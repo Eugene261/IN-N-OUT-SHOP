@@ -1,0 +1,59 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Build files
+/build
+/dist
+/.next
+/out
+
+# Logs
+logs
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Dependency directories
+jspm_packages/
+bower_components/
+
+# Coverage directory
+coverage/
+
+# Temporary files
+tmp/
+temp/
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local Netlify folder
+.netlify
+
+# Cloudinary credentials and other sensitive information
+# (already moved to environment variables)
