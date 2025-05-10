@@ -35,7 +35,7 @@ import ContactUs from "./pages/ContactUs";
 import AboutUs from "./pages/AboutUs";
 import FAQs from "./pages/FAQs";
 import Features from "./pages/Features";
-import TestPage from "./pages/TestPage";
+
 
 // SuperAdmin imports
 import SuperAdminLayout from "./components/super-admin-view/superAdminLayout";
@@ -113,10 +113,25 @@ function App() {
             <Route path='' element={<ShoppingHome />} />
             <Route path='home' element={<ShoppingHome />} />
             <Route path='listing' element={<ShoppingListing />} />
-            <Route path='checkout' element={<ShoppingCheckout />} />
             <Route path='search' element={<SearchProducts />} />
-            <Route path='paypal-return' element={<PaypalReturnPage />} />
-            <Route path='order-confirmation' element={<OrderConfirmationPage />} />
+            <Route path='product/:productId' element={<ProductDetailsPage />} />
+            
+            {/* Routes that require authentication */}
+            <Route path='checkout' element={
+              <CheckAuth isAuthenticated={isAuthenticated} user={user}>
+                <ShoppingCheckout />
+              </CheckAuth>
+            } />
+            <Route path='paypal-return' element={
+              <CheckAuth isAuthenticated={isAuthenticated} user={user}>
+                <PaypalReturnPage />
+              </CheckAuth>
+            } />
+            <Route path='order-confirmation' element={
+              <CheckAuth isAuthenticated={isAuthenticated} user={user}>
+                <OrderConfirmationPage />
+              </CheckAuth>
+            } />
             <Route path='account' element={
               <CheckAuth isAuthenticated={isAuthenticated} user={user}>
                 <ShoppingAccount />
@@ -133,7 +148,7 @@ function App() {
             <Route path="about-us" element={<AboutUs />} />
             <Route path="faqs" element={<FAQs />} />
             <Route path="features" element={<Features />} />
-            <Route path="test" element={<TestPage />} />
+            
             
             {/* Product Details Page */}
             <Route path="product/:productId" element={<ProductDetailsPage />} />

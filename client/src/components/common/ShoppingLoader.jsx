@@ -42,8 +42,11 @@ export default function ShoppingLoader({ className = '' }) {
               <motion.span
                 key={index}
                 variants={letterVariants}
-                className={`text-3xl font-bold ${letter === '-' ? 'text-gray-500' : 'text-black'}`}
-                style={{ display: 'inline-block' }}
+                className={`text-4xl font-extrabold ${letter === '-' ? 'text-gray-500' : 'text-black'}`}
+                style={{ 
+                  display: 'inline-block',
+                  textShadow: letter !== '-' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'
+                }}
               >
                 {letter}
               </motion.span>

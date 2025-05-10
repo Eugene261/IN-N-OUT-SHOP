@@ -20,7 +20,8 @@ function CheckAuth({ isAuthenticated, user, children }) {
 
     if(path === '/') {
         if(!isAuthenticated){
-            return <Navigate to="/auth/login" replace />;
+            // Redirect unauthenticated users to shop home instead of login
+            return <Navigate to="/shop/home" replace />;
         } else {
             if (user?.role === 'superAdmin') {
                 return <Navigate to="/super-admin/dashboard" replace />;
@@ -37,8 +38,12 @@ function CheckAuth({ isAuthenticated, user, children }) {
         return <>{children}</>;
     }
 
-    // Not authenticated - redirect to login
+    // Not authenticated - redirect to login except for shop pages
     if (!isAuthenticated) {
+        // Allow access to shop pages without authentication
+        if (path.startsWith('/shop')) {
+            return <>{children}</>;
+        }
         return <Navigate to="/auth/login" replace />;
     }
 

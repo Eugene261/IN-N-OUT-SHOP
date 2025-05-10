@@ -5,10 +5,14 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { verifyPayment } from '@/services/paystackService'
 import { toast } from 'sonner'
+import { useDispatch, useSelector } from 'react-redux'
+import { clearCart, clearCartState } from '@/store/shop/cart-slice/index.js'
 
 function OrderConfirmationPage() {
   const navigate = useNavigate()
   const location = useLocation()
+  const dispatch = useDispatch()
+  const { user } = useSelector(state => state.auth)
   const [verificationStatus, setVerificationStatus] = useState('loading') // 'loading', 'success', 'failed'
   const [orderDetails, setOrderDetails] = useState(null)
   const [transactionId, setTransactionId] = useState('')
@@ -26,6 +30,27 @@ function OrderConfirmationPage() {
             setVerificationStatus('success')
             setOrderDetails(response.data)
             toast.success('Payment verified successfully!')
+            
+            // Clear the cart after successful payment
+            if (user && user.id) {
+              try {
+                // Try to clear cart on the server
+                dispatch(clearCart(user.id))
+                  .unwrap()
+                  .catch(error => {
+                    console.error('Failed to clear cart on server:', error)
+                    // If server call fails, at least clear the cart in Redux state
+                    dispatch(clearCartState())
+                  })
+              } catch (error) {
+                console.error('Error clearing cart:', error)
+                // Ensure cart is cleared in Redux state even if API call fails
+                dispatch(clearCartState())
+              }
+            } else {
+              // If no user ID available, just clear the cart state
+              dispatch(clearCartState())
+            }
           } else {
             setVerificationStatus('failed')
             toast.error('Payment verification failed')

@@ -152,7 +152,16 @@ function ProductDetailsPage() {
   // Handle toggling wishlist
   function handleToggleWishlist() {
     if (!isAuthenticated) {
-      toast.error("Please login to add items to your wishlist");
+      toast.info("Please login to add items to your wishlist", {
+        description: "You'll be redirected to the login page",
+        duration: 3000
+      });
+      // Set a timeout to allow the toast to be shown before redirecting
+      setTimeout(() => {
+        // Store the current product page URL in sessionStorage to redirect back after login
+        sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
+        navigate('/auth/login');
+      }, 1500);
       return;
     }
     
@@ -200,7 +209,16 @@ function ProductDetailsPage() {
     }
     
     if (!isAuthenticated) {
-      toast.error("Please login to add items to your cart");
+      toast.info("Please login to add items to your cart", {
+        description: "You'll be redirected to the login page",
+        duration: 3000
+      });
+      // Set a timeout to allow the toast to be shown before redirecting
+      setTimeout(() => {
+        // Store the current product page URL in sessionStorage to redirect back after login
+        sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
+        navigate('/auth/login');
+      }, 1500);
       return;
     }
     

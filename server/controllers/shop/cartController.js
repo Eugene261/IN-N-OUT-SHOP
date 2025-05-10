@@ -250,9 +250,52 @@ const deleteCartItem = async(req, res) => {
     }
 };
 
+const clearCart = async(req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        if(!userId) {
+            return res.status(400).json({
+                success: false,
+                message: 'User ID is required'
+            });
+        }
+
+        // Find the user's cart
+        const cart = await Cart.findOne({ userId });
+        
+        if(!cart) {
+            return res.status(200).json({
+                success: true,
+                message: 'No cart found for this user',
+                data: { userId, items: [] }
+            });
+        }
+        
+        // Clear all items from the cart
+        cart.items = [];
+        await cart.save();
+        
+        res.status(200).json({
+            success: true,
+            message: 'Cart cleared successfully',
+            data: { userId, items: [] }
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred while clearing the cart',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     addToCart,
     updateCartItemQuantity,
     fetchCartItems,
-    deleteCartItem
+    deleteCartItem,
+    clearCart
 };

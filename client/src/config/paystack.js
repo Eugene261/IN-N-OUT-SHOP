@@ -1,5 +1,13 @@
 // Paystack configuration
-export const PAYSTACK_PUBLIC_KEY = 'pk_test_c713d2a0aef25e7e2d93340b57f0d26b68bb5ce6';
+// Use environment variable if available, otherwise fall back to the test key
+// In production, this should always come from environment variables
+const envPublicKey = import.meta.env?.VITE_PAYSTACK_PUBLIC_KEY;
+export const PAYSTACK_PUBLIC_KEY = envPublicKey || 'pk_test_c713d2a0aef25e7e2d93340b57f0d26b68bb5ce6';
+
+// Log warning if using fallback key
+if (!envPublicKey) {
+  console.warn('Using fallback Paystack public key. Set VITE_PAYSTACK_PUBLIC_KEY in your environment variables for production.');
+}
 
 // Paystack API endpoints (these are accessed through our backend proxy)
 export const PAYSTACK_API = {

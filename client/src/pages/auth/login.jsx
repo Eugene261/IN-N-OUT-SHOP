@@ -1,7 +1,7 @@
 import CommonForm from '@/components/common/form';
 import { loginFormControls } from '@/config';
 import { loginUser } from '@/store/auth-slice';
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -14,8 +14,17 @@ const initialState = {
 function AuthLogin() {
   const [formData, setFormData] = useState(initialState);
   const [isLoading, setIsLoading] = useState(false);
+  const [redirectPath, setRedirectPath] = useState('');
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  
+  // Check for redirect path in sessionStorage
+  useEffect(() => {
+    const savedRedirectPath = sessionStorage.getItem('redirectAfterLogin');
+    if (savedRedirectPath) {
+      setRedirectPath(savedRedirectPath);
+    }
+  }, []);
 
   const onSubmit = async (event) => {
     event.preventDefault();
@@ -33,13 +42,18 @@ function AuthLogin() {
             duration: 2000
           });
           
-          // Navigate based on user role
+          // Navigate based on user role or redirect path
           if (user.role === 'admin') {
             navigate('/admin/dashboard');
           } else if (user.role === 'superAdmin') {
             navigate('/super-admin/dashboard');
+          } else if (redirectPath) {
+            // Clear the redirect path from session storage
+            sessionStorage.removeItem('redirectAfterLogin');
+            // Navigate back to the previous page
+            navigate(redirectPath);
           } else {
-            // Regular user
+            // Regular user with no redirect path
             navigate('/shop/home');
           }
         } else {

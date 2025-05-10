@@ -20,6 +20,7 @@ function MenuItems() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const isHomePage = location.pathname === '/shop/home' || location.pathname === '/shop';
 
   function handleNaviagte(getCerrentMenuItem){
     sessionStorage.removeItem('filters');
@@ -41,32 +42,34 @@ function MenuItems() {
 
   return (
     <nav className='flex flex-col mb-3 lg:mb-0 lg:items-center gap-6 lg:flex-row'>
-      {shoppingViewHeaderMenuItems.map((menuItem, index) => (
-        <motion.div
-          key={menuItem.id}
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 + index * 0.05 }}
-        >
-          <Label 
-            onClick={() => handleNaviagte(menuItem)}
-            className={cn(
-              'text-sm font-medium relative group',
-              'text-gray-800 hover:text-black transition-colors duration-300',
-              'px-3 py-2 rounded-lg hover:bg-gray-100/50',
-              'cursor-pointer'
-            )}
+      {shoppingViewHeaderMenuItems
+        .filter(menuItem => !(isHomePage && menuItem.id === 'home'))
+        .map((menuItem, index) => (
+          <motion.div
+            key={menuItem.id}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 + index * 0.05 }}
           >
-            <span className="relative z-10">{menuItem.label}</span>
-            <motion.span 
-              className="absolute inset-0 bg-gradient-to-r from-gray-200 to-gray-100 rounded-lg opacity-0 group-hover:opacity-100 -z-10"
-              initial={{ opacity: 0 }}
-              whileHover={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-            />
-          </Label>
-        </motion.div>
-      ))}
+            <Label 
+              onClick={() => handleNaviagte(menuItem)}
+              className={cn(
+                'text-sm font-medium relative group',
+                'text-gray-800 hover:text-black transition-colors duration-300',
+                'px-3 py-2 rounded-lg hover:bg-gray-100/50',
+                'cursor-pointer'
+              )}
+            >
+              <span className="relative z-10">{menuItem.label}</span>
+              <motion.span 
+                className="absolute inset-0 bg-gradient-to-r from-gray-200 to-gray-100 rounded-lg opacity-0 group-hover:opacity-100 -z-10"
+                initial={{ opacity: 0 }}
+                whileHover={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              />
+            </Label>
+          </motion.div>
+        ))}
     </nav>
   )
 }
@@ -127,26 +130,37 @@ function HeaderRightContent() {
       onOpenChange={() => setOpenCartSheet(false)}
       >
         <motion.button 
-        onClick={() => setOpenCartSheet(true)}
+        onClick={() => {
+          if (!user) {
+            // Redirect to login if user is not authenticated
+            navigate('/auth/login');
+            return;
+          }
+          setOpenCartSheet(true);
+        }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           className="p-2 rounded-full relative group bg-white border border-gray-200 shadow-sm cursor-pointer"
         >
           <ShoppingBag className='w-6 h-6 text-gray-800' />
           <span className='sr-only'>Cart</span>
-          <motion.span 
-            className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full 
-            h-5 w-5 flex items-center justify-center"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 500 }}
-          >
-            {cartItems?.items?.length || 0}
-          </motion.span>
+          {user && (
+            <motion.span 
+              className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full 
+              h-5 w-5 flex items-center justify-center"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 500 }}
+            >
+              {cartItems?.items?.length || 0}
+            </motion.span>
+          )}
         </motion.button>
-        <UserCartWraper 
-        setOpenCartSheet={setOpenCartSheet}
-        cartItems={cartItems && cartItems.items && cartItems.items.length > 0 ? cartItems.items : []} />
+        {user && (
+          <UserCartWraper 
+          setOpenCartSheet={setOpenCartSheet}
+          cartItems={cartItems && cartItems.items && cartItems.items.length > 0 ? cartItems.items : []} />
+        )}
       </Sheet>
       
       {user ? (

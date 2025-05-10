@@ -119,8 +119,7 @@ const Footer = () => {
                 { name: 'Contact Us', path: '/shop/contact-us' },
                 { name: 'About Us', path: '/shop/about-us' },
                 { name: 'FAQs', path: '/shop/faqs' },
-                { name: 'Features', path: '/shop/features' },
-                { name: 'Test Page', path: '/shop/test' }
+                { name: 'Features', path: '/shop/features' }
               ].map((item, i) => (
                 <motion.div
                   key={i}

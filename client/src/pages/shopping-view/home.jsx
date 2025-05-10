@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import bannerOne from '../../assets/banner-1.webp'
 import bannerTwo from '../../assets/banner-2.webp'
 import bannerThree from '../../assets/banner-3.webp'
+import LazyImage from '../../components/common/LazyImage'
 import { toast } from 'sonner';
 import ShoppingLoader from '@/components/common/ShoppingLoader';
 import { 
@@ -208,9 +209,18 @@ function ShoppingHome() {
   }, [productList]);
 
 
+  // Fetch feature images with loading state management
+  const [imagesLoading, setImagesLoading] = useState(true);
+  
   useEffect(() => {
-      dispatch(getFeatureImages());
-    }, [dispatch]);
+    setImagesLoading(true);
+    dispatch(getFeatureImages())
+      .then(() => {
+        // Add a small delay to ensure images are properly loaded
+        setTimeout(() => setImagesLoading(false), 100);
+      })
+      .catch(() => setImagesLoading(false));
+  }, [dispatch]);
   
     return (
       <div className='flex flex-col min-h-screen'>
@@ -223,10 +233,18 @@ function ShoppingHome() {
         >
           <div className="absolute inset-0 z-10 pointer-events-none"></div>
           
-          {FeatureImageList && FeatureImageList.length > 0 ? (
+          {imagesLoading ? (
+            // Show loading state while images are being fetched
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+              <div className="animate-pulse flex flex-col items-center">
+                <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="mt-4 text-gray-600 font-medium">Loading featured images...</p>
+              </div>
+            </div>
+          ) : FeatureImageList && FeatureImageList.length > 0 ? (
             <AnimatePresence initial={false} custom={direction} mode="popLayout">
               <motion.div
-                key={currentSlide}
+                key={`slide-${currentSlide}-${FeatureImageList[currentSlide]?._id}`}
                 custom={direction}
                 variants={slideVariants}
                 initial="enter"
@@ -234,10 +252,12 @@ function ShoppingHome() {
                 exit="exit"
                 className="absolute inset-0"
               >
-                <img
+                <LazyImage
                   src={FeatureImageList[currentSlide]?.image}
                   alt={`Banner ${currentSlide + 1}`}
                   className="w-full h-full object-cover object-center"
+                  eager={true}
+                  placeholderSrc={bannerOne}
                 />
                 <div className="absolute bottom-0 left-0 right-0 h-1/4 bg-gradient-to-t from-black/60 to-transparent backdrop-blur-[2px] z-10"></div>
               </motion.div>
@@ -283,7 +303,7 @@ function ShoppingHome() {
   
           {/* Slide Indicators */}
           <div className="absolute bottom-4 sm:bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex space-x-2 sm:space-x-3">
-            {FeatureImageList && FeatureImageList.length > 0 ? 
+            {!imagesLoading && FeatureImageList && FeatureImageList.length > 0 ? 
               FeatureImageList.map((_, index) => (
                 <motion.button
                   key={index}

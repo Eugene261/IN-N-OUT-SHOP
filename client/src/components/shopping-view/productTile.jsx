@@ -8,6 +8,7 @@ import { addToWishlist, removeFromWishlist, fetchWishlistItems } from '@/store/s
 import { toast } from 'sonner';
 import { brandOptionsMap, categoryOptionsMap } from '@/config';
 import { useNavigate } from 'react-router-dom';
+import LazyImage from '../common/LazyImage';
 
 function ShoppingProductTile({ product, handleAddToCart, onAddToCart }) {
   const dispatch = useDispatch();
@@ -29,7 +30,16 @@ function ShoppingProductTile({ product, handleAddToCart, onAddToCart }) {
     e.stopPropagation();
     
     if (!isAuthenticated) {
-      toast.error("Please login to add items to your wishlist");
+      toast.info("Please login to add items to your wishlist", {
+        description: "You'll be redirected to the login page",
+        duration: 3000
+      });
+      // Set a timeout to allow the toast to be shown before redirecting
+      setTimeout(() => {
+        // Store the current URL in sessionStorage to redirect back after login
+        sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
+        navigate('/auth/login');
+      }, 1500);
       return;
     }
     
@@ -112,10 +122,11 @@ function ShoppingProductTile({ product, handleAddToCart, onAddToCart }) {
         {/* Image container */}
         <div className="relative w-full overflow-hidden">
           <div className="aspect-square overflow-hidden bg-gray-50">
-            <img
+            <LazyImage
               src={product?.image}
-              alt={product?.title}
+              alt={product?.title || 'Product image'}
               className="w-full h-full object-cover object-center transition-transform duration-500 md:group-hover:scale-110"
+              fallbackSrc="/placeholder-product.svg"
             />
           </div>
 
@@ -156,20 +167,18 @@ function ShoppingProductTile({ product, handleAddToCart, onAddToCart }) {
             )}
           </div>
           
-          {/* Wishlist button - only for logged in users */}
-          {user && (
-            <motion.button
-              className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm
-              flex items-center justify-center shadow-md z-10"
-              onClick={handleToggleWishlist}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              <Heart 
-                className={`w-5 h-5 ${isInWishlist ? 'fill-red-500 text-red-500' : 'text-gray-700'}`} 
-              />
-            </motion.button>
-          )}
+          {/* Wishlist button - visible for all users */}
+          <motion.button
+            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm
+            flex items-center justify-center shadow-md z-10"
+            onClick={handleToggleWishlist}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <Heart 
+              className={`w-5 h-5 ${isInWishlist ? 'fill-red-500 text-red-500' : 'text-gray-700'}`} 
+            />
+          </motion.button>
         </div>
         
         {/* Product details */}

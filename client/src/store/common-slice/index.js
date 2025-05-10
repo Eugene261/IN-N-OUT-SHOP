@@ -121,10 +121,15 @@ const commonSlice = createSlice({
             })
             .addCase(deleteFeatureImage.fulfilled, (state, action) => {
                 state.deleteLoading = false;
-                // Remove the deleted image from the list
+                // Remove the deleted image from the list immediately
                 state.FeatureImageList = state.FeatureImageList.filter(
                     image => image._id !== action.payload.imageId
                 );
+                
+                // If the list is now empty, ensure it's an empty array rather than undefined
+                if (!state.FeatureImageList || state.FeatureImageList.length === 0) {
+                    state.FeatureImageList = [];
+                }
             })
             .addCase(deleteFeatureImage.rejected, (state, action) => {
                 state.deleteLoading = false;

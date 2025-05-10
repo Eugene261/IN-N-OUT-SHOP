@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { handleApiError } from '../utils/apiErrorHandler';
 
 const API_URL = 'http://localhost:5000/api/payment';
 
@@ -23,12 +24,14 @@ export const initializePayment = async (data) => {
     console.log('Payment initialization successful:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error initializing payment:', error);
-    if (error.response) {
-      console.error('Error response data:', error.response.data);
-      console.error('Error response status:', error.response.status);
-    }
-    throw error;
+    // Use the standardized error handler
+    const errorDetails = handleApiError(error, {
+      context: 'payment initialization',
+      showToast: true
+    });
+    
+    // Rethrow with standardized error information
+    throw errorDetails;
   }
 };
 
@@ -40,8 +43,14 @@ export const verifyPayment = async (reference) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error verifying payment:', error);
-    throw error;
+    // Use the standardized error handler
+    const errorDetails = handleApiError(error, {
+      context: 'payment verification',
+      showToast: true
+    });
+    
+    // Rethrow with standardized error information
+    throw errorDetails;
   }
 };
 
@@ -53,7 +62,13 @@ export const getPaymentChannels = async () => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching payment channels:', error);
-    throw error;
+    // Use the standardized error handler
+    const errorDetails = handleApiError(error, {
+      context: 'fetching payment channels',
+      showToast: false // Less critical, may not need a toast
+    });
+    
+    // Rethrow with standardized error information
+    throw errorDetails;
   }
 };
