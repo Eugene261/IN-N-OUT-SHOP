@@ -26,6 +26,7 @@ const superAdminOrdersRouter = require('./routes/superAdmin/ordersRoutes.js');
 const superAdminProductsRouter = require('./routes/superAdmin/productsRoutes.js');
 const superAdminFeaturedRouter = require('./routes/superAdmin/featuredRoutes.js');
 const superAdminFeaturedCollectionRouter = require('./routes/superAdmin/featuredCollectionRoutes.js');
+const superAdminRevenueRouter = require('./Routes/superAdmin/revenueRoutes.js');
 
 
 
@@ -79,6 +80,7 @@ app.use('/api/superAdmin/orders', superAdminOrdersRouter);
 app.use('/api/superAdmin/products', superAdminProductsRouter);
 app.use('/api/superAdmin/featured', superAdminFeaturedRouter);
 app.use('/api/superAdmin/featured-collections', superAdminFeaturedCollectionRouter);
+app.use('/api/superAdmin/revenue', superAdminRevenueRouter);
 
 
 

@@ -141,11 +141,32 @@ function UserCartItemsContent({ cartItem }) {
           
           // Check if current quantity would exceed total stock
           if (getQuantity >= getTotalStock) {
-            toast.error(`Only ${getTotalStock} items can be added for this product`, {
-              position: 'top-center',
-              duration: 2000
-            });
+            toast.error(
+              <div className="flex flex-col gap-1">
+                <span className="font-bold">Stock limit reached!</span>
+                <span>Only {getTotalStock} items available in stock.</span>
+                <span className="text-xs">You cannot add more of this item to your cart.</span>
+              </div>, 
+              {
+                position: 'top-center',
+                duration: 3000
+              }
+            );
             return;
+          }
+          
+          // Check if we're approaching stock limit
+          if (getQuantity + 1 === getTotalStock) {
+            toast.warning(
+              <div className="flex flex-col gap-1">
+                <span className="font-bold">Last item in stock!</span>
+                <span>You've reached the maximum available quantity for this product.</span>
+              </div>,
+              {
+                position: 'top-center',
+                duration: 3000
+              }
+            );
           }
         }
       }

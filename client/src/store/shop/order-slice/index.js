@@ -24,24 +24,7 @@ export const createNewOrder = createAsyncThunk('/order/createNewOrder', async(or
     }
 });
 
-export const capturePayment = createAsyncThunk('/order/capturePayment', async({paymentId, payerId, orderId}, { rejectWithValue }) => {
-    try {
-        const response = await axios.post('http://localhost:5000/api/shop/order/capture', {
-            paymentId,
-            payerId,
-            orderId
-        }, {
-            withCredentials: true,
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        return response.data;
-    } catch (error) {
-        console.error('Payment capture error:', error);
-        return rejectWithValue(error.response?.data || { message: 'Server connection failed' });
-    }
-});
+// PayPal capturePayment function removed
 
 export const getAllOrdersByUserId = createAsyncThunk('/order/getAllOrdersByUser', async(userId, { rejectWithValue }) => {
     try {

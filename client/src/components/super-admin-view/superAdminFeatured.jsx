@@ -49,6 +49,8 @@ const SuperAdminFeatured = () => {
   const [filteredProducts, setFilteredProducts] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [imageToDelete, setImageToDelete] = useState(null);
   
   // Image upload states
   const [imageFile, setImageFile] = useState(null);
@@ -133,10 +135,16 @@ const SuperAdminFeatured = () => {
   };
   
   function handleDeleteImage(imageId) {
-    if (window.confirm('Are you sure you want to delete this image? This action cannot be undone.')) {
-      setDeletingId(imageId);
+    setImageToDelete(imageId);
+    setShowDeleteDialog(true);
+  }
+  
+  function confirmDeleteImage() {
+    if (imageToDelete) {
+      setDeletingId(imageToDelete);
+      setShowDeleteDialog(false);
       
-      dispatch(deleteFeatureImage(imageId))
+      dispatch(deleteFeatureImage(imageToDelete))
         .unwrap()
         .then((data) => {
           if (data?.success) {
@@ -148,6 +156,7 @@ const SuperAdminFeatured = () => {
         })
         .finally(() => {
           setDeletingId(null);
+          setImageToDelete(null);
         });
     }
   }
@@ -783,6 +792,49 @@ const SuperAdminFeatured = () => {
             </motion.div>
           </div>
         </motion.div>
+      )}
+      
+      {/* Delete Confirmation Dialog */}
+      {showDeleteDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden"
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-center mb-4">
+                <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
+                  <Trash2 className="h-6 w-6 text-red-600" />
+                </div>
+              </div>
+              <h3 className="text-xl font-semibold text-center text-gray-800 mb-2">Delete Feature Image</h3>
+              <p className="text-gray-600 text-center mb-6">
+                Are you sure you want to delete this image? This action cannot be undone.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => setShowDeleteDialog(false)}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteImage}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center min-w-[100px]"
+                  disabled={deletingId !== null}
+                >
+                  {deletingId !== null ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    'Delete'
+                  )}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
       )}
     </motion.div>
   );

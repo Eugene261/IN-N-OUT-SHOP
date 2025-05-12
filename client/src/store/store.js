@@ -17,6 +17,7 @@ import wishlistSlice from './shop/wishlist-slice/index.js';
 import superAdminUsersSlice from './super-admin/user-slice/index.js';
 import superAdminOrdersSlice from './super-admin/orders-slice/index.js';
 import superAdminProductsSlice from './super-admin/products-slice/index.js';
+import superAdminRevenueSlice from './super-admin/revenue-slice/index.js';
 import featuredCollectionSlice from './superAdmin/featured-collection-slice/index.js';
 import shopFeaturedCollectionSlice from './shop/featured-collection-slice/index.js';
 
@@ -40,6 +41,7 @@ const store = configureStore({
         superAdminUsers: superAdminUsersSlice,
         superAdminOrders: superAdminOrdersSlice,
         superAdminProducts: superAdminProductsSlice,
+        superAdminRevenue: superAdminRevenueSlice,
         featuredCollections: featuredCollectionSlice,
         
         // Shop public reducers

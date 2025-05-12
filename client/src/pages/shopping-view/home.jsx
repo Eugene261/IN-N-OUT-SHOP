@@ -1,7 +1,4 @@
-import React, { useEffect, useState } from 'react'
-import bannerOne from '../../assets/banner-1.webp'
-import bannerTwo from '../../assets/banner-2.webp'
-import bannerThree from '../../assets/banner-3.webp'
+import React, { useEffect, useState, useRef } from 'react'
 import LazyImage from '../../components/common/LazyImage'
 import { toast } from 'sonner';
 import ShoppingLoader from '@/components/common/ShoppingLoader';
@@ -17,7 +14,8 @@ import {
   ShoppingBag,
   Zap,
   Leaf,
-  Diamond
+  Diamond,
+  ArrowUp
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
@@ -54,7 +52,6 @@ const brandWithIcons = [
 function ShoppingHome() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(0); // -1 for left, 1 for right
-  const slides = [bannerOne, bannerTwo, bannerThree];
   const { productList } = useSelector(state => state.shopProducts)
   const navigate = useNavigate();
   const { user } = useSelector(state => state.auth);
@@ -64,8 +61,12 @@ function ShoppingHome() {
   const dispatch = useDispatch();
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {
+    // Reset filters when home page loads
+    sessionStorage.removeItem('filters');
+    
     // Only set up the timer if FeatureImageList exists and has items
     if (FeatureImageList && FeatureImageList.length > 0) {
       const timer = setInterval(() => {
@@ -76,6 +77,25 @@ function ShoppingHome() {
       return () => clearInterval(timer);
     }
   }, [FeatureImageList]);
+
+  // Handle scroll for Back to Top button
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show button when user scrolls down 500px from the top
+      if (window.scrollY > 500) {
+        setShowBackToTop(true);
+      } else {
+        setShowBackToTop(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    
+    // Clean up the event listener
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   function handleNaviagteToListingPage(getCerrentItem, section){
     sessionStorage.removeItem('filters');
@@ -150,6 +170,14 @@ function ShoppingHome() {
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 }
+  };
+  
+  // Function to scroll back to top smoothly
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
   };
 
   const slideVariants = {
@@ -226,7 +254,7 @@ function ShoppingHome() {
       <div className='flex flex-col min-h-screen'>
         {/* Enhanced Banner Slider */}
         <motion.div 
-          className="relative w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[70vh] max-h-[800px] overflow-hidden"
+          className="relative w-full h-[400px] sm:h-[500px] md:h-[600px] lg:h-[90vh] max-h-[1000px] overflow-hidden"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
@@ -257,18 +285,21 @@ function ShoppingHome() {
                   alt={`Banner ${currentSlide + 1}`}
                   className="w-full h-full object-cover object-center"
                   eager={true}
-                  placeholderSrc={bannerOne}
+                  placeholderSrc="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f3f4f6'/%3E%3C/svg%3E"
                 />
-                <div className="absolute bottom-0 left-0 right-0 h-1/4 bg-gradient-to-t from-black/60 to-transparent backdrop-blur-[2px] z-10"></div>
               </motion.div>
             </AnimatePresence>
           ) : (
-            <div className="absolute inset-0">
-              <img
-                src={bannerOne}
-                alt="Default Banner"
-                className="w-full h-full object-cover object-center"
-              />
+            <div className="absolute inset-0 bg-gradient-to-b from-gray-100 to-gray-200 flex items-center justify-center">
+              <div className="text-center p-8">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-300 flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-700 mb-2">No Featured Images</h3>
+                <p className="text-gray-500">Add featured images in the admin dashboard to display here.</p>
+              </div>
             </div>
           )}
   
@@ -303,7 +334,7 @@ function ShoppingHome() {
   
           {/* Slide Indicators */}
           <div className="absolute bottom-4 sm:bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex space-x-2 sm:space-x-3">
-            {!imagesLoading && FeatureImageList && FeatureImageList.length > 0 ? 
+            {!imagesLoading && FeatureImageList && FeatureImageList.length > 0 && 
               FeatureImageList.map((_, index) => (
                 <motion.button
                   key={index}
@@ -327,32 +358,7 @@ function ShoppingHome() {
                     />
                   )}
                 </motion.button>
-              )) : (
-                slides.map((_, index) => (
-                  <motion.button
-                    key={index}
-                    onClick={() => {
-                      setDirection(index > currentSlide ? 1 : -1);
-                      setCurrentSlide(index);
-                    }}
-                    className={`w-1.5 sm:w-2 h-6 sm:h-8 rounded-full transition-all overflow-hidden relative`}
-                    whileHover={{ scale: 1.1 }}
-                    animate={{ 
-                      backgroundColor: index === currentSlide ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.3)',
-                      width: index === currentSlide ? '20px' : '6px'
-                    }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    {index === currentSlide && (
-                      <motion.div 
-                        className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500"
-                        animate={{ opacity: [0.7, 1, 0.7] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                      />
-                    )}
-                  </motion.button>
-                ))
-              )
+              ))
             }
           </div>
         </motion.div>
@@ -562,6 +568,23 @@ function ShoppingHome() {
         </div>
   
         <FeaturedSection />
+
+        {/* Back to Top Button */}
+        <AnimatePresence>
+          {showBackToTop && (
+            <motion.button
+              onClick={scrollToTop}
+              className="fixed bottom-8 right-8 z-50 p-3 rounded-full bg-black text-white shadow-lg hover:shadow-xl transition-all duration-300"
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.5 }}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <ArrowUp size={24} />
+            </motion.button>
+          )}
+        </AnimatePresence>
 
         {/* Product Options Modal */}
         <ProductOptionsModal 

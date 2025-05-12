@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
-import { Dialog } from '../ui/dialog';
+import { Dialog, DialogTitle } from '../ui/dialog';
 import AdminOrderDetailsView from './orderDetails';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, Package, Calendar, CircleDollarSign } from 'lucide-react';
@@ -200,6 +200,7 @@ function AdminOrdersView() {
       </motion.div>
 
       <Dialog open={openDetailsDialog} onOpenChange={handleCloseDialog}>
+        <DialogTitle className="sr-only">Order Details</DialogTitle>
         {orderDetails && <AdminOrderDetailsView orderDetails={orderDetails} user={user} />}
       </Dialog>
     </motion.div>

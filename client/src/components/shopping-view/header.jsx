@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { HousePlus, Menu, ShoppingBag, UserRound, LogOut, Heart } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
+import { HousePlus, Menu, ShoppingBag, UserRound, LogOut, Heart, ChevronDown, ShoppingCart } from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '../ui/sheet';
 import { useDispatch, useSelector } from 'react-redux';
+import axios from 'axios';
 import { shoppingViewHeaderMenuItems } from '@/config';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, 
   DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
@@ -12,74 +13,182 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import UserCartItemsContent from './cartItemsContent';
 import UserCartWraper from './cartWrapper';
-import { fetchCartItems } from '@/store/shop/cart-slice';
+import { fetchCartItems, openCart, closeCart, toggleCart, clearCartState } from '@/store/shop/cart-slice';
 import { fetchWishlistItems } from '@/store/shop/wishlist-slice';
 import { Label } from '../ui/label';
 
-function MenuItems() {
+function MenuItems({ onNavigate }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const isHomePage = location.pathname === '/shop/home' || location.pathname === '/shop';
+  const [activeSubmenu, setActiveSubmenu] = useState(null);
 
-  function handleNaviagte(getCerrentMenuItem){
-    sessionStorage.removeItem('filters');
-    const currentFilter =
-    getCerrentMenuItem.id !==  'home'  && getCerrentMenuItem.id !== 'products' && getCerrentMenuItem.id !== 'search' ?
-    {
-      category : [getCerrentMenuItem.id]
-    } : null
+  function handleNavigate(menuItem) {
+    // Always navigate to the menu item's path when clicked
+    if (menuItem.path) {
+      // For items with category filtering
+      if (menuItem.id !== 'home' && menuItem.id !== 'products' && menuItem.id !== 'search') {
+        // Store the category filter in session storage
+        sessionStorage.removeItem('filters');
+        const currentFilter = {
+          category: [menuItem.id]
+        };
+        sessionStorage.setItem('filters', JSON.stringify(currentFilter));
+      }
+      
+      // Navigate to the path
+      navigate(menuItem.path);
+      
+      // Call the onNavigate callback if provided (to close mobile menu)
+      if (typeof onNavigate === 'function') {
+        onNavigate();
+      }
+    }
+    
+    // Close the submenu after navigation
+    setActiveSubmenu(null);
+  }
 
-
-    sessionStorage.setItem('filters', JSON.stringify(currentFilter));
-
-
-    location.pathname.includes('listing') && currentFilter !== null ? 
-    setSearchParams(new URLSearchParams(`?category=${getCerrentMenuItem.id}`)) : 
-    navigate(getCerrentMenuItem.path)
-
+  function handleSubmenuToggle(menuItemId) {
+    setActiveSubmenu(activeSubmenu === menuItemId ? null : menuItemId);
+  }
+  
+  function handleMouseEnter(menuItemId) {
+    if (menuItemId) {
+      setActiveSubmenu(menuItemId);
+    }
+  }
+  
+  function handleMouseLeave() {
+    setActiveSubmenu(null);
+  }
+  
+  function handleSubmenuItemClick(path, category) {
+    // Close the submenu
+    setActiveSubmenu(null);
+    
+    // Extract category information from the URL if available
+    if (path.includes('?')) {
+      const url = new URL(`http://example.com${path}`);
+      const categoryParam = url.searchParams.get('category');
+      const subCategoryParam = url.searchParams.get('subCategory');
+      
+      // Set filter in session storage for the listing page
+      if (categoryParam) {
+        sessionStorage.removeItem('filters');
+        const currentFilter = {
+          category: [categoryParam]
+        };
+        
+        // Add subcategory if available
+        if (subCategoryParam) {
+          currentFilter.subCategory = [subCategoryParam];
+        }
+        
+        sessionStorage.setItem('filters', JSON.stringify(currentFilter));
+      }
+    } 
+    // If direct category is provided but no query params in URL
+    else if (category) {
+      sessionStorage.removeItem('filters');
+      const currentFilter = {
+        category: [category]
+      };
+      sessionStorage.setItem('filters', JSON.stringify(currentFilter));
+    }
+    
+    // Navigate to the specified path
+    navigate(path);
+    
+    // Call the onNavigate callback if provided (to close mobile menu)
+    if (typeof onNavigate === 'function') {
+      onNavigate();
+    }
   }
 
   return (
-    <nav className='flex flex-col mb-3 lg:mb-0 lg:items-center gap-6 lg:flex-row'>
-      {shoppingViewHeaderMenuItems
-        .filter(menuItem => !(isHomePage && menuItem.id === 'home'))
-        .map((menuItem, index) => (
-          <motion.div
-            key={menuItem.id}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 + index * 0.05 }}
-          >
-            <Label 
-              onClick={() => handleNaviagte(menuItem)}
-              className={cn(
-                'text-sm font-medium relative group',
-                'text-gray-800 hover:text-black transition-colors duration-300',
-                'px-3 py-2 rounded-lg hover:bg-gray-100/50',
-                'cursor-pointer'
-              )}
+    <div className="relative w-full">
+      <nav className='flex flex-col lg:flex-row lg:items-center gap-0 w-full'>
+        {shoppingViewHeaderMenuItems
+          .filter(menuItem => !(isHomePage && menuItem.id === 'home'))
+          .map((menuItem, index) => (
+            <motion.div
+              key={menuItem.id}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+              className='relative'
+              onMouseEnter={() => window.innerWidth >= 1024 && menuItem.hasSubmenu && handleMouseEnter(menuItem.id)}
+              onMouseLeave={() => window.innerWidth >= 1024 && handleMouseLeave()}
             >
-              <span className="relative z-10">{menuItem.label}</span>
-              <motion.span 
-                className="absolute inset-0 bg-gradient-to-r from-gray-200 to-gray-100 rounded-lg opacity-0 group-hover:opacity-100 -z-10"
-                initial={{ opacity: 0 }}
-                whileHover={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-              />
-            </Label>
-          </motion.div>
-        ))}
-    </nav>
+              <div
+                onClick={() => handleNavigate(menuItem)}
+                className={cn(
+                  'cursor-pointer text-sm font-medium uppercase tracking-wide transition-colors hover:bg-gray-100 px-5 py-4',
+                  location.pathname.includes(menuItem.path) && menuItem.id !== 'home'
+                    ? 'text-gray-900 bg-gray-100'
+                    : 'text-gray-700'
+                )}
+              >
+                <div className='flex items-center'>
+                  {menuItem.label}
+                  {menuItem.hasSubmenu && <ChevronDown className='ml-1 h-3 w-3' />}
+                </div>
+              </div>
+            </motion.div>
+          ))}
+      </nav>
+      
+      {/* Mega Menu Dropdown - Positioned full width below the navigation */}
+      {activeSubmenu && (
+        <div 
+          className="absolute left-0 right-0 z-50 bg-white shadow-lg border-t border-gray-200 w-full"
+          style={{ top: '100%' }}
+          onMouseEnter={() => setActiveSubmenu(activeSubmenu)}
+          onMouseLeave={() => setActiveSubmenu(null)}
+        >
+          {shoppingViewHeaderMenuItems
+            .filter(item => item.id === activeSubmenu && item.hasSubmenu)
+            .map((menuItem, menuIndex) => (
+              <div key={menuIndex} className="container mx-auto py-6 px-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                  {menuItem.submenu.map((section, sectionIndex) => (
+                    <div key={sectionIndex} className="space-y-4">
+                      <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider border-b pb-2">
+                        {section.title}
+                      </h3>
+                      <ul className="space-y-2">
+                        {section.items.map((item, itemIndex) => (
+                          <li key={itemIndex}>
+                            <a
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleSubmenuItemClick(item.path, item.category || section.category);
+                              }}
+                              className="text-sm text-gray-600 hover:text-black transition-colors block py-1"
+                            >
+                              {item.label}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+        </div>
+      )}
+    </div>
   )
 }
 
 function HeaderRightContent() {
   const { user } = useSelector(state => state.auth);
-  const {cartItems}  = useSelector(state => state.shopCart);
+  const { cartItems, isCartOpen }  = useSelector(state => state.shopCart);
   const { wishlistItems } = useSelector(state => state.wishlist);
-  const [ openCartSheet, setOpenCartSheet ] = useState(false);
-  const [ openWishlistSheet, setOpenWishlistSheet ] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -91,146 +200,175 @@ function HeaderRightContent() {
     if (user) {
       const userId = user.id || user._id;
       if (userId) {
-        dispatch(fetchCartItems(userId));
+        // Check for the direct cart empty flag from sessionStorage (persists on refresh)
+        const cartEmptyAfterOrder = sessionStorage.getItem('cartEmptyAfterOrder') === 'true';
+        
+        // Check if we're on the order confirmation page
+        const isOrderConfirmationPage = window.location.pathname.includes('/shop/order-confirmation');
+        
+        // If cart should be empty after order or we're on confirmation page
+        if (cartEmptyAfterOrder || isOrderConfirmationPage) {
+          console.log('Cart should be empty after order completion');
+          
+          // Clear the cart state in Redux
+          dispatch(clearCartState());
+          
+          // Force cart to be empty in Redux store with the correct structure
+          dispatch({ 
+            type: 'shopCart/fetchCartItems/fulfilled', 
+            payload: { data: { items: [] } }
+          });
+          
+          // If we're not on the order confirmation page, make a direct API call 
+          // to ensure the cart is truly empty on the server
+          if (!isOrderConfirmationPage && cartEmptyAfterOrder) {
+            console.log('Making direct API call to ensure cart is empty');
+            axios.delete(`http://localhost:5000/api/shop/cart/clear/${userId}`)
+              .then(() => {
+                console.log('Cart cleared via direct API call in header');
+              })
+              .catch(err => console.error('Error clearing cart in header:', err));
+          }
+        } 
+        // Otherwise fetch cart items normally
+        else {
+          console.log('Fetching cart for user:', userId);
+          dispatch(fetchCartItems(userId));
+        }
+        
+        // Always fetch wishlist items
         dispatch(fetchWishlistItems(userId));
       }
     }
-  }, [dispatch, user])
+  }, [user, dispatch]);
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center space-x-1">
       {/* Wishlist Button */}
       {user && (
         <Link to="/shop/wishlist">
-          <motion.button
+          <motion.div
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="p-2 rounded-full relative group bg-white border border-gray-200 shadow-sm cursor-pointer"
+            className="relative p-2 rounded-full hover:bg-gray-50 transition-all duration-200"
           >
-            <Heart className={`w-6 h-6 ${wishlistItems?.length > 0 ? 'fill-red-500 text-red-500' : 'text-gray-800'}`} />
-            <span className='sr-only'>Wishlist</span>
+            <Heart className={`w-5 h-5 ${wishlistItems?.length > 0 ? 'fill-red-500 text-red-500' : 'text-gray-700'}`} />
             {wishlistItems?.length > 0 && (
-              <motion.span 
-                className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full 
-                h-5 w-5 flex items-center justify-center"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 500 }}
-              >
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium shadow-sm">
                 {wishlistItems.length}
-              </motion.span>
+              </span>
             )}
-          </motion.button>
+          </motion.div>
         </Link>
       )}
       
-      {/* Cart Button */}
-      <Sheet 
-      open={openCartSheet}
-      onOpenChange={() => setOpenCartSheet(false)}
-      >
-        <motion.button 
-        onClick={() => {
-          if (!user) {
-            // Redirect to login if user is not authenticated
-            navigate('/auth/login');
-            return;
-          }
-          setOpenCartSheet(true);
-        }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="p-2 rounded-full relative group bg-white border border-gray-200 shadow-sm cursor-pointer"
-        >
-          <ShoppingBag className='w-6 h-6 text-gray-800' />
-          <span className='sr-only'>Cart</span>
-          {user && (
-            <motion.span 
-              className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full 
-              h-5 w-5 flex items-center justify-center"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 500 }}
-            >
-              {cartItems?.items?.length || 0}
-            </motion.span>
-          )}
-        </motion.button>
-        {user && (
-          <UserCartWraper 
-          setOpenCartSheet={setOpenCartSheet}
-          cartItems={cartItems && cartItems.items && cartItems.items.length > 0 ? cartItems.items : []} />
-        )}
-      </Sheet>
+      {/* Cart Button - Only shown when user is logged in */}
+      {user && (
+        <div className="relative">
+          <Sheet open={isCartOpen} onOpenChange={(open) => open ? dispatch(openCart()) : dispatch(closeCart())}>
+            <SheetTrigger asChild>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="cursor-pointer relative p-2 rounded-full hover:bg-gray-50 transition-all duration-200"
+              >
+                <ShoppingBag className='h-5 w-5 text-gray-700' />
+                {cartItems?.items?.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-black text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium shadow-sm">
+                    {cartItems?.items?.length}
+                  </span>
+                )}
+              </motion.div>
+            </SheetTrigger>
+            <SheetContent side="right" className="p-0 w-full max-w-md">
+              <SheetHeader className="sr-only">
+                <SheetTitle>Shopping Cart</SheetTitle>
+              </SheetHeader>
+              <UserCartWraper cartItems={cartItems?.items?.length > 0 ? cartItems.items : []} />
+            </SheetContent>
+          </Sheet>
+        </div>
+      )}
       
       {user ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="relative"
-            >
-              <Avatar className='cursor-pointer shadow-md border-2 border-white hover:border-indigo-200 transition-all duration-300'>
-                <AvatarFallback className='bg-gradient-to-br from-indigo-600 to-purple-600 text-white font-bold'>
-                  {user?.userName && user.userName[0] ? user.userName[0].toUpperCase() : 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></span>
-            </motion.div>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent 
-            side='right' 
-            className='w-64 bg-white rounded-xl border border-gray-100 shadow-lg overflow-hidden py-2 mt-1'
-            align="end"
-          >
-            <div className="px-4 py-3 bg-gradient-to-r from-indigo-50 to-blue-50 mb-2">
-              <div className="flex items-center gap-3">
-                <Avatar className='h-10 w-10 border-2 border-white shadow-sm'>
-                  <AvatarFallback className='bg-gradient-to-br from-indigo-600 to-purple-600 text-white font-bold'>
-                    {user?.userName && user.userName[0] ? user.userName[0].toUpperCase() : 'U'}
+        <div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <motion.div
+                whileHover={window.innerWidth >= 1024 ? { scale: 1.05 } : {}}
+                whileTap={{ scale: 0.95 }}
+                className="cursor-pointer relative p-1 rounded-full hover:bg-gray-50 transition-all duration-200"
+              >
+                <Avatar className="h-8 w-8 border border-gray-200 shadow-sm">
+                  <AvatarFallback className="bg-gradient-to-br from-gray-900 to-gray-700 text-white text-xs font-medium">
+                    {user?.userName?.substring(0, 2).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col">
-                  <p className="text-sm font-medium text-gray-900">{user?.userName}</p>
-                  <p className="text-xs text-gray-500 truncate">{user?.email || 'User'}</p>
+              </motion.div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className='min-w-[240px] p-3 bg-white text-black rounded-xl shadow-lg border border-gray-100'>
+              <DropdownMenuLabel className='font-normal'>
+                <div className='flex flex-col space-y-1'>
+                  <p className='font-medium text-gray-900'>{user?.userName || 'User'}</p>
+                  <p className='text-xs text-gray-500 truncate'>{user?.email || ''}</p>
                 </div>
-              </div>
-            </div>
-            
-            <DropdownMenuItem 
-              onClick={() => navigate('/shop/account')}
-              className='cursor-pointer hover:bg-indigo-50 transition-colors text-gray-700 px-4 py-2.5 mx-1 rounded-lg focus:bg-indigo-50 focus:text-indigo-700'
-            >
-              <div className="p-1.5 rounded-full bg-indigo-100 text-indigo-600 mr-3">
-                <UserRound className='h-4 w-4' />
-              </div>
-              <span className="font-medium">Account</span>
-            </DropdownMenuItem>
-            
-            <DropdownMenuSeparator className="my-2 bg-gray-100" />
-            
-            <DropdownMenuItem 
-              onClick={handleLogout}
-              className='cursor-pointer hover:bg-red-50 transition-colors text-gray-700 px-4 py-2.5 mx-1 rounded-lg focus:bg-red-50 focus:text-red-600'
-            >
-              <div className="p-1.5 rounded-full bg-red-100 text-red-600 mr-3">
-                <LogOut className='h-4 w-4' />
-              </div>
-              <span className="font-medium">Logout</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="my-2" />
+              <DropdownMenuItem 
+                onClick={() => navigate('/shop/account/profile')} 
+                className='cursor-pointer rounded-lg py-2 my-1 transition-colors duration-200 hover:bg-gray-50'
+              >
+                <UserRound className='mr-3 h-4 w-4 text-gray-600' />
+                <span className="font-medium">Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => navigate('/shop/account/orders')} 
+                className='cursor-pointer rounded-lg py-2 my-1 transition-colors duration-200 hover:bg-gray-50'
+              >
+                <ShoppingCart className='mr-3 h-4 w-4 text-gray-600' />
+                <span className="font-medium">Orders</span>
+              </DropdownMenuItem>
+              {user?.role === 'admin' && (
+                <DropdownMenuItem 
+                  onClick={() => navigate('/admin/dashboard')} 
+                  className='cursor-pointer rounded-lg py-2 my-1 transition-colors duration-200 hover:bg-gray-50'
+                >
+                  <HousePlus className='mr-3 h-4 w-4 text-gray-600' />
+                  <span className="font-medium">Admin Dashboard</span>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator className="my-2" />
+              <DropdownMenuItem 
+                onClick={handleLogout} 
+                className='cursor-pointer rounded-lg py-2 my-1 transition-colors duration-200 text-red-600 hover:bg-red-50 hover:text-red-700'
+              >
+                <LogOut className='mr-3 h-4 w-4' />
+                <span className="font-medium">Logout</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       ) : (
-        <Link to="/auth/login">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="py-2 px-4 bg-black text-white rounded-lg font-medium"
-          >
-            Login
-          </motion.button>
-        </Link>
+        <div className="flex items-center space-x-2">
+          <Link to="/auth/login">
+            <motion.button
+              className="bg-gradient-to-r from-gray-900 to-black text-white text-sm font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200"
+              whileHover={{ scale: 1.03, y: -1 }}
+              whileTap={{ scale: 0.97 }}
+            >
+              Login
+            </motion.button>
+          </Link>
+          <Link to="/auth/register">
+            <motion.button
+              className="bg-white border border-gray-200 text-gray-800 text-sm font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200"
+              whileHover={{ scale: 1.03, y: -1 }}
+              whileTap={{ scale: 0.97 }}
+            >
+              Register
+            </motion.button>
+          </Link>
+        </div>
       )}
     </div>
   )
@@ -238,61 +376,88 @@ function HeaderRightContent() {
 
 function ShoppingHeader() {
   const { isAuthenticated } = useSelector(state => state.auth);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <motion.header 
-      className='sticky top-0 z-50 w-full border-b border-gray-200 bg-white/95 backdrop-blur-sm'
+      className='sticky top-0 z-50 w-full bg-white text-gray-900 backdrop-blur-sm bg-white/90 border-b border-gray-100 shadow-md'
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.5, type: 'spring' }}
+      transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
     >
-      <div className="relative flex h-16 items-center justify-between px-4 md:px-6 lg:px-8">
-        {/* Mobile: Menu button (left) and Centered Logo */}
-        <div className="flex items-center lg:hidden">
-          {/* Mobile menu button - stays left */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <motion.button 
-                className="p-2 rounded-md bg-gray-100 hover:bg-gray-200 transition-colors mr-2"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Menu className='h-6 w-6 text-gray-800' />
-                <span className='sr-only'>Toggle Menu</span>
-              </motion.button>
-            </SheetTrigger>
-            <SheetContent side='left' className='w-full max-w-xs bg-white border-r border-gray-200'>
-              <MenuItems />
-            </SheetContent>
-          </Sheet>
-
-          {/* Logo - centered on mobile */}
-          <div className="absolute left-1/2 transform -translate-x-1/2">
-            <Link to='/shop/home' className='flex items-center no-underline'>
-              <span className="font-bold text-xl text-gray-900 whitespace-nowrap">
+      <div className="max-w-screen-2xl mx-auto px-4">
+        {/* Desktop Layout */}
+        <div className="hidden lg:flex items-center justify-between h-16">
+          {/* Logo */}
+          <div className="flex-shrink-0">
+            <Link to='/shop/home' className='flex items-center no-underline group'>
+              <span className="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-black to-gray-700 group-hover:from-black group-hover:to-gray-500 transition-all duration-300">
                 IN-N-OUT
               </span>
             </Link>
           </div>
+          
+          {/* Navigation - Centered */}
+          <div className="flex-1 flex justify-center">
+            <div className="flex space-x-1">
+              <MenuItems onNavigate={() => {}} />
+            </div>
+          </div>
+          
+          {/* Right Side Elements */}
+          <div className="flex items-center space-x-2">
+            <Link to="/shop/search">
+              <motion.button 
+                className="flex items-center text-gray-700 px-4 py-2 rounded-full bg-gray-50 hover:bg-gray-100 transition-all duration-200"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <span className="mr-2 text-sm font-medium">Search</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              </motion.button>
+            </Link>
+            <HeaderRightContent isAuthenticated={isAuthenticated} />
+          </div>
         </div>
-
-        {/* Desktop: Logo (left-aligned) */}
-        <div className="hidden lg:block">
-          <Link to='/shop/home' className='flex items-center no-underline'>
-            <span className="font-bold text-xl text-gray-900 whitespace-nowrap">
-              IN-N-OUT
-            </span>
-          </Link>
-        </div>
-
-        {/* Desktop: Centered Menu Items */}
-        <div className="hidden lg:flex lg:flex-1 lg:justify-center">
-          <MenuItems />
-        </div>
-
-        {/* User/Cart (right-aligned on all screens) */}
-        <div className="flex items-center justify-end">
-          <HeaderRightContent />
+        
+        {/* Mobile Layout */}
+        <div className="flex lg:hidden items-center justify-between h-16 py-2">
+          <div className="flex items-center">
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <motion.button 
+                  className="p-2 rounded-full bg-gray-50 hover:bg-gray-100 transition-all duration-200"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Menu className='h-5 w-5 text-gray-700' />
+                  <span className='sr-only'>Toggle Menu</span>
+                </motion.button>
+              </SheetTrigger>
+              <SheetContent side='left' className='w-full max-w-xs bg-white text-gray-800 border-r border-gray-100'>
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Navigation Menu</SheetTitle>
+                </SheetHeader>
+                <div className="py-6">
+                  <MenuItems onNavigate={() => setMobileMenuOpen(false)} />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+          
+          {/* Logo - centered on mobile */}
+          <div className="absolute left-1/2 transform -translate-x-1/2">
+            <Link to='/shop/home' className='flex items-center no-underline'>
+              <span className="font-bold text-lg bg-clip-text text-transparent bg-gradient-to-r from-black to-gray-700 whitespace-nowrap">
+                IN-N-OUT
+              </span>
+            </Link>
+          </div>
+          
+          {/* Right side elements */}
+          <div className="flex items-center">
+            <HeaderRightContent isAuthenticated={isAuthenticated} />
+          </div>
         </div>
       </div>
     </motion.header>

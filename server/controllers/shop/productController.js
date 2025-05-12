@@ -6,7 +6,7 @@ const getFilteredProducts = async(req, res) => {
     try {
         
 
-        const {category = [], brand = [], sortBy = "price-lowtohigh" } = req.query;
+        const {category = [], brand = [], price = [], sortBy = "price-lowtohigh" } = req.query;
 
         let filters = {};
 
@@ -16,6 +16,32 @@ const getFilteredProducts = async(req, res) => {
         }
         if(brand.length){
             filters.brand = {$in: brand.split(',')}
+        }
+        
+        // Handle price range filtering
+        if(price.length){
+            const priceRanges = price.split(',');
+            const priceFilters = [];
+            
+            priceRanges.forEach(range => {
+                if (range === '1000+') {
+                    // Handle 'Above GHS 1000' case
+                    priceFilters.push({ price: { $gte: 1000 } });
+                } else {
+                    // Handle normal price ranges (e.g., '0-50', '50-100', etc.)
+                    const [min, max] = range.split('-').map(Number);
+                    priceFilters.push({ 
+                        price: { 
+                            $gte: min, 
+                            $lte: max 
+                        } 
+                    });
+                }
+            });
+            
+            if (priceFilters.length > 0) {
+                filters.$or = priceFilters;
+            }
         }
 
         let sort = {};

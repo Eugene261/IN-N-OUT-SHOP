@@ -4,6 +4,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 const initialState = {
   cartItems: [],
   isLoading: false,
+  isCartOpen: false, // New state to control cart visibility
 };
 
 export const addToCart = createAsyncThunk(
@@ -147,13 +148,22 @@ export const clearCart = createAsyncThunk(
 );
 
 const shoppingCartSlice = createSlice({
-  name: "shoppingCart",
+  name: "shopCart",
   initialState,
   reducers: {
-    clearCartState: (state) => {
+    clearCartState(state) {
       state.cartItems = [];
       state.isLoading = false;
-    }
+    },
+    openCart(state) {
+      state.isCartOpen = true;
+    },
+    closeCart(state) {
+      state.isCartOpen = false;
+    },
+    toggleCart(state) {
+      state.isCartOpen = !state.isCartOpen;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -214,5 +224,5 @@ const shoppingCartSlice = createSlice({
   },
 });
 
-export const { clearCartState } = shoppingCartSlice.actions;
+export const { clearCartState, openCart, closeCart, toggleCart } = shoppingCartSlice.actions;
 export default shoppingCartSlice.reducer;

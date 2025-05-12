@@ -20,7 +20,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import { checkAuth } from "./store/auth-slice";
 import ShoppingLoader from "./components/common/ShoppingLoader";
-import PaypalReturnPage from "./pages/shopping-view/paypalReturn";
+// PayPal import removed
 import OrderConfirmationPage from "./pages/shopping-view/orderConfirmation";
 import SearchProducts from "./components/shopping-view/search";
 import AdminFeaturedProducts from "./pages/admin-view/featuredProducts";
@@ -29,6 +29,7 @@ import TermsOfService from "./pages/shopping-view/termsOfService";
 import PrivacyPolicy from "./pages/shopping-view/privacyPolicy";
 import CookiePolicy from "./pages/shopping-view/cookiePolicy";
 import ProductDetailsPage from "./pages/shopping-view/productDetailsPage";
+import ShippingPage from "./pages/shopping-view/shipping";
 
 // Import new pages
 import ContactUs from "./pages/ContactUs";
@@ -44,6 +45,9 @@ import SuperAdminUsersPage from "./pages/super-admin-view/users";
 import SuperAdminOrdersPage from "./pages/super-admin-view/orders";
 import SuperAdminProductsPage from "./pages/super-admin-view/products";
 import SuperAdminFeaturedPage from "./pages/super-admin-view/featured";
+
+// Import ConnectionStatus component
+import ConnectionStatus from "./components/shared/ConnectionStatus";
 
 function App() {
   const {user, isAuthenticated, isLoading } = useSelector(state => state.auth);
@@ -63,6 +67,7 @@ function App() {
 
   return (
     <div className="flex flex-col overflow-hidden bg-white">
+      <ConnectionStatus />
         <Routes>
           {/* AUTH */}
           <Route 
@@ -122,17 +127,23 @@ function App() {
                 <ShoppingCheckout />
               </CheckAuth>
             } />
-            <Route path='paypal-return' element={
-              <CheckAuth isAuthenticated={isAuthenticated} user={user}>
-                <PaypalReturnPage />
-              </CheckAuth>
-            } />
+            {/* PayPal return route removed */}
             <Route path='order-confirmation' element={
               <CheckAuth isAuthenticated={isAuthenticated} user={user}>
                 <OrderConfirmationPage />
               </CheckAuth>
             } />
             <Route path='account' element={
+              <CheckAuth isAuthenticated={isAuthenticated} user={user}>
+                <ShoppingAccount />
+              </CheckAuth>
+            } />
+            <Route path='account/orders' element={
+              <CheckAuth isAuthenticated={isAuthenticated} user={user}>
+                <ShoppingAccount />
+              </CheckAuth>
+            } />
+            <Route path='account/profile' element={
               <CheckAuth isAuthenticated={isAuthenticated} user={user}>
                 <ShoppingAccount />
               </CheckAuth>
@@ -148,6 +159,7 @@ function App() {
             <Route path="about-us" element={<AboutUs />} />
             <Route path="faqs" element={<FAQs />} />
             <Route path="features" element={<Features />} />
+            <Route path="shipping" element={<ShippingPage />} />
             
             
             {/* Product Details Page */}

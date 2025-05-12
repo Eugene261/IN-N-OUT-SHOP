@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import { verifyPayment } from '@/services/paystackService'
 import { toast } from 'sonner'
 import { useDispatch, useSelector } from 'react-redux'
-import { clearCart, clearCartState } from '@/store/shop/cart-slice/index.js'
+import { clearCart, clearCartState, fetchCartItems } from '@/store/shop/cart-slice/index.js'
 
 function OrderConfirmationPage() {
   const navigate = useNavigate()
@@ -23,33 +23,79 @@ function OrderConfirmationPage() {
 
     if (reference) {
       setTransactionId(reference)
-      // Verify the payment with Paystack
+      // First verify the payment with Paystack's API
       verifyPayment(reference)
-        .then(response => {
-          if (response.success && response.data.status === 'success') {
+        .then(paystackResponse => {
+          if (paystackResponse.success && paystackResponse.data.status === 'success') {
             setVerificationStatus('success')
-            setOrderDetails(response.data)
-            toast.success('Payment verified successfully!')
+            setOrderDetails(paystackResponse.data)
+            toast.success('Payment verified with Paystack!')
             
-            // Clear the cart after successful payment
+            // Now update the order in our database and clear the cart using our new endpoint
             if (user && user.id) {
               try {
-                // Try to clear cart on the server
-                dispatch(clearCart(user.id))
-                  .unwrap()
-                  .catch(error => {
-                    console.error('Failed to clear cart on server:', error)
-                    // If server call fails, at least clear the cart in Redux state
-                    dispatch(clearCartState())
-                  })
+                console.log('Verifying payment and clearing cart for user:', user.id);
+                
+                // First clear the cart state in Redux for immediate UI feedback
+                dispatch(clearCartState());
+                
+                // Force cart to be empty in Redux store with the correct structure
+                dispatch({ 
+                  type: 'shopCart/fetchCartItems/fulfilled', 
+                  payload: { data: { items: [] } }
+                });
+                
+                // Set a flag to prevent cart fetching on page refresh
+                sessionStorage.setItem('cartEmptyAfterOrder', 'true');
+                
+                // IMPORTANT: Call our new server endpoint to verify the payment and clear the cart
+                // This is the key fix that ensures the cart is properly deleted from the database
+                axios.post('http://localhost:5000/api/shop/order/verify', {
+                  reference: reference,
+                  orderId: paystackResponse.data?.metadata?.orderId || sessionStorage.getItem('currentOrderId')
+                })
+                .then(serverResponse => {
+                  console.log('Order verified and cart cleared on server:', serverResponse.data);
+                  
+                  // Store the order completion info in localStorage
+                  const orderData = {
+                    orderId: serverResponse.data?.data?._id || transactionId,
+                    timestamp: new Date().getTime(),
+                    cartCleared: true
+                  };
+                  localStorage.setItem('lastCompletedOrder', JSON.stringify(orderData));
+                  
+                  // After a delay, verify the cart is truly empty
+                  setTimeout(() => {
+                    axios.get(`http://localhost:5000/api/shop/cart/get/${user.id}`)
+                      .then(cartResponse => {
+                        console.log('Final cart verification:', cartResponse.data);
+                        if (cartResponse.data?.data?.items?.length > 0) {
+                          // If somehow items still exist, delete the cart directly
+                          console.log('Items still found in cart, making final clear attempt');
+                          axios.delete(`http://localhost:5000/api/shop/cart/clear/${user.id}`);
+                        }
+                      })
+                      .catch(err => console.error('Error in final cart verification:', err));
+                  }, 3000);
+                })
+                .catch(error => {
+                  console.error('Error verifying order on server:', error);
+                  // Even on error, ensure Redux state shows empty cart
+                  dispatch(clearCartState());
+                  
+                  // As a fallback, try to clear the cart directly
+                  axios.delete(`http://localhost:5000/api/shop/cart/clear/${user.id}`)
+                    .catch(err => console.error('Error in fallback cart clearing:', err));
+                });
               } catch (error) {
-                console.error('Error clearing cart:', error)
+                console.error('Error in payment verification process:', error);
                 // Ensure cart is cleared in Redux state even if API call fails
-                dispatch(clearCartState())
+                dispatch(clearCartState());
               }
             } else {
               // If no user ID available, just clear the cart state
-              dispatch(clearCartState())
+              dispatch(clearCartState());
             }
           } else {
             setVerificationStatus('failed')

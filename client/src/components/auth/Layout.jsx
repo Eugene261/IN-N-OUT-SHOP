@@ -249,29 +249,84 @@ function AuthLayout() {
         
         {/* Bottom info */}
         <div className="absolute bottom-8 left-0 right-0 text-center text-white/60 text-sm font-light">
-          © 2025 IN-N-OUT Store • Premium Experience
+          2025 IN-N-OUT Store Premium Experience
         </div>
       </motion.div>
 
       {/* Right sided - Content */}
       <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="flex flex-1 items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8 relative"
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
+        className="flex flex-1 items-center justify-center relative overflow-hidden"
       >
-        {/* Subtle background elements */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full filter blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full filter blur-3xl"></div>
+        {/* Modern gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-gray-100"></div>
         
-        {/* Content wrapper */}
-        <div className="w-full max-w-md relative z-10">
+        {/* Decorative grid pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+        
+        {/* Animated background elements */}
+        <div className="absolute top-10 right-10 w-72 h-72 bg-blue-50 rounded-full filter blur-3xl opacity-60 animate-pulse"></div>
+        <div className="absolute bottom-10 left-10 w-80 h-80 bg-indigo-50 rounded-full filter blur-3xl opacity-50 animate-pulse delay-1000"></div>
+        <motion.div 
+          className="absolute top-1/4 right-1/4 w-6 h-6 rounded-full bg-indigo-200 opacity-70"
+          animate={{ 
+            y: [0, -20, 0],
+            scale: [1, 1.2, 1],
+            opacity: [0.7, 0.9, 0.7]
+          }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div 
+          className="absolute bottom-1/3 left-1/3 w-4 h-4 rounded-full bg-blue-300 opacity-60"
+          animate={{ 
+            y: [0, 15, 0],
+            scale: [1, 1.1, 1],
+            opacity: [0.6, 0.8, 0.6]
+          }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+        />
+        
+        {/* Decorative shapes */}
+        <motion.div 
+          className="absolute top-20 left-1/4 w-12 h-12 border-2 border-gray-200 rounded-lg opacity-40"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        />
+        <motion.div 
+          className="absolute bottom-32 right-1/4 w-16 h-16 border-2 border-gray-200 rounded-full opacity-30"
+          animate={{ rotate: -360 }}
+          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+        />
+        
+        {/* Content card with glass effect */}
+        <div className="w-full max-w-md relative z-10 px-6 py-8 sm:px-10">
           <motion.div
-            initial={{ y: 20 }}
-            animate={{ y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
+            className="bg-white/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 p-8 overflow-hidden"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
           >
+            {/* Brand indicator at top */}
+            <div className="absolute -top-10 -right-10 w-20 h-20 bg-black rounded-full flex items-end justify-start p-2 opacity-10"></div>
+            
+            {/* Content */}
             <Outlet/>
+            
+            {/* Security badge */}
+            <motion.div 
+              className="mt-8 flex items-center justify-center text-xs text-gray-500 gap-1.5"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.2 }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <span>Secure Authentication</span>
+            </motion.div>
           </motion.div>
         </div>
       </motion.div>

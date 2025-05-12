@@ -10,13 +10,15 @@ const api = axios.create({
 // Get all orders
 export const fetchAllOrders = createAsyncThunk(
   'superAdminOrders/fetchAllOrders',
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, dispatch }) => {
     try {
       const response = await api.get('/api/superAdmin/orders/all', {
         withCredentials: true
       });
       return response.data;
     } catch (error) {
+      console.error('Error fetching all orders:', error);
+      // Make sure we return a rejected value to trigger the rejected case
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch orders');
     }
   }

@@ -64,7 +64,7 @@ export const fetchSimilarProducts = createAsyncThunk(
     '/products/fetchSimilarProducts',
     async (productId) => {
         console.log('Fetching similar products with timestamp to prevent caching');
-        const response = await axios.get(`http://localhost:5000/api/shop/products/similar/${productId}?_t=${Date.now()}`);
+        const response = await axios.get(`http://localhost:5000/api/shop/products/similar/${productId}?limit=8&_t=${Date.now()}`);
         console.log('Fetched similar products response:', response?.data);
         return response?.data;
     }

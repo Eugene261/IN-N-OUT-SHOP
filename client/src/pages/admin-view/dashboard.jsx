@@ -2,6 +2,7 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { useDispatch } from 'react-redux'
 import RevenueDashboard from '@/components/admin-view/revenueDashboard'
+import StockAlertsDashboard from '@/components/admin-view/stockAlertsDashboard'
 
 function AdminDashboard() {
   const dispatch = useDispatch();
@@ -33,7 +34,9 @@ function AdminDashboard() {
       >
         {/* Revenue Dashboard Section */}
         <RevenueDashboard />
-        {/* No featured image manager or uploaded feature images sections as they've been removed */}
+        
+        {/* Stock Alerts Dashboard Section */}
+        <StockAlertsDashboard />
       </motion.div>
     </div>
   )

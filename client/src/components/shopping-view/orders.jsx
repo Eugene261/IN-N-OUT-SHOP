@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
-import { Dialog, DialogContent } from '../ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '../ui/dialog'
 import ShoppingOrderDetailsView from './orderDetails'
 import { useDispatch, useSelector } from 'react-redux'
 import { getAllOrdersByUserId, getOrdersDetails } from '@/store/shop/order-slice'
@@ -233,7 +233,13 @@ function ShoppingOrders() {
       </motion.div>
 
       <Dialog open={openDetailsDialog} onOpenChange={setOpenDetailsDialog}>
-        {orderDetails && <ShoppingOrderDetailsView orderDetails={orderDetails} user={user} />}
+        {orderDetails && (
+          <>
+            {/* Visually hidden title for screen readers */}
+            <DialogTitle className="sr-only">Order Details</DialogTitle>
+            <ShoppingOrderDetailsView orderDetails={orderDetails} user={user} />
+          </>
+        )}
       </Dialog>
     </motion.div>
   )

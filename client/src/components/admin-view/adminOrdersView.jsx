@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
-import { Dialog } from '../ui/dialog';
+import { Dialog, DialogTitle } from '../ui/dialog';
 import AdminOrderDetailsView from './orderDetails';
 import { motion } from 'framer-motion';
-import { ArrowUpRight, Package, Calendar, CircleDollarSign } from 'lucide-react';
+import { ArrowUpRight, Package, Calendar, CircleDollarSign, Search, X, Filter } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getOrdersDetailsForAdmin, resetOrderDetails } from '@/store/admin/order-slice';
 import { fetchAdminOrders } from '@/store/admin/revenue-slice';
@@ -57,6 +57,12 @@ function AdminOrdersView() {
   const { adminOrders, isLoading, error } = useSelector(state => state.adminRevenue);
   const { user } = useSelector(state => state.auth);
   const dispatch = useDispatch();
+  
+  // Filter states
+  const [orderIdFilter, setOrderIdFilter] = useState('');
+  const [startDateFilter, setStartDateFilter] = useState('');
+  const [endDateFilter, setEndDateFilter] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
 
   function handleFetchOrderDetailsForAdmin(getId) {
     setSelectedOrderId(getId);
@@ -94,6 +100,52 @@ function AdminOrdersView() {
     setOpenDetailsDialog(false);
     dispatch(resetOrderDetails());
   };
+  
+  // Filter orders based on criteria and sort by date (newest first)
+  const getFilteredOrders = () => {
+    if (!adminOrders) return [];
+    
+    // First filter the orders
+    const filteredOrders = adminOrders.filter(order => {
+      // Filter by order ID (partial match)
+      const orderIdMatch = orderIdFilter 
+        ? order._id.toLowerCase().includes(orderIdFilter.toLowerCase()) ||
+          (order._id.slice(-6).toLowerCase().includes(orderIdFilter.toLowerCase()))
+        : true;
+      
+      // Filter by date range
+      let dateMatch = true;
+      const orderDate = new Date(order.orderDate || order.createdAt);
+      
+      if (startDateFilter) {
+        const startDate = new Date(startDateFilter);
+        startDate.setHours(0, 0, 0, 0); // Start of day
+        dateMatch = dateMatch && orderDate >= startDate;
+      }
+      
+      if (endDateFilter) {
+        const endDate = new Date(endDateFilter);
+        endDate.setHours(23, 59, 59, 999); // End of day
+        dateMatch = dateMatch && orderDate <= endDate;
+      }
+      
+      return orderIdMatch && dateMatch;
+    });
+    
+    // Then sort by date (newest first)
+    return filteredOrders.sort((a, b) => {
+      const dateA = new Date(a.orderDate || a.createdAt);
+      const dateB = new Date(b.orderDate || b.createdAt);
+      return dateB - dateA; // Descending order (newest first)
+    });
+  };
+  
+  // Reset all filters
+  const resetFilters = () => {
+    setOrderIdFilter('');
+    setStartDateFilter('');
+    setEndDateFilter('');
+  };
 
   return (
     <motion.div
@@ -108,11 +160,70 @@ function AdminOrdersView() {
               <CardTitle className="text-white font-medium tracking-tight text-xl">
                 My Orders
               </CardTitle>
-              <span className="text-sm text-gray-200 bg-slate-600 px-3 py-1 rounded-full">
-                {adminOrders.length} orders total
-              </span>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`flex items-center gap-1.5 text-white bg-slate-600 hover:bg-slate-500 transition-colors px-3 py-1.5 rounded-full text-sm`}
+                >
+                  <Filter className="w-4 h-4" />
+                  <span>{showFilters ? 'Hide Filters' : 'Show Filters'}</span>
+                </button>
+                <span className="text-sm text-gray-200 bg-slate-600 px-3 py-1 rounded-full">
+                  {getFilteredOrders().length} / {adminOrders.length} orders
+                </span>
+              </div>
             </div>
           </CardHeader>
+          
+          {showFilters && (
+            <div className="p-4 bg-gray-50 border-b border-gray-200">
+              <div className="flex flex-wrap gap-4 items-end">
+                <div className="flex-1 min-w-[200px]">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Order ID</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={orderIdFilter}
+                      onChange={(e) => setOrderIdFilter(e.target.value)}
+                      placeholder="Search by order ID"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent pl-9"
+                    />
+                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                  </div>
+                </div>
+                
+                <div className="flex-1 min-w-[200px]">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    value={startDateFilter}
+                    onChange={(e) => setStartDateFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div className="flex-1 min-w-[200px]">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                  <input
+                    type="date"
+                    value={endDateFilter}
+                    onChange={(e) => setEndDateFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div className="flex-none">
+                  <button
+                    onClick={resetFilters}
+                    className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 transition-colors px-3 py-2 rounded-md hover:bg-gray-100"
+                  >
+                    <X className="w-4 h-4" />
+                    <span>Clear Filters</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           
           <CardContent className="p-0">
             {isLoading ? (
@@ -136,8 +247,8 @@ function AdminOrdersView() {
                 </TableHeader>
                 
                 <TableBody>
-                  {adminOrders.length > 0 ? (
-                    adminOrders.map((orderItem, index) => (
+                  {getFilteredOrders().length > 0 ? (
+                    getFilteredOrders().map((orderItem, index) => (
                       <motion.tr
                         key={orderItem._id}
                         variants={rowVariants}
@@ -206,6 +317,7 @@ function AdminOrdersView() {
       </motion.div>
 
       <Dialog open={openDetailsDialog} onOpenChange={handleCloseDialog}>
+        <DialogTitle className="sr-only">Order Details</DialogTitle>
         {orderDetails && <AdminOrderDetailsView orderDetails={orderDetails} user={user} />}
       </Dialog>
     </motion.div>

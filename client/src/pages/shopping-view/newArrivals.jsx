@@ -100,12 +100,33 @@ const NewArrivals = () => {
     e.stopPropagation();
     
     if (!user) {
-      toast.error("Please login to add items to your wishlist");
+      toast.info("Please login to add items to your wishlist", {
+        description: "You'll be redirected to the login page",
+        duration: 3000
+      });
+      // Set a timeout to allow the toast to be shown before redirecting
+      setTimeout(() => {
+        // Store the current page URL in sessionStorage to redirect back after login
+        sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
+        navigate('/auth/login');
+      }, 1500);
       return;
     }
     
-    const userId = user._id;
+    // Ensure user ID is available
+    const userId = user?.id || user?._id;
+    if (!userId) {
+      console.error("User is authenticated but ID is missing:", user);
+      toast.error("User information is incomplete. Please try logging in again.");
+      return;
+    }
+    
     const productId = product._id;
+    
+    if (!productId) {
+      toast.error("Product information is missing");
+      return;
+    }
     
     const isInWishlist = wishlistItems?.some(item => 
       item.productId === productId || 
@@ -114,7 +135,6 @@ const NewArrivals = () => {
     
     if (isInWishlist) {
       dispatch(removeFromWishlist({ userId, productId }))
-        .unwrap()
         .then(() => {
           toast.success("Removed from wishlist");
         })
@@ -124,7 +144,6 @@ const NewArrivals = () => {
         });
     } else {
       dispatch(addToWishlist({ userId, productId }))
-        .unwrap()
         .then(() => {
           toast.success("Added to wishlist");
         })

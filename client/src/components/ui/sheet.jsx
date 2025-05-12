@@ -31,7 +31,7 @@ const SheetPortal = SheetPrimitive.Portal;
 const SheetOverlay = React.forwardRef(({ className, ...props }, ref) => (
   <SheetPrimitive.Overlay
     className={cn(
-      "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-50 bg-transparent data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className
     )}
     {...props}
@@ -57,6 +57,9 @@ const SheetContent = React.forwardRef(
         <SheetPrimitive.Content
           ref={ref}
           aria-describedby={descriptionId}
+          // Remove any aria-hidden attributes that might be added by the component
+          aria-hidden={undefined}
+          data-aria-hidden={undefined}
           className={cn(
             "fixed z-[100] gap-4 bg-background p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
             side === "right" &&

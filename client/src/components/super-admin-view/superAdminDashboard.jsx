@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { fetchAllOrders, fetchOrderStats } from '../../store/super-admin/orders-slice';
 import { fetchProductStats } from '../../store/super-admin/products-slice';
 import { fetchAllUsers, fetchUsersByRole } from '../../store/super-admin/user-slice';
+import { fetchAdminRevenueByTime } from '../../store/super-admin/revenue-slice';
+import AdminRevenueAnalytics from './adminRevenueAnalytics';
 import { 
   DollarSign, 
   Users, 
@@ -20,14 +22,19 @@ const SuperAdminDashboard = () => {
   const { orderStats, isLoading: ordersLoading, error: ordersError } = useSelector(state => state.superAdminOrders);
   const { productStats, isLoading: productsLoading, error: productsError } = useSelector(state => state.superAdminProducts);
   const { users, isLoading: usersLoading, error: usersError } = useSelector(state => state.superAdminUsers);
+  const { isLoading: revenueLoading, error: revenueError } = useSelector(state => state.superAdminRevenue);
   
   const [adminUsers, setAdminUsers] = useState([]);
+  const [forceLoaded, setForceLoaded] = useState(false);
   
   // Function to fetch all necessary data for the dashboard
   const fetchDashboardData = useCallback(() => {
     console.log('Fetching SuperAdmin dashboard data...');
     
-    // Fetch all orders to get accurate status counts
+    // We'll skip fetchAllOrders and just use fetchOrderStats since that's what we need for the dashboard
+    // This prevents the ordersLoading state from getting stuck
+    // If we need all orders data later, we can uncomment this
+    /*
     dispatch(fetchAllOrders())
       .then(response => {
         if (response.payload && response.payload.orders) {
@@ -40,7 +47,10 @@ const SuperAdminDashboard = () => {
           console.log('Order status counts from orders endpoint:', statusCounts);
         }
       })
-      .catch(error => console.error('All orders error:', error));
+      .catch(error => {
+        console.error('All orders error:', error);
+      });
+    */
     
     // Fetch order stats for the dashboard
     dispatch(fetchOrderStats())
@@ -51,13 +61,28 @@ const SuperAdminDashboard = () => {
       })
       .catch(error => console.error('Order stats error:', error));
     
-    // Fetch product stats
-    dispatch(fetchProductStats())
-      .catch(error => console.error('Product stats error:', error));
+    // Fetch all users to get accurate role counts
+    dispatch(fetchAllUsers())
+      .catch(error => console.error('All users error:', error));
     
-    // Fetch admin users
+    // Fetch admin users specifically
     dispatch(fetchUsersByRole('admin'))
-      .catch(error => console.error('Users error:', error));
+      .then(response => {
+        if (response.payload && response.payload.users) {
+          setAdminUsers(response.payload.users);
+        }
+      })
+      .catch(error => console.error('Admin users error:', error));
+      
+    // Fetch revenue data for all time periods
+    dispatch(fetchAdminRevenueByTime('daily'))
+      .catch(error => console.error('Daily revenue error:', error));
+    dispatch(fetchAdminRevenueByTime('weekly'))
+      .catch(error => console.error('Weekly revenue error:', error));
+    dispatch(fetchAdminRevenueByTime('monthly'))
+      .catch(error => console.error('Monthly revenue error:', error));
+    dispatch(fetchAdminRevenueByTime('yearly'))
+      .catch(error => console.error('Yearly revenue error:', error));
   }, [dispatch]);
   
   // Initial data fetch on component mount
@@ -65,19 +90,45 @@ const SuperAdminDashboard = () => {
     console.log('SuperAdmin dashboard mounted, fetching initial data...');
     fetchDashboardData();
     
-    // Set up polling to refresh data every 2 minutes (120000ms)
-    // This ensures the dashboard stays in sync with changes made by admins without refreshing too frequently
+    // We'll disable polling for now to prevent loading state issues
+    // If you want to re-enable it later, uncomment this code
+    /*
     const pollingInterval = setInterval(() => {
       console.log('Polling for updated dashboard data...');
       fetchDashboardData();
-    }, 120000); // 2 minutes
+    }, 300000); // 5 minutes instead of 2 minutes
     
     // Clean up interval on component unmount
     return () => {
       console.log('SuperAdmin dashboard unmounting, clearing polling interval...');
       clearInterval(pollingInterval);
     };
+    */
   }, [fetchDashboardData]);
+  
+  // Force loading to complete after timeout - reduced to 2 seconds
+  useEffect(() => {
+    // Set force loaded to true immediately after mounting
+    const initialTimer = setTimeout(() => {
+      console.log('Initial force loading timeout triggered');
+      setForceLoaded(true);
+    }, 2000); // 2 seconds timeout
+    
+    // Also set up a listener for loading state changes
+    const loadingTimer = setTimeout(() => {
+      console.log('Checking if dashboard is still loading after timeout');
+      // Use the current loading states directly instead of isLoading
+      if (ordersLoading || productsLoading || usersLoading || revenueLoading) {
+        console.log('Forcing dashboard to load after loading state timeout');
+        setForceLoaded(true);
+      }
+    }, 3000); // 3 seconds timeout
+    
+    return () => {
+      clearTimeout(initialTimer);
+      clearTimeout(loadingTimer);
+    };
+  }, [ordersLoading, productsLoading, usersLoading, revenueLoading]);
   
   // Debug the current orderStats
   useEffect(() => {
@@ -119,8 +170,18 @@ const SuperAdminDashboard = () => {
     }
   };
   
-  const isLoading = ordersLoading || productsLoading || usersLoading;
-  const error = ordersError || productsError || usersError;
+  const isLoading = (ordersLoading || productsLoading || usersLoading || revenueLoading) && !forceLoaded;
+  const error = ordersError || productsError || usersError || revenueError;
+  
+  // Debug loading states
+  console.log('Loading states:', { 
+    ordersLoading, 
+    productsLoading, 
+    usersLoading, 
+    revenueLoading,
+    forceLoaded,
+    isLoading
+  });
 
   return (
     <motion.div
@@ -213,73 +274,8 @@ const SuperAdminDashboard = () => {
             </div>
           </motion.div>
           
-          {/* Admin Revenue Section */}
-          <motion.div variants={itemVariants} className="mb-8">
-            <div className="flex items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800">Admin Revenue</h2>
-              <div className="ml-2 h-1 w-10 bg-blue-500 rounded-full"></div>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Admin
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Revenue
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Orders
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Products
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {orderStats && orderStats.adminRevenue && orderStats.adminRevenue.length > 0 ? (
-                    orderStats.adminRevenue.map((admin, index) => (
-                      <tr key={admin.adminId || index}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                              <Users className="h-5 w-5 text-blue-600" />
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">
-                                {admin.adminName || 'Unknown Admin'}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{formatCurrency(admin.revenue)}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{admin.orderCount}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{admin.productCount || 0}</div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="4" className="px-6 py-12 text-center">
-                        <div className="flex flex-col items-center">
-                          <BarChart3 className="h-12 w-12 mx-auto text-gray-300 mb-2" />
-                          <p className="text-lg font-medium text-gray-500">No revenue data available</p>
-                          <p className="text-sm text-gray-400">Revenue will appear here once orders are processed</p>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </motion.div>
+          {/* Admin Revenue Analytics Section */}
+          <AdminRevenueAnalytics />
           
           {/* Order Status Section */}
           <motion.div variants={itemVariants}>

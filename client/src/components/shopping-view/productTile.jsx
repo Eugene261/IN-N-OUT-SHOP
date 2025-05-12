@@ -16,9 +16,6 @@ function ShoppingProductTile({ product, handleAddToCart, onAddToCart }) {
   const { user, isAuthenticated } = useSelector(state => state.auth);
   const { wishlistItems } = useSelector(state => state.wishlist);
   
-  // Debug user authentication state
-  console.log("Auth state in ProductTile:", { user, isAuthenticated });
-  
   // Check if product is in wishlist
   const isInWishlist = wishlistItems?.some(item => 
     item.productId === product?._id || 
@@ -162,7 +159,7 @@ function ShoppingProductTile({ product, handleAddToCart, onAddToCart }) {
             
             {product?.totalStock > 0 && product?.totalStock <= 5 && (
               <Badge className="bg-amber-500 text-white px-2 py-1 text-xs font-medium rounded-md">
-                LOW STOCK
+                ONLY {product.totalStock} LEFT
               </Badge>
             )}
           </div>
@@ -216,11 +213,11 @@ function ShoppingProductTile({ product, handleAddToCart, onAddToCart }) {
             )}
           </div>
           
-          {/* Add to Cart button */}
+          {/* Add to Cart button - only visible on medium screens and up */}
           {product?.totalStock > 0 && (
             <button
               onClick={(e) => handleAddToCartClick(e, product?._id, product?.totalStock)}
-              className="mt-3 w-full py-2 px-3 bg-black text-white rounded-md flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors text-sm"
+              className="mt-3 w-full py-2 px-3 bg-black text-white rounded-md flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors text-sm hidden sm:flex"
             >
               <ShoppingBag className="w-3.5 h-3.5" />
               Add to Cart

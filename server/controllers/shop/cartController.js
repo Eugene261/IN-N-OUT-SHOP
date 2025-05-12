@@ -272,13 +272,16 @@ const clearCart = async(req, res) => {
             });
         }
         
-        // Clear all items from the cart
-        cart.items = [];
-        await cart.save();
+        // IMPORTANT CHANGE: Delete the cart document completely instead of just emptying it
+        // This ensures the cart is truly cleared after order completion
+        await Cart.findByIdAndDelete(cart._id);
+        
+        // Log the deletion for debugging
+        console.log(`Cart ${cart._id} for user ${userId} has been completely deleted`);
         
         res.status(200).json({
             success: true,
-            message: 'Cart cleared successfully',
+            message: 'Cart deleted successfully',
             data: { userId, items: [] }
         });
 

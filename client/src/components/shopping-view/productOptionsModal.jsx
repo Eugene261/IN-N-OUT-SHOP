@@ -4,7 +4,7 @@ import { Label } from '../ui/label';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { ShoppingBag } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { addToCart, fetchCartItems } from '../../store/shop/cart-slice';
+import { addToCart, fetchCartItems, openCart } from '../../store/shop/cart-slice';
 import { toast } from 'sonner';
 
 const ProductOptionsModal = ({ isOpen, onClose, product, onAddToCart }) => {
@@ -73,6 +73,8 @@ const ProductOptionsModal = ({ isOpen, onClose, product, onAddToCart }) => {
           dispatch(fetchCartItems(userId));
           toast.success('Product added to cart');
           onClose();
+          // Open the cart automatically when a product is added
+          dispatch(openCart());
         } else {
           toast.error('Failed to add product to cart');
         }

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchRevenueStats, fetchAdminOrders, updateOrderStatus } from '@/store/admin/revenue-slice';
 import { DollarSign, Package, ShoppingBag, TruckIcon, CreditCard, BarChart3, X, ArrowRight } from 'lucide-react';
+import AdminRevenueStats from './adminRevenueStats';
 
 // Animation variants
 const containerVariants = {
@@ -516,6 +517,9 @@ function RevenueDashboard() {
             </div>
           </motion.div>
         </div>
+        
+        {/* Revenue Analytics Section */}
+        <AdminRevenueStats />
         
         {/* Main Dialog Modal */}
         <Modal
