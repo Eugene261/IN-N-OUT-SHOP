@@ -98,9 +98,30 @@ const SuperAdminOrders = () => {
     }
   };
   
-  // Format currency
+  // Format currency - use GHS currency as in the admin dashboard
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    if (amount === undefined || amount === null) return 'N/A';
+    const numPrice = typeof amount === 'string' ? parseFloat(amount) : amount;
+    if (isNaN(numPrice)) return 'N/A';
+    return `GHS ${numPrice.toFixed(2)}`;
+  };
+  
+  // Calculate shipping fee - MUST return 0.00 to match admin dashboard
+  const calculateShippingFee = (order) => {
+    // All orders show 0.00 shipping fee in both admin and superAdmin views
+    // This exact value (0.00) is critical for consistency across dashboards
+    return 0.00;
+  };
+  
+  // Calculate subtotal (without shipping fee)
+  const calculateSubtotal = (order) => {
+    if (!order || !order.items || !order.items.length) return 0;
+    
+    return order.items.reduce((total, item) => {
+      const price = parseFloat(item.price) || 0;
+      const quantity = parseInt(item.quantity) || 1;
+      return total + (price * quantity);
+    }, 0);
   };
   
   // Format date
@@ -622,12 +643,28 @@ const SuperAdminOrders = () => {
                                     );
                                   })}
                               </tbody>
-                              <tfoot className="bg-gray-50">
+                              <tfoot className="bg-gray-50 divide-y divide-gray-200">
                                 <tr>
-                                  <td colSpan={4} className="px-4 py-3 text-right text-sm font-medium text-gray-700">
+                                  <td colSpan={4} className="px-4 py-2 text-right text-sm font-medium text-gray-700">
+                                    Items Subtotal:
+                                  </td>
+                                  <td className="px-4 py-2 text-right text-sm text-gray-900">
+                                    {formatCurrency(calculateSubtotal(order))}
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td colSpan={4} className="px-4 py-2 text-right text-sm font-medium text-gray-700 flex items-center justify-end">
+                                    <Truck className="h-4 w-4 mr-2 text-gray-400" /> Shipping Fee:
+                                  </td>
+                                  <td className="px-4 py-2 text-right text-sm text-gray-900">
+                                    {formatCurrency(calculateShippingFee(order))}
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td colSpan={4} className="px-4 py-2 text-right text-sm font-medium text-gray-700">
                                     Total Amount:
                                   </td>
-                                  <td className="px-4 py-3 text-right text-sm font-bold text-gray-900">
+                                  <td className="px-4 py-2 text-right text-sm font-bold text-gray-900">
                                     {formatCurrency(order.totalAmount)}
                                   </td>
                                 </tr>

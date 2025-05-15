@@ -13,7 +13,7 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import UserCartItemsContent from './cartItemsContent';
 import UserCartWraper from './cartWrapper';
-import { fetchCartItems, openCart, closeCart, toggleCart, clearCartState } from '@/store/shop/cart-slice';
+import { fetchCartItems, openCart, closeCart, toggleCart, clearCartState, clearCart } from '@/store/shop/cart-slice';
 import { fetchWishlistItems } from '@/store/shop/wishlist-slice';
 import { Label } from '../ui/label';
 
@@ -189,6 +189,10 @@ function HeaderRightContent() {
   const { user } = useSelector(state => state.auth);
   const { cartItems, isCartOpen }  = useSelector(state => state.shopCart);
   const { wishlistItems } = useSelector(state => state.wishlist);
+  
+  // CRITICAL FIX: Ensure cartItems has the right structure
+  const validCartItems = cartItems && cartItems.items ? cartItems.items : [];
+  console.log('Cart items in header:', validCartItems);
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -200,47 +204,72 @@ function HeaderRightContent() {
     if (user) {
       const userId = user.id || user._id;
       if (userId) {
-        // Check for the direct cart empty flag from sessionStorage (persists on refresh)
-        const cartEmptyAfterOrder = sessionStorage.getItem('cartEmptyAfterOrder') === 'true';
+        // Store the current user ID in localStorage for cart ownership validation
+        localStorage.setItem('currentUserId', userId);
+        localStorage.setItem('sessionActive', 'true');
         
         // Check if we're on the order confirmation page
         const isOrderConfirmationPage = window.location.pathname.includes('/shop/order-confirmation');
         
-        // If cart should be empty after order or we're on confirmation page
-        if (cartEmptyAfterOrder || isOrderConfirmationPage) {
-          console.log('Cart should be empty after order completion');
+        // ONLY clear cart flags when not on the order confirmation page
+        // This ensures cart persistence across normal page navigation
+        if (!isOrderConfirmationPage) {
+          // Only clear these flags when NOT on the order confirmation page
+          // This helps maintain cart data across regular page navigation
+          localStorage.removeItem('cartEmptyAfterOrder');
+          sessionStorage.removeItem('cartEmptyAfterOrder');
           
-          // Clear the cart state in Redux
-          dispatch(clearCartState());
+          // Check if it's been more than 1 hour since order completion
+          const lastCompletedOrderStr = localStorage.getItem('lastCompletedOrder');
+          const lastCompletedOrder = lastCompletedOrderStr ? JSON.parse(lastCompletedOrderStr) : null;
+          const orderCompletedRecently = lastCompletedOrder && 
+                                (new Date().getTime() - lastCompletedOrder.timestamp < 3600000); // Within last hour
           
-          // Force cart to be empty in Redux store with the correct structure
-          dispatch({ 
-            type: 'shopCart/fetchCartItems/fulfilled', 
-            payload: { data: { items: [] } }
-          });
-          
-          // If we're not on the order confirmation page, make a direct API call 
-          // to ensure the cart is truly empty on the server
-          if (!isOrderConfirmationPage && cartEmptyAfterOrder) {
-            console.log('Making direct API call to ensure cart is empty');
-            axios.delete(`http://localhost:5000/api/shop/cart/clear/${userId}`)
-              .then(() => {
-                console.log('Cart cleared via direct API call in header');
+          if (!orderCompletedRecently) {
+            // Normal page - fetch the cart normally
+            console.log('Normal page navigation, fetching cart for user:', userId);
+            dispatch(fetchCartItems(userId))
+              .then((result) => {
+                console.log('Cart fetch result:', result);
+                // If we have a successful fetch but the cart is empty, try again once
+                if (result.payload?.data?.items?.length === 0) {
+                  setTimeout(() => {
+                    console.log('Retry cart fetch after delay');
+                    dispatch(fetchCartItems(userId));
+                  }, 1000);
+                }
               })
-              .catch(err => console.error('Error clearing cart in header:', err));
+              .catch(err => {
+                console.error('Error fetching cart:', err);
+              });
+              
+            // Fetch wishlist items as well
+            dispatch(fetchWishlistItems(userId));
           }
-        } 
-        // Otherwise fetch cart items normally
-        else {
-          console.log('Fetching cart for user:', userId);
-          dispatch(fetchCartItems(userId));
+        } else {
+          // We're on the order confirmation page
+          console.log('On order confirmation page, not fetching cart');
+          // Don't clear the wishlist or manipulate anything else on this page
         }
-        
-        // Always fetch wishlist items
-        dispatch(fetchWishlistItems(userId));
       }
     }
   }, [user, dispatch]);
+  
+  // Handle cart clean-up when component unmounts, especially important for logout
+  useEffect(() => {
+    return () => {
+      if (!user) {
+        // Clear cart data when user logs out
+        localStorage.removeItem('sessionActive');
+      }
+    };
+  }, [user]);
+  
+  // Separate effect for cart updates to prevent infinite loops
+  useEffect(() => {
+    // Intentionally empty to avoid dependency on cartItems
+    // This decouples the cart fetching from wishlist fetching
+  }, [cartItems]);
 
   return (
     <div className="flex items-center space-x-1">
@@ -284,7 +313,7 @@ function HeaderRightContent() {
               <SheetHeader className="sr-only">
                 <SheetTitle>Shopping Cart</SheetTitle>
               </SheetHeader>
-              <UserCartWraper cartItems={cartItems?.items?.length > 0 ? cartItems.items : []} />
+              <UserCartWraper cartItems={cartItems?.items || []} />
             </SheetContent>
           </Sheet>
         </div>

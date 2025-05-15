@@ -291,11 +291,24 @@ const getOrderStats = async (req, res) => {
               adminId,
               adminName,
               revenue: 0,
-              orderCount: 0
+              itemsSold: 0,
+              orderCount: 0,
+              platformFees: 0,  // Initialize platform fees
+              netRevenue: 0     // Initialize net revenue
             };
           }
           
+          // Add the revenue from this item
+          const itemPrice = parseFloat(item.price) || 0;
+          const itemQuantity = parseInt(item.quantity) || 1;
+          const itemPlatformFee = itemPrice * itemQuantity * 0.05; // Calculate 5% platform fee
+          
+          // Update admin revenue statistics
           adminRevenue[adminId].revenue += itemRevenue;
+          adminRevenue[adminId].platformFees += itemPlatformFee;
+          adminRevenue[adminId].netRevenue = adminRevenue[adminId].revenue - adminRevenue[adminId].platformFees;
+          adminRevenue[adminId].itemsSold += itemQuantity;
+          
           // Count this order for this admin if not already counted
           if (!order._adminOrderCounted) {
             order._adminOrderCounted = new Set();
@@ -322,11 +335,24 @@ const getOrderStats = async (req, res) => {
                 adminId,
                 adminName,
                 revenue: 0,
-                orderCount: 0
+                itemsSold: 0,
+                orderCount: 0,
+                platformFees: 0,  // Initialize platform fees
+                netRevenue: 0     // Initialize net revenue
               };
             }
             
+            // Add the revenue from this item
+            const itemPrice = parseFloat(item.price) || 0;
+            const itemQuantity = parseInt(item.quantity) || 1;
+            const itemPlatformFee = itemPrice * itemQuantity * 0.05; // Calculate 5% platform fee
+            
+            // Update admin revenue statistics
             adminRevenue[adminId].revenue += itemRevenue;
+            adminRevenue[adminId].platformFees += itemPlatformFee;
+            adminRevenue[adminId].netRevenue = adminRevenue[adminId].revenue - adminRevenue[adminId].platformFees;
+            adminRevenue[adminId].itemsSold += itemQuantity;
+            
             // Count this order for this admin if not already counted
             if (!order._adminOrderCounted) {
               order._adminOrderCounted = new Set();
@@ -381,13 +407,25 @@ const getOrderStats = async (req, res) => {
       }
     });
     
+    // Calculate platform fees (5% of total revenue)
+    const platformFees = totalRevenue * 0.05;
+    const netRevenue = totalRevenue - platformFees;
+    
+    // Calculate average order value
+    const totalItemsSold = orders.reduce((total, order) => total + (order.items ? order.items.length : 0), 0);
+    const averageOrderValue = totalRevenue / orders.length;
+    
     res.status(200).json({
       success: true,
       stats: {
-        totalRevenue,
         totalOrders: orders.length,
-        adminRevenue: adminRevenueArray,
-        ordersByStatus
+        totalRevenue,
+        platformFees,
+        netRevenue,
+        averageOrderValue,
+        totalItemsSold,
+        ordersByStatus,
+        adminRevenue: adminRevenueArray
       }
     });
   } catch (error) {

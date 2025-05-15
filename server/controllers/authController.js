@@ -91,13 +91,21 @@ const loginUser = async(req, res) => {
             message : "email or password incorrect"
         });
 
+        // Sign a JWT token with extended expiration time for better UX
         const token = jwt.sign({
             id : checkUser._id, role : checkUser.role, email : checkUser.email, userName : checkUser.userName
-        }, 'CLIENT_SECRET_KEY', {expiresIn : '60m'});
+        }, 'CLIENT_SECRET_KEY', {expiresIn : '24h'}); // Extended to 24 hours
 
-        res.cookie('token', token, {httpOnly: true, secure: false}).json({
+        // Send token both in cookie (for server API calls) and in response (for localStorage)
+        res.cookie('token', token, {
+            httpOnly: false, // Allow JS access
+            secure: process.env.NODE_ENV === 'production', // Use secure in production
+            sameSite: 'lax', // Better compatibility with different browsers
+            maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        }).json({
             success : true,
             message : 'Logged in successfully',
+            token: token, // Send token in response for localStorage storage
             user: {
                 email : checkUser.email,
                 role : checkUser.role,

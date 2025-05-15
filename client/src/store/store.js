@@ -21,7 +21,6 @@ import superAdminRevenueSlice from './super-admin/revenue-slice/index.js';
 import featuredCollectionSlice from './superAdmin/featured-collection-slice/index.js';
 import shopFeaturedCollectionSlice from './shop/featured-collection-slice/index.js';
 
-
 const store = configureStore({
     reducer: {
         auth : authReducer,

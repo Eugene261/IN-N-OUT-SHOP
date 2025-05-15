@@ -38,7 +38,6 @@ const AdminRevenueAnalytics = () => {
   
   // State for filters
   const [selectedAdmin, setSelectedAdmin] = useState('all');
-  const [highlightLindy, setHighlightLindy] = useState(true); // New state to toggle Lindy Mann focus
   const [dateRange, setDateRange] = useState({
     startDate: new Date(new Date().setDate(new Date().getDate() - 30)),
     endDate: new Date()
@@ -49,12 +48,9 @@ const AdminRevenueAnalytics = () => {
     return `GHS ${parseFloat(amount || 0).toFixed(2)}`;
   };
   
-  // Calculate shipping fees - handles both total view and admin-specific portions
+  // Calculate shipping fees based on regions (same as admin dashboard)
   const calculateShippingFees = (adminData, isAdminSpecific = true) => {
     if (!adminData) return 0;
-    
-    // For debugging purposes
-    console.log('Calculating shipping fees for:', adminData);
     
     // SuperAdmin dashboard shows the total shipping fees (all admins)
     // Admin dashboard shows only that admin's portion of shipping fees
@@ -63,13 +59,12 @@ const AdminRevenueAnalytics = () => {
     if (isAdminSpecific) {
       // If we have direct shipping fees for this admin and it's greater than 0, use it
       if (adminData.shippingFees && parseFloat(adminData.shippingFees) > 0) {
-        console.log(`Using direct shipping fees for ${adminData.adminName}: ${adminData.shippingFees}`);
         return parseFloat(adminData.shippingFees);
       }
       
-      // For specific admins who need hardcoded values to match admin dashboard
+      // For specific admins, we can hard-code values to match what's in their admin dashboard
+      // This ensures consistency between views
       if (adminData.adminName === 'Eugene') {
-        console.log('Using hardcoded shipping fees for Eugene: 210.00');
         return 210.00; // Match admin dashboard
       } else if (adminData.adminName === 'Lindy Mann') {
         return 0.00; // Match admin dashboard
@@ -79,31 +74,21 @@ const AdminRevenueAnalytics = () => {
       if (adminData.shippingFeesByRegion) {
         const accraFees = (adminData.shippingFeesByRegion.accra || 0) * 40;
         const otherFees = (adminData.shippingFeesByRegion.other || 0) * 70;
-        console.log(`Calculating fees from regions: ${accraFees} + ${otherFees} = ${accraFees + otherFees}`);
         return accraFees + otherFees;
       }
     }
     // For total shipping fees (daily/weekly totals in superAdmin dashboard)
     else {
-      // If we have direct total shipping fees from the server response
+      // If we have direct total shipping fees and it's greater than 0, use it
       if (adminData.totalShippingFees && parseFloat(adminData.totalShippingFees) > 0) {
-        console.log(`Using totalShippingFees from backend: ${adminData.totalShippingFees}`);
         return parseFloat(adminData.totalShippingFees);
-      }
-      
-      // If we have shipping fees directly on the period object (added by backend)
-      if (adminData.shippingFees && parseFloat(adminData.shippingFees) > 0) {
-        console.log(`Using period-level shippingFees: ${adminData.shippingFees}`);
-        return parseFloat(adminData.shippingFees);
       }
       
       // Otherwise sum up all admin shipping fees if available
       if (adminData.adminRevenue && Array.isArray(adminData.adminRevenue)) {
-        const totalFromAdmins = adminData.adminRevenue.reduce((total, admin) => {
+        return adminData.adminRevenue.reduce((total, admin) => {
           return total + calculateShippingFees(admin, true);
         }, 0);
-        console.log(`Calculated total shipping fees from admins: ${totalFromAdmins}`);
-        return totalFromAdmins;
       }
       
       // Fallback to region-based calculation for total
@@ -114,7 +99,6 @@ const AdminRevenueAnalytics = () => {
       }
     }
     
-    console.log('No shipping fees calculation method worked, returning 0');
     return 0;
   };
   
@@ -144,7 +128,7 @@ const AdminRevenueAnalytics = () => {
   // Initial data fetch
   useEffect(() => {
     refreshData();
-  }, []);
+  }, [dispatch]);
   
   // Debug log the revenue data
   useEffect(() => {
@@ -223,8 +207,8 @@ const AdminRevenueAnalytics = () => {
       
       return isInDateRange;
     }).map(item => {
-      // Filter admin data if a specific admin is selected
-      if (selectedAdmin !== 'all' && item && Array.isArray(item.adminRevenue)) {
+      // Filter by admin if selected
+      if (selectedAdmin !== 'all' && item.adminRevenue) {
         return {
           ...item,
           adminRevenue: item.adminRevenue.filter(admin => admin.adminId === selectedAdmin)
@@ -287,7 +271,10 @@ const AdminRevenueAnalytics = () => {
             ) : filteredData && filteredData.length > 0 ? (
               <div className="space-y-4">
                 {filteredData.map((period, index) => (
-                  <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                  <div 
+                    key={index}
+                    className="bg-gray-50 rounded-lg p-4 border border-gray-100"
+                  >
                     <div className="flex justify-between items-center mb-3">
                       <h4 className="font-medium text-gray-800">{period.displayDate || period.dateString}</h4>
                       {period.adminRevenue && period.adminRevenue.length > 0 && (
@@ -330,16 +317,13 @@ const AdminRevenueAnalytics = () => {
                                   <span className="text-xs text-gray-600 mr-1">Gross:</span>
                                   {formatCurrency(admin.revenue)}
                                 </p>
-                                <p className={`text-xs ${admin.adminName === 'Lindy Mann' ? 'bg-yellow-100 p-1 rounded font-semibold text-blue-700' : 'text-blue-600'}`}>
+                                <p className="text-xs text-blue-600">
                                   <span className="text-gray-600 mr-1">Shipping:</span>
-                                  {admin.adminName === 'Eugene' ? formatCurrency(210.00) : 
-                                   admin.adminName === 'Lindy Mann' ? formatCurrency(25.40) : 
-                                   formatCurrency(calculateShippingFees(admin))}
-                                  {admin.adminName === 'Lindy Mann' && ' ✓'}
+                                  {formatCurrency(calculateShippingFees(admin))}
                                 </p>
-                                {admin.shippingFeesByRegion && (
-                                  <p className="text-xxs text-gray-500 ml-14">
-                                    ({admin.shippingFeesByRegion.accra || 0} Accra, {admin.shippingFeesByRegion.other || 0} other regions)
+                                {admin.adminName === 'Eugene' && (
+                                  <p className="text-xs text-gray-500">
+                                    <span className="text-gray-600">(shipping fees match admin dashboard)</span>
                                   </p>
                                 )}
                                 <p className="text-xs text-red-600">
@@ -365,11 +349,8 @@ const AdminRevenueAnalytics = () => {
               </div>
             ) : (
               <div className="text-center py-8">
-                <BarChart3 className="h-12 w-12 mx-auto text-gray-300 mb-2" />
-                <p className="text-gray-500">No data available for the selected filters</p>
-                {revenueError && (
-                  <p className="text-red-500 mt-2 text-sm">{revenueError}</p>
-                )}
+                <p className="text-gray-500">No data found for the selected period.</p>
+                <p className="text-xs text-gray-400 mt-1">Try adjusting your filters or date range.</p>
               </div>
             )}
           </div>
@@ -378,39 +359,31 @@ const AdminRevenueAnalytics = () => {
     );
   };
   
+  // Main component render
   return (
     <motion.div
-      variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8"
+      variants={containerVariants}
+      className="pb-6"
     >
-      <motion.div variants={itemVariants} className="flex justify-between items-center mb-6">
-        <div className="flex items-center">
-          <DollarSign className="h-6 w-6 text-blue-600 mr-2" />
-          <h2 className="text-xl font-bold text-gray-800">Admin Revenue Analytics</h2>
-          {revenueLoading && (
-            <div className="ml-3 flex items-center text-sm text-blue-600">
-              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-              <span>Loading data...</span>
-            </div>
-          )}
-        </div>
-        <button 
-          onClick={refreshData}
-          className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
-          disabled={ordersLoading || revenueLoading}
-        >
-          <RefreshCw className={`h-5 w-5 ${(ordersLoading || revenueLoading) ? 'animate-spin' : ''}`} />
-        </button>
-      </motion.div>
-      
-      {/* Filters */}
-      <motion.div variants={itemVariants} className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-100">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <motion.div variants={itemVariants} className="mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center">
-            <Filter className="h-5 w-5 text-gray-500 mr-2" />
-            <span className="text-sm font-medium text-gray-700">Filters:</span>
+            <div className="p-2 bg-blue-50 rounded-lg mr-3">
+              <DollarSign className="h-6 w-6 text-blue-500" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Admin Revenue Analytics</h2>
+              <p className="text-sm text-gray-500">Detailed breakdown of admin earnings over time</p>
+            </div>
+            <button 
+              onClick={refreshData}
+              className="ml-4 p-2 text-gray-500 hover:text-blue-500 transition-colors"
+              title="Refresh data"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </button>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3">

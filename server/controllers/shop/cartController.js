@@ -3,7 +3,7 @@ const Product = require('../../models/Products');
 
 const addToCart = async(req, res) => {
     try {
-        const {userId, productId, quantity, size, color} = req.body;
+        const {userId, productId, quantity, size, color, price, salePrice, title, image} = req.body;
 
         if(!userId || !productId || quantity <= 0 || !size || !color) {
             return res.status(400).json({
@@ -12,6 +12,7 @@ const addToCart = async(req, res) => {
             });
         }
 
+        // Still fetch the product to verify it exists
         const product = await Product.findById(productId);
 
         if(!product) {
@@ -32,17 +33,40 @@ const addToCart = async(req, res) => {
             item.size === size && item.color === color
         );
 
+        // Use product data from database as a fallback
+        const productPrice = price || product.price;
+        const productSalePrice = salePrice || product.salePrice;
+        const productTitle = title || product.title;
+        const productImage = image || product.image;
+
+        // Store extra product information directly in the cart item
         if(findCurrentProductIndex === -1){
-            cart.items.push({productId, quantity, size, color});
+            cart.items.push({
+                productId, 
+                quantity, 
+                size, 
+                color,
+                price: productPrice,
+                salePrice: productSalePrice,
+                title: productTitle,
+                image: productImage
+            });
         } else {
             cart.items[findCurrentProductIndex].quantity += quantity;
+            // Update product information if provided
+            if (productPrice) cart.items[findCurrentProductIndex].price = productPrice;
+            if (productSalePrice) cart.items[findCurrentProductIndex].salePrice = productSalePrice;
+            if (productTitle) cart.items[findCurrentProductIndex].title = productTitle;
+            if (productImage) cart.items[findCurrentProductIndex].image = productImage;
         }
 
         await cart.save();
 
         res.status(200).json({
             success: true,
-            data: cart
+            data: cart,
+            // Add itemUpdated flag to indicate whether an existing item was updated
+            itemUpdated: findCurrentProductIndex !== -1
         });
 
     } catch (error) {
@@ -252,7 +276,27 @@ const deleteCartItem = async(req, res) => {
 
 const clearCart = async(req, res) => {
     try {
-        const { userId } = req.params;
+        // Get userId from either params, body, or query
+        let userId = req.params.userId;
+        
+        // If not in params, try to get from body or query
+        if (!userId) {
+            if (req.body && req.body.userId) {
+                userId = req.body.userId;
+            } else if (req.query && req.query.userId) {
+                userId = req.query.userId;
+            }
+        }
+        
+        // Log the request for debugging
+        console.log('Clear cart request received:', {
+            method: req.method,
+            url: req.url,
+            params: req.params,
+            body: req.body,
+            query: req.query,
+            userId: userId
+        });
         
         if(!userId) {
             return res.status(400).json({
@@ -261,10 +305,10 @@ const clearCart = async(req, res) => {
             });
         }
 
-        // Find the user's cart
-        const cart = await Cart.findOne({ userId });
+        // Try to find all carts for this user (in case of duplicates)
+        const carts = await Cart.find({ userId });
         
-        if(!cart) {
+        if(!carts || carts.length === 0) {
             return res.status(200).json({
                 success: true,
                 message: 'No cart found for this user',
@@ -272,21 +316,27 @@ const clearCart = async(req, res) => {
             });
         }
         
-        // IMPORTANT CHANGE: Delete the cart document completely instead of just emptying it
-        // This ensures the cart is truly cleared after order completion
-        await Cart.findByIdAndDelete(cart._id);
+        // Delete all carts found for this user
+        let deleteCount = 0;
+        for (const cart of carts) {
+            await Cart.findByIdAndDelete(cart._id);
+            deleteCount++;
+        }
         
         // Log the deletion for debugging
-        console.log(`Cart ${cart._id} for user ${userId} has been completely deleted`);
+        console.log(`${deleteCount} carts for user ${userId} have been completely deleted`);
+        
+        // Set a flag to identify this was a manual cart clear
+        res.locals.cartCleared = true;
         
         res.status(200).json({
             success: true,
-            message: 'Cart deleted successfully',
+            message: `${deleteCount} carts deleted successfully`,
             data: { userId, items: [] }
         });
 
     } catch (error) {
-        console.log(error);
+        console.log('Error clearing cart:', error);
         res.status(500).json({
             success: false,
             message: 'An error occurred while clearing the cart',

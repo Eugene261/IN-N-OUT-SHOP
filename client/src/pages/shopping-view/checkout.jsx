@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import img from '../../assets/account.jpg'
 import Address from '@/components/shopping-view/address';
 import { useDispatch, useSelector } from 'react-redux';
@@ -6,6 +6,7 @@ import UserCartItemsContent from '@/components/shopping-view/cartItemsContent';
 import { toast } from 'sonner';
 import { createNewOrder } from '@/store/shop/order-slice';
 import PaystackPayment from '@/components/shopping-view/PaystackPayment';
+import { TruckIcon, Store, Package } from 'lucide-react';
 
 function ShoppingCheckout() {
   // Fix: Correctly destructure the user object from auth state
@@ -14,16 +15,78 @@ function ShoppingCheckout() {
   const [currentSelectedAddress, setCurrentSelectedAddress] = useState(null);
   const [isPaymentStart, setIsPaymentStart] = useState(false);
   const [showPaystack, setShowPaystack] = useState(false);
+  const [adminShippingFees, setAdminShippingFees] = useState({});
+  const [totalShippingFee, setTotalShippingFee] = useState(0);
   const dispatch = useDispatch();
 
-  console.log(currentSelectedAddress, "currentSelectedAddress");
+  // Group cart items by admin/seller
+  const groupCartItemsByAdmin = () => {
+    // If cart items don't exist, return empty object
+    if (!cartItems || !cartItems.items || !cartItems.items.length) return {};
 
-  const totalPrice = cartItems && cartItems.items && cartItems.items.length > 0
+    const adminGroups = {};
+    
+    cartItems.items.forEach(item => {
+      // Use adminId if available, or fallback to a placeholder
+      // In a real implementation, we would fetch the admin ID for each product
+      const adminId = item.adminId || 'unknown';
+      const adminName = item.adminName || 'Shop Seller';
+      
+      if (!adminGroups[adminId]) {
+        adminGroups[adminId] = {
+          items: [],
+          adminName,
+          subtotal: 0
+        };
+      }
+      
+      const itemPrice = item.salePrice || item.price || 0;
+      const itemTotal = itemPrice * item.quantity;
+      
+      adminGroups[adminId].items.push(item);
+      adminGroups[adminId].subtotal += itemTotal;
+    });
+    
+    return adminGroups;
+  };
+
+  // Calculate shipping fee based on selected address for each admin group
+  useEffect(() => {
+    if (currentSelectedAddress) {
+      const city = (currentSelectedAddress.city || '').toLowerCase();
+      const region = (currentSelectedAddress.region || '').toLowerCase();
+      const isAccra = city.includes('accra') || region.includes('accra') || region.includes('greater accra');
+      
+      // Get admin groups
+      const adminGroups = groupCartItemsByAdmin();
+      const fees = {};
+      let total = 0;
+      
+      // Calculate shipping fee for each admin
+      Object.keys(adminGroups).forEach(adminId => {
+        // Check if location is Accra or Greater Accra
+        const fee = isAccra ? 40 : 70; // GHS 40 for Accra/Greater Accra, GHS 70 for other regions
+        fees[adminId] = fee;
+        total += fee;
+      });
+      
+      setAdminShippingFees(fees);
+      setTotalShippingFee(total);
+    } else {
+      setAdminShippingFees({});
+      setTotalShippingFee(0);
+    }
+  }, [currentSelectedAddress, cartItems]);
+
+  const subtotal = cartItems && cartItems.items && cartItems.items.length > 0
     ? cartItems.items.reduce((total, item) => {
         const itemPrice = item.salePrice || item.price || 0;
         return total + (itemPrice * item.quantity);
       }, 0)
     : 0;
+
+  // Calculate total including shipping fee
+  const totalPrice = subtotal + totalShippingFee;
 
   function handleInitiatePaystackPayment() {
     // Check if an address is selected
@@ -72,7 +135,14 @@ function ShoppingCheckout() {
     setShowPaystack(false);
   };
 
-  // No need for approvalURL redirect with Paystack
+  // Format price
+  const formatPrice = (price) => {
+    if (price === undefined || price === null) return 'GHS 0.00';
+    return `GHS ${price.toFixed(2)}`;
+  };
+
+  // Get admin groups for display
+  const adminGroups = groupCartItemsByAdmin();
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -98,7 +168,7 @@ function ShoppingCheckout() {
             <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
               <div className="bg-gradient-to-r from-indigo-50 to-blue-50 px-6 py-5 border-b border-gray-200">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-indigo-100 text-indigo-600 rounded-full">
+                  <div className="p-2 bg-indigo-100 text-indigo-600 rounded-full shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                     </svg>
@@ -137,15 +207,39 @@ function ShoppingCheckout() {
               </div>
               
               <div className="p-6">
-                {/* Cart Items List */}
-                <div className="space-y-4 mb-6">
-                  {cartItems?.items?.length > 0 ? (
-                    cartItems.items.map((item) => (
+                {/* Cart Items List - Grouped by Admin/Seller */}
+                <div className="space-y-6 mb-6">
+                  {Object.keys(adminGroups).length > 0 ? (
+                    Object.keys(adminGroups).map((adminId) => (
                       <div 
-                        key={item.title}
-                        className="p-4 rounded-lg border border-gray-200 hover:shadow-sm transition-all duration-200 bg-white"
+                        key={adminId}
+                        className="border border-gray-200 rounded-lg overflow-hidden"
                       >
-                        <UserCartItemsContent cartItem={item} />
+                        <div className="bg-blue-50 px-4 py-3 flex items-center justify-between">
+                          <div className="flex items-center">
+                            <Store className="h-4 w-4 text-blue-600 mr-2" />
+                            <h3 className="font-medium text-gray-800">{adminGroups[adminId].adminName}</h3>
+                          </div>
+                          {currentSelectedAddress && (
+                            <div className="flex items-center text-sm">
+                              <TruckIcon className="h-3.5 w-3.5 text-blue-600 mr-1" />
+                              <span className="text-blue-600 font-medium">
+                                {formatPrice(adminShippingFees[adminId] || 0)} shipping
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="divide-y divide-gray-100">
+                          {adminGroups[adminId].items.map((item) => (
+                            <div 
+                              key={item.productId + (item.size || '') + (item.color || '')}
+                              className="p-4 hover:bg-gray-50"
+                            >
+                              <UserCartItemsContent cartItem={item} />
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     ))
                   ) : (
@@ -165,29 +259,60 @@ function ShoppingCheckout() {
                   )}
                 </div>
 
-                {cartItems?.items?.length > 0 && (
+                {Object.keys(adminGroups).length > 0 && (
                   <>
                     {/* Order Details */}
                     <div className="bg-gray-50 p-4 rounded-lg mb-6">
-                      <h3 className="font-medium text-gray-700 mb-3">Order Details</h3>
+                      <h3 className="font-medium text-gray-700 mb-3">Price Details</h3>
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
                           <span className="text-gray-600">Subtotal</span>
-                          <span className="font-medium">GHS {totalPrice.toFixed(2)}</span>
+                          <span className="font-medium">{formatPrice(subtotal)}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Shipping</span>
-                          <span className="font-medium">GHS 0.00</span>
+                        
+                        {/* Shipping Fees Section - Itemized by seller */}
+                        <div className="pt-2 border-t border-gray-200">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-gray-600 flex items-center">
+                              <TruckIcon className="h-4 w-4 mr-2 text-gray-400" /> 
+                              Total Shipping ({Object.keys(adminGroups).length} {Object.keys(adminGroups).length === 1 ? 'seller' : 'sellers'})
+                            </span>
+                            <span className={`font-medium ${currentSelectedAddress ? '' : 'text-gray-400'}`}>
+                              {currentSelectedAddress ? formatPrice(totalShippingFee) : 'Select address'}
+                            </span>
+                          </div>
+                          
+                          {currentSelectedAddress && Object.keys(adminShippingFees).length > 0 && (
+                            <div className="ml-6 text-xs text-gray-500 space-y-1 mt-1">
+                              {Object.keys(adminShippingFees).map(adminId => (
+                                <div key={adminId} className="flex justify-between">
+                                  <span>{adminGroups[adminId]?.adminName || 'Seller'}</span>
+                                  <span>{formatPrice(adminShippingFees[adminId])}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Tax</span>
-                          <span className="font-medium">GHS 0.00</span>
-                        </div>
+                        
                         <div className="border-t border-gray-200 my-2 pt-2 flex justify-between">
                           <span className="font-semibold text-gray-800">Total</span>
                           <span className="font-bold text-xl text-gray-900">
-                            GHS {totalPrice.toFixed(2)}
+                            {formatPrice(totalPrice)}
                           </span>
+                        </div>
+                      </div>
+                      
+                      {/* Shipping information note */}
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <div className="flex items-start text-xs text-gray-500">
+                          <TruckIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400 flex-shrink-0 mt-0.5" />
+                          <p>
+                            Shipping fees: GHS 40 for Accra/Greater Accra Region, GHS 70 for all other regions.
+                            Each seller ships separately and charges their own shipping fee.
+                            <a href="/shop/shipping" className="text-indigo-600 hover:text-indigo-800 ml-1 whitespace-nowrap">
+                              View shipping details
+                            </a>
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -203,7 +328,8 @@ function ShoppingCheckout() {
                             price: item?.salePrice > 0 ? item?.salePrice : item?.price,
                             quantity: item?.quantity,
                             size: item?.size,
-                            color: item?.color
+                            color: item?.color,
+                            adminId: item?.adminId || 'unknown'
                           }))}
                           shippingAddress={{
                             addressId: currentSelectedAddress?._id,
@@ -213,6 +339,8 @@ function ShoppingCheckout() {
                             phone: currentSelectedAddress?.phone,
                             notes: currentSelectedAddress?.notes,
                           }}
+                          shippingFees={adminShippingFees}
+                          totalShippingFee={totalShippingFee}
                           onSuccess={handlePaymentSuccess}
                           onError={handlePaymentError}
                         />
@@ -224,30 +352,40 @@ function ShoppingCheckout() {
                         </button>
                       </div>
                     ) : (
-                      <button 
-                        onClick={handleInitiatePaystackPayment}
-                        className={`w-full py-3.5 px-6 font-semibold rounded-lg shadow-md transition-all duration-300 flex items-center justify-center gap-2 ${!user || cartItems?.items?.length === 0 
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                          : 'bg-indigo-600 hover:bg-indigo-700 text-white transform hover:scale-[1.01]'}`}
-                        disabled={!user || cartItems?.items?.length === 0}
-                      >
-                        {isPaymentStart ? (
-                          <>
-                            <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Processing Payment...
-                          </>
-                        ) : (
-                          <>
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                            </svg>
-                            Pay with Mobile Money
-                          </>
+                      <>
+                        <button 
+                          onClick={handleInitiatePaystackPayment}
+                          className={`w-full py-3.5 px-6 font-semibold rounded-lg shadow-md transition-all duration-300 flex items-center justify-center gap-2 ${!user || cartItems?.items?.length === 0 || !currentSelectedAddress
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                            : 'bg-indigo-600 hover:bg-indigo-700 text-white transform hover:scale-[1.01]'}`}
+                          disabled={!user || cartItems?.items?.length === 0 || !currentSelectedAddress}
+                        >
+                          {isPaymentStart ? (
+                            <>
+                              <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Processing Payment...
+                            </>
+                          ) : (
+                            <>
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                              </svg>
+                              Pay with Mobile Money
+                            </>
+                          )}
+                        </button>
+                        
+                        {!currentSelectedAddress && cartItems?.items?.length > 0 && (
+                          <div className="mt-2 text-center">
+                            <p className="text-amber-600 text-sm font-medium animate-pulse">
+                              Please select a shipping address to continue
+                            </p>
+                          </div>
                         )}
-                      </button>
+                      </>
                     )}
                   </>
                 )}

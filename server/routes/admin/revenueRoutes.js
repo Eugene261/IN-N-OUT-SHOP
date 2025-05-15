@@ -5,24 +5,21 @@ const {
     getAdminRevenueByTime,
     getAllAdminRevenueData
 } = require('../../Controllers/admin/revenueController.js');
-const { isAuthenticated, isAdmin } = require('../../middleware/auth');
+const { verifyToken, isAdmin } = require('../../Middleware/auth');
 
 const router = express.Router();
 
-// Apply authentication middleware to all admin revenue routes
-router.use(isAuthenticated);
-router.use(isAdmin);
-
+// Apply authentication middleware to individual routes
 // Get revenue statistics for the logged-in admin
-router.get('/stats', getAdminRevenue);
+router.get('/stats', verifyToken, isAdmin, getAdminRevenue);
 
 // Get orders that contain products created by the logged-in admin
-router.get('/orders', getAdminOrders);
+router.get('/orders', verifyToken, isAdmin, getAdminOrders);
 
 // Get all revenue data at once (daily, weekly, monthly, yearly)
-router.get('/all/revenue-data', getAllAdminRevenueData);
+router.get('/all/revenue-data', verifyToken, isAdmin, getAllAdminRevenueData);
 
 // Get time-based revenue data for the logged-in admin
-router.get('/:timeUnit', getAdminRevenueByTime);
+router.get('/:timeUnit', verifyToken, isAdmin, getAdminRevenueByTime);
 
 module.exports = router;

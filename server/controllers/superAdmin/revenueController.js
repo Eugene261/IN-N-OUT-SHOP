@@ -168,7 +168,9 @@ const getAdminRevenueByTime = async (req, res) => {
             adminId,
             adminName: admin.userName,
             revenue: 0,
-            orderCount: 0
+            orderCount: 0,
+            platformFees: 0,
+            shippingFees: 0
           };
         });
       }
@@ -177,6 +179,9 @@ const getAdminRevenueByTime = async (req, res) => {
       const orderItems = order.items || [];
       const cartItems = order.cartItems || [];
       const orderTotal = parseFloat(order.totalAmount) || 0;
+      
+      // Get shipping fee if available
+      const orderShippingFee = order.shippingFee ? parseFloat(order.shippingFee) : 0;
       
       // Track if any admin was credited for this order
       let adminCredited = false;
@@ -202,7 +207,27 @@ const getAdminRevenueByTime = async (req, res) => {
           // If we found an admin ID and it's in our map
           if (adminId && revenueByTime[timePeriodKey].adminRevenue[adminId]) {
             const itemRevenue = item.quantity * (parseFloat(item.price) || 0);
+            const platformFee = itemRevenue * 0.05; // Calculate 5% platform fee
+            
+            // Calculate share of shipping fee based on item's contribution to total order
+            let shippingFeeShare = 0;
+            if (orderShippingFee > 0 && orderTotal > 0) {
+              const itemPercentage = itemRevenue / orderTotal;
+              shippingFeeShare = orderShippingFee * itemPercentage;
+            }
+            
+            // Update admin revenue stats
+            if (!revenueByTime[timePeriodKey].adminRevenue[adminId].platformFees) {
+              revenueByTime[timePeriodKey].adminRevenue[adminId].platformFees = 0;
+            }
+            
+            if (!revenueByTime[timePeriodKey].adminRevenue[adminId].shippingFees) {
+              revenueByTime[timePeriodKey].adminRevenue[adminId].shippingFees = 0;
+            }
+            
             revenueByTime[timePeriodKey].adminRevenue[adminId].revenue += itemRevenue;
+            revenueByTime[timePeriodKey].adminRevenue[adminId].platformFees += platformFee;
+            revenueByTime[timePeriodKey].adminRevenue[adminId].shippingFees += shippingFeeShare;
             adminCredited = true;
             
             // Count this order for this admin if not already counted
@@ -244,7 +269,27 @@ const getAdminRevenueByTime = async (req, res) => {
           // If we found an admin ID and it's in our map
           if (adminId && revenueByTime[timePeriodKey].adminRevenue[adminId]) {
             const itemRevenue = item.quantity * (parseFloat(item.price) || 0);
+            const platformFee = itemRevenue * 0.05; // Calculate 5% platform fee
+            
+            // Calculate share of shipping fee based on item's contribution to total order
+            let shippingFeeShare = 0;
+            if (orderShippingFee > 0 && orderTotal > 0) {
+              const itemPercentage = itemRevenue / orderTotal;
+              shippingFeeShare = orderShippingFee * itemPercentage;
+            }
+            
+            // Update admin revenue stats
+            if (!revenueByTime[timePeriodKey].adminRevenue[adminId].platformFees) {
+              revenueByTime[timePeriodKey].adminRevenue[adminId].platformFees = 0;
+            }
+            
+            if (!revenueByTime[timePeriodKey].adminRevenue[adminId].shippingFees) {
+              revenueByTime[timePeriodKey].adminRevenue[adminId].shippingFees = 0;
+            }
+            
             revenueByTime[timePeriodKey].adminRevenue[adminId].revenue += itemRevenue;
+            revenueByTime[timePeriodKey].adminRevenue[adminId].platformFees += platformFee;
+            revenueByTime[timePeriodKey].adminRevenue[adminId].shippingFees += shippingFeeShare;
             adminCredited = true;
             
             // Count this order for this admin if not already counted

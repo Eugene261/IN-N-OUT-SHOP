@@ -2,6 +2,7 @@ import React from 'react'
 import { DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Label } from '../ui/label';
 import { Separator } from '../ui/separator';
+import { TruckIcon } from 'lucide-react';
 
 function ShoppingOrderDetailsView({ orderDetails, user }) {
   if (!orderDetails) return null;
@@ -49,6 +50,12 @@ function ShoppingOrderDetailsView({ orderDetails, user }) {
     }
   };
 
+  // Calculate or get shipping fee
+  const shippingFee = orderDetails.shippingFee || 0;
+  
+  // Calculate subtotal (total - shipping)
+  const subtotal = (orderDetails.totalAmount || 0) - shippingFee;
+
   return (
     <DialogContent className="w-full max-w-md md:max-w-lg lg:max-w-xl mx-auto p-4 md:p-6 overflow-y-auto max-h-[90vh]">
       <DialogHeader className="mb-4">
@@ -67,14 +74,34 @@ function ShoppingOrderDetailsView({ orderDetails, user }) {
             <p className="font-medium text-sm text-gray-700">Status</p>
             <p className="text-sm text-right">{orderDetails.orderStatus || 'N/A'}</p>
             
-            <p className="font-medium text-sm text-gray-700">Total Amount</p>
-            <p className="text-sm text-right font-semibold">{formatPrice(orderDetails.totalAmount)}</p>
-
             <p className="font-medium text-sm text-gray-700">Payment Method</p>
             <p className="text-sm text-right font-semibold">{orderDetails?.paymentMethod}</p>
 
             <p className="font-medium text-sm text-gray-700">Payment Status</p>
             <p className="text-sm text-right font-semibold">{orderDetails?.paymentStatus}</p>
+          </div>
+        </div>
+
+        {/* Price details with shipping fee */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h3 className="font-medium mb-3">Price Details</h3>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Subtotal:</span>
+              <span className="font-medium">{formatPrice(subtotal)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600 flex items-center">
+                <TruckIcon className="h-4 w-4 mr-2 text-gray-400" /> Shipping Fee:
+              </span>
+              <span className="font-medium">{formatPrice(shippingFee)}</span>
+            </div>
+            <div className="border-t pt-2 mt-2">
+              <div className="flex justify-between font-bold">
+                <span>Total:</span>
+                <span>{formatPrice(orderDetails.totalAmount)}</span>
+              </div>
+            </div>
           </div>
         </div>
 

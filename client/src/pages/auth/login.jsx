@@ -3,7 +3,7 @@ import { loginFormControls } from '@/config';
 import { loginUser } from '@/store/auth-slice';
 import React, { useState, useEffect } from 'react'
 import { useDispatch } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 
 const initialState = {
@@ -17,14 +17,28 @@ function AuthLogin() {
   const [redirectPath, setRedirectPath] = useState('');
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   
-  // Check for redirect path in sessionStorage
+  // Check for redirect path in sessionStorage or query params
   useEffect(() => {
+    // First check session storage
     const savedRedirectPath = sessionStorage.getItem('redirectAfterLogin');
-    if (savedRedirectPath) {
+    
+    // Then check URL query parameters
+    const queryParams = new URLSearchParams(location.search);
+    const redirectFromQuery = queryParams.get('redirect');
+    
+    if (redirectFromQuery) {
+      setRedirectPath(redirectFromQuery);
+      // Save to session storage for persistence
+      sessionStorage.setItem('redirectAfterLogin', redirectFromQuery);
+    } else if (savedRedirectPath) {
       setRedirectPath(savedRedirectPath);
     }
-  }, []);
+    
+    // Log for debugging
+    console.log('Redirect path after login:', redirectFromQuery || savedRedirectPath || 'None specified');
+  }, [location]);
 
   const onSubmit = async (event) => {
     event.preventDefault();
@@ -37,6 +51,12 @@ function AuthLogin() {
         if (resultAction.payload?.success) {
           const user = resultAction.payload.user;
           
+          // Store the JWT token in localStorage for auth across browser sessions
+          if (resultAction.payload.token) {
+            localStorage.setItem('token', resultAction.payload.token);
+            console.log('Token saved to localStorage');
+          }
+          
           toast.success('Login Successful', {
             position: 'top-center',
             duration: 2000
@@ -44,9 +64,9 @@ function AuthLogin() {
           
           // Navigate based on user role or redirect path
           if (user.role === 'admin') {
-            navigate('/admin/dashboard');
+            navigate(redirectPath || '/admin/dashboard');
           } else if (user.role === 'superAdmin') {
-            navigate('/super-admin/dashboard');
+            navigate(redirectPath || '/super-admin/dashboard');
           } else if (redirectPath) {
             // Clear the redirect path from session storage
             sessionStorage.removeItem('redirectAfterLogin');

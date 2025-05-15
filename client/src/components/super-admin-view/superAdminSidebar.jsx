@@ -8,7 +8,7 @@ import {
   Package, 
   Star, 
   LogOut, 
-  X 
+  X
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { logoutUser } from '../../store/auth-slice';

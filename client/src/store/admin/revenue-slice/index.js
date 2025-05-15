@@ -176,7 +176,22 @@ const adminRevenueSlice = createSlice({
             })
             .addCase(fetchRevenueStats.fulfilled, (state, action) => {
                 state.isLoading = false;
-                state.revenueStats = action.payload.data;
+                
+                // Log what we're receiving from the API
+                console.log('Raw API response for revenue stats:', action.payload);
+                
+                // Properly extract and normalize the data structure
+                // Handle both possible API response structures
+                if (action.payload && action.payload.success) {
+                    // Store the data directly, without nesting it under 'data' again
+                    // This fixes the double nesting problem
+                    state.revenueStats = action.payload.data || {};
+                    console.log('Normalized revenue stats data:', state.revenueStats);
+                } else {
+                    // Fallback if different structure
+                    state.revenueStats = action.payload || {};
+                    console.log('Using fallback structure for revenue stats');
+                }
             })
             .addCase(fetchRevenueStats.rejected, (state, action) => {
                 state.isLoading = false;

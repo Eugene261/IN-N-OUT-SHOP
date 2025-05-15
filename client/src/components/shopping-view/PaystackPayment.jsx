@@ -5,17 +5,44 @@ import { toast } from 'sonner';
 import { initializePayment, verifyPayment } from '../../services/paystackService';
 import { createNewOrder } from '../../store/shop/order-slice';
 import { PAYSTACK_PUBLIC_KEY, MOBILE_MONEY_NETWORKS } from '../../config/paystack';
+import { TruckIcon, Store } from 'lucide-react';
 
-const PaystackPayment = ({ amount, items, shippingAddress, onSuccess, onError }) => {
+const PaystackPayment = ({ amount, items, shippingAddress, shippingFees = {}, totalShippingFee = 0, onSuccess, onError }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('mobile_money');
   const [mobileNetwork, setMobileNetwork] = useState('mtn');
   const [mobileNumber, setMobileNumber] = useState('');
+  const [subtotal, setSubtotal] = useState(0);
   const { user } = useSelector(state => state.auth);
   const dispatch = useDispatch();
 
   // Using networks from config file
   const networks = MOBILE_MONEY_NETWORKS;
+
+  // Calculate subtotal from total amount and shipping fee
+  useEffect(() => {
+    setSubtotal(amount - totalShippingFee);
+  }, [amount, totalShippingFee]);
+
+  // Group items by admin
+  const groupItemsByAdmin = () => {
+    const adminGroups = {};
+    
+    items.forEach(item => {
+      const adminId = item.adminId || 'unknown';
+      
+      if (!adminGroups[adminId]) {
+        adminGroups[adminId] = {
+          items: [],
+          shippingFee: shippingFees[adminId] || 0
+        };
+      }
+      
+      adminGroups[adminId].items.push(item);
+    });
+    
+    return adminGroups;
+  };
 
   const handlePayment = async (e) => {
     e.preventDefault();
@@ -33,17 +60,28 @@ const PaystackPayment = ({ amount, items, shippingAddress, onSuccess, onError })
     try {
       setIsProcessing(true);
       
-      // Create an order first
+      // Group items by admin
+      const adminGroups = groupItemsByAdmin();
+      
+      // Create an order with shipping fees per admin
       const orderAction = await dispatch(createNewOrder({
         userId: user.id,
         cartItems: items,
         addressInfo: shippingAddress,
         totalAmount: amount,
+        shippingFee: totalShippingFee, // Total shipping fee
+        adminShippingFees: shippingFees, // Keep the per-admin shipping fees
         paymentMethod: 'paystack',
         paymentStatus: 'pending',
         orderStatus: 'pending',
         orderDate: new Date(),
-        orderUpdateDate: new Date()
+        orderUpdateDate: new Date(),
+        // Add admin groups information for order processing
+        adminGroups: Object.keys(adminGroups).map(adminId => ({
+          adminId,
+          items: adminGroups[adminId].items.map(item => item.productId),
+          shippingFee: adminGroups[adminId].shippingFee
+        }))
       }));
       
       if (createNewOrder.fulfilled.match(orderAction) && orderAction.payload.success) {
@@ -63,6 +101,8 @@ const PaystackPayment = ({ amount, items, shippingAddress, onSuccess, onError })
           metadata: {
             orderId,
             userId: user.id,
+            totalShippingFee,
+            adminShippingFees: JSON.stringify(shippingFees), // Pass admin shipping fees as metadata
             mobileNumber: paymentMethod === 'mobile_money' ? mobileNumber : '',
             mobileNetwork: paymentMethod === 'mobile_money' ? mobileNetwork : ''
           }
@@ -94,6 +134,15 @@ const PaystackPayment = ({ amount, items, shippingAddress, onSuccess, onError })
       toast.error(error.message || 'Payment processing failed');
     }
   };
+
+  // Format price
+  const formatPrice = (price) => {
+    if (price === undefined || price === null) return 'GHS 0.00';
+    return `GHS ${price.toFixed(2)}`;
+  };
+  
+  // Get admin shipping details for display
+  const adminGroups = groupItemsByAdmin();
 
   return (
     <div className="w-full max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
@@ -172,11 +221,40 @@ const PaystackPayment = ({ amount, items, shippingAddress, onSuccess, onError })
       <div className="mb-6">
         <div className="bg-gray-50 p-4 rounded-md">
           <div className="flex justify-between mb-2">
-            <span className="text-gray-600">Amount:</span>
-            <span className="font-semibold">GHS {amount.toFixed(2)}</span>
+            <span className="text-gray-600">Subtotal:</span>
+            <span className="font-semibold">{formatPrice(subtotal)}</span>
+          </div>
+          
+          {/* Shipping Fee Section - With Admin Breakdown */}
+          <div className="border-t border-gray-100 pt-2 mb-2">
+            <div className="flex justify-between mb-1 items-center">
+              <span className="text-gray-600 flex items-center">
+                <TruckIcon className="h-4 w-4 mr-2 text-gray-400" /> Shipping Fees:
+              </span>
+              <span className="font-semibold">{formatPrice(totalShippingFee)}</span>
+            </div>
+            
+            {/* Show per-admin shipping fees */}
+            {Object.keys(adminGroups).length > 1 && (
+              <div className="ml-6 text-xs text-gray-500 space-y-1 mt-1">
+                {Object.keys(adminGroups).map(adminId => (
+                  <div key={adminId} className="flex justify-between">
+                    <span className="flex items-center">
+                      <Store className="h-3 w-3 mr-1" /> Seller {adminId.substring(0, 4)}...
+                    </span>
+                    <span>{formatPrice(adminGroups[adminId].shippingFee)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <div className="pt-2 mt-2 border-t border-gray-200 flex justify-between">
+            <span className="text-gray-800 font-medium">Total Amount:</span>
+            <span className="font-bold">{formatPrice(amount)}</span>
           </div>
           {paymentMethod === 'mobile_money' && (
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 mt-3">
               You will receive a prompt on your phone to complete the payment
             </p>
           )}

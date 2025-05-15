@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchRevenueStats, fetchAdminOrders, updateOrderStatus } from '@/store/admin/revenue-slice';
-import { DollarSign, Package, ShoppingBag, TruckIcon, CreditCard, BarChart3, X, ArrowRight } from 'lucide-react';
+import { DollarSign, Package, ShoppingBag, TruckIcon, CreditCard, BarChart3, X, ArrowRight, Percent } from 'lucide-react';
 import AdminRevenueStats from './adminRevenueStats';
 
 // Animation variants
@@ -32,6 +32,9 @@ const cardVariants = {
 function RevenueDashboard() {
   const dispatch = useDispatch();
   const { revenueStats, adminOrders, isLoading, error } = useSelector(state => state.adminRevenue);
+  
+  // Debug current data structure
+  console.log('Current revenue stats in component:', revenueStats);
   const { user } = useSelector(state => state.auth);
   
   // Dialog states
@@ -46,7 +49,23 @@ function RevenueDashboard() {
   const [updatedStatus, setUpdatedStatus] = useState('');
 
   useEffect(() => {
-    dispatch(fetchRevenueStats());
+    // Fetch revenue stats and explicitly debug the shipping fee issue
+    dispatch(fetchRevenueStats())
+      .then((action) => {
+        // Log the complete response data to debug structure
+        console.log('Revenue stats response:', action.payload);
+        
+        // Focus on shipping fee debugging
+        if (action.payload?.data) {
+          console.log('Shipping fee from API:', action.payload.data.totalShippingFees);
+          console.log('Shipping fee type:', typeof action.payload.data.totalShippingFees);
+          
+          // Check if the value is being properly assigned to the state
+          setTimeout(() => {
+            console.log('Current shipping fee in component state:', revenueStats?.totalShippingFees);
+          }, 500);
+        }
+      });
     dispatch(fetchAdminOrders());
   }, [dispatch]);
   
@@ -59,6 +78,10 @@ function RevenueDashboard() {
       case 'revenue':
         setDialogTitle('Revenue Details');
         setDialogDescription('Breakdown of your total earnings');
+        break;
+      case 'shipping':
+        setDialogTitle('Shipping Fees');
+        setDialogDescription('Breakdown of shipping fees collected');
         break;
       case 'items':
         setDialogTitle('Items Sold');
@@ -80,6 +103,14 @@ function RevenueDashboard() {
         setDialogTitle('Your Products');
         setDialogDescription('All products in your inventory');
         break;
+      case 'fees':
+        setDialogTitle('Platform Fees');
+        setDialogDescription('Details of platform fees');
+        break;
+      case 'net':
+        setDialogTitle('Net Revenue');
+        setDialogDescription('Earnings after platform fees');
+        break;
       default:
         setDialogTitle('Details');
         setDialogDescription('');
@@ -91,6 +122,24 @@ function RevenueDashboard() {
   // Format currency
   const formatCurrency = (amount) => {
     return `GH₵${parseFloat(amount || 0).toFixed(2)}`;
+  };
+  
+  // Calculate total shipping fees (as a fallback when server value is 0)
+  const calculateTotalShippingFees = () => {
+    if (revenueStats?.totalShippingFees > 0) {
+      return revenueStats.totalShippingFees;
+    } else if (revenueStats?.shippingFeesByRegion) {
+      // Calculate based on region counts (GHS 40 for Accra, GHS 70 for other regions)
+      const accraFees = (revenueStats.shippingFeesByRegion.accra || 0) * 40;
+      const otherFees = (revenueStats.shippingFeesByRegion.other || 0) * 70;
+      return accraFees + otherFees;
+    }
+    return 0;
+  };
+  
+  // Get the shipping fee value for display
+  const getShippingFeeDisplayValue = () => {
+    return formatCurrency(calculateTotalShippingFees());
   };
   
   // Format date safely
@@ -154,13 +203,64 @@ function RevenueDashboard() {
               <h4 className="font-medium mb-2">Revenue Breakdown</h4>
               <ul className="space-y-2">
                 <li className="flex justify-between">
+                  <span className="text-gray-600">Gross Revenue:</span>
+                  <span className="font-medium">{formatCurrency(revenueStats?.totalRevenue || 0)}</span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-gray-600">Shipping Fees:</span>
+                  <span className="font-medium">
+                    {formatCurrency(calculateTotalShippingFees())}
+                  </span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-gray-600">Platform Fees:</span>
+                  <span className="font-medium">
+                    {formatCurrency(revenueStats?.totalPlatformFees || 0)}
+                  </span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-gray-600">Net Revenue:</span>
+                  <span className="font-medium">
+                    {formatCurrency(revenueStats?.netRevenue || 0)}
+                  </span>
+                </li>
+                <li className="flex justify-between">
                   <span className="text-gray-600">Total Orders:</span>
                   <span className="font-medium">{revenueStats?.totalOrders || 0}</span>
                 </li>
+              </ul>
+            </div>
+          </div>
+        );
+      case 'shipping':
+        return (
+          <div className="space-y-4">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h4 className="font-medium text-blue-800">Total Shipping Fees</h4>
+              <p className="text-2xl font-bold text-blue-900">
+                {revenueStats?.totalShippingFees > 0 
+                  ? formatCurrency(revenueStats.totalShippingFees)
+                  : revenueStats?.shippingFeesByRegion 
+                    ? formatCurrency((revenueStats.shippingFeesByRegion.accra || 0) * 40 + (revenueStats.shippingFeesByRegion.other || 0) * 70)
+                    : formatCurrency(0)
+                }
+              </p>
+            </div>
+            <div className="border-t pt-4">
+              <h4 className="font-medium mb-2">Shipping Fee Breakdown</h4>
+              <ul className="space-y-2">
                 <li className="flex justify-between">
-                  <span className="text-gray-600">Average Order Value:</span>
+                  <span className="text-gray-600">Accra/Greater Accra (GHS 40):</span>
+                  <span className="font-medium">{revenueStats?.shippingFeesByRegion?.accra || 0} orders</span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-gray-600">Other Regions (GHS 70):</span>
+                  <span className="font-medium">{revenueStats?.shippingFeesByRegion?.other || 0} orders</span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-gray-600">Average Shipping Fee:</span>
                   <span className="font-medium">
-                    {formatCurrency(revenueStats?.totalRevenue / (revenueStats?.totalOrders || 1))}
+                    {revenueStats?.totalOrders ? formatCurrency((calculateTotalShippingFees()) / (revenueStats?.totalOrders || 1)) : 'N/A'}
                   </span>
                 </li>
               </ul>
@@ -341,6 +441,50 @@ function RevenueDashboard() {
             </div>
           </div>
         );
+      case 'fees':
+        return (
+          <div className="space-y-4">
+            <div className="bg-red-50 p-4 rounded-lg">
+              <h4 className="font-medium text-red-800">Platform Fees</h4>
+              <p className="text-2xl font-bold text-red-900">{formatCurrency(revenueStats?.totalPlatformFees || 0)}</p>
+            </div>
+            <div className="border-t pt-4">
+              <h4 className="font-medium mb-2">Fees Breakdown</h4>
+              <ul className="space-y-2">
+                <li className="flex justify-between">
+                  <span className="text-gray-600">Total Platform Fees:</span>
+                  <span className="font-medium">5% of gross revenue</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        );
+      case 'net':
+        return (
+          <div className="space-y-4">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h4 className="font-medium text-blue-800">Net Revenue</h4>
+              <p className="text-2xl font-bold text-blue-900">{formatCurrency(revenueStats?.netRevenue || 0)}</p>
+            </div>
+            <div className="border-t pt-4">
+              <h4 className="font-medium mb-2">Revenue Breakdown</h4>
+              <ul className="space-y-2">
+                <li className="flex justify-between">
+                  <span className="text-gray-600">Total Revenue:</span>
+                  <span className="font-medium">{formatCurrency(revenueStats?.totalRevenue)}</span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-gray-600">Platform Fees:</span>
+                  <span className="font-medium">{formatCurrency(revenueStats?.totalPlatformFees || 0)}</span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-gray-600">Net Revenue:</span>
+                  <span className="font-medium">{formatCurrency(revenueStats?.netRevenue || 0)}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        );
       default:
         return <p>No data available</p>;
     }
@@ -379,7 +523,7 @@ function RevenueDashboard() {
         <div className="space-y-8">
         {/* Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Total Revenue */}
+          {/* Gross Revenue */}
           <motion.div
             variants={cardVariants}
             className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer hover:border-green-200 hover:bg-green-50/10"
@@ -387,7 +531,7 @@ function RevenueDashboard() {
             whileHover={{ y: -5, transition: { duration: 0.2 } }}
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-gray-500 font-medium">Total Revenue</h3>
+              <h3 className="text-gray-500 font-medium">Gross Revenue</h3>
               <span className="p-2 bg-green-100 rounded-full">
                 <DollarSign className="h-5 w-5 text-green-600" />
               </span>
@@ -395,8 +539,87 @@ function RevenueDashboard() {
             <p className="text-3xl font-bold text-gray-900 mt-2">
               {formatCurrency(revenueStats?.totalRevenue)}
             </p>
-            <p className="text-sm text-gray-500 mt-1">Lifetime earnings</p>
+            <p className="text-sm text-gray-500 mt-1">Total earnings before fees</p>
             <div className="mt-4 text-green-600 text-sm font-medium flex items-center">
+              <span>View details</span>
+              <ArrowRight className="h-4 w-4 ml-1" />
+            </div>
+          </motion.div>
+
+          {/* Shipping Fees */}
+          <motion.div
+            variants={cardVariants}
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer hover:border-blue-200 hover:bg-blue-50/10"
+            onClick={() => openCardDialog('shipping')}
+            whileHover={{ y: -5, transition: { duration: 0.2 } }}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-gray-500 font-medium">Shipping Fees</h3>
+              <span className="p-2 bg-blue-100 rounded-full">
+                <TruckIcon className="h-5 w-5 text-blue-600" />
+              </span>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 mt-2">
+              {revenueStats?.totalShippingFees > 0 
+                ? formatCurrency(revenueStats.totalShippingFees)
+                : revenueStats?.shippingFeesByRegion 
+                  ? formatCurrency((revenueStats.shippingFeesByRegion.accra || 0) * 40 + (revenueStats.shippingFeesByRegion.other || 0) * 70)
+                  : formatCurrency(0)
+              }
+            </p>
+            {revenueStats?.totalShippingFees === 0 && revenueStats?.shippingFeesByRegion && 
+              <p className="text-xs text-blue-600 mt-1">
+                Based on {revenueStats.shippingFeesByRegion.accra || 0} Accra orders and {revenueStats.shippingFeesByRegion.other || 0} other region orders
+              </p>
+            }
+            <p className="text-sm text-gray-500 mt-1">Total shipping charges collected</p>
+            <div className="mt-4 text-blue-600 text-sm font-medium flex items-center">
+              <span>View details</span>
+              <ArrowRight className="h-4 w-4 ml-1" />
+            </div>
+          </motion.div>
+
+          {/* Platform Fees */}
+          <motion.div
+            variants={cardVariants}
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer hover:border-red-200 hover:bg-red-50/10"
+            onClick={() => openCardDialog('fees')}
+            whileHover={{ y: -5, transition: { duration: 0.2 } }}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-gray-500 font-medium">Platform Fees</h3>
+              <span className="p-2 bg-red-100 rounded-full">
+                <Percent className="h-5 w-5 text-red-600" />
+              </span>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 mt-2">
+              {formatCurrency(revenueStats?.totalPlatformFees || 0)}
+            </p>
+            <p className="text-sm text-gray-500 mt-1">5% of gross revenue</p>
+            <div className="mt-4 text-red-600 text-sm font-medium flex items-center">
+              <span>View details</span>
+              <ArrowRight className="h-4 w-4 ml-1" />
+            </div>
+          </motion.div>
+
+          {/* Net Revenue */}
+          <motion.div
+            variants={cardVariants}
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer hover:border-blue-200 hover:bg-blue-50/10"
+            onClick={() => openCardDialog('net')}
+            whileHover={{ y: -5, transition: { duration: 0.2 } }}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-gray-500 font-medium">Net Revenue</h3>
+              <span className="p-2 bg-blue-100 rounded-full">
+                <DollarSign className="h-5 w-5 text-blue-600" />
+              </span>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 mt-2">
+              {formatCurrency(revenueStats?.netRevenue || 0)}
+            </p>
+            <p className="text-sm text-gray-500 mt-1">Earnings after platform fees</p>
+            <div className="mt-4 text-blue-600 text-sm font-medium flex items-center">
               <span>View details</span>
               <ArrowRight className="h-4 w-4 ml-1" />
             </div>

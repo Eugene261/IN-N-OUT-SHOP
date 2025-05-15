@@ -26,9 +26,13 @@ const superAdminOrdersRouter = require('./routes/superAdmin/ordersRoutes.js');
 const superAdminProductsRouter = require('./routes/superAdmin/productsRoutes.js');
 const superAdminFeaturedRouter = require('./routes/superAdmin/featuredRoutes.js');
 const superAdminFeaturedCollectionRouter = require('./routes/superAdmin/featuredCollectionRoutes.js');
-const superAdminRevenueRouter = require('./Routes/superAdmin/revenueRoutes.js');
+const superAdminRevenueRouter = require('./routes/superAdmin/revenueRoutes.js');
 
+// Test route
+const testRouter = require('./routes/testRoute.js');
 
+// Add registration for admin routes
+const adminRoutes = require('./routes/admin/adminRoutes');
 
 const app = express()
 const PORT = process.env.PORT || 5000;
@@ -82,8 +86,11 @@ app.use('/api/superAdmin/featured', superAdminFeaturedRouter);
 app.use('/api/superAdmin/featured-collections', superAdminFeaturedCollectionRouter);
 app.use('/api/superAdmin/revenue', superAdminRevenueRouter);
 
+// Test route
+app.use('/api/test', testRouter);
 
-
+// Add registration for admin routes
+app.use('/api/admin', adminRoutes);
 
 app.listen(PORT, () =>
 console.log(`Server is running on port ${PORT}`)

@@ -14,7 +14,9 @@ import {
   BarChart3, 
   TrendingUp, 
   Loader2, 
-  AlertCircle 
+  AlertCircle,
+  Percent,
+  TruckIcon
 } from 'lucide-react';
 
 const SuperAdminDashboard = () => {
@@ -220,7 +222,7 @@ const SuperAdminDashboard = () => {
             {/* Total Revenue */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all">
               <div className="flex items-center justify-between">
-                <h3 className="text-gray-500 font-medium">Total Revenue</h3>
+                <h3 className="text-gray-500 font-medium">Gross Revenue</h3>
                 <span className="p-2 bg-green-100 rounded-full">
                   <DollarSign className="h-5 w-5 text-green-600" />
                 </span>
@@ -228,7 +230,49 @@ const SuperAdminDashboard = () => {
               <p className="text-3xl font-bold text-gray-900 mt-2">
                 {formatCurrency(orderStats?.totalRevenue || 0)}
               </p>
-              <p className="text-sm text-gray-500 mt-1">From all sales</p>
+              <p className="text-sm text-gray-500 mt-1">Total revenue before fees</p>
+            </div>
+            
+            {/* Shipping Fees */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all">
+              <div className="flex items-center justify-between">
+                <h3 className="text-gray-500 font-medium">Shipping Fees</h3>
+                <span className="p-2 bg-blue-100 rounded-full">
+                  <TruckIcon className="h-5 w-5 text-blue-600" />
+                </span>
+              </div>
+              <p className="text-3xl font-bold text-gray-900 mt-2">
+                {formatCurrency(orderStats?.totalShippingFees || 0)}
+              </p>
+              <p className="text-sm text-gray-500 mt-1">Total shipping charges</p>
+            </div>
+            
+            {/* Platform Fees */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all">
+              <div className="flex items-center justify-between">
+                <h3 className="text-gray-500 font-medium">Platform Fees</h3>
+                <span className="p-2 bg-red-100 rounded-full">
+                  <Percent className="h-5 w-5 text-red-600" />
+                </span>
+              </div>
+              <p className="text-3xl font-bold text-gray-900 mt-2">
+                {formatCurrency((orderStats?.totalRevenue || 0) * 0.05)}
+              </p>
+              <p className="text-sm text-gray-500 mt-1">5% of gross revenue</p>
+            </div>
+            
+            {/* Net Revenue */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all">
+              <div className="flex items-center justify-between">
+                <h3 className="text-gray-500 font-medium">Net Revenue</h3>
+                <span className="p-2 bg-blue-100 rounded-full">
+                  <DollarSign className="h-5 w-5 text-blue-600" />
+                </span>
+              </div>
+              <p className="text-3xl font-bold text-gray-900 mt-2">
+                {formatCurrency((orderStats?.totalRevenue || 0) * 0.95)}
+              </p>
+              <p className="text-sm text-gray-500 mt-1">After platform fees</p>
             </div>
             
             {/* Total Orders */}

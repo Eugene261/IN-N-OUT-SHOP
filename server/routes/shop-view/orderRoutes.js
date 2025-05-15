@@ -1,12 +1,12 @@
 const express = require('express');
-const { createOrder, verifyAndUpdateOrder, getAllOrdersByUser, getOrdersDetails } = require('../../controllers/shop/orderController');
+const { createOrder, verifyAndUpdateOrder, getAllOrders, getOrdersByUser, getOrderById } = require('../../controllers/shop/orderControllerWithCommission');
 
 const router = express.Router();
 
 router.post('/create', createOrder);
 router.post('/verify', verifyAndUpdateOrder);
-router.get('/list/:userId', getAllOrdersByUser);
-router.get('/details/:id', getOrdersDetails);
+router.get('/list/:userId', getOrdersByUser);
+router.get('/details/:id', getOrderById);
 
 
 

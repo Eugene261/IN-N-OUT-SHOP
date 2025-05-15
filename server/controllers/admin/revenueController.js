@@ -36,6 +36,14 @@ const getAdminRevenue = async (req, res) => {
         let totalItemsSold = 0;
         let pendingDeliveries = 0;
         let confirmedPayments = 0;
+        let totalPlatformFees = 0;  // Track total platform fees
+        let totalShippingFees = 0;  // Track total shipping fees
+        
+        // Track shipping fees by region for analytics
+        let shippingFeesByRegion = {
+            accra: 0,
+            other: 0
+        };
         
         adminOrders.forEach(order => {
             // Only count revenue from admin's products in each order
@@ -47,6 +55,81 @@ const getAdminRevenue = async (req, res) => {
             const orderRevenue = adminItemsInOrder.reduce((sum, item) => 
                 sum + (parseFloat(item.price) * item.quantity), 0
             );
+            
+            // Calculate platform fees (5% of product value)
+            const orderPlatformFees = orderRevenue * 0.05;
+            totalPlatformFees += orderPlatformFees;
+            
+            // CRITICAL FIX: Use the admin-specific shipping fees from adminShippingFees
+            let adminShippingFee = 0;
+            
+            // First check if there's a specific shipping fee for this admin in adminShippingFees
+            if (order.adminShippingFees && order.adminShippingFees[adminId]) {
+                // Direct method - admin's shipping fee is already calculated and stored
+                adminShippingFee = parseFloat(order.adminShippingFees[adminId]) || 0;
+                console.log(`Order ${order._id}: Using stored admin shipping fee: ${adminShippingFee} GHS`);
+                totalShippingFees += adminShippingFee;
+            } 
+            // Fall back to the apportioned shipping fee method if no admin-specific fee is stored
+            else if (order.shippingFee) {
+                let totalShippingFee = 0;
+                
+                // Parse the shipping fee value
+                if (typeof order.shippingFee === 'number') {
+                    totalShippingFee = order.shippingFee;
+                } else if (typeof order.shippingFee === 'string') {
+                    totalShippingFee = parseFloat(order.shippingFee) || 0;
+                }
+                
+                // Only proceed if we have a valid shipping fee
+                if (totalShippingFee > 0) {
+                    // Calculate the total order value
+                    const totalOrderValue = order.cartItems.reduce((total, item) => 
+                        total + (parseFloat(item.price || 0) * (item.quantity || 1)), 0
+                    );
+                    
+                    // Calculate admin's percentage of the order
+                    if (totalOrderValue > 0) {
+                        const adminPercentageOfOrder = orderRevenue / totalOrderValue;
+                        
+                        // Apportion shipping fee based on admin's percentage
+                        adminShippingFee = totalShippingFee * adminPercentageOfOrder;
+                        
+                        // Add this admin's portion of the shipping fee
+                        totalShippingFees += adminShippingFee;
+                        
+                        console.log(`Order ${order._id}: Admin gets ${(adminPercentageOfOrder*100).toFixed(2)}% (${adminShippingFee.toFixed(2)} GHS) of total shipping fee: ${totalShippingFee.toFixed(2)} GHS`);
+                    }
+                }
+            }
+            
+            // ALWAYS track region counts for ANY order with address info that has admin items
+            // This ensures we have region data even if shipping fees aren't explicitly stored
+            if (adminItemsInOrder.length > 0 && order.addressInfo) {
+                const city = (order.addressInfo.city || '').toLowerCase();
+                const region = (order.addressInfo.region || '').toLowerCase();
+                
+                // Determine region and increment counter
+                if (city.includes('accra') || region.includes('accra') || region.includes('greater accra')) {
+                    shippingFeesByRegion.accra++;
+                    
+                    // If no shipping fee was calculated but we have items, add standard fee
+                    if (adminShippingFee <= 0) {
+                        adminShippingFee = 40; // Standard GHS 40 for Accra
+                        totalShippingFees += adminShippingFee;
+                        console.log(`Order ${order._id}: No shipping fee found, adding standard Accra fee: ${adminShippingFee} GHS`);
+                    }
+                } else {
+                    shippingFeesByRegion.other++;
+                    
+                    // If no shipping fee was calculated but we have items, add standard fee
+                    if (adminShippingFee <= 0) {
+                        adminShippingFee = 70; // Standard GHS 70 for other regions
+                        totalShippingFees += adminShippingFee;
+                        console.log(`Order ${order._id}: No shipping fee found, adding standard other region fee: ${adminShippingFee} GHS`);
+                    }
+                }
+            }
             
             // Calculate total items sold
             const orderItemsSold = adminItemsInOrder.reduce((sum, item) => 
@@ -73,10 +156,33 @@ const getAdminRevenue = async (req, res) => {
             }
         });
         
+        // Calculate net revenue after platform fees
+        const netRevenue = totalRevenue - totalPlatformFees;
+        
+        console.log('===== ADMIN REVENUE SUMMARY =====');
+        console.log(`Admin ID: ${adminId}`);
+        console.log(`Total Revenue: ${totalRevenue}`);
+        console.log(`Total Shipping Fees: ${totalShippingFees}`);
+        console.log(`Shipping Fees by Region: `, shippingFeesByRegion);
+        console.log(`Total Orders: ${adminOrders.length}`);
+        console.log('Detailed Order Information:');
+        adminOrders.forEach(order => {
+            console.log(`  Order ID: ${order._id}`);
+            console.log(`    Shipping Fee: ${order.shippingFee || 0}`);
+            console.log(`    Type of shippingFee: ${typeof order.shippingFee}`);
+            console.log(`    Address Info:`, order.addressInfo || 'N/A');
+            console.log(`    Product Count: ${order.cartItems?.length || 0}`);
+        });
+        console.log('================================');
+        
         res.status(200).json({
             success: true,
             data: {
                 totalRevenue,
+                netRevenue,
+                totalPlatformFees,
+                totalShippingFees,
+                shippingFeesByRegion,
                 totalItemsSold,
                 pendingDeliveries,
                 confirmedPayments,
@@ -249,6 +355,49 @@ const getAdminRevenueByTime = async (req, res) => {
             // Skip if no revenue from admin's products
             if (orderRevenue <= 0) return;
             
+            // Calculate platform fees (5% of revenue)
+            const orderPlatformFees = orderRevenue * 0.05;
+            const orderNetRevenue = orderRevenue - orderPlatformFees;
+            
+            // Calculate admin-specific shipping fee using the same approach as the main dashboard
+            let shippingFees = 0;
+            
+            // First try to get admin-specific shipping fee if available
+            if (order.adminShippingFees && order.adminShippingFees[adminId]) {
+                // Use the stored admin-specific fee
+                shippingFees = parseFloat(order.adminShippingFees[adminId]) || 0;
+            } 
+            // Then try apportioning the total shipping fee
+            else if (order.shippingFee) {
+                const totalShippingFee = parseFloat(order.shippingFee) || 0;
+                
+                if (totalShippingFee > 0) {
+                    // Calculate total order value
+                    const totalOrderValue = order.cartItems.reduce((total, item) => 
+                        total + (parseFloat(item.price || 0) * (item.quantity || 1)), 0
+                    );
+                    
+                    // Calculate admin's percentage of the order
+                    if (totalOrderValue > 0) {
+                        const adminPercentageOfOrder = orderRevenue / totalOrderValue;
+                        // Apportion shipping fee based on admin's percentage
+                        shippingFees = totalShippingFee * adminPercentageOfOrder;
+                    }
+                }
+            }
+            
+            // If no shipping fee is found but we have address info, use standard rates
+            if (shippingFees <= 0 && order.addressInfo && adminItemsInOrder.length > 0) {
+                const city = (order.addressInfo.city || '').toLowerCase();
+                const region = (order.addressInfo.region || '').toLowerCase();
+                
+                if (city.includes('accra') || region.includes('accra') || region.includes('greater accra')) {
+                    shippingFees = 40; // Standard GHS 40 for Accra
+                } else {
+                    shippingFees = 70; // Standard GHS 70 for other regions
+                }
+            }
+            
             const orderDate = new Date(order.createdAt);
             let timeKey;
             let displayDate;
@@ -302,12 +451,18 @@ const getAdminRevenueByTime = async (req, res) => {
                     displayDate,
                     dateString: timeKey,
                     totalRevenue: 0,
+                    platformFees: 0,
+                    netRevenue: 0,
+                    shippingFees: 0,
                     orderCount: 0
                 };
             }
             
             // Add the order revenue to the time period
             revenueByTime[timeKey].totalRevenue += orderRevenue;
+            revenueByTime[timeKey].platformFees += orderPlatformFees;
+            revenueByTime[timeKey].netRevenue += orderNetRevenue;
+            revenueByTime[timeKey].shippingFees += shippingFees;
             revenueByTime[timeKey].orderCount += 1;
         });
         
@@ -438,6 +593,9 @@ const calculateRevenueByTime = (orders, adminProductIds, timePeriod) => {
                 timeKey,
                 date: displayDate,
                 totalRevenue: 0,
+                platformFees: 0,
+                netRevenue: 0,
+                shippingFees: 0,
                 orderCount: 0
             };
         }
@@ -452,8 +610,18 @@ const calculateRevenueByTime = (orders, adminProductIds, timePeriod) => {
             sum + (parseFloat(item.price) * item.quantity), 0
         );
         
+        // Calculate platform fees (5% of revenue)
+        const platformFees = orderRevenue * 0.05;
+        const netRevenue = orderRevenue - platformFees;
+        
+        // Get shipping fees if available
+        const shippingFees = order.shippingFee ? parseFloat(order.shippingFee) : 0;
+        
         // Update revenue and order count for this time period
         revenueByTime[timeKey].totalRevenue += orderRevenue;
+        revenueByTime[timeKey].platformFees += platformFees;
+        revenueByTime[timeKey].netRevenue += netRevenue;
+        revenueByTime[timeKey].shippingFees += shippingFees;
         revenueByTime[timeKey].orderCount += 1;
     });
     

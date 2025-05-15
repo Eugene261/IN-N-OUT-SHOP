@@ -13,7 +13,9 @@ import {
   Calendar as CalendarIcon,
   CalendarDays,
   CalendarRange,
-  Loader2
+  Loader2,
+  Percent,
+  TruckIcon
 } from 'lucide-react';
 import { fetchAdminRevenue } from '../../store/admin/revenue-slice';
 
@@ -142,6 +144,19 @@ const AdminRevenueStats = () => {
     });
   };
   
+  // Calculate platform fees and net revenue for a period
+  const calculateRevenueDetails = (period) => {
+    const grossRevenue = period.totalRevenue || period.revenue || 0;
+    const platformFees = grossRevenue * 0.05; // 5% platform fee
+    const netRevenue = grossRevenue - platformFees;
+    
+    return {
+      grossRevenue,
+      platformFees,
+      netRevenue
+    };
+  };
+  
   // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -186,36 +201,95 @@ const AdminRevenueStats = () => {
           <div className="p-4 bg-white">
             {filteredData && filteredData.length > 0 ? (
               <div className="space-y-4">
-                {filteredData.map((period, index) => (
-                  <div 
-                    key={index}
-                    className="bg-gray-50 rounded-lg p-4 border border-gray-100"
-                  >
-                    <div className="flex justify-between items-center mb-3">
-                      <h4 className="font-medium text-gray-800">{period.displayDate || period.dateString}</h4>
-                      <div className="text-right">
-                        <span className="text-sm text-gray-500 mr-2">Total:</span>
-                        <span className="font-bold text-gray-900">
-                          {formatCurrency(period.totalRevenue || period.revenue || 0)}
-                        </span>
+                {filteredData.map((period, index) => {
+                  const { grossRevenue, platformFees, netRevenue } = calculateRevenueDetails(period);
+                  return (
+                    <div 
+                      key={index}
+                      className="bg-gray-50 rounded-lg p-4 border border-gray-100"
+                    >
+                      <div className="flex justify-between items-center mb-3">
+                        <h4 className="font-medium text-gray-800">{period.displayDate || period.dateString}</h4>
+                        <div className="text-right">
+                          <span className="text-sm text-gray-500 mr-2">Total:</span>
+                          <span className="font-bold text-gray-900">
+                            {formatCurrency(grossRevenue)}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-                            <DollarSign className="h-4 w-4 text-blue-600" />
+                      
+                      <div className="space-y-3">
+                        {/* Revenue Details */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          {/* Gross Revenue */}
+                          <div className="bg-white p-3 rounded-lg border border-gray-200 flex items-center justify-between">
+                            <div className="flex items-center">
+                              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                                <DollarSign className="h-4 w-4 text-green-600" />
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500">Gross Revenue</p>
+                                <p className="font-medium text-gray-800">{formatCurrency(grossRevenue)}</p>
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium text-gray-800">Orders</p>
-                            <p className="text-xs text-gray-500">{period.orderCount || 0} orders</p>
+                          
+                          {/* Shipping Fees */}
+                          <div className="bg-white p-3 rounded-lg border border-gray-200 flex items-center justify-between">
+                            <div className="flex items-center">
+                              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                                <TruckIcon className="h-4 w-4 text-blue-600" />
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500">Shipping Fees</p>
+                                <p className="font-medium text-gray-800">{formatCurrency(period.shippingFees || 0)}</p>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Platform Fees */}
+                          <div className="bg-white p-3 rounded-lg border border-gray-200 flex items-center justify-between">
+                            <div className="flex items-center">
+                              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center mr-3">
+                                <Percent className="h-4 w-4 text-red-600" />
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500">Platform Fees</p>
+                                <p className="font-medium text-gray-800">{formatCurrency(platformFees)}</p>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Net Revenue */}
+                          <div className="bg-white p-3 rounded-lg border border-gray-200 flex items-center justify-between">
+                            <div className="flex items-center">
+                              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                                <DollarSign className="h-4 w-4 text-blue-600" />
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500">Net Revenue</p>
+                                <p className="font-medium text-gray-800">{formatCurrency(netRevenue)}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Order Count */}
+                        <div className="bg-white p-3 rounded-lg border border-gray-200 flex items-center justify-between">
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center mr-3">
+                              <BarChart3 className="h-4 w-4 text-purple-600" />
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Orders</p>
+                              <p className="font-medium text-gray-800">{period.orderCount || 0} orders</p>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-8">

@@ -25,6 +25,23 @@ const cartSchema = new mongoose.Schema({
             color : {
                 type : String,
                 required : true
+            },
+            // Added fields for direct price storage
+            price : {
+                type : Number,
+                default: 0
+            },
+            salePrice : {
+                type : Number,
+                default: 0
+            },
+            title : {
+                type : String,
+                default: ''
+            },
+            image : {
+                type : String,
+                default: ''
             }
         }
     ]

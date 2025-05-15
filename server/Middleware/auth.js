@@ -4,71 +4,76 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User'); // Adjust path as needed
 
 // Authentication middleware
-exports.isAuthenticated = async (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
+    // Get token from cookies
+    let token = req.cookies.token;
+    
+    // If no token in cookies, check Authorization header
+    if (!token && req.headers.authorization) {
+        const authHeader = req.headers.authorization;
+        // Check if it's a Bearer token
+        if (authHeader.startsWith('Bearer ')) {
+            token = authHeader.substring(7);
+            console.log('Using token from Authorization header');
+        }
+    }
+
+    if (!token) return res.status(401).json({
+        success: false,
+        message: 'Unauthorized user!'
+    });
+
     try {
-        // Check if token exists in cookies or Authorization header
-        let token = req.cookies.token;
-        
-        // If no token in cookies, check Authorization header
-        if (!token && req.headers.authorization) {
-            const authHeader = req.headers.authorization;
-            // Check if it's a Bearer token
-            if (authHeader.startsWith('Bearer ')) {
-                token = authHeader.substring(7);
-            }
-        }
-        
-        if (!token) {
-            return res.status(401).json({
-                success: false,
-                message: 'Please login to access this resource'
-            });
-        }
-        
-        // Verify token
-        // Make sure to use the same secret key as in authController.js
         const decoded = jwt.verify(token, 'CLIENT_SECRET_KEY');
-        
-        if (!decoded || !decoded.id) {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid token'
-            });
-        }
-        
-        // Find user with decoded id
-        const user = await User.findById(decoded.id);
-        
-        if (!user) {
-            return res.status(401).json({
-                success: false,
-                message: 'User not found'
-            });
-        }
-        
-        // Attach user data to request object
-        req.user = {
-            id: user._id,
-            email: user.email,
-            role: user.role,
-            userName: user.userName
-        };
-        
+        req.user = decoded;
         next();
-        
     } catch (error) {
-        console.error('Authentication error:', error);
+        res.status(401).json({
+            success: false,
+            message: 'Unauthorized user!'
+        });
+    }
+};
+
+// Verify token middleware (enhanced)
+const verifyToken = (req, res, next) => {
+    // Get token from cookies
+    let token = req.cookies.token;
+    
+    // If no token in cookies, check Authorization header
+    if (!token && req.headers.authorization) {
+        const authHeader = req.headers.authorization;
+        // Check if it's a Bearer token
+        if (authHeader.startsWith('Bearer ')) {
+            token = authHeader.substring(7);
+            console.log('Using token from Authorization header');
+        }
+    }
+
+    if (!token) {
         return res.status(401).json({
             success: false,
-            message: 'Authentication failed'
+            message: 'Authentication required'
+        });
+    }
+
+    try {
+        // Verify token
+        const decoded = jwt.verify(token, 'CLIENT_SECRET_KEY');
+        req.user = decoded;
+        next();
+    } catch (error) {
+        return res.status(401).json({
+            success: false,
+            message: 'Invalid or expired token'
         });
     }
 };
 
 // Admin middleware - checks if the authenticated user is an admin
-exports.isAdmin = async (req, res, next) => {
+const isAdmin = async (req, res, next) => {
     try {
-        if (req.user && req.user.role === 'admin') {
+        if (req.user && (req.user.role === 'admin' || req.user.role === 'superadmin')) {
             next();
         } else {
             return res.status(403).json({
@@ -83,4 +88,32 @@ exports.isAdmin = async (req, res, next) => {
             message: 'Server error'
         });
     }
+};
+
+// Super Admin middleware - checks if the authenticated user is a super admin
+const isSuperAdmin = async (req, res, next) => {
+    try {
+        if (req.user && req.user.role === 'superadmin') {
+            next();
+        } else {
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied: Super Admin only'
+            });
+        }
+    } catch (error) {
+        console.error('Super Admin authorization error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Server error'
+        });
+    }
+};
+
+// Export all middleware functions
+module.exports = {
+    authMiddleware,
+    verifyToken,
+    isAdmin,
+    isSuperAdmin
 };

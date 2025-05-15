@@ -11,9 +11,14 @@ const getAllOrdersOfAllUsers = async(req, res) => {
         const adminId = req.user.id;
         
         // Get all orders
-        const allOrders = await Order.find({}).populate({
+        const allOrders = await Order.find({})
+        .populate({
             path: 'items.product',
             select: 'createdBy title image price'
+        })
+        .populate({
+            path: 'user',
+            select: 'userName email'
         });
         
         if(!allOrders.length){
@@ -92,10 +97,15 @@ const getOrdersDetailsForAdmin = async(req, res) => {
         const adminId = req.user.id;
         const { id } = req.params;
 
-        // Find the order and populate product details
-        const order = await Order.findById(id).populate({
+        // Find the order and populate product details and user details
+        const order = await Order.findById(id)
+        .populate({
             path: 'items.product',
             select: 'createdBy title image price'
+        })
+        .populate({
+            path: 'user',
+            select: 'userName email'
         });
         
         // Also find all products created by this admin for cartItems check
@@ -189,10 +199,15 @@ const updateOrderStatus = async(req, res) => {
             });
         }
         
-        // Find the order and populate product details
-        const order = await Order.findById(id).populate({
+        // Find the order and populate product details and user details
+        const order = await Order.findById(id)
+        .populate({
             path: 'items.product',
             select: 'createdBy title image price'
+        })
+        .populate({
+            path: 'user',
+            select: 'userName email'
         });
         
         if (!order) {
@@ -247,7 +262,10 @@ const updateOrderStatus = async(req, res) => {
                 status: status.toLowerCase() // Also update the new status field
             },
             { new: true } // Return the updated document
-        );
+        ).populate({
+            path: 'user',
+            select: 'userName email'
+        });
         
         // Calculate the total amount for just this admin's items
         const adminTotalAmount = adminItems.reduce((total, item) => {

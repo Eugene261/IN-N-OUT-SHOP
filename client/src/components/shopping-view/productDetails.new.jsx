@@ -134,7 +134,16 @@ function ProductDetailsDialog({open, setOpen, productDetails}) {
     setSizeError(false);
     setColorError(false);
     
-    let getCartItems = cartItems.items || [];
+    // Get cart items with proper fallback for different structures
+    let getCartItems = [];
+    if (Array.isArray(cartItems)) {
+      getCartItems = cartItems;
+    } else if (cartItems && Array.isArray(cartItems.items)) {
+      getCartItems = cartItems.items;
+    }
+    
+    console.log('Current cart items:', getCartItems);
+    console.log('Product details for cart:', productDetails);
       
     if(getCartItems.length) {
       const indexOfCurrentItem = getCartItems.findIndex(item => 
@@ -157,12 +166,20 @@ function ProductDetailsDialog({open, setOpen, productDetails}) {
       }
     }
 
+    // Make sure we're sending all the necessary product info to avoid NaN issues
+    const price = parseFloat(productDetails?.price) || 0;
+    const salePrice = parseFloat(productDetails?.salePrice) || 0;
+
     dispatch(addToCart({ 
       userId: user?.id, 
       productId: getCurrentProductId, 
       quantity: 1,
       size: selectedSize,
-      color: selectedColor
+      color: selectedColor,
+      price: price,
+      salePrice: salePrice,
+      title: productDetails?.title || 'Product',
+      image: productDetails?.image || ''
     })).then((data) => {
       if(data?.payload.success){
         dispatch(fetchCartItems(user?.id))

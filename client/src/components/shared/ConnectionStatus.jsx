@@ -56,7 +56,7 @@ const ConnectionStatus = () => {
     try {
       // Use performance API to measure connection speed
       const startTime = Date.now();
-      const response = await fetch('/favicon.ico', { 
+      const response = await fetch('/vite.svg', { 
         method: 'HEAD',
         cache: 'no-store',
         headers: { 'pragma': 'no-cache' }

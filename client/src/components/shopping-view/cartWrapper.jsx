@@ -13,14 +13,21 @@ function UserCartWraper({cartItems}) {
   // Debug cart items
   console.log('Cart items in wrapper:', cartItems);
   
-  // Filter out any undefined or null items that might be causing issues
-  const validCartItems = cartItems && cartItems.filter(item => item && item.productId);
+  // Ensure cartItems is an array and filter out any invalid items
+  // This is critical for multi-vendor platform where cart items originate from different vendors
+  const validCartItems = Array.isArray(cartItems) 
+    ? cartItems.filter(item => item && item.productId)
+    : [];
+    
+  console.log('Valid cart items after filtering:', validCartItems);
   
-  // Calculate total price from cart items
-  const totalPrice = validCartItems && validCartItems.length > 0
+  // Calculate total price from cart items with safeguards against NaN
+  const totalPrice = validCartItems.length > 0
     ? validCartItems.reduce((total, item) => {
-        const itemPrice = item.salePrice || item.price || 0;
-        return total + (itemPrice * item.quantity);
+        // Ensure we have valid numeric values for price and quantity
+        const itemPrice = parseFloat(item.salePrice > 0 ? item.salePrice : item.price) || 0;
+        const quantity = parseInt(item.quantity) || 1;
+        return total + (itemPrice * quantity);
       }, 0)
     : 0;
     
@@ -36,10 +43,10 @@ function UserCartWraper({cartItems}) {
         {/* Scrollable cart items container */}
         <div className="flex-1 overflow-y-auto py-4 px-6">
           <div className="space-y-4">
-            {validCartItems && validCartItems.length > 0 ? (
+            {validCartItems.length > 0 ? (
               validCartItems.map((item) => (
                 <UserCartItemsContent 
-                  key={`${item.productId}-${item.size}-${item.color}`}
+                  key={`${item.productId}-${item.size || 'default'}-${item.color || 'default'}`}
                   cartItem={item}
                 />
               ))
@@ -52,7 +59,7 @@ function UserCartWraper({cartItems}) {
         </div>
         
         {/* Fixed bottom section with total and checkout button */}
-        {validCartItems && validCartItems.length > 0 && (
+        {validCartItems.length > 0 && (
           <div className="p-6 pt-4 border-t border-gray-200 bg-white">
             <div className="space-y-4">
               <div className="flex justify-between">

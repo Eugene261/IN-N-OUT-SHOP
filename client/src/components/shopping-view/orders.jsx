@@ -62,8 +62,11 @@ function ShoppingOrders() {
   }
 
   useEffect(() => {
-    if (user?.id) {
-      dispatch(getAllOrdersByUserId(user.id))
+    if (user) {
+      // Use either id or _id, whichever is available
+      const userId = user.id || user._id;
+      console.log('Fetching orders for user ID:', userId);
+      dispatch(getAllOrdersByUserId(userId));
     }
   }, [dispatch, user])
 

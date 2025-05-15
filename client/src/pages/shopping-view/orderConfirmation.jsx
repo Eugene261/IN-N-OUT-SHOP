@@ -7,6 +7,7 @@ import { verifyPayment } from '@/services/paystackService'
 import { toast } from 'sonner'
 import { useDispatch, useSelector } from 'react-redux'
 import { clearCart, clearCartState, fetchCartItems } from '@/store/shop/cart-slice/index.js'
+import axios from 'axios'
 
 function OrderConfirmationPage() {
   const navigate = useNavigate()
@@ -17,11 +18,16 @@ function OrderConfirmationPage() {
   const [orderDetails, setOrderDetails] = useState(null)
   const [transactionId, setTransactionId] = useState('')
 
+  // Use a flag to prevent multiple verifications
+  const [hasVerified, setHasVerified] = useState(false);
+
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     const reference = params.get('reference')
 
-    if (reference) {
+    // Only run verification once
+    if (reference && !hasVerified) {
+      setHasVerified(true); // Set verification flag
       setTransactionId(reference)
       // First verify the payment with Paystack's API
       verifyPayment(reference)
@@ -45,8 +51,17 @@ function OrderConfirmationPage() {
                   payload: { data: { items: [] } }
                 });
                 
-                // Set a flag to prevent cart fetching on page refresh
+                // Set a flag to prevent cart fetching ON THE ORDER CONFIRMATION PAGE ONLY
+                // These flags will be cleared when navigating away from the order confirmation page
                 sessionStorage.setItem('cartEmptyAfterOrder', 'true');
+                localStorage.setItem('cartEmptyAfterOrder', 'true');
+                
+                // Also set the timestamp of order completion for tracking purposes
+                const orderCompletionData = {
+                  timestamp: new Date().getTime(),
+                  reference: reference
+                };
+                localStorage.setItem('orderCompletionTimestamp', JSON.stringify(orderCompletionData));
                 
                 // IMPORTANT: Call our new server endpoint to verify the payment and clear the cart
                 // This is the key fix that ensures the cart is properly deleted from the database
@@ -64,6 +79,16 @@ function OrderConfirmationPage() {
                     cartCleared: true
                   };
                   localStorage.setItem('lastCompletedOrder', JSON.stringify(orderData));
+                  
+                  // Directly call the clear cart API to ensure database is updated
+                  const userId = user.id || user._id;
+                  dispatch(clearCart(userId))
+                    .then(() => {
+                      console.log('Cart cleared through Redux action');
+                    })
+                    .catch(error => {
+                      console.error('Error clearing cart through Redux:', error);
+                    });
                   
                   // After a delay, verify the cart is truly empty
                   setTimeout(() => {
@@ -111,7 +136,13 @@ function OrderConfirmationPage() {
       // No reference found, might be a direct access
       setVerificationStatus('failed')
     }
-  }, [location])
+    
+    // Cleanup function - Clear any remaining cart flags when leaving the confirmation page
+    return () => {
+      sessionStorage.removeItem('cartEmptyAfterOrder');
+      localStorage.removeItem('cartEmptyAfterOrder');
+    };
+  }, [location, dispatch, user])
 
   const checkmarkVariants = {
     initial: { pathLength: 0 },
@@ -237,7 +268,7 @@ function OrderConfirmationPage() {
                 <>
                   {verificationStatus === 'success' && (
                     <button
-                      onClick={() => navigate('/shop/account')}
+                      onClick={() => navigate('/shop/account/orders')}
                       className="w-full py-3 rounded-lg bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white font-medium transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
                     >
                       View Your Orders

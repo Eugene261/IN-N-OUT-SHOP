@@ -49,6 +49,9 @@ import SuperAdminFeaturedPage from "./pages/super-admin-view/featured";
 // Import ConnectionStatus component
 import ConnectionStatus from "./components/shared/ConnectionStatus";
 
+// Import TokenManager component
+import TokenManager from './components/common/TokenManager';
+
 function App() {
   const {user, isAuthenticated, isLoading } = useSelector(state => state.auth);
   const dispatch = useDispatch();
@@ -66,8 +69,10 @@ function App() {
   }
 
   return (
-    <div className="flex flex-col overflow-hidden bg-white">
-      <ConnectionStatus />
+    <>
+      <TokenManager />
+      <div className="flex flex-col overflow-hidden bg-white">
+        <ConnectionStatus />
         <Routes>
           {/* AUTH */}
           <Route 
@@ -178,6 +183,7 @@ function App() {
           <Route path="unauth-page" element={<UnauthPage/>} />
         </Routes>
       </div>
+    </>
   );
 }
 

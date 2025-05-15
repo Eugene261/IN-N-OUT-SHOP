@@ -232,9 +232,13 @@ function UserCartItemsContent({ cartItem }) {
           transition={{ type: "spring", stiffness: 400 }}
         >
           <img
-            src={cartItem?.image}
-            alt={cartItem?.title}
+            src={cartItem?.image || '/images/placeholder-product.png'}
+            alt={cartItem?.title || 'Product'}
             className="w-20 h-20 object-cover rounded-lg bg-gray-50"
+            onError={(e) => {
+              e.target.src = '/images/placeholder-product.png';
+              e.target.onerror = null; // Prevent infinite loop
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 hover:opacity-100 transition-opacity" />
         </motion.div>
@@ -298,7 +302,26 @@ function UserCartItemsContent({ cartItem }) {
 
       <div className="flex flex-col items-end space-y-3">
         <p className="font-semibold text-gray-900">
-          GHS{((cartItem?.salePrice > 0 ? cartItem?.salePrice : cartItem?.price) * cartItem.quantity).toFixed(2)}
+          {(() => {
+            // Debug the price values
+            console.log('Cart item price data:', {
+              salePrice: cartItem?.salePrice,
+              price: cartItem?.price,
+              quantity: cartItem?.quantity
+            });
+            
+            // Ensure we have valid numbers
+            const salePrice = parseFloat(cartItem?.salePrice) || 0;
+            const price = parseFloat(cartItem?.price) || 0;
+            const quantity = parseInt(cartItem?.quantity) || 1;
+            
+            // Determine which price to use and calculate total
+            const unitPrice = salePrice > 0 ? salePrice : price;
+            const totalPrice = unitPrice * quantity;
+            
+            // Format the price with fallback
+            return `GHS ${totalPrice.toFixed(2)}`;
+          })()}
         </p>
         
         <motion.button

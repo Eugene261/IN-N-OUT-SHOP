@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Truck, Clock, Globe, Info, ShieldCheck, ArrowLeft, MapPin, DollarSign, HelpCircle, AlertTriangle } from 'lucide-react';
+import { Truck, Clock, Globe, Info, ShieldCheck, ArrowLeft, MapPin, DollarSign, HelpCircle, AlertTriangle, CheckCircle } from 'lucide-react';
 
 const ShippingPage = () => {
   const navigate = useNavigate();
@@ -27,23 +27,11 @@ const ShippingPage = () => {
     }
   };
 
-  // Shipping rate data
+  // Updated shipping rate data
   const domesticShippingRates = [
-    { region: 'Accra (Central)', cost: 10, time: '1-2 business days' },
-    { region: 'Accra (Suburbs)', cost: 15, time: '2-3 business days' },
-    { region: 'Kumasi', cost: 20, time: '2-4 business days' },
-    { region: 'Takoradi', cost: 25, time: '3-5 business days' },
-    { region: 'Tamale', cost: 30, time: '4-6 business days' },
-    { region: 'Other Regions', cost: 35, time: '5-7 business days' },
-  ];
-
-  const internationalShippingRates = [
-    { region: 'West Africa', cost: 50, time: '7-10 business days' },
-    { region: 'Rest of Africa', cost: 70, time: '10-14 business days' },
-    { region: 'Europe', cost: 100, time: '10-15 business days' },
-    { region: 'North America', cost: 120, time: '12-18 business days' },
-    { region: 'Asia', cost: 110, time: '14-20 business days' },
-    { region: 'Australia & Oceania', cost: 130, time: '15-21 business days' },
+    { region: 'Accra (City)', cost: 40, time: '1-2 business days' },
+    { region: 'Greater Accra Region', cost: 40, time: '1-3 business days' },
+    { region: 'All Other Regions', cost: 70, time: '3-5 business days' },
   ];
 
   return (
@@ -67,9 +55,36 @@ const ShippingPage = () => {
         >
           <h1 className="text-3xl md:text-4xl font-bold mb-4">Shipping Information</h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            We offer reliable shipping options to ensure your purchases reach you safely and on time. 
-            Below you'll find detailed information about our shipping rates, policies, and delivery times.
+            We deliver your purchases quickly and reliably throughout Ghana. 
+            Our simple shipping rates are based on your delivery location, with special rates for Accra and the Greater Accra Region.
           </p>
+        </motion.div>
+
+        {/* Simplified Shipping Banner */}
+        <motion.div
+          className="mb-12 bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-xl shadow-sm border border-blue-100"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+        >
+          <div className="flex flex-col md:flex-row items-center justify-between">
+            <div className="flex items-center mb-4 md:mb-0">
+              <div className="bg-white p-3 rounded-full shadow-sm mr-4">
+                <Truck className="text-indigo-600 w-8 h-8" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800">Simple, Transparent Shipping</h2>
+            </div>
+            <div className="flex flex-col items-center md:items-end">
+              <div className="flex items-center">
+                <span className="text-lg font-semibold mr-2">GHS 40</span>
+                <span className="text-sm text-gray-600 bg-white px-2 py-1 rounded-full">Accra Region</span>
+              </div>
+              <div className="flex items-center mt-2">
+                <span className="text-lg font-semibold mr-2">GHS 70</span>
+                <span className="text-sm text-gray-600 bg-white px-2 py-1 rounded-full">Other Regions</span>
+              </div>
+            </div>
+          </div>
         </motion.div>
 
         {/* Main Content */}
@@ -79,21 +94,6 @@ const ShippingPage = () => {
           initial="hidden"
           animate="visible"
         >
-          {/* Free Shipping Card */}
-          <motion.div 
-            className="bg-white p-6 rounded-lg shadow-sm border border-gray-100"
-            variants={itemVariants}
-          >
-            <div className="bg-blue-50 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
-              <Truck className="text-blue-600 w-6 h-6" />
-            </div>
-            <h2 className="text-xl font-bold mb-2">Free Shipping</h2>
-            <p className="text-gray-600">
-              Enjoy free standard shipping on all orders over GHS 100 within Accra. 
-              For orders under GHS 100, standard shipping rates apply.
-            </p>
-          </motion.div>
-
           {/* Delivery Times Card */}
           <motion.div 
             className="bg-white p-6 rounded-lg shadow-sm border border-gray-100"
@@ -102,25 +102,40 @@ const ShippingPage = () => {
             <div className="bg-green-50 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
               <Clock className="text-green-600 w-6 h-6" />
             </div>
-            <h2 className="text-xl font-bold mb-2">Delivery Times</h2>
+            <h2 className="text-xl font-bold mb-2">Fast Delivery</h2>
             <p className="text-gray-600">
-              Delivery times vary based on your location. Within Accra, expect delivery within 1-2 business days. 
-              Other regions in Ghana may take 2-7 business days.
+              Orders in Accra are typically delivered within 1-3 business days. 
+              Orders to other regions of Ghana take approximately 3-5 business days to arrive.
             </p>
           </motion.div>
 
-          {/* International Shipping Card */}
+          {/* Tracking Card */}
+          <motion.div 
+            className="bg-white p-6 rounded-lg shadow-sm border border-gray-100"
+            variants={itemVariants}
+          >
+            <div className="bg-blue-50 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+              <ShieldCheck className="text-blue-600 w-6 h-6" />
+            </div>
+            <h2 className="text-xl font-bold mb-2">Order Tracking</h2>
+            <p className="text-gray-600">
+              After your order ships, you'll receive tracking information via email. 
+              You can also view tracking details in your account dashboard.
+            </p>
+          </motion.div>
+
+          {/* Secure Packaging Card */}
           <motion.div 
             className="bg-white p-6 rounded-lg shadow-sm border border-gray-100"
             variants={itemVariants}
           >
             <div className="bg-purple-50 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
-              <Globe className="text-purple-600 w-6 h-6" />
+              <CheckCircle className="text-purple-600 w-6 h-6" />
             </div>
-            <h2 className="text-xl font-bold mb-2">International Shipping</h2>
+            <h2 className="text-xl font-bold mb-2">Secure Packaging</h2>
             <p className="text-gray-600">
-              We ship to select countries worldwide. International shipping rates start at GHS 50, 
-              with delivery times ranging from 7-21 business days depending on location.
+              All items are carefully packaged to ensure they arrive in perfect condition.
+              We use quality materials to protect your purchase during transit.
             </p>
           </motion.div>
         </motion.div>
@@ -142,7 +157,7 @@ const ShippingPage = () => {
             <div className="mb-8">
               <h3 className="text-lg font-semibold mb-4 flex items-center">
                 <DollarSign className="w-5 h-5 mr-1 text-gray-700" />
-                Domestic Shipping (Ghana)
+                Ghana Shipping Rates
               </h3>
               <div className="overflow-x-auto">
                 <table className="min-w-full bg-white">
@@ -166,32 +181,31 @@ const ShippingPage = () => {
               </div>
             </div>
 
-            {/* International Shipping */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4 flex items-center">
-                <Globe className="w-5 h-5 mr-1 text-gray-700" />
-                International Shipping
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full bg-white">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Region</th>
-                      <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost (GHS)</th>
-                      <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estimated Delivery</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {internationalShippingRates.map((rate, index) => (
-                      <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="py-3 px-4 text-sm text-gray-900">{rate.region}</td>
-                        <td className="py-3 px-4 text-sm text-gray-900">{rate.cost}</td>
-                        <td className="py-3 px-4 text-sm text-gray-900">{rate.time}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            {/* How Shipping Works */}
+            <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+              <h3 className="text-lg font-semibold mb-3">How Our Shipping Process Works</h3>
+              <ol className="space-y-3 ml-4">
+                <li className="flex items-start">
+                  <span className="flex-shrink-0 flex items-center justify-center bg-indigo-100 text-indigo-600 font-semibold rounded-full w-6 h-6 text-sm mr-3">1</span>
+                  <span className="text-gray-700">Place your order and select your shipping address at checkout</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="flex-shrink-0 flex items-center justify-center bg-indigo-100 text-indigo-600 font-semibold rounded-full w-6 h-6 text-sm mr-3">2</span>
+                  <span className="text-gray-700">Shipping fee is automatically calculated based on your location</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="flex-shrink-0 flex items-center justify-center bg-indigo-100 text-indigo-600 font-semibold rounded-full w-6 h-6 text-sm mr-3">3</span>
+                  <span className="text-gray-700">Your order is processed and prepared for shipping within 24 hours</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="flex-shrink-0 flex items-center justify-center bg-indigo-100 text-indigo-600 font-semibold rounded-full w-6 h-6 text-sm mr-3">4</span>
+                  <span className="text-gray-700">You receive tracking information via email</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="flex-shrink-0 flex items-center justify-center bg-indigo-100 text-indigo-600 font-semibold rounded-full w-6 h-6 text-sm mr-3">5</span>
+                  <span className="text-gray-700">Your package is delivered to your address within the estimated timeframe</span>
+                </li>
+              </ol>
             </div>
           </div>
         </motion.div>
@@ -213,7 +227,7 @@ const ShippingPage = () => {
               <div>
                 <h3 className="text-lg font-semibold mb-2">Order Processing</h3>
                 <p className="text-gray-600">
-                  Orders are typically processed within 24-48 hours after payment confirmation. 
+                  Orders are typically processed within 24 hours after payment confirmation. 
                   You will receive a confirmation email with tracking information once your order ships.
                 </p>
               </div>
@@ -229,8 +243,8 @@ const ShippingPage = () => {
               <div>
                 <h3 className="text-lg font-semibold mb-2">Shipping Delays</h3>
                 <p className="text-gray-600">
-                  Occasional delays may occur due to weather conditions, customs clearance for international orders, 
-                  or other unforeseen circumstances. We will notify you of any significant delays affecting your order.
+                  Occasional delays may occur due to weather conditions or other unforeseen circumstances. 
+                  We will notify you of any significant delays affecting your order.
                 </p>
               </div>
 
@@ -262,10 +276,10 @@ const ShippingPage = () => {
 
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold mb-2">Do you ship to P.O. boxes?</h3>
+                <h3 className="text-lg font-semibold mb-2">How are shipping costs calculated?</h3>
                 <p className="text-gray-600">
-                  Yes, we ship to P.O. boxes for domestic orders within Ghana. However, for international orders, 
-                  we require a physical address for delivery.
+                  Shipping costs are calculated based on your delivery location. We charge a flat rate of GHS 40 for 
+                  deliveries within Accra/Greater Accra, and GHS 70 for all other regions in Ghana.
                 </p>
               </div>
 
@@ -288,8 +302,8 @@ const ShippingPage = () => {
               <div>
                 <h3 className="text-lg font-semibold mb-2">Do you offer expedited shipping?</h3>
                 <p className="text-gray-600">
-                  Yes, we offer expedited shipping options for an additional fee. These options will be available 
-                  during checkout if they are available for your location.
+                  Currently, we offer standard shipping with the rates mentioned above. For urgent deliveries within Accra, 
+                  please contact our customer service team to discuss options.
                 </p>
               </div>
             </div>
@@ -303,13 +317,13 @@ const ShippingPage = () => {
           animate={{ opacity: 1 }}
           transition={{ delay: 1, duration: 0.5 }}
         >
-          <h2 className="text-xl font-bold mb-3">Need More Help?</h2>
+          <h2 className="text-xl font-bold mb-3">Need Help With Your Order?</h2>
           <p className="text-gray-600 mb-4">
             If you have any questions about shipping or delivery, our customer service team is here to help.
           </p>
           <a 
             href="/contact" 
-            className="inline-block px-6 py-3 bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
+            className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
           >
             Contact Us
           </a>
