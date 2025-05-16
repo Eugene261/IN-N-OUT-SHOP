@@ -144,7 +144,10 @@ const BestSeller = () => {
                           </span>
                         </div>
                         <h3 className="text-4xl font-bold mb-3 leading-tight">{product.title}</h3>
-                        <p className="text-gray-200 text-lg line-clamp-2 mb-6 max-w-2xl">{product.description}</p>
+                        <div 
+                          className="text-gray-200 text-lg line-clamp-2 mb-6 max-w-2xl"
+                          dangerouslySetInnerHTML={{ __html: product.description }}
+                        />
                       </div>
                       
                       <div className="flex flex-wrap items-center gap-6">

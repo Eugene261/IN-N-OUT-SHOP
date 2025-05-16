@@ -177,7 +177,10 @@ const BestSeller = () => {
                   {bestsellerProducts.slice(0, 1).map((product, index) => (
                     <div key={product._id || index} className="space-y-2">
                       <h4 className="text-xl font-bold">{product.name}</h4>
-                      <p className="text-gray-600 line-clamp-3">{product.description}</p>
+                      <div 
+                        className="text-gray-600 line-clamp-3"
+                        dangerouslySetInnerHTML={{ __html: product.description }}
+                      />
                       <div className="flex items-center justify-between mt-4">
                         <span className="text-xl font-bold">${product.price.toFixed(2)}</span>
                         <motion.button
