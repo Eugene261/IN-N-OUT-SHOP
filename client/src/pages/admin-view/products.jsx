@@ -233,23 +233,24 @@ function AdminProducts() {
   }
 
   // Validate the form with multiselect fields included
-  function isFormValid(){
+  function isFormValid() {
     // If new product, require main image
     if (currentEditedId === null && !uploadedImageUrl) {
       return false;
     }
-  
+    
     // Basic validation for required fields
     const requiredFields = ['title', 'description', 'category', 'gender', 'brand', 'price', 'totalStock'];
     const hasRequiredFields = requiredFields.every(key => 
       formData[key] !== '' && formData[key] !== null && formData[key] !== undefined
     );
     
-    // Check sizes and colors arrays
+    // Check sizes array - still required
     const hasSizes = Array.isArray(formData.sizes) && formData.sizes.length > 0;
-    const hasColors = Array.isArray(formData.colors) && formData.colors.length > 0;
     
-    return hasRequiredFields && hasSizes && hasColors;
+    // Colors are now optional - don't include in validation
+    
+    return hasRequiredFields && hasSizes;
   }
 
   // Calculate stock summary

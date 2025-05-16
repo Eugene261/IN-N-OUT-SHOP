@@ -259,7 +259,7 @@ export const addProductFormElements = [
     name: 'colors',
     label: 'Colors',
     componentType: 'multiselect',
-    required: true,
+    required: false,
     skipLabel: true, // Skip rendering the label in the form component as it's already shown by the field
     options: [
       // Basic colors
@@ -472,11 +472,6 @@ export const shoppingViewHeaderMenuItems = [
                 ]
             }
         ]
-    },
-    {
-        id: 'search',
-        label: 'Search',
-        path: '/shop/search'
     },
     {
         id: "devices",
