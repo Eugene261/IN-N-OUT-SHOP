@@ -315,8 +315,8 @@ function UserCartItemsContent({ cartItem }) {
             const price = parseFloat(cartItem?.price) || 0;
             const quantity = parseInt(cartItem?.quantity) || 1;
             
-            // Determine which price to use and calculate total
-            const unitPrice = salePrice > 0 ? salePrice : price;
+            // Always use the actual price (not the sale price) for calculation
+            const unitPrice = price;
             const totalPrice = unitPrice * quantity;
             
             // Format the price with fallback

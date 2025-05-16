@@ -6,7 +6,8 @@ import UserCartItemsContent from '@/components/shopping-view/cartItemsContent';
 import { toast } from 'sonner';
 import { createNewOrder } from '@/store/shop/order-slice';
 import PaystackPayment from '@/components/shopping-view/PaystackPayment';
-import { TruckIcon, Store, Package } from 'lucide-react';
+import { TruckIcon, Store, Package, Clock } from 'lucide-react';
+import { calculateShippingFees } from '@/services/shippingService';
 
 function ShoppingCheckout() {
   // Fix: Correctly destructure the user object from auth state
@@ -17,6 +18,8 @@ function ShoppingCheckout() {
   const [showPaystack, setShowPaystack] = useState(false);
   const [adminShippingFees, setAdminShippingFees] = useState({});
   const [totalShippingFee, setTotalShippingFee] = useState(0);
+  const [estimatedDelivery, setEstimatedDelivery] = useState(null);
+  const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
   const dispatch = useDispatch();
 
   // Group cart items by admin/seller
@@ -52,17 +55,64 @@ function ShoppingCheckout() {
 
   // Calculate shipping fee based on selected address for each admin group
   useEffect(() => {
-    if (currentSelectedAddress) {
+    const calculateShipping = async () => {
+      if (currentSelectedAddress && cartItems && cartItems.items && cartItems.items.length > 0) {
+        setIsCalculatingShipping(true);
+        try {
+          // Format cart items for shipping calculation
+          const cartItemsForShipping = cartItems.items.map(item => ({
+            productId: item.productId,
+            adminId: item.adminId || 'unknown',
+            quantity: item.quantity,
+            price: item.price,
+            title: item.title,
+            image: item.image
+          }));
+          
+          // Call shipping service
+          const result = await calculateShippingFees(cartItemsForShipping, currentSelectedAddress);
+          
+          if (result.success && result.data) {
+            setAdminShippingFees(result.data.adminShippingFees || {});
+            setTotalShippingFee(result.data.totalShippingFee || 0);
+            
+            // Store estimated delivery info if available
+            if (result.data.estimatedDelivery) {
+              setEstimatedDelivery(result.data.estimatedDelivery);
+            }
+          } else {
+            // If API call failed, use fallback calculation
+            fallbackShippingCalculation();
+          }
+        } catch (error) {
+          console.error('Error calculating shipping:', error);
+          // Use fallback calculation if API call fails
+          fallbackShippingCalculation();
+        } finally {
+          setIsCalculatingShipping(false);
+        }
+      } else {
+        // Reset shipping fees if no address selected or no items in cart
+        setAdminShippingFees({});
+        setTotalShippingFee(0);
+        setEstimatedDelivery(null);
+      }
+    };
+    
+    // Fallback calculation method if API fails
+    const fallbackShippingCalculation = () => {
+      // Group cart items by admin/seller
+      const adminGroups = groupCartItemsByAdmin();
+      
+      // Calculate shipping fee based on location (simple zone-based)
       const city = (currentSelectedAddress.city || '').toLowerCase();
       const region = (currentSelectedAddress.region || '').toLowerCase();
       const isAccra = city.includes('accra') || region.includes('accra') || region.includes('greater accra');
       
-      // Get admin groups
-      const adminGroups = groupCartItemsByAdmin();
+      // Calculate shipping fee for each admin
       const fees = {};
       let total = 0;
       
-      // Calculate shipping fee for each admin
       Object.keys(adminGroups).forEach(adminId => {
         // Check if location is Accra or Greater Accra
         const fee = isAccra ? 40 : 70; // GHS 40 for Accra/Greater Accra, GHS 70 for other regions
@@ -72,15 +122,21 @@ function ShoppingCheckout() {
       
       setAdminShippingFees(fees);
       setTotalShippingFee(total);
-    } else {
-      setAdminShippingFees({});
-      setTotalShippingFee(0);
-    }
+      
+      // Set fallback estimated delivery
+      setEstimatedDelivery({
+        displayText: '3-5 business days',
+        minDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+        maxDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)
+      });
+    };
+    
+    calculateShipping();
   }, [currentSelectedAddress, cartItems]);
 
   const subtotal = cartItems && cartItems.items && cartItems.items.length > 0
     ? cartItems.items.reduce((total, item) => {
-        const itemPrice = item.salePrice || item.price || 0;
+        const itemPrice = item.price || 0;
         return total + (itemPrice * item.quantity);
       }, 0)
     : 0;
@@ -304,10 +360,29 @@ function ShoppingCheckout() {
                       
                       {/* Shipping information note */}
                       <div className="mt-3 pt-3 border-t border-gray-200">
+                        {isCalculatingShipping && (
+                          <div className="text-xs text-gray-500 flex items-center mb-2">
+                            <svg className="animate-spin mr-1.5 h-3 w-3 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Calculating shipping fees...
+                          </div>
+                        )}
+                        
+                        {estimatedDelivery && (
+                          <div className="flex items-start text-xs text-gray-500 mb-2">
+                            <Clock className="h-3.5 w-3.5 mr-1.5 text-gray-400 flex-shrink-0 mt-0.5" />
+                            <p>
+                              Estimated delivery: {estimatedDelivery.displayText} from payment confirmation
+                            </p>
+                          </div>
+                        )}
+                        
                         <div className="flex items-start text-xs text-gray-500">
                           <TruckIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400 flex-shrink-0 mt-0.5" />
                           <p>
-                            Shipping fees: GHS 40 for Accra/Greater Accra Region, GHS 70 for all other regions.
+                            Shipping fees are calculated based on your location, order weight, and value.
                             Each seller ships separately and charges their own shipping fee.
                             <a href="/shop/shipping" className="text-indigo-600 hover:text-indigo-800 ml-1 whitespace-nowrap">
                               View shipping details
@@ -341,6 +416,7 @@ function ShoppingCheckout() {
                           }}
                           shippingFees={adminShippingFees}
                           totalShippingFee={totalShippingFee}
+                          estimatedDelivery={estimatedDelivery}
                           onSuccess={handlePaymentSuccess}
                           onError={handlePaymentError}
                         />

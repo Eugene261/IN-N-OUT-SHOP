@@ -25,7 +25,7 @@ function UserCartWraper({cartItems}) {
   const totalPrice = validCartItems.length > 0
     ? validCartItems.reduce((total, item) => {
         // Ensure we have valid numeric values for price and quantity
-        const itemPrice = parseFloat(item.salePrice > 0 ? item.salePrice : item.price) || 0;
+        const itemPrice = parseFloat(item.price) || 0;
         const quantity = parseInt(item.quantity) || 1;
         return total + (itemPrice * quantity);
       }, 0)

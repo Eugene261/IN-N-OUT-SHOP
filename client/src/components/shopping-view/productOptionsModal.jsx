@@ -132,7 +132,7 @@ const ProductOptionsModal = ({ isOpen, onClose, product, onAddToCart }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md max-w-[95vw] p-0 overflow-hidden rounded-xl">
+      <DialogContent className="max-w-[95vw] sm:max-w-[480px] md:max-w-[500px] lg:max-w-[520px] p-0 overflow-hidden rounded-xl mx-auto max-h-[95vh] flex flex-col">
         {/* Close button */}
         <button
           onClick={onClose}
@@ -147,34 +147,33 @@ const ProductOptionsModal = ({ isOpen, onClose, product, onAddToCart }) => {
           <img 
             src={product.image} 
             alt={product.name || product.title} 
-            className="w-full h-48 sm:h-56 object-cover"
+            className="w-full h-52 sm:h-56 md:h-60 lg:h-64 object-cover"
           />
           
           {/* Product info overlay */}
           <div className="absolute bottom-0 left-0 w-full p-4 z-20 text-white">
-            <h2 className="text-lg sm:text-xl font-bold">{product.name || product.title}</h2>
+            <h2 className="text-lg sm:text-xl md:text-xl font-bold">{product.name || product.title}</h2>
             <div className="flex items-center justify-between mt-1">
-              <p className="text-sm text-white/90">{product.brand}</p>
+              <p className="text-sm md:text-base text-white/90">{product.brand}</p>
               <div className="flex items-center gap-2">
                 {product.salePrice > 0 && (
-                  <p className="text-sm line-through text-white/70">GHS {product.price?.toFixed(2)}</p>
+                  <p className="text-sm md:text-base line-through text-white/70">GHS {product.salePrice?.toFixed(2)}</p>
                 )}
-                <p className="font-bold text-base sm:text-lg">
-                  GHS {(product.salePrice > 0 ? product.salePrice : product.price)?.toFixed(2)}
+                <p className="font-bold text-base md:text-lg">
+                  GHS {product.price?.toFixed(2)}
                 </p>
               </div>
             </div>
           </div>
         </div>
         
-        <div className="grid gap-6 p-4 sm:p-6">
-
+        <div className="grid gap-5 p-4 sm:p-5 overflow-y-auto">
           <div className="space-y-3">
-            <Label htmlFor="size" className="text-sm font-medium text-gray-700 flex items-center justify-between">
+            <Label htmlFor="size" className="text-sm md:text-base font-medium text-gray-700 flex items-center justify-between">
               <span>Select size</span>
               <button 
                 type="button" 
-                className="text-xs font-medium text-gray-600 hover:text-black"
+                className="text-xs md:text-sm font-medium text-gray-600 hover:text-black"
               >
                 Size chart
               </button>
@@ -204,7 +203,7 @@ const ProductOptionsModal = ({ isOpen, onClose, product, onAddToCart }) => {
           </div>
 
           <div className="space-y-3">
-            <Label htmlFor="color" className="text-sm font-medium text-gray-700 flex items-center">
+            <Label htmlFor="color" className="text-sm md:text-base font-medium text-gray-700 flex items-center">
               <span>Select color</span>
             </Label>
             
@@ -273,8 +272,8 @@ const ProductOptionsModal = ({ isOpen, onClose, product, onAddToCart }) => {
             </div>
           </div>
 
-          <div className="space-y-3 mt-4">
-            <Label htmlFor="quantity" className="text-sm font-medium text-gray-700">
+          <div className="space-y-3">
+            <Label htmlFor="quantity" className="text-sm md:text-base font-medium text-gray-700">
               Quantity
             </Label>
             <div className="flex items-center border border-gray-300 w-[120px] rounded">
@@ -304,19 +303,19 @@ const ProductOptionsModal = ({ isOpen, onClose, product, onAddToCart }) => {
         </div>
 
         {/* Fixed bottom actions */}
-        <div className="sticky bottom-0 left-0 w-full bg-white border-t px-4 py-3 sm:px-6 sm:py-4 shadow-[0_-4px_10px_rgba(0,0,0,0.03)]">
-          <div className="flex flex-col sm:flex-row gap-3 w-full">
+        <div className="sticky bottom-0 left-0 w-full bg-white border-t px-4 py-4 shadow-[0_-4px_10px_rgba(0,0,0,0.03)] mt-auto">
+          <div className="flex flex-row gap-3 w-full">
             <button 
               type="button"
               onClick={onClose}
-              className="sm:w-auto px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-all font-medium hidden sm:flex items-center justify-center"
+              className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-all font-medium items-center justify-center"
             >
               Cancel
             </button>
             <motion.button 
               type="button"
               onClick={handleAddToCart}
-              className="w-full sm:flex-1 px-6 py-3 rounded-lg bg-black hover:bg-gray-800 text-white flex items-center justify-center gap-2 transition-all font-medium shadow-sm"
+              className="flex-1 px-4 py-2.5 rounded-lg bg-black hover:bg-gray-800 text-white flex items-center justify-center gap-2 transition-all font-medium shadow-sm"
               disabled={isLoading}
               whileTap={{ scale: 0.98 }}
             >
