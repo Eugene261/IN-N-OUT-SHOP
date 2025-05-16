@@ -485,6 +485,16 @@ function ShoppingHeader() {
           
           {/* Right side elements */}
           <div className="flex items-center">
+            <Link to="/shop/search">
+              <motion.button 
+                className="p-2 mr-1 rounded-full bg-gray-50 hover:bg-gray-100 transition-all duration-200"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <span className='sr-only'>Search</span>
+              </motion.button>
+            </Link>
             <HeaderRightContent isAuthenticated={isAuthenticated} />
           </div>
         </div>
