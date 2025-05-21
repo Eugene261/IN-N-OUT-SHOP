@@ -250,11 +250,11 @@ function UserCartItemsContent({ cartItem }) {
           <div className="flex flex-col space-y-1">
             <div className="flex items-center space-x-2">
               <span className="text-xs text-gray-500">Size:</span>
-              <span className="text-xs font-medium">{cartItem?.size || 'N/A'}</span>
+              <span className="text-xs font-medium uppercase">{cartItem?.size || 'N/A'}</span>
             </div>
             <div className="flex items-center space-x-2">
               <span className="text-xs text-gray-500">Color:</span>
-              <span className="text-xs font-medium">{cartItem?.color || 'N/A'}</span>
+              <span className="text-xs font-medium captalize">{cartItem?.color || 'N/A'}</span>
               {cartItem?.color && (
                 <div 
                   className="w-3 h-3 rounded-full border border-gray-300" 

@@ -62,14 +62,18 @@ const orderSchema = new mongoose.Schema({
             productId: String,
             title: String,
             image: String,
-            price: String,
+            price: Number,
             quantity: Number,
             status: {
                 type: String,
                 enum: ['pending', 'processing', 'confirmed', 'shipped', 'delivered', 'cancelled'],
                 default: 'processing'
             },
-            adminId: String // Admin ID for shipping fee calculation
+            adminId: String, // Admin ID for shipping fee calculation
+            adminName: String, // Vendor name for display
+            // Add size and color fields to support product attributes
+            size: String,
+            color: String
         }
     ],
     // Shipping address
@@ -99,6 +103,11 @@ const orderSchema = new mongoose.Schema({
     },
     // Admin groups for order tracking and shipping management
     adminGroups: [adminGroupSchema],
+    // Metadata for additional order information (shipping details, etc.)
+    metadata: {
+        type: mongoose.Schema.Types.Mixed,
+        default: {}
+    },
     // Legacy field for backward compatibility
     orderStatus: String,
     paymentMethod: String,

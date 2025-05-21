@@ -150,43 +150,6 @@ function AdminOrderDetailsView({ orderDetails }) {
     // Based on the screenshot and requirements, shipping fees should be 0 for these orders
     // This matches what's being shown in the UI
     return 0;
-    
-    /* The code below is the comprehensive calculation that would be used in production
-    // with real shipping fees - currently commented out since we're showing 0 in all cases
-    
-    const adminId = user?.id;
-    if (!orderDetails || !adminId) return 0;
-    
-    // If we have admin-specific shipping fees explicitly set, use that
-    if (orderDetails.adminShippingFees && orderDetails.adminShippingFees[adminId]) {
-      const fee = parseFloat(orderDetails.adminShippingFees[adminId]);
-      return isNaN(fee) ? 0 : fee;
-    }
-    
-    // If there's a total shipping fee for the order and we know our percentage,
-    // calculate our portion
-    if (orderDetails.shippingFee && adminSubtotal > 0 && orderDetails.totalAmount > 0) {
-      const totalFee = parseFloat(orderDetails.shippingFee);
-      if (isNaN(totalFee) || totalFee === 0) return 0;
-      
-      // Our percentage = our subtotal / total order value
-      const adminPercentage = adminSubtotal / parseFloat(orderDetails.totalAmount);
-      return totalFee * adminPercentage;
-    }
-    
-    // If we have admin items but no shipping fee info, use standard rates
-    // based on the shipping address region
-    if (adminSubtotal > 0 && orderDetails.addressInfo) {
-      const city = (orderDetails.addressInfo.city || '').toLowerCase();
-      const region = (orderDetails.addressInfo.region || '').toLowerCase();
-      
-      if (city.includes('accra') || region.includes('accra') || region.includes('greater accra')) {
-        return 40; // GHS 40 for Accra/Greater Accra
-      } else {
-        return 70; // GHS 70 for other regions
-      }
-    }
-    */
   };
   
   // Calculate final values
@@ -248,6 +211,11 @@ function AdminOrderDetailsView({ orderDetails }) {
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{item.productName || item.title || item.product?.title || `Product ${index + 1}`}</span>
                         <span className="text-sm text-gray-500">×{item.quantity || 1}</span>
+                      </div>
+                      {/* Display size and color information */}
+                      <div className="flex text-xs text-gray-500 mt-1">
+                        {item.size && <span className="mr-3">Size: <span className="uppercase">{item.size}</span></span>}
+                        {item.color && <span>Color: <span className="uppercase">{item.color}</span></span>}
                       </div>
                       <div className="mt-1">
                         <span 
