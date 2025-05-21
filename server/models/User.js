@@ -19,9 +19,51 @@ const UserSchema = new mongoose.Schema({
         type : String,
         enum: ['user', 'admin', 'superAdmin'],
         default : 'user'
+    },
+    // Vendor shipping information
+    baseRegion: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    baseCity: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    // Financial tracking
+    balance: {
+        type: Number,
+        default: 0
+    },
+    totalEarnings: {
+        type: Number,
+        default: 0
+    },
+    totalShippingFees: {
+        type: Number,
+        default: 0
+    },
+    platformFees: {
+        type: Number,
+        default: 0
+    },
+    // Store additional shipping preferences
+    shippingPreferences: {
+        defaultBaseRate: {
+            type: Number,
+            default: 40 // Default base rate in GHS
+        },
+        defaultOutOfRegionRate: {
+            type: Number,
+            default: 70 // Default out-of-region rate in GHS
+        },
+        enableRegionalRates: {
+            type: Boolean,
+            default: true
+        }
     }
 });
-
 
 const User = mongoose.model('User', UserSchema);
 module.exports = User;

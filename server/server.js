@@ -28,6 +28,12 @@ const superAdminFeaturedRouter = require('./routes/superAdmin/featuredRoutes.js'
 const superAdminFeaturedCollectionRouter = require('./routes/superAdmin/featuredCollectionRoutes.js');
 const superAdminRevenueRouter = require('./routes/superAdmin/revenueRoutes.js');
 
+// Shipping routes
+const shippingRouter = require('./routes/shop/shippingRoutes.js');
+
+// User routes
+const userRouter = require('./routes/userRoutes.js');
+
 // Test route
 const testRouter = require('./routes/testRoute.js');
 
@@ -74,6 +80,12 @@ app.use('/api/shop/review', shopReviewRouter);
 app.use('/api/common/feature', commonFeatureRouter);
 app.use('/api/shop/wishlist', wishlistRouter);
 app.use('/api/shop/featured-collections', shopFeaturedCollectionRouter);
+
+// Shipping routes
+app.use('/api/shop/shipping', shippingRouter);
+
+// User routes
+app.use('/api/users', userRouter);
 
 // Payment routes
 app.use('/api/payment/paystack', paystackRouter);

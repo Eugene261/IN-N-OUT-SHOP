@@ -20,6 +20,35 @@ function OrderConfirmationPage() {
 
   // Use a flag to prevent multiple verifications
   const [hasVerified, setHasVerified] = useState(false);
+  
+  // Helper function to format shipping fee values - handles different data types
+  const formatShippingFee = (fee) => {
+    if (fee === undefined || fee === null) return '0.00';
+    
+    // Handle case where fee might be an object with a fee property
+    if (typeof fee === 'object' && fee !== null) {
+      if (fee.fee !== undefined && typeof fee.fee === 'number') {
+        return fee.fee.toFixed(2);
+      }
+      return '0.00';
+    }
+    
+    // Handle string values that can be converted to numbers
+    if (typeof fee === 'string') {
+      const numFee = parseFloat(fee);
+      if (!isNaN(numFee)) {
+        return numFee.toFixed(2);
+      }
+      return '0.00';
+    }
+    
+    // Handle regular number values
+    if (typeof fee === 'number') {
+      return fee.toFixed(2);
+    }
+    
+    return '0.00';
+  };
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -247,6 +276,43 @@ function OrderConfirmationPage() {
                     <p className="text-gray-400 text-sm">
                       Order ID: {orderDetails.metadata.orderId}
                     </p>
+                  )}
+                  
+                  {/* Shipping Information Summary - Only shown if available in metadata */}
+                  {orderDetails && orderDetails.metadata && orderDetails.metadata.shippingDetails && (
+                    <div className="mt-4 pt-4 border-t border-gray-700">
+                      <h3 className="text-left text-gray-200 font-medium mb-2">Shipping Details</h3>
+                      <div className="bg-gray-800 rounded-lg p-3 text-left">
+                        <div className="flex justify-between text-sm text-gray-300 mb-2">
+                          <span>Delivery Address:</span>
+                          <span className="text-right">{orderDetails.metadata.shippingDetails.address}</span>
+                        </div>
+                        
+                        {/* Multi-vendor shipping breakdown */}
+                        {orderDetails.metadata.shippingDetails.vendorShipping && (
+                          <div className="mt-2 pt-2 border-t border-gray-700">
+                            <h4 className="text-gray-300 text-xs mb-2">Shipping By Vendor:</h4>
+                            <div className="space-y-1">
+                              {Object.entries(orderDetails.metadata.shippingDetails.vendorShipping).map(([vendorId, details]) => (
+                                <div key={vendorId} className="flex justify-between text-xs">
+                                  <span className="text-gray-400">{details.vendorName || 'Vendor'}:</span>
+                                  <span className="text-gray-300">GHS {formatShippingFee(details.fee)}</span>
+                                </div>
+                              ))}
+                              <div className="flex justify-between text-xs font-medium pt-1 border-t border-gray-700 mt-1">
+                                <span className="text-gray-300">Total Shipping:</span>
+                                <span className="text-gray-200">GHS {formatShippingFee(orderDetails.metadata.shippingDetails.totalFee)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="mt-2 pt-2 border-t border-gray-700 flex justify-between text-xs text-gray-400">
+                          <span>Estimated Delivery:</span>
+                          <span>{orderDetails.metadata.shippingDetails.estimatedDelivery || '3-5 business days'}</span>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </>
               )}

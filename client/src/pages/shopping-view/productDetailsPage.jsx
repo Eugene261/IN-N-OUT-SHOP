@@ -315,12 +315,20 @@ function ProductDetailsPage() {
 
     setIsAddingToCart(true);
 
+    // IMPORTANT: Use the correct price field - price is the actual price customer pays (42 for Snake Crew Sweatshirt)
+    // salePrice is the original price shown with strikethrough (60 for Snake Crew Sweatshirt)
     dispatch(addToCart({
       userId,
       productId: productDetails._id,
       quantity,
       size: selectedSize || undefined,
-      color: selectedColor || undefined
+      color: selectedColor || undefined,
+      price: productDetails.price, // Just use the price field directly - it already contains the customer-facing price
+      title: productDetails.title,
+      image: productDetails.image,
+      adminId: productDetails.createdBy,
+      adminName: productDetails.createdByName || productDetails.adminName || 'Vendor'
+      // salePrice removed to align with backend changes
     }))
       .then(() => {
         toast.success("Added to cart");

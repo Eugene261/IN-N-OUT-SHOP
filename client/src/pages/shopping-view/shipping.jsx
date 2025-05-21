@@ -60,33 +60,68 @@ const ShippingPage = () => {
           </p>
         </motion.div>
 
-        {/* Simplified Shipping Banner */}
+        {/* Multi-Vendor Shipping Banner */}
         <motion.div
           className="mb-12 bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-xl shadow-sm border border-blue-100"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
         >
-          <div className="flex flex-col md:flex-row items-center justify-between">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center mb-4 md:mb-0">
               <div className="bg-white p-3 rounded-full shadow-sm mr-4">
                 <Truck className="text-indigo-600 w-8 h-8" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-800">Simple, Transparent Shipping</h2>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">Multi-Vendor Shipping</h2>
+                <p className="text-sm text-gray-600 mt-1">Each vendor sets their own shipping rates based on their location</p>
+              </div>
             </div>
             <div className="flex flex-col items-center md:items-end">
               <div className="flex items-center">
                 <span className="text-lg font-semibold mr-2">GHS 40</span>
-                <span className="text-sm text-gray-600 bg-white px-2 py-1 rounded-full">Accra Region</span>
+                <span className="text-sm text-gray-600 bg-white px-2 py-1 rounded-full">Same Region Rate</span>
               </div>
               <div className="flex items-center mt-2">
                 <span className="text-lg font-semibold mr-2">GHS 70</span>
-                <span className="text-sm text-gray-600 bg-white px-2 py-1 rounded-full">Other Regions</span>
+                <span className="text-sm text-gray-600 bg-white px-2 py-1 rounded-full">Other Regions Rate</span>
               </div>
+              <div className="text-xs text-gray-500 mt-1 italic">Rates may vary by vendor</div>
             </div>
           </div>
         </motion.div>
 
+        {/* How Multi-Vendor Shipping Works */}
+        <motion.div
+          className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+        >
+          <h2 className="text-xl font-bold mb-4 flex items-center text-gray-800">
+            <Info className="w-5 h-5 mr-2 text-blue-500" />
+            How Our Multi-Vendor Shipping Works
+          </h2>
+          
+          <div className="space-y-4 text-gray-700">
+            <p>
+              Our platform hosts multiple independent vendors, each with their own shipping policies based on their location.
+              When you order items from different vendors, each vendor will ship their products separately.
+            </p>
+            
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-blue-700 mb-2 flex items-center">
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Regional Shipping Discounts
+              </h3>
+              <p className="text-sm">
+                When you order from a vendor located in your region, you'll automatically receive a reduced shipping rate. 
+                This encourages supporting local vendors and reduces shipping costs!
+              </p>
+            </div>
+          </div>
+        </motion.div>
+        
         {/* Main Content */}
         <motion.div
           className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12"
@@ -276,11 +311,16 @@ const ShippingPage = () => {
 
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold mb-2">How are shipping costs calculated?</h3>
+                <h3 className="text-lg font-semibold mb-2">How are shipping costs calculated in a multi-vendor order?</h3>
                 <p className="text-gray-600">
-                  Shipping costs are calculated based on your delivery location. We charge a flat rate of GHS 40 for 
-                  deliveries within Accra/Greater Accra, and GHS 70 for all other regions in Ghana.
+                  In our multi-vendor platform, each vendor sets their own shipping rates based on their location. 
+                  The standard rates are GHS 40 for deliveries within the vendor's region, and GHS 70 for deliveries to other regions.
+                  When you order from multiple vendors, each vendor's shipping fee is calculated separately and added to your total.
                 </p>
+                <div className="mt-2 p-3 bg-gray-50 rounded border border-gray-200 text-sm">
+                  <strong>Example:</strong> If you order from three different vendors and one is in your region while
+                  two are in different regions, your shipping total might be: GHS 40 + GHS 70 + GHS 70 = GHS 180
+                </div>
               </div>
 
               <div>
@@ -302,8 +342,25 @@ const ShippingPage = () => {
               <div>
                 <h3 className="text-lg font-semibold mb-2">Do you offer expedited shipping?</h3>
                 <p className="text-gray-600">
-                  Currently, we offer standard shipping with the rates mentioned above. For urgent deliveries within Accra, 
-                  please contact our customer service team to discuss options.
+                  Shipping options vary by vendor. Some vendors may offer expedited shipping for an additional fee.
+                  These options, if available, will be displayed during checkout for eligible items.
+                </p>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Why am I seeing different shipping fees for similar items?</h3>
+                <p className="text-gray-600">
+                  Since each vendor determines their own shipping rates based on their location, two similar items from different
+                  vendors may have different shipping costs. This is especially noticeable when vendors are located in different
+                  regions of Ghana.
+                </p>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Can I combine shipping from multiple vendors?</h3>
+                <p className="text-gray-600">
+                  Currently, shipping fees are calculated separately for each vendor in your order. However, when you purchase
+                  multiple items from the same vendor, they will be shipped together with a single shipping fee.
                 </p>
               </div>
             </div>

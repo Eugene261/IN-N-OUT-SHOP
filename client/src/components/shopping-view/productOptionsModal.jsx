@@ -72,23 +72,24 @@ const ProductOptionsModal = ({ isOpen, onClose, product, onAddToCart }) => {
 
     setIsLoading(true);
     
-    // Include price, salePrice, title, and image data to ensure consistency
-    // with product details page and proper cart functionality
-    const cartData = { 
-      userId: userId, 
-      productId: product._id, 
-      quantity: quantity,
+    // Only include price (not salePrice) as we've simplified the pricing model
+    // IMPORTANT: The price field in cart should be the actual price customer pays
+    const cartData = {
+      userId,
+      productId: product._id || product.id,
+      quantity,
       size: selectedSize,
       color: selectedColor,
-      price: product.price,
-      salePrice: product.salePrice || 0,
+      // For Snake Crew Sweatshirt: price should be 42 (the main price), not 60 (the strikethrough price)
+      price: product.price, // This should be the current price displayed to customer (already discounted if on sale)
       title: product.name || product.title,
-      image: product.image
+      image: product.image,
+      // Add vendor information to properly attribute products
+      adminId: product.createdBy,
+      adminName: product.createdByName || product.adminName || 'Vendor'
     };
     
-    console.log("Sending cart data:", cartData);
-    
-    // First add the item to cart
+    // Log the data being sent to the cart
     console.log("Adding item to cart:", cartData);
     
     dispatch(addToCart(cartData))

@@ -8,6 +8,8 @@ import AdminProducts from "./pages/admin-view/products";
 import AdminDashboard from "./pages/admin-view/dashboard";
 import AdminOrders from "./pages/admin-view/orders";
 import AdminFeatures from "./pages/admin-view/features";
+import AdminFeaturedProducts from "./pages/admin-view/featuredProducts";
+import AdminShippingSettings from "./pages/admin-view/shippingSettings";
 import ShoppingLayout from "./components/shopping-view/layout";
 import NotFound from "./pages/not-found";
 import ShoppingHome from "./pages/shopping-view/home";
@@ -23,7 +25,6 @@ import ShoppingLoader from "./components/common/ShoppingLoader";
 // PayPal import removed
 import OrderConfirmationPage from "./pages/shopping-view/orderConfirmation";
 import SearchProducts from "./components/shopping-view/search";
-import AdminFeaturedProducts from "./pages/admin-view/featuredProducts";
 import WishlistPage from "./pages/shopping-view/wishlist";
 import TermsOfService from "./pages/shopping-view/termsOfService";
 import PrivacyPolicy from "./pages/shopping-view/privacyPolicy";
@@ -103,6 +104,7 @@ function App() {
             <Route path='orders' element={<AdminOrders />} />
             <Route path='features' element={<AdminFeatures />} />
             <Route path='featured-products' element={<AdminFeaturedProducts />} />
+            <Route path='shipping-settings' element={<AdminShippingSettings />} />
           </Route>
 
           {/* SUPER ADMIN */}

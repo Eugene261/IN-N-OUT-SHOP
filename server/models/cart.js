@@ -29,7 +29,15 @@ const cartSchema = new mongoose.Schema({
             // Added fields for direct price storage
             price : {
                 type : Number,
-                default: 0
+            },
+            // Vendor information fields
+            adminId : {
+                type : mongoose.Schema.Types.ObjectId,
+                ref : 'User'
+            },
+            adminName : {
+                type : String,
+                default: 'Vendor'
             },
             salePrice : {
                 type : Number,

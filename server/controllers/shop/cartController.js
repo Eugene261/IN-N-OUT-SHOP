@@ -3,7 +3,8 @@ const Product = require('../../models/Products');
 
 const addToCart = async(req, res) => {
     try {
-        const {userId, productId, quantity, size, color, price, salePrice, title, image} = req.body;
+        const {userId, productId, quantity, size, color, price, title, image, adminId, adminName} = req.body;
+        // Removed salePrice from destructuring as we don't want to use it
 
         if(!userId || !productId || quantity <= 0 || !size || !color) {
             return res.status(400).json({
@@ -34,8 +35,8 @@ const addToCart = async(req, res) => {
         );
 
         // Use product data from database as a fallback
+        // We only use the price field - not salePrice - as the actual purchase price
         const productPrice = price || product.price;
-        const productSalePrice = salePrice || product.salePrice;
         const productTitle = title || product.title;
         const productImage = image || product.image;
 
@@ -47,17 +48,22 @@ const addToCart = async(req, res) => {
                 size, 
                 color,
                 price: productPrice,
-                salePrice: productSalePrice,
                 title: productTitle,
-                image: productImage
+                image: productImage,
+                adminId: adminId || product.createdBy,
+                adminName: adminName || 'Vendor'
             });
+            // Removed salePrice field from cart items
         } else {
             cart.items[findCurrentProductIndex].quantity += quantity;
             // Update product information if provided
             if (productPrice) cart.items[findCurrentProductIndex].price = productPrice;
-            if (productSalePrice) cart.items[findCurrentProductIndex].salePrice = productSalePrice;
             if (productTitle) cart.items[findCurrentProductIndex].title = productTitle;
             if (productImage) cart.items[findCurrentProductIndex].image = productImage;
+            // Update vendor information if provided
+            if (adminId) cart.items[findCurrentProductIndex].adminId = adminId;
+            if (adminName) cart.items[findCurrentProductIndex].adminName = adminName;
+            // Removed salePrice update
         }
 
         await cart.save();
@@ -91,7 +97,7 @@ const fetchCartItems = async(req, res) => {
 
         const cart = await Cart.findOne({userId}).populate({
             path: 'items.productId', // FIXED from 'item.productId'
-            select: 'image title price salePrice'
+            select: 'image title price' // Removed salePrice to ensure it's not used
         });
 
         if(!cart){
@@ -113,10 +119,13 @@ const fetchCartItems = async(req, res) => {
             image: item.productId.image,
             title: item.productId.title,
             price: item.productId.price,
-            salePrice: item.productId.salePrice,
+            // salePrice: item.productId.salePrice,
             quantity: item.quantity,
             size: item.size,
-            color: item.color
+            color: item.color,
+            // Include vendor information
+            adminId: item.adminId || item.productId.createdBy,
+            adminName: item.adminName || 'Vendor'
         }));
 
         res.status(200).json({
@@ -183,7 +192,7 @@ const updateCartItemQuantity = async(req, res) => {
             image: item.productId ? item.productId.image : null,
             title: item.productId ? item.productId.title : 'Product not found',
             price: item.productId ? item.productId.price : null,
-            salePrice: item.productId ? item.productId.salePrice : null,
+            // salePrice: item.productId ? item.productId.salePrice : null,
             quantity: item.quantity,
             size: item.size,
             color: item.color
@@ -221,7 +230,7 @@ const deleteCartItem = async(req, res) => {
 
         const cart = await Cart.findOne({userId}).populate({
             path: 'items.productId',
-            select: 'image title price salePrice',
+            select: 'image title price', // Removed salePrice
         });
 
         if(!cart) {
@@ -242,7 +251,7 @@ const deleteCartItem = async(req, res) => {
 
         await cart.populate({ // FIXED from Cart.populate
             path: 'items.productId',
-            select: 'image title price salePrice',
+            select: 'image title price', // Removed salePrice
         });
 
         const populatedCartItems = cart.items.map(item => ({

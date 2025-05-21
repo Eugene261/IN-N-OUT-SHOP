@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, Star, X } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Star, X, Truck, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const menuItems = [
@@ -21,6 +21,12 @@ const menuItems = [
     label: 'Orders',
     path: '/admin/orders',
     icon: <ShoppingCart className="h-5 w-5" />
+  },
+  {
+    id: 'shipping-settings',
+    label: 'Shipping Settings',
+    path: '/admin/shipping-settings',
+    icon: <Truck className="h-5 w-5" />
   }
 ];
 

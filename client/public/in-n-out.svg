@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <!-- Red background -->
+  <rect width="24" height="24" rx="2" fill="#E20A17" />
+  <!-- Yellow arrow -->
+  <path d="M21 12H10M21 12L16 7M21 12L16 17" stroke="#FFCC00" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- IN-N-OUT text simplified as white rectangle -->
+  <rect x="3" y="9" width="7" height="6" rx="1" fill="#FFFFFF" />
+</svg> 

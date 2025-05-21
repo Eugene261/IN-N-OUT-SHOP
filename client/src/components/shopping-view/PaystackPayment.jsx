@@ -104,7 +104,33 @@ const PaystackPayment = ({ amount, items, shippingAddress, shippingFees = {}, to
             totalShippingFee,
             adminShippingFees: JSON.stringify(shippingFees), // Pass admin shipping fees as metadata
             mobileNumber: paymentMethod === 'mobile_money' ? mobileNumber : '',
-            mobileNetwork: paymentMethod === 'mobile_money' ? mobileNetwork : ''
+            mobileNetwork: paymentMethod === 'mobile_money' ? mobileNetwork : '',
+            // Enhanced shipping details for order confirmation
+            shippingDetails: JSON.stringify({
+              address: `${shippingAddress.city}, ${shippingAddress.region}`,
+              totalFee: totalShippingFee,
+              vendorShipping: Object.entries(shippingFees).reduce((acc, [adminId, fee]) => {
+                // Get vendor name from items if available
+                const adminItems = items.filter(item => item.adminId === adminId);
+                const vendorName = adminItems.length > 0 && adminItems[0].adminName 
+                  ? adminItems[0].adminName : 'Vendor';
+                
+                // Add vendor shipping details
+                acc[adminId] = {
+                  fee: typeof fee === 'object' ? fee.fee || 0 : fee || 0,
+                  vendorName
+                };
+                
+                // Add additional shipping details if available
+                if (typeof fee === 'object' && fee.details) {
+                  acc[adminId].baseRegion = fee.details.baseRegion;
+                  acc[adminId].customerRegion = fee.details.customerRegion;
+                  acc[adminId].isSameRegion = fee.details.isSameRegion;
+                }
+                
+                return acc;
+              }, {})
+            })
           }
         };
         
@@ -138,7 +164,30 @@ const PaystackPayment = ({ amount, items, shippingAddress, shippingFees = {}, to
   // Format price
   const formatPrice = (price) => {
     if (price === undefined || price === null) return 'GHS 0.00';
-    return `GHS ${price.toFixed(2)}`;
+    
+    // Handle case where price might be an object with a fee property
+    if (typeof price === 'object' && price !== null) {
+      if (price.fee !== undefined && typeof price.fee === 'number') {
+        return `GHS ${price.fee.toFixed(2)}`;
+      }
+      return 'GHS 0.00';
+    }
+    
+    // Handle string values that can be converted to numbers
+    if (typeof price === 'string') {
+      const numPrice = parseFloat(price);
+      if (!isNaN(numPrice)) {
+        return `GHS ${numPrice.toFixed(2)}`;
+      }
+      return 'GHS 0.00';
+    }
+    
+    // Handle regular number values
+    if (typeof price === 'number') {
+      return `GHS ${price.toFixed(2)}`;
+    }
+    
+    return 'GHS 0.00';
   };
   
   // Get admin shipping details for display

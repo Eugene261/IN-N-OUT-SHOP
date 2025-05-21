@@ -40,7 +40,8 @@ const initialState = {
 
 export const addToCart = createAsyncThunk(
   "cart/addToCart",
-  async ({ userId, productId, quantity, size, color, price, salePrice, title, image }, { rejectWithValue }) => {
+  async ({ userId, productId, quantity, size, color, price, title, image }, { rejectWithValue }) => {
+    // Note: salePrice parameter removed to align with backend changes
     // Validate required parameters
     if (!userId || !productId) {
       console.error("Missing required parameters for addToCart:", { userId, productId });
@@ -48,7 +49,7 @@ export const addToCart = createAsyncThunk(
     }
     
     try {
-      console.log("Adding to cart:", { userId, productId, quantity, size, color, price, salePrice, title, image });
+      console.log("Adding to cart:", { userId, productId, quantity, size, color, price, title, image });
       const response = await axios.post(
         "http://localhost:5000/api/shop/cart/add",
         {
@@ -57,10 +58,10 @@ export const addToCart = createAsyncThunk(
           quantity: quantity || 1, // Default to 1 if not provided
           size,
           color,
-          price, // Include price data
-          salePrice, // Include sale price data
+          price, // Include price data - the actual purchase price
           title, // Include product title
           image // Include product image
+          // salePrice removed as we no longer use it
         }
       );
       

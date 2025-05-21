@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import img from '../../assets/account.jpg'
 import Address from '@/components/shopping-view/address';
 import { useDispatch, useSelector } from 'react-redux';
@@ -194,7 +195,18 @@ function ShoppingCheckout() {
   // Format price
   const formatPrice = (price) => {
     if (price === undefined || price === null) return 'GHS 0.00';
-    return `GHS ${price.toFixed(2)}`;
+    
+    // Handle case where price might be an object with a fee property (from new shipping structure)
+    if (typeof price === 'object' && price !== null) {
+      if (price.fee !== undefined) {
+        return `GHS ${Number(price.fee).toFixed(2)}`;
+      }
+      // If it's an object but doesn't have a fee property, return 0
+      return 'GHS 0.00';
+    }
+    
+    // Ensure price is treated as a number
+    return `GHS ${Number(price).toFixed(2)}`;
   };
 
   // Get admin groups for display
@@ -280,8 +292,16 @@ function ShoppingCheckout() {
                             <div className="flex items-center text-sm">
                               <TruckIcon className="h-3.5 w-3.5 text-blue-600 mr-1" />
                               <span className="text-blue-600 font-medium">
-                                {formatPrice(adminShippingFees[adminId] || 0)} shipping
+                                {formatPrice(adminShippingFees[adminId] && adminShippingFees[adminId].fee ? adminShippingFees[adminId].fee : 0)} shipping
                               </span>
+                              {adminShippingFees[adminId] && adminShippingFees[adminId].isSameRegion && (
+                                <span className="inline-flex items-center text-green-600 ml-2 text-xs">
+                                  <svg className="w-3 h-3 mr-0.5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                                  </svg>
+                                  Same region discount
+                                </span>
+                              )}
                             </div>
                           )}
                         </div>
@@ -329,23 +349,60 @@ function ShoppingCheckout() {
                         {/* Shipping Fees Section - Itemized by seller */}
                         <div className="pt-2 border-t border-gray-200">
                           <div className="flex justify-between items-center mb-1">
-                            <span className="text-gray-600 flex items-center">
-                              <TruckIcon className="h-4 w-4 mr-2 text-gray-400" /> 
-                              Total Shipping ({Object.keys(adminGroups).length} {Object.keys(adminGroups).length === 1 ? 'seller' : 'sellers'})
-                            </span>
+                            <div className="flex flex-col">
+                              <span className="text-gray-600 flex items-center">
+                                <TruckIcon className="h-4 w-4 mr-2 text-gray-400" /> 
+                                Total Shipping ({Object.keys(adminGroups).length} {Object.keys(adminGroups).length === 1 ? 'seller' : 'sellers'})
+                              </span>
+                              <Link to="/shop/shipping" className="text-xs text-blue-500 hover:text-blue-700 mt-1 ml-6 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Learn about multi-vendor shipping
+                              </Link>
+                            </div>
                             <span className={`font-medium ${currentSelectedAddress ? '' : 'text-gray-400'}`}>
                               {currentSelectedAddress ? formatPrice(totalShippingFee) : 'Select address'}
                             </span>
                           </div>
                           
                           {currentSelectedAddress && Object.keys(adminShippingFees).length > 0 && (
-                            <div className="ml-6 text-xs text-gray-500 space-y-1 mt-1">
-                              {Object.keys(adminShippingFees).map(adminId => (
-                                <div key={adminId} className="flex justify-between">
-                                  <span>{adminGroups[adminId]?.adminName || 'Seller'}</span>
-                                  <span>{formatPrice(adminShippingFees[adminId])}</span>
-                                </div>
-                              ))}
+                            <div className="ml-6 text-xs space-y-1 mt-1">
+                              {Object.keys(adminShippingFees).map(adminId => {
+                                // Check if we have detailed shipping info for this admin
+                                const hasDetails = adminShippingFees.details && adminShippingFees.details[adminId];
+                                const isSameRegion = hasDetails && adminShippingFees.details[adminId].isSameRegion;
+                                const baseRegion = hasDetails ? adminShippingFees.details[adminId].baseRegion : null;
+                                const customerRegion = hasDetails ? adminShippingFees.details[adminId].customerRegion : null;
+                                
+                                return (
+                                  <div key={adminId}>
+                                    <div className="flex justify-between text-gray-500">
+                                      <span>
+                                        {adminGroups[adminId]?.adminName || 'Seller'}
+                                        {isSameRegion && (
+                                          <span className="inline-flex items-center ml-1 text-green-600 bg-green-50 px-1.5 py-0.5 rounded-sm text-[10px]">
+                                            <svg className="w-2.5 h-2.5 mr-0.5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                                            </svg>
+                                            Discounted
+                                          </span>
+                                        )}
+                                      </span>
+                                      <span>{formatPrice(adminShippingFees[adminId] && adminShippingFees[adminId].fee ? adminShippingFees[adminId].fee : 0)}</span>
+                                    </div>
+                                    {hasDetails && baseRegion && (
+                                      <div className="ml-4 text-[10px] text-gray-400 mt-0.5">
+                                        {isSameRegion ? (
+                                          <span>Based in your region ({baseRegion})</span>
+                                        ) : (
+                                          <span>Ships from {baseRegion} to {customerRegion || 'your location'}</span>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           )}
                         </div>
@@ -384,6 +441,7 @@ function ShoppingCheckout() {
                           <p>
                             Shipping fees are calculated based on your location, order weight, and value.
                             Each seller ships separately and charges their own shipping fee.
+                            Sellers based in your region may offer discounted shipping rates.
                             <a href="/shop/shipping" className="text-indigo-600 hover:text-indigo-800 ml-1 whitespace-nowrap">
                               View shipping details
                             </a>
