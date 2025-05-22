@@ -78,9 +78,10 @@ function AdminProductTile({
             {product?.title}
           </h2>
           
-          <p className="text-sm text-gray-600 line-clamp-2 h-10 overflow-hidden">
-            {product?.description || "No description available"}
-          </p>
+          <div 
+            className="text-sm text-gray-600 line-clamp-2 h-10 overflow-hidden prose prose-sm max-w-none"
+            dangerouslySetInnerHTML={{ __html: product?.description || "No description available" }}
+          />
           
           <div className="mt-3 flex justify-between items-center">
             <span className={`text-xs font-medium px-2 py-1 rounded-full ${parseInt(product?.totalStock) > 10 ? 'bg-green-100 text-green-800' : parseInt(product?.totalStock) > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>

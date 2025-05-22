@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <rect width="32" height="32" fill="white"/>
+  <g fill="black">
+    <!-- I -->
+    <rect x="2" y="8" width="2" height="16"/>
+    
+    <!-- N -->
+    <rect x="6" y="8" width="2" height="16"/>
+    <rect x="12" y="8" width="2" height="16"/>
+    <path d="M8 8 L12 24 L12 22 L8 6 Z"/>
+    
+    <!-- Second N -->
+    <rect x="16" y="8" width="2" height="16"/>
+    <rect x="22" y="8" width="2" height="16"/>
+    <path d="M18 8 L22 24 L22 22 L18 6 Z"/>
+    
+    <!-- OUT -->
+    <circle cx="27" cy="16" r="4" stroke="black" stroke-width="2" fill="white"/>
+  </g>
+</svg>

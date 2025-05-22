@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import PageTitle from '../../components/common/PageTitle';
 import { motion } from 'framer-motion';
 import { ShoppingBag, Star, ChevronLeft, ChevronRight, Heart, Info, Truck, ShieldCheck, Tag, MessageCircle, ArrowLeft, Clock } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -366,6 +367,7 @@ function ProductDetailsPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <PageTitle title={productDetails?.title || 'Product Details'} />
       <main className="flex-1 container mx-auto px-4 py-6 max-w-7xl">
         <button
           onClick={() => navigate(-1)}
@@ -429,9 +431,10 @@ function ProductDetailsPage() {
                 Description
               </h3>
               <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-gray-600 leading-relaxed">
-                  {productDetails?.description}
-                </p>
+                <div 
+                  className="text-gray-600 leading-relaxed prose prose-sm max-w-none" 
+                  dangerouslySetInnerHTML={{ __html: productDetails?.description || '' }}
+                />
               </div>
             </div>
 

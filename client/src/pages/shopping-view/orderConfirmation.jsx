@@ -1,5 +1,6 @@
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { motion } from 'framer-motion'
+import PageTitle from '@/components/common/PageTitle'
 import { CheckCircle, XCircle, Loader } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
@@ -250,6 +251,7 @@ function OrderConfirmationPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-black p-4">
+      <PageTitle title={verificationStatus === 'success' ? 'Order Confirmed' : (verificationStatus === 'failed' ? 'Payment Failed' : 'Verifying Payment')} />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

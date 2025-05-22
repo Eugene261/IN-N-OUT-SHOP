@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import PageTitle from '@/components/common/PageTitle'
 import img from '../../assets/account.jpg'
 import Address from '@/components/shopping-view/address';
 import { useDispatch, useSelector } from 'react-redux';
@@ -257,6 +258,7 @@ function ShoppingCheckout() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
+      <PageTitle title="Checkout" />
       {/* Hero Section */}
       <div className="relative h-48 sm:h-60 overflow-hidden bg-gray-900">
         <img

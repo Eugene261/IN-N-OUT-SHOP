@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import LazyImage from '../../components/common/LazyImage'
 import { toast } from 'sonner';
+import PageTitle from '../../components/common/PageTitle';
 import ShoppingLoader from '@/components/common/ShoppingLoader';
 import { 
   ChevronLeft, 
@@ -252,6 +253,7 @@ function ShoppingHome() {
   
     return (
       <div className='flex flex-col min-h-screen'>
+        <PageTitle title="Home" />
         {/* Enhanced Banner Slider */}
         <motion.div 
           className="relative w-full h-[400px] sm:h-[500px] md:h-[600px] lg:h-[90vh] max-h-[1000px] overflow-hidden"

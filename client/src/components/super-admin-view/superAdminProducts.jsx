@@ -421,9 +421,10 @@ const SuperAdminProducts = () => {
                     {getStockBadge(product.totalStock)}
                   </div>
                   
-                  <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                    {product.description || 'No description available'}
-                  </p>
+                  <div 
+                    className="text-sm text-gray-600 mb-4 line-clamp-2 prose prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ __html: product.description || 'No description available' }}
+                  />
                   
                   <div className="flex items-center text-sm text-gray-600 mb-3">
                     <User className="h-4 w-4 mr-1 text-gray-400" />
@@ -464,9 +465,10 @@ const SuperAdminProducts = () => {
                             <h4 className="text-xs font-medium text-gray-500 uppercase mb-1">
                               Full Description
                             </h4>
-                            <p className="text-sm text-gray-700">
-                              {product.description || 'No description available'}
-                            </p>
+                            <div 
+                              className="text-sm text-gray-700 prose prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{ __html: product.description || 'No description available' }}
+                            />
                           </div>
                           
                           <div className="grid grid-cols-2 gap-3">
