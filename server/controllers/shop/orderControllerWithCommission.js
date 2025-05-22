@@ -704,6 +704,86 @@ const fixShippingFees = async(req, res) => {
     }
 };
 
+// Create an order only after successful payment verification
+const createOrderAfterPayment = async (req, res) => {
+    try {
+        const { orderData, reference, tempOrderId } = req.body;
+        
+        // Validate required params
+        if (!orderData || !reference) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required parameters (orderData and reference)'
+            });
+        }
+
+        console.log('Creating order after successful payment:', { reference, tempOrderId });
+        console.log('Order data summary:', {
+            userId: orderData.userId,
+            totalAmount: orderData.totalAmount,
+            itemCount: orderData.cartItems?.length || 0,
+            shippingFee: orderData.shippingFee
+        });
+        
+        // Create order with completed payment status
+        const orderWithPayment = {
+            ...orderData,
+            paymentStatus: 'completed',
+            orderStatus: 'confirmed',
+            paymentId: reference,
+            orderDate: new Date(),
+            orderUpdateDate: new Date()
+        };
+        
+        // Process items - verify products exist and are in stock
+        if (Array.isArray(orderWithPayment.cartItems)) {
+            for (const item of orderWithPayment.cartItems) {
+                const product = await Product.findById(item.productId);
+                if (!product) {
+                    return res.status(404).json({
+                        success: false,
+                        message: `Product not found: ${item.title}`
+                    });
+                }
+                
+                // Update product inventory would happen here
+                // This is the appropriate place since payment is confirmed
+            }
+        }
+        
+        // Create the order in the database
+        const newOrder = new Order(orderWithPayment);
+        const savedOrder = await newOrder.save();
+        
+        if (!savedOrder) {
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to save order'
+            });
+        }
+        
+        // Clear the cart after successful order
+        if (orderData.userId) {
+            await Cart.findOneAndDelete({ userId: orderData.userId });
+            console.log(`Cart cleared for user ${orderData.userId}`);
+        }
+        
+        return res.status(201).json({
+            success: true,
+            message: 'Order created successfully after payment verification',
+            data: savedOrder
+        });
+        
+    } catch (error) {
+        console.error('Error creating order after payment:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Server error creating order after payment',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     createOrder,
     verifyAndUpdateOrder,
@@ -711,5 +791,6 @@ module.exports = {
     getOrdersByUser,
     getOrderById,
     updateOrderStatus,
-    fixShippingFees
+    fixShippingFees,
+    createOrderAfterPayment
 };

@@ -108,8 +108,9 @@ const PaystackPayment = ({ amount, items, shippingAddress, shippingFees = {}, to
       
       console.log('SHIPPING DEBUG - Formatted shipping fees for order creation:', JSON.stringify(formattedShippingFees));
       
-      // Create an order with shipping fees per admin
-      const orderAction = await dispatch(createNewOrder({
+      // Instead of creating an order in the database, store the order data in localStorage
+      // to be used after successful payment
+      const orderData = {
         userId: user.id,
         cartItems: items,
         addressInfo: shippingAddress,
@@ -127,76 +128,73 @@ const PaystackPayment = ({ amount, items, shippingAddress, shippingFees = {}, to
           items: adminGroups[adminId].items.map(item => item.productId),
           shippingFee: adminGroups[adminId].shippingFee
         }))
-      }));
+      };
       
-      if (createNewOrder.fulfilled.match(orderAction) && orderAction.payload.success) {
-        // Extract orderId safely, with fallback
-        const orderId = orderAction.payload.data?._id || 
-                       orderAction.payload.orderId || 
-                       orderAction.payload._id || 
-                       `order-${Date.now()}`; // Fallback to timestamp if no ID found
-        
-        console.log('Order created with response:', orderAction.payload);
-        
-        // Initialize Paystack payment
-        const paymentData = {
-          amount: parseFloat(amount.toFixed(2)), // Ensure amount is a clean number
-          email: user.email,
-          callbackUrl: `${window.location.origin}/shop/order-confirmation`,
-          metadata: {
-            orderId,
-            userId: user.id,
-            totalShippingFee,
-            adminShippingFees: JSON.stringify(shippingFees), // Pass admin shipping fees as metadata
-            mobileNumber: paymentMethod === 'mobile_money' ? mobileNumber : '',
-            mobileNetwork: paymentMethod === 'mobile_money' ? mobileNetwork : '',
-            // Enhanced shipping details for order confirmation
-            shippingDetails: JSON.stringify({
-              address: `${shippingAddress.city}, ${shippingAddress.region}`,
-              totalFee: totalShippingFee,
-              vendorShipping: Object.entries(shippingFees).reduce((acc, [adminId, fee]) => {
-                // Get vendor name from items if available
-                const adminItems = items.filter(item => item.adminId === adminId);
-                const vendorName = adminItems.length > 0 && adminItems[0].adminName 
-                  ? adminItems[0].adminName : 'Vendor';
-                
-                // Add vendor shipping details
-                acc[adminId] = {
-                  fee: typeof fee === 'object' ? fee.fee || 0 : fee || 0,
-                  vendorName
-                };
-                
-                // Add additional shipping details if available
-                if (typeof fee === 'object' && fee.details) {
-                  acc[adminId].baseRegion = fee.details.baseRegion;
-                  acc[adminId].customerRegion = fee.details.customerRegion;
-                  acc[adminId].isSameRegion = fee.details.isSameRegion;
-                }
-                
-                return acc;
-              }, {})
-            })
-          }
-        };
-        
-        console.log('Sending payment data to server:', paymentData);
-        
-        try {
-          const paymentResponse = await initializePayment(paymentData);
-          console.log('Payment initialization response:', paymentResponse);
-          
-          if (paymentResponse.success) {
-            // Redirect to Paystack payment page
-            window.location.href = paymentResponse.data.authorization_url;
-          } else {
-            throw new Error(paymentResponse.message || 'Payment initialization failed');
-          }
-        } catch (error) {
-          console.error('Payment initialization error details:', error);
-          throw error;
+      // Generate temporary order ID for reference
+      const tempOrderId = `temp-order-${Date.now()}`;
+      
+      // Store order data in localStorage for retrieval after payment
+      localStorage.setItem('pendingOrderData', JSON.stringify(orderData));
+      localStorage.setItem('pendingOrderId', tempOrderId);
+      
+      console.log('Order data stored locally with temp ID:', tempOrderId);
+      
+      // Initialize Paystack payment
+      const paymentData = {
+        amount: parseFloat(amount.toFixed(2)), // Ensure amount is a clean number
+        email: user.email,
+        callbackUrl: `${window.location.origin}/shop/order-confirmation`,
+        metadata: {
+          tempOrderId, // Use the temporary order ID
+          userId: user.id,
+          totalShippingFee,
+          adminShippingFees: JSON.stringify(shippingFees), // Pass admin shipping fees as metadata
+          mobileNumber: paymentMethod === 'mobile_money' ? mobileNumber : '',
+          mobileNetwork: paymentMethod === 'mobile_money' ? mobileNetwork : '',
+          // Enhanced shipping details for order confirmation
+          shippingDetails: JSON.stringify({
+            address: `${shippingAddress.city}, ${shippingAddress.region}`,
+            totalFee: totalShippingFee,
+            vendorShipping: Object.entries(shippingFees).reduce((acc, [adminId, fee]) => {
+              // Get vendor name from items if available
+              const adminItems = items.filter(item => item.adminId === adminId);
+              const vendorName = adminItems.length > 0 && adminItems[0].adminName 
+                ? adminItems[0].adminName : 'Vendor';
+              
+              // Add vendor shipping details
+              acc[adminId] = {
+                fee: typeof fee === 'object' ? fee.fee || 0 : fee || 0,
+                vendorName
+              };
+              
+              // Add additional shipping details if available
+              if (typeof fee === 'object' && fee.details) {
+                acc[adminId].baseRegion = fee.details.baseRegion;
+                acc[adminId].customerRegion = fee.details.customerRegion;
+                acc[adminId].isSameRegion = fee.details.isSameRegion;
+              }
+              
+              return acc;
+            }, {})
+          })
         }
-      } else {
-        throw new Error(orderAction.payload?.message || 'Order creation failed');
+      };
+      
+      console.log('Sending payment data to server:', paymentData);
+      
+      try {
+        const paymentResponse = await initializePayment(paymentData);
+        console.log('Payment initialization response:', paymentResponse);
+        
+        if (paymentResponse.success) {
+          // Redirect to Paystack payment page
+          window.location.href = paymentResponse.data.authorization_url;
+        } else {
+          throw new Error(paymentResponse.message || 'Payment initialization failed');
+        }
+      } catch (error) {
+        console.error('Payment initialization error details:', error);
+        throw error;
       }
     } catch (error) {
       console.error('Payment error:', error);

@@ -66,10 +66,10 @@ function OrderConfirmationPage() {
             setOrderDetails(paystackResponse.data)
             toast.success('Payment verified with Paystack!')
             
-            // Now update the order in our database and clear the cart using our new endpoint
+            // Now create the order in our database and clear the cart
             if (user && user.id) {
               try {
-                console.log('Verifying payment and clearing cart for user:', user.id);
+                console.log('Payment successful, creating order and clearing cart for user:', user.id);
                 
                 // First clear the cart state in Redux for immediate UI feedback
                 dispatch(clearCartState());
@@ -81,22 +81,37 @@ function OrderConfirmationPage() {
                 });
                 
                 // Set a flag to prevent cart fetching ON THE ORDER CONFIRMATION PAGE ONLY
-                // These flags will be cleared when navigating away from the order confirmation page
                 sessionStorage.setItem('cartEmptyAfterOrder', 'true');
                 localStorage.setItem('cartEmptyAfterOrder', 'true');
                 
-                // Also set the timestamp of order completion for tracking purposes
-                const orderCompletionData = {
-                  timestamp: new Date().getTime(),
-                  reference: reference
-                };
-                localStorage.setItem('orderCompletionTimestamp', JSON.stringify(orderCompletionData));
+                // Get the pending order data from localStorage
+                const pendingOrderData = JSON.parse(localStorage.getItem('pendingOrderData') || '{}');
+                const tempOrderId = localStorage.getItem('pendingOrderId');
                 
-                // IMPORTANT: Call our new server endpoint to verify the payment and clear the cart
-                // This is the key fix that ensures the cart is properly deleted from the database
-                axios.post('http://localhost:5000/api/shop/order/verify', {
+                // If there's no pending order data, show error
+                if (!pendingOrderData || Object.keys(pendingOrderData).length === 0) {
+                  console.error('No pending order data found in localStorage');
+                  toast.error('Order data not found. Please try again.');
+                  setVerificationStatus('failed');
+                  return;
+                }
+                
+                // Update the order data with successful payment details
+                const orderDataWithPayment = {
+                  ...pendingOrderData,
+                  paymentStatus: 'completed',
+                  orderStatus: 'confirmed',
+                  paymentId: reference,
+                  paymentData: paystackResponse.data
+                };
+                
+                console.log('Creating order with data:', orderDataWithPayment);
+                
+                // Create the order in the database now that payment is confirmed
+                axios.post('http://localhost:5000/api/shop/order/create-after-payment', {
+                  orderData: orderDataWithPayment,
                   reference: reference,
-                  orderId: paystackResponse.data?.metadata?.orderId || sessionStorage.getItem('currentOrderId')
+                  tempOrderId: tempOrderId || paystackResponse.data?.metadata?.tempOrderId
                 })
                 .then(serverResponse => {
                   console.log('Order verified and cart cleared on server:', serverResponse.data);
