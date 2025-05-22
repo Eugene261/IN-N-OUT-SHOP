@@ -312,19 +312,65 @@ const createOrder = async(req, res) => {
                 adminGroups[adminId].items.push(item);
             });
             
-            // Apply a basic fee per vendor (40 GHS for Accra, 70 GHS for other regions)
-            const region = (addressInfo.region || '').toLowerCase();
-            const city = (addressInfo.city || '').toLowerCase();
-            const isAccra = region.includes('accra') || city.includes('accra');
-            const defaultFee = isAccra ? 40 : 70; // 40 GHS for Accra, 70 GHS for other regions
+            // Use the shipping service to calculate fees dynamically - no hardcoded values
+            try {
+                // Import the shipping service to calculate fees properly
+                const { calculateShippingFees } = require('../../services/shippingService');
+                
+                // Extract items in the format needed for shipping calculation
+                const shippingItems = [];
+                Object.keys(adminGroups).forEach(adminId => {
+                    adminGroups[adminId].items.forEach(item => {
+                        shippingItems.push({
+                            productId: item.productId,
+                            adminId: adminId,
+                            quantity: item.quantity,
+                            price: item.price
+                        });
+                    });
+                });
+                
+                // Calculate proper shipping fees based on admin-configured zones
+                const shippingData = await calculateShippingFees(shippingItems, addressInfo);
+                
+                // Use the properly calculated fees
+                if (shippingData && shippingData.adminShippingFees) {
+                    Object.keys(shippingData.adminShippingFees).forEach(adminId => {
+                        const fee = shippingData.adminShippingFees[adminId];
+                        const feeValue = typeof fee === 'object' ? (fee.fee || 0) : (typeof fee === 'number' ? fee : 0);
+                        
+                        calculatedAdminShippingFees[adminId] = {
+                            fee: feeValue,
+                            vendorName: adminGroups[adminId]?.adminName || 'Vendor',
+                            // Store any additional metadata from the shipping calculation
+                            ...(typeof fee === 'object' ? fee : {})
+                        };
+                        
+                        calculatedShippingFee += feeValue;
+                    });
+                } else {
+                    // Fallback if the calculation fails - using 0 as a safe default
+                    console.error('Warning: Shipping fee calculation failed in order creation, using 0 as fallback');
+                    Object.keys(adminGroups).forEach(adminId => {
+                        calculatedAdminShippingFees[adminId] = {
+                            fee: 0,
+                            vendorName: adminGroups[adminId].adminName,
+                            isFallback: true
+                        };
+                    });
+                }
+            } catch (shippingError) {
+                console.error('Error calculating shipping fees in order creation:', shippingError);
+                // Safe fallback - using 0 instead of hardcoded values
+                Object.keys(adminGroups).forEach(adminId => {
+                    calculatedAdminShippingFees[adminId] = {
+                        fee: 0,
+                        vendorName: adminGroups[adminId].adminName,
+                        isFallback: true
+                    };
+                });
+            }
             
-            Object.keys(adminGroups).forEach(adminId => {
-                calculatedAdminShippingFees[adminId] = { 
-                    fee: defaultFee,
-                    vendorName: adminGroups[adminId].adminName
-                };
-                calculatedShippingFee += defaultFee;
-            });
             
             console.log('Applied basic shipping fees:', JSON.stringify(calculatedAdminShippingFees));
             console.log('Total shipping fee:', calculatedShippingFee);
@@ -1127,15 +1173,52 @@ const fixShippingFees = async(req, res) => {
                     });
                     
                     // Apply default shipping fees per admin
-                    const calculatedShippingFee = 0;
+                    // Initialize with zeros - will be updated with actual values from database
+                    let calculatedShippingFee = 0;
                     const calculatedAdminShippingFees = {};
-                    Object.keys(adminGroups).forEach(adminId => {
-                        const defaultFee = isAccra ? 40 : 70; // 40 GHS for Accra, 70 GHS for other regions
-                        calculatedAdminShippingFees[adminId] = defaultFee;
-                        calculatedShippingFee += defaultFee;
-                    });
                     
-                    console.log('Applied default shipping fees:', {
+                    // Get the ShippingZone model to fetch actual rates from database
+                    const ShippingZone = require('../../models/ShippingZone');
+                    
+                    // Get shipping rates from database instead of using hardcoded values
+                    try {
+                        // Look for a matching shipping zone for the region
+                        const defaultZone = await ShippingZone.findOne({ isDefault: true });
+                        
+                        // Apply shipping fees for each admin based on database values
+                        await Promise.all(Object.keys(adminGroups).map(async (adminId) => {
+                            try {
+                                // Try to find a zone matching the customer's location
+                                const vendorZone = await ShippingZone.findOne({
+                                    vendorId: adminId,
+                                    $or: [
+                                        { name: { $regex: new RegExp(city, 'i') } },
+                                        { region: { $regex: new RegExp(region, 'i') } }
+                                    ]
+                                }).sort({ updatedAt: -1 });
+                                
+                                // Use the vendor's specific zone rate if available, otherwise use the default zone
+                                const fee = vendorZone ? vendorZone.baseRate : (defaultZone ? defaultZone.baseRate : 0);
+                                
+                                calculatedAdminShippingFees[adminId] = fee;
+                                calculatedShippingFee += fee;
+                                
+                                console.log(`Using database shipping rate of ${fee} GHS for vendor ${adminId}`);
+                            } catch (error) {
+                                console.error(`Error getting shipping zone for admin ${adminId}:`, error);
+                                // Default to 0 when there's an error instead of hardcoding values
+                                calculatedAdminShippingFees[adminId] = 0;
+                            }
+                        }));
+                    } catch (error) {
+                        console.error('Error calculating shipping fees from database:', error);
+                        // Initialize all admin shipping fees to 0 if database lookup fails
+                        Object.keys(adminGroups).forEach(adminId => {
+                            calculatedAdminShippingFees[adminId] = 0;
+                        });
+                    }
+                    
+                    console.log('Applied database shipping fees:', {
                         totalShippingFee: calculatedShippingFee,
                         adminShippingFees: calculatedAdminShippingFees
                     });

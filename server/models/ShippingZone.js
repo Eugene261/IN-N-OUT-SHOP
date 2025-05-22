@@ -31,7 +31,6 @@ const shippingZoneSchema = new mongoose.Schema({
     },
     sameRegionCapFee: {
         type: Number,
-        default: 40,
         min: 0
     },
     additionalRates: [{

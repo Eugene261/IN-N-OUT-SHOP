@@ -117,7 +117,7 @@ const createShippingZone = async (req, res) => {
 const updateShippingZone = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, region, baseRate, isDefault, additionalRates, vendorRegion, sameRegionCapFee } = req.body;
+        const { name, region, baseRate, isDefault, additionalRates, vendorRegion } = req.body;
         
         console.log(`Received update request for zone ${id} with data:`, req.body);
         console.log(`Vendor region from request: ${vendorRegion}`);
@@ -150,7 +150,7 @@ const updateShippingZone = async (req, res) => {
         if (baseRate !== undefined) zone.baseRate = baseRate;
         if (isDefault !== undefined) zone.isDefault = isDefault;
         if (additionalRates) zone.additionalRates = additionalRates;
-        if (sameRegionCapFee !== undefined) zone.sameRegionCapFee = sameRegionCapFee;
+        // sameRegionCapFee removed as part of eliminating same region discount logic
         
         // For vendor region, we need to check if we should update all zones or just this one
         if (vendorRegion) {

@@ -273,13 +273,13 @@ const ShippingZones = () => {
       }
       
       // Extract only the data needed for the update to avoid sending the entire object with MongoDB fields
+      // Removed sameRegionCapFee as we no longer use same region discount
       const updatedZoneData = {
         name: editingZone.name,
         region: editingZone.region,
         baseRate: editingZone.baseRate,
         isDefault: editingZone.isDefault,
         additionalRates: editingZone.additionalRates,
-        sameRegionCapFee: editingZone.sameRegionCapFee || 40,
         vendorRegion: savedBaseRegion || editingZone.vendorRegion || editingZone.region
       };
       
@@ -919,31 +919,11 @@ const ShippingZones = () => {
                     </span>
                   </div>
                   
-                  {/* Display special same region note */}
-                  {!editingZone && (
-                    <div className="text-xs bg-blue-50 text-blue-700 p-2 rounded-md mt-2">
-                      <div className="flex items-center">
-                        <span className="font-medium">Same Region Discount:</span>
-                      </div>
-                      <p>
-                        Deliveries within {zone.vendorRegion || savedBaseRegion} region will have a maximum shipping fee of GHS {(zone.sameRegionCapFee || 40).toFixed(2)}
-                      </p>
-                    </div>
-                  )}
+                  {/* Same Region Cap Fee section removed */}
                   
                   {editingZone && editingZone._id === zone._id && (
                     <>
-                      <div className="flex items-center justify-between text-sm pt-2">
-                        <span className="text-gray-500">Same Region Cap Fee:</span>
-                        <Input
-                          type="number"
-                          value={editingZone.sameRegionCapFee || 40}
-                          onChange={(e) => setEditingZone({ ...editingZone, sameRegionCapFee: parseFloat(e.target.value) })}
-                          min="0"
-                          step="0.01"
-                          className="w-24 text-right"
-                        />
-                      </div>
+                      {/* Same Region Cap Fee input field removed */}
                       <div className="flex items-center justify-between text-sm pt-2">
                         <span className="text-gray-500">Default Zone:</span>
                         <Switch

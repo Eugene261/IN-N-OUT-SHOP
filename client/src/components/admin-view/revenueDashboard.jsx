@@ -124,15 +124,26 @@ function RevenueDashboard() {
     return `GH₵${parseFloat(amount || 0).toFixed(2)}`;
   };
   
-  // Calculate total shipping fees (as a fallback when server value is 0)
+  // Calculate total shipping fees (only use server-provided values, no hardcoded fallbacks)
   const calculateTotalShippingFees = () => {
     if (revenueStats?.totalShippingFees > 0) {
       return revenueStats.totalShippingFees;
     } else if (revenueStats?.shippingFeesByRegion) {
-      // Calculate based on region counts (GHS 40 for Accra, GHS 70 for other regions)
-      const accraFees = (revenueStats.shippingFeesByRegion.accra || 0) * 40;
-      const otherFees = (revenueStats.shippingFeesByRegion.other || 0) * 70;
-      return accraFees + otherFees;
+      // Use the server-provided values instead of hardcoded fees
+      const totalFees = Object.values(revenueStats.shippingFeesByRegion)
+        .reduce((sum, regionStats) => {
+          // If the regionStats has an amount field, use that, otherwise use the count * average fee
+          if (regionStats.amount) {
+            return sum + regionStats.amount;
+          } else if (regionStats.count && regionStats.averageFee) {
+            return sum + (regionStats.count * regionStats.averageFee);
+          } else if (typeof regionStats === 'number') {
+            // For backward compatibility if it's just a count with no fee info
+            return sum + regionStats; // In this case, assume it's already the total fee amount
+          }
+          return sum;
+        }, 0);
+      return totalFees;
     }
     return 0;
   };
@@ -238,25 +249,29 @@ function RevenueDashboard() {
             <div className="bg-blue-50 p-4 rounded-lg">
               <h4 className="font-medium text-blue-800">Total Shipping Fees</h4>
               <p className="text-2xl font-bold text-blue-900">
-                {revenueStats?.totalShippingFees > 0 
-                  ? formatCurrency(revenueStats.totalShippingFees)
-                  : revenueStats?.shippingFeesByRegion 
-                    ? formatCurrency((revenueStats.shippingFeesByRegion.accra || 0) * 40 + (revenueStats.shippingFeesByRegion.other || 0) * 70)
-                    : formatCurrency(0)
-                }
+                {formatCurrency(calculateTotalShippingFees())}
               </p>
             </div>
             <div className="border-t pt-4">
               <h4 className="font-medium mb-2">Shipping Fee Breakdown</h4>
               <ul className="space-y-2">
-                <li className="flex justify-between">
-                  <span className="text-gray-600">Accra/Greater Accra (GHS 40):</span>
-                  <span className="font-medium">{revenueStats?.shippingFeesByRegion?.accra || 0} orders</span>
-                </li>
-                <li className="flex justify-between">
-                  <span className="text-gray-600">Other Regions (GHS 70):</span>
-                  <span className="font-medium">{revenueStats?.shippingFeesByRegion?.other || 0} orders</span>
-                </li>
+                {/* Dynamically generate shipping fee breakdown by region */}
+                {revenueStats?.shippingFeesByRegion && Object.entries(revenueStats.shippingFeesByRegion)
+                  .filter(([key]) => key !== 'total') // Skip total if present
+                  .map(([region, data]) => {
+                    // Handle both legacy number values and new object structure
+                    const count = typeof data === 'object' ? (data.count || 0) : (data || 0);
+                    const avgFee = typeof data === 'object' && data.averageFee ? 
+                      ` (Avg: ${formatCurrency(data.averageFee)})` : '';
+                    
+                    return (
+                      <li key={region} className="flex justify-between">
+                        <span className="text-gray-600">{region.charAt(0).toUpperCase() + region.slice(1)}{avgFee}:</span>
+                        <span className="font-medium">{count} orders</span>
+                      </li>
+                    );
+                  })
+                }
                 <li className="flex justify-between">
                   <span className="text-gray-600">Average Shipping Fee:</span>
                   <span className="font-medium">

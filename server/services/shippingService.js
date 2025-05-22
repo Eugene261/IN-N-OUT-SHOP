@@ -144,60 +144,33 @@ const calculateShippingFees = async (cartItems, addressInfo) => {
             } else if (vendorShippingPrefs) {
                 // Fall back to vendor shipping preferences if no custom zone is found
                 // Default to out-of-region rate first
-                adminFee = vendorShippingPrefs.defaultOutOfRegionRate || 70;
+                adminFee = vendorShippingPrefs.defaultOutOfRegionRate || 0;
                 console.log(`Initial shipping fee for ${adminId}: ${adminFee} GHS (using vendor default out-of-region rate)`);
             } else {
-                // Final fallback to system default
-                adminFee = 70; // Default shipping fee
-                console.log(`Initial shipping fee for ${adminId}: ${adminFee} GHS (using system default)`);
-            }
-            
-            // Check if customer's region matches vendor's base region for direct shipping discount
-            const vendorBaseRegion = group.baseRegion?.toLowerCase().trim();
-            if (vendorBaseRegion && region) {
-                // Check for region match (with some flexibility for similar region names)
-                const isBaseRegionMatch = 
-                    vendorBaseRegion === region || 
-                    (vendorBaseRegion === 'greater accra' && region === 'accra') ||
-                    (vendorBaseRegion === 'accra' && region === 'greater accra') ||
-                    (vendorBaseRegion === 'ashanti' && region === 'ashanti region') ||
-                    (vendorBaseRegion === 'ashanti region' && region === 'ashanti');
-                
-                if (isBaseRegionMatch) {
-                    console.log(`✓ Customer is in vendor's base region (${vendorBaseRegion})`);
+                // Get any zone configuration from database as fallback
+                try {
+                    // Try to find a default zone first
+                    const defaultZone = await ShippingZone.findOne({ isDefault: true });
                     
-                    // Check if vendor has enabled regional rates
-                    const enableRegionalRates = vendorShippingPrefs ? 
-                        vendorShippingPrefs.enableRegionalRates !== false : true; // Default to true
-                    
-                    if (enableRegionalRates) {
-                        // Get appropriate base region fee
-                        let baseRegionFee = null;
-                        
-                        // Priority order: 1) Custom zone > 2) Vendor preference > 3) Default
-                        if (destinationZone && destinationZone.sameRegionCapFee) {
-                            // Use zone-specific cap fee
-                            baseRegionFee = destinationZone.sameRegionCapFee;
-                            console.log(`Using zone-specific same-region cap fee: ${baseRegionFee} GHS`);
-                        } else if (vendorShippingPrefs && vendorShippingPrefs.defaultBaseRate) {
-                            // Use vendor's default base region rate
-                            baseRegionFee = vendorShippingPrefs.defaultBaseRate;
-                            console.log(`Using vendor's base region rate: ${baseRegionFee} GHS`);
-                        } else {
-                            // Use system default
-                            baseRegionFee = 40; // Default system base region fee
-                            console.log(`Using system default base region fee: ${baseRegionFee} GHS`);
-                        }
-                        
-                        console.log(`Applying base region fee of ${baseRegionFee} GHS (was ${adminFee} GHS)`);
-                        adminFee = Math.min(adminFee, baseRegionFee); // Use the lower of the two fees
+                    if (defaultZone) {
+                        adminFee = defaultZone.baseRate || 0;
+                        console.log(`Initial shipping fee for ${adminId}: ${adminFee} GHS (using default zone: ${defaultZone.name})`);
                     } else {
-                        console.log(`✗ Vendor has disabled regional rates - no base region discount applied`);
+                        // If no default zone, try to get any zone
+                        const anyZone = await ShippingZone.findOne();
+                        adminFee = anyZone ? anyZone.baseRate || 0 : 0;
+                        console.log(`Initial shipping fee for ${adminId}: ${adminFee} GHS (using any available zone)`);
                     }
-                } else {
-                    console.log(`✗ Customer region (${region}) doesn't match vendor base region (${vendorBaseRegion})`);
+                } catch (error) {
+                    console.error('Error fetching zone for initial fee:', error);
+                    adminFee = 0; // Set to zero if all else fails
+                    console.log(`Initial shipping fee for ${adminId}: ${adminFee} GHS (using zero as last resort)`);
                 }
             }
+            
+            // Store basic shipping information without same-region discount logic
+            // Simply using the shipping zone rate as determined by the zone lookup
+            console.log(`Using shipping fee of ${adminFee} GHS for ${adminId} based on shipping zone configuration`);
             
             // Apply additional rates based on weight or cart value
             if (destinationZone.additionalRates && destinationZone.additionalRates.length > 0) {
@@ -215,15 +188,14 @@ const calculateShippingFees = async (cartItems, addressInfo) => {
             // Ensure fee is not negative
             adminFee = Math.max(0, adminFee);
             
-            // Save the admin fee for this vendor with additional information
+            // Save the admin fee for this vendor with simplified information
+            // Remove references to base region and same region comparison
             adminShippingFees[adminId] = {
                 fee: adminFee,
-                zone: destinationZone.name,
+                zone: destinationZone?.name || 'unknown',
                 itemCount: group.items.length,
                 cartValue: group.totalValue,
-                baseRegion: group.baseRegion || 'unknown',
                 customerRegion: region,
-                isSameRegion: vendorBaseRegion && vendorBaseRegion === region,
                 items: group.items.map(item => ({
                     productId: item.productId || 'unknown',
                     title: item.title || 'Unknown Product',
@@ -249,9 +221,27 @@ const calculateShippingFees = async (cartItems, addressInfo) => {
         };
     } catch (error) {
         console.error('Error calculating shipping fees:', error);
-        // Fallback to default shipping rates if calculation fails
-        const fallbackRate = 70; // Default fallback rate
-        const fallbackAccraRate = 40; // Default rate for Accra
+        // Fallback to admin-configured shipping rates from database if calculation fails
+        let fallbackRate = 0; // Initialize with zero instead of hardcoded value
+        
+        // Try to get rates from database - without hardcoding specific regions
+        try {
+            // Get the default zone as the primary fallback
+            const defaultZone = await ShippingZone.findOne({ isDefault: true });
+            fallbackRate = defaultZone?.baseRate || 0;
+            
+            if (!defaultZone) {
+                // If no default zone, just get any zone as a last resort
+                const anyZone = await ShippingZone.findOne();
+                fallbackRate = anyZone?.baseRate || 0;
+            }
+            
+            console.log(`Using database values for fallback rate: ${fallbackRate} GHS`);
+        } catch (dbError) {
+            console.error('Error fetching fallback rates from database:', dbError);
+            // Even in case of error, we'll use 0 as the fallback rate
+            fallbackRate = 0;
+        }
         
         // Group items by admin/vendor for fallback calculation
         const adminGroups = {};
@@ -267,7 +257,7 @@ const calculateShippingFees = async (cartItems, addressInfo) => {
         // Extract location information
         const city = (addressInfo.city || '').toLowerCase().trim();
         const region = (addressInfo.region || '').toLowerCase().trim();
-        const isAccra = city.includes('accra') || region.includes('accra') || region.includes('greater accra');
+        // No hardcoded region checks - we'll use the normalizeRegionName function defined earlier
         
         // Calculate fallback shipping fees with same-region discount attempts
         const adminShippingFees = {};
@@ -290,14 +280,20 @@ const calculateShippingFees = async (cartItems, addressInfo) => {
                     const enableRegionalRates = vendorShippingPrefs ? 
                         vendorShippingPrefs.enableRegionalRates !== false : true; // Default to true
                     
-                    // Need exact region match, not partial match
-                    const isExactMatch = vendorRegion && (
-                        vendorRegion === customerRegion || 
-                        (vendorRegion === 'greater accra' && customerRegion === 'accra') ||
-                        (vendorRegion === 'accra' && customerRegion === 'greater accra') ||
-                        (vendorRegion === 'ashanti' && customerRegion === 'ashanti region') ||
-                        (vendorRegion === 'ashanti region' && customerRegion === 'ashanti')
-                    );
+                    // Use our region normalization function for consistent comparison
+                    const normalizeRegionName = (regionName) => {
+                        if (!regionName) return '';
+                        // Remove common suffixes and prefixes
+                        let normalized = regionName.replace(/\s*region$/i, '').trim();
+                        normalized = normalized.replace(/^greater\s*/i, '').trim();
+                        return normalized.toLowerCase();
+                    };
+                    
+                    const normalizedVendorRegion = normalizeRegionName(vendorRegion);
+                    const normalizedCustomerRegion = normalizeRegionName(customerRegion);
+                    
+                    // Check for exact region match using normalized names
+                    const isExactMatch = vendorRegion && normalizedVendorRegion === normalizedCustomerRegion;
                     
                     if (isExactMatch && enableRegionalRates) {
                         // Get base region fee based on vendor preferences
@@ -307,8 +303,8 @@ const calculateShippingFees = async (cartItems, addressInfo) => {
                         totalFee += sameRegionFee;
                         continue;
                     } else if (vendorShippingPrefs && !isExactMatch) {
-                        // Apply vendor-specific out-of-region rate
-                        const outOfRegionFee = vendorShippingPrefs.defaultOutOfRegionRate || (isAccra ? fallbackAccraRate : fallbackRate);
+                        // Apply vendor-specific out-of-region rate - no hardcoded region checks
+                        const outOfRegionFee = vendorShippingPrefs.defaultOutOfRegionRate || fallbackRate;
                         console.log(`Fallback - DIFFERENT REGIONS - using vendor out-of-region rate: GHS ${outOfRegionFee}`);
                         adminShippingFees[adminId] = outOfRegionFee;
                         totalFee += outOfRegionFee;
@@ -322,8 +318,8 @@ const calculateShippingFees = async (cartItems, addressInfo) => {
                 // Continue with standard fallback below
             }
             
-            // Standard fallback based on location
-            const fee = isAccra ? fallbackAccraRate : fallbackRate;
+            // Standard fallback - no hardcoded region checks
+            const fee = fallbackRate; // Use the single fallback rate we retrieved from the database
             adminShippingFees[adminId] = fee;
             totalFee += fee;
         }
@@ -379,11 +375,31 @@ const findShippingZone = async (city, region, vendorId) => {
                     console.log(`Vendor ${vendorId} has no base region set`);
                 }
                 
-                // First try to find a vendor-specific zone for this exact region
+                // First try to find a vendor-specific zone for this region using flexible matching
+                // Sort by updatedAt to ensure we get the most recently updated zone
                 zone = await ShippingZone.findOne({
                     vendorId,
-                    region: normalizedRegion
-                });
+                    region: { $regex: normalizedRegion, $options: 'i' }
+                }).sort({ updatedAt: -1 });
+                
+                // If the region contains the word 'region' but didn't match, try without it
+                if (!zone && normalizedRegion.includes('region')) {
+                    const shortRegion = normalizedRegion.replace('region', '').trim();
+                    console.log(`Trying simplified region name: '${shortRegion}'`);
+                    zone = await ShippingZone.findOne({
+                        vendorId,
+                        region: { $regex: shortRegion, $options: 'i' }
+                    }).sort({ updatedAt: -1 });
+                }
+                
+                // Also try matching by the zone name (which is often the city)
+                if (!zone && normalizedCity) {
+                    console.log(`Trying to match by city name: '${normalizedCity}'`);
+                    zone = await ShippingZone.findOne({
+                        vendorId,
+                        name: { $regex: normalizedCity, $options: 'i' }
+                    }).sort({ updatedAt: -1 });
+                }
                 
                 if (zone) {
                     console.log(`Found vendor-specific zone for region: ${zone.name}`);
@@ -445,11 +461,11 @@ const findShippingZone = async (city, region, vendorId) => {
         
         // Step 3: If no zone found at all, create a default fallback zone object
         if (!zone) {
-            console.log('No shipping zone found, using hardcoded default zone');
+            console.log('No shipping zone found, using safe fallback zone with zero rate');
             zone = {
                 name: 'Default Zone',
                 region: 'Ghana',
-                baseRate: 70,
+                baseRate: 0,  // Default to zero instead of hardcoded 70 GHS
                 isDefault: true,
                 additionalRates: [
                     {
@@ -464,60 +480,37 @@ const findShippingZone = async (city, region, vendorId) => {
         // Log the found zone
         console.log(`Selected zone: ${zone.name}, region: ${zone.region}, baseRate: ${zone.baseRate}, vendorRegion: ${zone.vendorRegion || 'not set'}`);
         
-        // Check for same-region discount rule - if customer and vendor are in the same region,
-        // cap the shipping fee at the vendor-specified cap fee
-        if (zone.vendorRegion && normalizedRegion) {
-            // Need exact region match, not partial match
-            const vendorRegionLower = zone.vendorRegion.toLowerCase().trim();
-            const isExactMatch = 
-                vendorRegionLower === normalizedRegion || 
-                (vendorRegionLower === 'greater accra' && normalizedRegion === 'accra') ||
-                (vendorRegionLower === 'accra' && normalizedRegion === 'greater accra') ||
-                (vendorRegionLower === 'ashanti' && normalizedRegion === 'ashanti region') ||
-                (vendorRegionLower === 'ashanti region' && normalizedRegion === 'ashanti');
-            
-            if (isExactMatch) {
-                console.log(`SAME REGION MATCH! Customer region: ${normalizedRegion}, Vendor region: ${zone.vendorRegion}`);
-                
-                // Create a copy of the zone to avoid modifying the original
-                const modifiedZone = JSON.parse(JSON.stringify(zone));
-                
-                // Use the vendor-specified cap fee (default 40 GHS)
-                const capFee = modifiedZone.sameRegionCapFee || 40;
-                console.log(`Applying same-region cap fee: ${capFee} GHS (original base rate: ${modifiedZone.baseRate} GHS)`);
-                
-                modifiedZone.baseRate = Math.min(modifiedZone.baseRate, capFee);
-                modifiedZone.isSameRegion = true; // Mark this for reference
-                modifiedZone.appliedCapFee = capFee; // Store the applied cap fee for reference
-                
-                console.log(`After same-region discount, base rate is now: ${modifiedZone.baseRate} GHS`);
-                
-                // Also cap any additional rates to ensure total doesn't exceed the cap fee
-                if (modifiedZone.additionalRates && modifiedZone.additionalRates.length > 0) {
-                    modifiedZone.additionalRates = modifiedZone.additionalRates.map(rate => {
-                        if (rate.additionalFee > 0 && modifiedZone.baseRate + rate.additionalFee > capFee) {
-                            // Adjust the fee to cap at vendor-specified cap fee total
-                            const newFee = Math.max(0, capFee - modifiedZone.baseRate);
-                            return { ...rate, additionalFee: newFee };
-                        }
-                        return rate;
-                    });
-                }
-                
-                return modifiedZone;
-            } else {
-                console.log(`DIFFERENT REGIONS - NO DISCOUNT: Customer region: ${normalizedRegion}, Vendor region: ${zone.vendorRegion}`);
-            }
-        }
+        // No special handling for same region anymore - directly return the zone with the configured base rate
+        // This ensures the shipping fee is exactly what was configured in the admin panel
         
         return zone;
     } catch (error) {
         console.error('Error in findShippingZone:', error);
-        // Return a default zone in case of error
+        
+        // Try to find a default zone from the database instead of using hardcoded values
+        try {
+            const defaultZone = await ShippingZone.findOne({ isDefault: true });
+            if (defaultZone) {
+                console.log(`Found default zone from database: ${defaultZone.name}, baseRate: ${defaultZone.baseRate}`);
+                return defaultZone;
+            }
+            
+            // If no default zone is found, try to find any zone as a fallback
+            const anyZone = await ShippingZone.findOne();
+            if (anyZone) {
+                console.log(`Found fallback zone from database: ${anyZone.name}, baseRate: ${anyZone.baseRate}`);
+                return anyZone;
+            }
+        } catch (fallbackError) {
+            console.error('Error finding default zone:', fallbackError);
+        }
+        
+        // As a last resort, return a minimal default zone with zero rate
+        // to avoid charging unexpected fees
         return {
             name: 'Default Zone (Error Fallback)',
             region: 'Ghana',
-            baseRate: 70,
+            baseRate: 0,
             isDefault: true
         };
     }

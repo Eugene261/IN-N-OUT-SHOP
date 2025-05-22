@@ -102,11 +102,13 @@ const migrateShippingZones = async () => {
         wasUpdated = true;
       }
       
-      // 5. Update same region cap fee to 40 GHS for all zones
-      if (zone.sameRegionCapFee === undefined || zone.sameRegionCapFee !== 40) {
-        const oldValue = zone.sameRegionCapFee !== undefined ? `${zone.sameRegionCapFee} GHS` : 'not set';
-        zone.sameRegionCapFee = 40; // Update to 40 GHS
-        console.log(`Updating sameRegionCapFee from ${oldValue} to ${zone.sameRegionCapFee} GHS`);
+      // 5. Ensure same region cap fee exists but don't force a specific value
+      if (zone.sameRegionCapFee === undefined) {
+        // Only set a default value if it's completely undefined
+        // Use a percentage of the base rate as a reasonable default
+        const suggestedCapFee = Math.min(Math.max(zone.baseRate * 0.8, 20), zone.baseRate);
+        zone.sameRegionCapFee = suggestedCapFee;
+        console.log(`Setting sameRegionCapFee from 'not set' to ${zone.sameRegionCapFee} GHS (80% of base rate)`);
         wasUpdated = true;
       }
       

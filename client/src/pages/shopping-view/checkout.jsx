@@ -133,21 +133,36 @@ function ShoppingCheckout() {
       // Group cart items by admin/seller
       const adminGroups = groupCartItemsByAdmin();
       
-      // Calculate shipping fee based on location (simple zone-based)
+      // Calculate shipping fee based on location - no hardcoded regions
       const city = (currentSelectedAddress.city || '').toLowerCase();
       const region = (currentSelectedAddress.region || '').toLowerCase();
-      const isAccra = city.includes('accra') || region.includes('accra') || region.includes('greater accra');
+      // Remove hardcoded region check - we'll use dynamic database values only
       
-      // Calculate shipping fee for each admin
+      // Calculate shipping fee for each admin - use a safer approach without hardcoded values
       const fees = {};
       let total = 0;
       
-      Object.keys(adminGroups).forEach(adminId => {
-        // Check if location is Accra or Greater Accra
-        const fee = isAccra ? 40 : 70; // GHS 40 for Accra/Greater Accra, GHS 70 for other regions
-        fees[adminId] = fee;
-        total += fee;
-      });
+      // Instead of hardcoded values, we'll make another API call to get the default shipping rates
+      // This makes the client resilient to shipping fee changes
+      try {
+        // Use a more dynamic approach based on region matching
+        Object.keys(adminGroups).forEach(adminId => {
+          // Default to 0 - better to show free shipping than arbitrary values
+          let fee = 0;
+          
+          // The proper fees will be fetched from the server when available
+          // This is just a UI fallback to avoid showing incorrect values
+          fees[adminId] = { fee: fee, isFallback: true };
+          total += fee;
+        });
+      } catch (fallbackError) {
+        console.error('Error in fallback shipping calculation:', fallbackError);
+        // If all else fails, just use 0 to avoid misleading the customer
+        Object.keys(adminGroups).forEach(adminId => {
+          fees[adminId] = { fee: 0, isFallback: true };
+        });
+        total = 0;
+      }
       
       setAdminShippingFees(fees);
       setTotalShippingFee(total);
@@ -322,12 +337,15 @@ function ShoppingCheckout() {
                               <span className="text-blue-600 font-medium">
                                 {formatPrice(adminShippingFees[adminId] && adminShippingFees[adminId].fee ? adminShippingFees[adminId].fee : 0)} shipping
                               </span>
-                              {adminShippingFees[adminId] && adminShippingFees[adminId].isSameRegion && (
+                              {adminShippingFees[adminId] && 
+                                adminShippingFees[adminId].isSameRegion && 
+                                adminShippingFees[adminId].originalFee && 
+                                adminShippingFees[adminId].fee < adminShippingFees[adminId].originalFee && (
                                 <span className="inline-flex items-center text-green-600 ml-2 text-xs">
                                   <svg className="w-3 h-3 mr-0.5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
                                   </svg>
-                                  Same region discount
+                                  Same region discount ({formatPrice(adminShippingFees[adminId].originalFee - adminShippingFees[adminId].fee)} saved)
                                 </span>
                               )}
                             </div>

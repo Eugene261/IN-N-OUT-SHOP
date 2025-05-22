@@ -130,12 +130,14 @@ function AdminOrderDetailsView({ orderDetails }) {
     }
     // Fourth try: Use standard shipping rates based on location
     else if (orderDetails?.addressInfo) {
-      const city = (orderDetails.addressInfo?.city || '').toLowerCase();
-      const region = (orderDetails.addressInfo?.region || '').toLowerCase();
-      const isAccra = city.includes('accra') || region.includes('accra') || region.includes('greater accra');
-      
-      // Standard shipping rate per vendor: GHS 40 for Accra, GHS 70 for others
-      return isAccra ? 40 : 70;
+      // Instead of hardcoded values, we'll use a consistent default of 0
+      // and show a message that shipping data is missing
+    
+      // Track this as a potentially invalid order that needs attention
+      console.warn('Order is missing shipping fee information:', orderDetails._id);
+    
+      // Return 0 instead of making assumptions based on hardcoded regions
+      return 0;
     }
     
     return 0.00; // Default fallback
