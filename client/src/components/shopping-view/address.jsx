@@ -10,6 +10,7 @@ import AccordionAddressCard from './addressCard';
 import { toast } from 'sonner';
 
 const initialAddressFormData = {
+    customerName: '', // Add customer name field
     region: '',
     address: '',
     city: '',

@@ -3,10 +3,9 @@ import { useState, useEffect } from 'react';
 
 // Announcement messages to display in the sliding carousel
 const announcements = [
-  "Deliveries within Accra is GHS50, GHS70 for other parts of the country",
-  "Free shipping on orders over GHS500",
+  "Deliveries within Accra is GHS30 - 50, GHS70 for other parts of the country depends on the vendor",
   "New arrivals every week - Check back often!",
-  "30-day returns on all purchases",
+  "5-day returns on all purchases",
   "Sign up for our newsletter and get 10% off your first order"
 ];
 

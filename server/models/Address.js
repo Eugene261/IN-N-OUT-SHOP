@@ -1,8 +1,8 @@
 const mongoose = require('mongoose')
 
-
 const AddressSchema = new mongoose.Schema({
     userId : String,
+    customerName : String, // Add customer name field
     region : String,
     address : String,
     city : String,

@@ -707,13 +707,24 @@ const fixShippingFees = async(req, res) => {
 // Create an order only after successful payment verification
 const createOrderAfterPayment = async (req, res) => {
     try {
+        console.log('Request body received:', JSON.stringify(req.body, null, 2));
+        
         const { orderData, reference, tempOrderId } = req.body;
         
         // Validate required params
-        if (!orderData || !reference) {
+        if (!orderData) {
+            console.error('Missing orderData in request body');
             return res.status(400).json({
                 success: false,
-                message: 'Missing required parameters (orderData and reference)'
+                message: 'Missing required parameter: orderData'
+            });
+        }
+        
+        if (!reference) {
+            console.error('Missing reference in request body');
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required parameter: reference'
             });
         }
 
@@ -726,8 +737,29 @@ const createOrderAfterPayment = async (req, res) => {
         });
         
         // Create order with completed payment status
+        // First, ensure we have all required fields with proper types
+        // Log important customer information for debugging
+        console.log('Customer information in order data:', {
+            userId: orderData.userId,
+            customerName: orderData.customerName,
+            addressCustomerName: orderData.addressInfo?.customerName,
+            userEmail: orderData.userEmail
+        });
+        
+        // CRITICAL FIX: Map userId to user field as required by the Order model
         const orderWithPayment = {
-            ...orderData,
+            // Map userId to user field (required by the Order model)
+            user: orderData.userId || '',  // This is the critical fix - user instead of userId
+            // Store customer name for display in admin panel
+            customerName: orderData.customerName || orderData.addressInfo?.customerName || 'Customer',
+            // Store email if available for better customer identification
+            customerEmail: orderData.userEmail || orderData.email || '',
+            cartItems: Array.isArray(orderData.cartItems) ? orderData.cartItems : [],
+            addressInfo: orderData.addressInfo || {},
+            totalAmount: parseFloat(orderData.totalAmount) || 0,
+            shippingFee: parseFloat(orderData.shippingFee) || 0,
+            adminShippingFees: orderData.adminShippingFees || {},
+            paymentMethod: orderData.paymentMethod || 'paystack',
             paymentStatus: 'completed',
             orderStatus: 'confirmed',
             paymentId: reference,
@@ -735,44 +767,114 @@ const createOrderAfterPayment = async (req, res) => {
             orderUpdateDate: new Date()
         };
         
-        // Process items - verify products exist and are in stock
-        if (Array.isArray(orderWithPayment.cartItems)) {
-            for (const item of orderWithPayment.cartItems) {
-                const product = await Product.findById(item.productId);
-                if (!product) {
-                    return res.status(404).json({
-                        success: false,
-                        message: `Product not found: ${item.title}`
-                    });
-                }
-                
-                // Update product inventory would happen here
-                // This is the appropriate place since payment is confirmed
-            }
+        // Ensure cartItems have the required structure
+        if (orderWithPayment.cartItems.length > 0) {
+            orderWithPayment.cartItems = orderWithPayment.cartItems.map(item => ({
+                productId: item.productId || item._id || '',
+                title: item.title || item.productName || 'Product',
+                price: parseFloat(item.price) || 0,
+                quantity: parseInt(item.quantity, 10) || 1,
+                size: item.size || '',
+                color: item.color || '',
+                image: item.image || '',
+                adminId: item.adminId || item.vendorId || '',
+                status: item.status || 'processing'
+            }));
         }
         
-        // Create the order in the database
-        const newOrder = new Order(orderWithPayment);
-        const savedOrder = await newOrder.save();
+        // Process items - verify products exist but continue even if some are missing
+        // We don't want to fail the order creation if a product was deleted
+        try {
+            if (Array.isArray(orderWithPayment.cartItems)) {
+                for (let i = 0; i < orderWithPayment.cartItems.length; i++) {
+                    const item = orderWithPayment.cartItems[i];
+                    try {
+                        // Attempt to find the product but don't fail if not found
+                        const product = await Product.findById(item.productId);
+                        
+                        if (product) {
+                            // Update product inventory would happen here
+                            // This is the appropriate place since payment is confirmed
+                            console.log(`Product verified for order item: ${product.title}`);
+                        } else {
+                            console.warn(`Product not found for order item: ${item.title} (ID: ${item.productId}), but continuing with order`);
+                        }
+                    } catch (productError) {
+                        console.error(`Error verifying product for item ${i}:`, productError);
+                        // Continue with next item
+                    }
+                }
+            }
+        } catch (itemsError) {
+            console.error('Error processing order items:', itemsError);
+            // Continue with order creation despite item processing errors
+        }
         
-        if (!savedOrder) {
+        // Log key order data before saving - important for debugging
+        console.log('About to create order with:', {
+            user: orderWithPayment.user, // Log the user field (required by model) 
+            items: orderWithPayment.cartItems?.length || 0,
+            totalAmount: orderWithPayment.totalAmount,
+            paymentId: orderWithPayment.paymentId,
+            hasAddress: !!orderWithPayment.addressInfo,
+            paymentMethod: orderWithPayment.paymentMethod,
+            paymentStatus: orderWithPayment.paymentStatus
+        });
+        
+        // Create and save the order, and handle cart clearing in one try/catch block
+        let savedOrder;
+        
+        try {
+            // Create the order in the database
+            const newOrder = new Order(orderWithPayment);
+            savedOrder = await newOrder.save();
+            
+            if (!savedOrder) {
+                console.error('Order was not saved properly - save operation returned falsy value');
+                return res.status(500).json({
+                    success: false,
+                    message: 'Failed to save order - save operation returned empty result'
+                });
+            }
+            
+            console.log('Order saved successfully with ID:', savedOrder._id);
+            
+            // Clear the cart after successful order creation
+            if (orderData.userId) {
+                try {
+                    // First check if the cart exists
+                    const cart = await Cart.findOne({ userId: orderData.userId });
+                    if (cart) {
+                        await Cart.findOneAndDelete({ userId: orderData.userId });
+                        console.log(`Cart cleared for user ${orderData.userId}`);
+                    } else {
+                        console.log(`No cart found for user ${orderData.userId}, nothing to clear`);
+                    }
+                } catch (cartError) {
+                    // Just log the cart error but don't fail the order creation
+                    console.error(`Error clearing cart for user ${orderData.userId}:`, cartError);
+                }
+            } else {
+                console.log('No userId provided, skipping cart clearing');
+            }
+            
+            // Return success response with the saved order
+            return res.status(201).json({
+                success: true,
+                message: 'Order created successfully after payment verification',
+                data: savedOrder
+            });
+            
+        } catch (saveError) {
+            console.error('Error saving order to database:', saveError);
+            // Return detailed error for debugging
             return res.status(500).json({
                 success: false,
-                message: 'Failed to save order'
+                message: 'Failed to save order to database',
+                error: saveError.message,
+                stack: process.env.NODE_ENV === 'development' ? saveError.stack : undefined
             });
         }
-        
-        // Clear the cart after successful order
-        if (orderData.userId) {
-            await Cart.findOneAndDelete({ userId: orderData.userId });
-            console.log(`Cart cleared for user ${orderData.userId}`);
-        }
-        
-        return res.status(201).json({
-            success: true,
-            message: 'Order created successfully after payment verification',
-            data: savedOrder
-        });
         
     } catch (error) {
         console.error('Error creating order after payment:', error);

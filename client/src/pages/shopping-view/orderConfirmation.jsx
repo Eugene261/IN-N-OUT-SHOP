@@ -108,11 +108,55 @@ function OrderConfirmationPage() {
                 
                 console.log('Creating order with data:', orderDataWithPayment);
                 
+                // Ensure all data is properly formatted before sending to server
+                const formattedOrderData = {
+                  userId: orderDataWithPayment.userId || user?.id || '',
+                  // Preserve customer name from original order data
+                  customerName: orderDataWithPayment.customerName || user?.userName || user?.name || 'Customer',
+                  cartItems: Array.isArray(orderDataWithPayment.cartItems) ? orderDataWithPayment.cartItems.map(item => ({
+                    productId: item.productId || item._id || '',
+                    title: item.title || item.productName || 'Product',
+                    price: parseFloat(item.price) || 0,
+                    quantity: parseInt(item.quantity, 10) || 1,
+                    size: item.size || '',
+                    color: item.color || '',
+                    image: item.image || '',
+                    adminId: item.adminId || item.vendorId || ''
+                  })) : [],
+                  // Preserve customer name in shipping address
+                  addressInfo: {
+                    ...(orderDataWithPayment.addressInfo || {}),
+                    customerName: orderDataWithPayment.addressInfo?.customerName || 
+                                  orderDataWithPayment.customerName || 
+                                  user?.userName || 
+                                  user?.name || 
+                                  'Customer'
+                  },
+                  totalAmount: parseFloat(orderDataWithPayment.totalAmount) || 0,
+                  shippingFee: parseFloat(orderDataWithPayment.shippingFee) || 0,
+                  paymentMethod: orderDataWithPayment.paymentMethod || 'paystack',
+                  paymentStatus: 'completed',
+                  orderStatus: 'confirmed',
+                  adminShippingFees: orderDataWithPayment.adminShippingFees || {}
+                };
+                
                 // Create the order in the database now that payment is confirmed
+                console.log('Attempting to create order with data:', {
+                  orderItems: formattedOrderData.cartItems?.length || 0,
+                  hasUserId: !!formattedOrderData.userId,
+                  hasAddress: !!formattedOrderData.addressInfo,
+                  totalAmount: formattedOrderData.totalAmount,
+                  reference: reference
+                });
+                
                 axios.post('http://localhost:5000/api/shop/order/create-after-payment', {
-                  orderData: orderDataWithPayment,
+                  orderData: formattedOrderData,
                   reference: reference,
                   tempOrderId: tempOrderId || paystackResponse.data?.metadata?.tempOrderId
+                }, {
+                  headers: {
+                    'Content-Type': 'application/json'
+                  }
                 })
                 .then(serverResponse => {
                   console.log('Order verified and cart cleared on server:', serverResponse.data);
@@ -151,6 +195,48 @@ function OrderConfirmationPage() {
                 })
                 .catch(error => {
                   console.error('Error verifying order on server:', error);
+                  toast.error('Failed to create order on server');
+                  
+                  // Try again with a retry - sometimes there might be a temporary network issue
+                  setTimeout(() => {
+                    console.log('Retrying order creation...');
+                    toast.info('Retrying order creation...');
+                    
+                    // Use the formatted data for retry as well
+                    axios.post('http://localhost:5000/api/shop/order/create-after-payment', {
+                      orderData: formattedOrderData, // Use the formatted data instead of raw data
+                      reference: reference,
+                      tempOrderId: tempOrderId || paystackResponse.data?.metadata?.tempOrderId
+                    }, {
+                      headers: {
+                        'Content-Type': 'application/json'
+                      }
+                    })
+                    .then(retryResponse => {
+                      console.log('Retry successful, order created:', retryResponse.data);
+                      toast.success('Order created on retry!');
+                      
+                      // Update order data
+                      const orderData = {
+                        orderId: retryResponse.data?.data?._id || transactionId,
+                        timestamp: new Date().getTime(),
+                        cartCleared: true
+                      };
+                      localStorage.setItem('lastCompletedOrder', JSON.stringify(orderData));
+                      
+                      // Clear cart through Redux
+                      const userId = user.id || user._id;
+                      dispatch(clearCart(userId));
+                    })
+                    .catch(retryError => {
+                      console.error('Final retry failed:', retryError);
+                      toast.error('Order creation failed. Please contact support with your reference number.');
+                      
+                      // Save payment reference for support
+                      localStorage.setItem('failedPaymentReference', reference);
+                    });
+                  }, 3000);
+                  
                   // Even on error, ensure Redux state shows empty cart
                   dispatch(clearCartState());
                   

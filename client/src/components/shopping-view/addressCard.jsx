@@ -15,6 +15,7 @@ const AccordionAddressCard = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
+    customerName: addressInfo?.customerName || '', // Add customer name field
     region: addressInfo?.region || '',
     address: addressInfo?.address || '',
     city: addressInfo?.city || '',
@@ -43,6 +44,7 @@ const AccordionAddressCard = ({
     setIsEditing(false);
     // Reset form data to original values
     setFormData({
+      customerName: addressInfo?.customerName || '', // Include customer name when resetting
       region: addressInfo?.region || '',
       address: addressInfo?.address || '',
       city: addressInfo?.city || '',

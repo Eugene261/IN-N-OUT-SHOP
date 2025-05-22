@@ -54,6 +54,16 @@ const orderSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    // Customer name (explicitly stored for display purposes)
+    customerName: {
+        type: String,
+        default: 'Customer'
+    },
+    // Customer email for better identification
+    customerEmail: {
+        type: String,
+        default: ''
+    },
     // Items in the order
     items: [orderItemSchema],
     // Original cart items for backward compatibility
@@ -79,6 +89,7 @@ const orderSchema = new mongoose.Schema({
     // Shipping address
     addressInfo: {
         addressId: String,
+        customerName: String, // Added customer name field to address info
         region: String,
         address: String,
         city: String,

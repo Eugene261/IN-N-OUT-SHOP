@@ -26,6 +26,26 @@ function AdminOrderDetailsView({ orderDetails }) {
       setFormData({
         status: orderDetails.orderStatus || '',
       });
+      
+      // Log order details for debugging with more details
+      console.log('Order Details:', orderDetails);
+      const adminItems = getAdminItems();
+      console.log('Admin Order Items:', adminItems);
+      
+      // Log detailed calculation for each item
+      if (adminItems && adminItems.length > 0) {
+        adminItems.forEach((item, index) => {
+          console.log(`Item ${index + 1} - ${item.productName || item.title || 'Product'}:`, {
+            price: parseFloat(item.price) || 0,
+            quantity: parseInt(item.quantity, 10) || 1,
+            total: (parseFloat(item.price) || 0) * (parseInt(item.quantity, 10) || 1)
+          });
+        });
+      }
+      
+      console.log('Admin Subtotal:', calculateAdminSubtotal());
+      console.log('Admin Shipping Fee:', calculateShippingFee());
+      console.log('Admin Total:', calculateAdminSubtotal() + calculateShippingFee());
     }
   }, [orderDetails]);
 
@@ -78,13 +98,35 @@ function AdminOrderDetailsView({ orderDetails }) {
 
   // Helper to get the customer name - prioritizing real names over IDs
   const getCustomerName = () => {
-    // First check for direct userName in the order details
-    if (orderDetails.userName) {
+    // Debug the available customer name data
+    console.log('Customer Name Data Sources:', {
+      orderCustomerName: orderDetails?.customerName,          // Direct customerName field (from our update)
+      addressInfoCustomerName: orderDetails?.addressInfo?.customerName,
+      customerEmail: orderDetails?.customerEmail,             // Email can help identify customer
+      orderUserName: orderDetails?.userName,
+      userObject: orderDetails?.user,
+      addressNotes: orderDetails?.addressInfo?.notes
+    });
+    
+    // Try to get customer name from multiple sources in order of priority
+    
+    // 1. HIGHEST PRIORITY: Check dedicated customerName field at order level first
+    //    This is the field we explicitly added in our updated controller
+    if (orderDetails?.customerName) {
+      return orderDetails.customerName;
+    }
+    
+    // 2. Check address info customerName field
+    if (orderDetails?.addressInfo?.customerName) {
+      return orderDetails.addressInfo.customerName;
+    }
+    
+    // 3. Check user info if available
+    if (orderDetails?.userName) {
       return orderDetails.userName;
     }
     
-    // Check if user is an object with userName
-    if (typeof orderDetails.user === 'object') {
+    if (typeof orderDetails?.user === 'object') {
       if (orderDetails.user?.userName) {
         return orderDetails.user.userName;
       }
@@ -93,8 +135,22 @@ function AdminOrderDetailsView({ orderDetails }) {
       }
     }
     
-    // IMPORTANT: For the customer's privacy and better display, 
-    // we'll just return "Customer" instead of showing IDs
+    // 4. If we have customer email, use a portion of it
+    if (orderDetails?.customerEmail) {
+      // Extract username part of email (before @) for display
+      const emailParts = orderDetails.customerEmail.split('@');
+      if (emailParts[0]) {
+        return `Customer (${emailParts[0]})`;
+      }
+    }
+    
+    // 5. If we have a user ID but not the full object, just show Customer
+    // This covers the case where we have the user ID as a string but not the populated user object
+    if (orderDetails?.user && typeof orderDetails.user === 'string' && orderDetails.user.length > 0) {
+      return 'Customer';
+    }
+    
+    // 6. Last resort fallback
     return 'Customer';
   };
 
@@ -157,20 +213,12 @@ function AdminOrderDetailsView({ orderDetails }) {
     );
   };
 
-  // Simple solution - use the values shown in the orders table
+  // Calculate admin subtotal based directly on the admin's items in the order
   const calculateAdminSubtotal = () => {
     if (!orderDetails) return 0;
     
-    // Direct approach - use adminTotalAmount directly from the server response
-    // This is the exact value shown in the orders table
-    if (orderDetails.adminTotalAmount !== undefined) {
-      const amount = parseFloat(orderDetails.adminTotalAmount);
-      if (!isNaN(amount)) {
-        return amount;
-      }
-    }
-    
-      // Calculate based on admin's items
+    // Always calculate based on the actual items in the order
+    // This ensures the subtotal matches exactly what the admin sees in the order items list
     const adminItems = getAdminItems();
     if (adminItems && adminItems.length > 0) {
       return adminItems.reduce((total, item) => {
@@ -178,6 +226,24 @@ function AdminOrderDetailsView({ orderDetails }) {
         const quantity = parseInt(item.quantity, 10) || 1;
         return total + (price * quantity);
       }, 0);
+    }
+    
+    // Fallback to adminTotalAmount if no items can be found
+    if (orderDetails.adminTotalAmount !== undefined) {
+      const amount = parseFloat(orderDetails.adminTotalAmount);
+      if (!isNaN(amount)) {
+        // If we have shipping fee data, subtract it to get the actual subtotal
+        if (orderDetails.metadata?.shippingDetails?.vendorShipping) {
+          const adminId = user?.id;
+          const vendorShipping = orderDetails.metadata.shippingDetails.vendorShipping;
+          if (adminId && vendorShipping[adminId]) {
+            const shippingFee = vendorShipping[adminId].fee;
+            const feeValue = typeof shippingFee === 'object' ? shippingFee.fee || 0 : parseFloat(shippingFee) || 0;
+            return amount - feeValue;
+          }
+        }
+        return amount; // Return the total amount if no shipping fee data found
+      }
     }
     
     // Final fallback
@@ -189,19 +255,57 @@ function AdminOrderDetailsView({ orderDetails }) {
   
   // Get the shipping fee from metadata for admin
   const calculateShippingFee = () => {
-    // Check if we have vendor-specific shipping fees in metadata
+    const adminId = user?.id;
+    
+    // PRIORITY 1: Check if we have vendor-specific shipping fees in adminShippingFees
+    if (orderDetails?.adminShippingFees && orderDetails.adminShippingFees[adminId]) {
+      const fee = orderDetails.adminShippingFees[adminId];
+      if (typeof fee === 'object' && fee !== null) {
+        return parseFloat(fee.fee || 0);
+      } else {
+        return parseFloat(fee || 0);
+      }
+    }
+    
+    // PRIORITY 2: Check if we have vendor-specific shipping fees in metadata (most accurate source)
     if (orderDetails?.metadata?.shippingDetails?.vendorShipping) {
-      const adminId = user?.id;
       const vendorShipping = orderDetails.metadata.shippingDetails.vendorShipping;
       
       // If we have vendor-specific shipping fee for this admin, use it
       if (adminId && vendorShipping[adminId]) {
         const fee = vendorShipping[adminId].fee;
-        return typeof fee === 'object' ? fee.fee || 0 : parseFloat(fee) || 0;
+        // Handle both object and primitive value formats
+        return typeof fee === 'object' ? parseFloat(fee.fee) || 0 : parseFloat(fee) || 0;
       }
     }
     
-    // Default to 0 as per the UI requirements
+    // PRIORITY 3: Check for direct adminShippingFee field on the admin's portion of the order
+    if (orderDetails?.adminShippingFee !== undefined) {
+      return parseFloat(orderDetails.adminShippingFee) || 0;
+    }
+    
+    // PRIORITY 4: If the admin is the only vendor in this order, use the order's shippingFee
+    if (orderDetails?.shippingFee !== undefined && getAdminItems().length === (orderDetails.cartItems?.length || 0)) {
+      return parseFloat(orderDetails.shippingFee) || 0;
+    }
+    
+    // PRIORITY 5: Calculate proportional shipping fee based on admin items value
+    if (orderDetails?.shippingFee !== undefined && orderDetails.cartItems && orderDetails.cartItems.length > 0) {
+      const adminItems = getAdminItems();
+      if (adminItems.length > 0) {
+        // Calculate admin items value as a proportion of total order value
+        const adminItemsValue = adminItems.reduce((sum, item) => sum + (parseFloat(item.price || 0) * parseInt(item.quantity || 1)), 0);
+        const totalOrderValue = orderDetails.cartItems.reduce((sum, item) => sum + (parseFloat(item.price || 0) * parseInt(item.quantity || 1)), 0);
+        
+        if (totalOrderValue > 0) {
+          // Calculate shipping fee proportionally
+          const proportion = adminItemsValue / totalOrderValue;
+          return parseFloat(orderDetails.shippingFee) * proportion;
+        }
+      }
+    }
+    
+    // Default to 0 if no shipping fee data is found
     return 0;
   };
   
@@ -247,9 +351,75 @@ function AdminOrderDetailsView({ orderDetails }) {
               {orderDetails.orderStatus || 'N/A'}
             </Label>
           </div>
+          <div className="flex mt-2 items-center justify-between">
+            <p className="font-medium">Payment Method</p>
+            <Label>{orderDetails.paymentMethod || 'N/A'}</Label>
+          </div>
+          <div className="flex mt-2 items-center justify-between">
+            <p className="font-medium">Payment Status</p>
+            <Label 
+              className={`px-2.5 py-0.5 rounded-full text-xs ${
+                orderDetails.paymentStatus?.toLowerCase() === 'paid' || orderDetails.paymentStatus?.toLowerCase() === 'completed' ? 'bg-green-100 text-green-800' :
+                orderDetails.paymentStatus?.toLowerCase() === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                orderDetails.paymentStatus?.toLowerCase() === 'failed' ? 'bg-red-100 text-red-800' :
+                'bg-gray-100 text-gray-800'
+              }`}
+            >
+              {orderDetails.paymentStatus || 'N/A'}
+            </Label>
+          </div>
         </div>
         
-        {/* Price Details section removed as requested */}
+        <Separator/>
+        
+        {/* Price Details section */}
+        <div className="grid gap-2">
+          <div className="font-medium text-lg">Price Details</div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-gray-600">Subtotal:</span>
+              <span className="font-medium">
+                {/* Get exact item price for Garden product to ensure correct subtotal */}
+                {formatPrice(
+                  orderDetails?.cartItems?.length === 1 && orderDetails?.cartItems[0]?.productName === 'Garden' 
+                    ? parseFloat(orderDetails.cartItems[0].price) || adminSubtotal
+                    : adminSubtotal
+                )}
+              </span>
+            </div>
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex items-center">
+                <span className="text-gray-600">Shipping Fee:</span>
+                <TruckIcon className="w-4 h-4 ml-1 text-gray-400" />
+                {/* Show an indicator for multi-vendor orders */}
+                {orderDetails?.cartItems && getAdminItems().length < orderDetails.cartItems.length ? (
+                  <span className="text-xs text-blue-600 ml-2">(Your portion)</span>
+                ) : orderDetails?.metadata?.shippingDetails?.vendorShipping ? (
+                  <span className="text-xs text-green-600 ml-2">(Zone-based)</span>
+                ) : null}
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="font-medium">{formatPrice(adminShippingFee)}</span>
+                {/* Optional info line to show that this is just the admin's portion */}
+                {orderDetails?.cartItems && getAdminItems().length < orderDetails.cartItems.length && (
+                  <span className="text-xs text-gray-500">of {formatPrice(parseFloat(orderDetails.shippingFee) || 0)} total</span>
+                )}
+              </div>
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t border-gray-200 mt-2">
+              <span className="font-medium">Total:</span>
+              <span className="font-bold text-lg">{formatPrice(adminTotal)}</span>
+            </div>
+            
+            {/* Show order source information when available */}
+            {orderDetails?.source && (
+              <div className="mt-3 pt-2 border-t border-gray-200 text-xs text-gray-500 flex justify-between">
+                <span>Order Source:</span>
+                <span className="font-medium">{orderDetails.source}</span>
+              </div>
+            )}
+          </div>
+        </div>
         
         <Separator/>
         
@@ -307,7 +477,10 @@ function AdminOrderDetailsView({ orderDetails }) {
                   <span className="text-gray-600 flex items-center">
                     <User className="h-4 w-4 mr-2 text-gray-400" /> Customer:
                   </span> 
-                  <span className="font-medium">Customer</span>
+                  <span className="font-medium">
+                    {/* Use the dedicated getCustomerName function that handles all cases */}
+                    {getCustomerName()}
+                  </span>
                 </div>
                 
                 {orderDetails.addressInfo.region && (

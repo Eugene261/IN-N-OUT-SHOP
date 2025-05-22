@@ -108,12 +108,39 @@ const PaystackPayment = ({ amount, items, shippingAddress, shippingFees = {}, to
       
       console.log('SHIPPING DEBUG - Formatted shipping fees for order creation:', JSON.stringify(formattedShippingFees));
       
+      // Log user information to debug what's available
+      console.log('User data for order creation:', {
+        id: user.id,
+        userName: user.userName,
+        name: user.name,
+        email: user.email
+      });
+      
+      // Get customer name from user object or address info
+      const customerNameFromUser = user.userName || user.name || '';
+      const customerNameFromAddress = shippingAddress.customerName || '';
+      
+      // Determine the best customer name to use
+      let finalCustomerName = customerNameFromAddress || customerNameFromUser || 'Customer';
+      
+      // Make sure we're not using notes as customer name
+      if (!customerNameFromAddress && !customerNameFromUser && shippingAddress.notes) {
+        finalCustomerName = 'Customer'; // Don't use notes as customer name
+      }
+      
+      console.log('Final customer name for order:', finalCustomerName);
+      
       // Instead of creating an order in the database, store the order data in localStorage
       // to be used after successful payment
       const orderData = {
         userId: user.id,
+        customerName: finalCustomerName,
+        userEmail: user.email, // Include email for better customer identification
         cartItems: items,
-        addressInfo: shippingAddress,
+        addressInfo: {
+          ...shippingAddress,
+          customerName: finalCustomerName // Use the same final name for consistency
+        },
         totalAmount: amount,
         shippingFee: totalShippingFee, // Total shipping fee
         adminShippingFees: formattedShippingFees, // Use formatted admin shipping fees

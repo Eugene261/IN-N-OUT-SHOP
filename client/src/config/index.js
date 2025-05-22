@@ -669,6 +669,14 @@ export const sortOptions = [
 
 export const addressFormControls = [
     {
+        label: "Name",
+        name: "customerName",
+        componentType: "input",
+        type: "text",
+        placeholder: "Enter your full name",
+        required: true
+    },
+    {
         label: "Region",
         name: "region",
         componentType: "input",
