@@ -98,9 +98,47 @@ function AdminOrderDetailsView({ orderDetails }) {
     return 'Customer';
   };
 
-  // Simple shipping fee calculation - return 0 as shown in the UI
+  // Get shipping fee with multiple fallback mechanisms for orders without metadata
   const getAdminShippingFee = () => {
-    return 0.00; // All orders show 0.00 in the UI
+    // First try: Use metadata.shippingDetails.totalShippingFee (most accurate)
+    if (orderDetails?.metadata?.shippingDetails?.totalShippingFee !== undefined) {
+      return parseFloat(orderDetails.metadata.shippingDetails.totalShippingFee) || 0;
+    } 
+    // Second try: Use the direct shippingFee field
+    else if (orderDetails?.shippingFee !== undefined) {
+      return parseFloat(orderDetails.shippingFee) || 0;
+    }
+    // Third try: Calculate from difference between total and subtotal
+    else if (orderDetails?.totalAmount) {
+      // Calculate subtotal from admin items
+      const adminItems = getAdminItems();
+      const calculatedSubtotal = adminItems.reduce((sum, item) => {
+        const itemPrice = parseFloat(item.price) || 0;
+        const quantity = parseInt(item.quantity, 10) || 1;
+        return sum + (itemPrice * quantity);
+      }, 0);
+      
+      // If totalAmount > calculatedSubtotal, a portion of the difference might be shipping
+      if (orderDetails.totalAmount > calculatedSubtotal && adminItems.length > 0) {
+        // Need to estimate admin's portion of total shipping fee
+        const allItems = orderDetails.cartItems || [];
+        const totalItems = allItems.length;
+        const adminPortion = totalItems > 0 ? adminItems.length / totalItems : 0;
+        const totalShippingFee = orderDetails.totalAmount - calculatedSubtotal;
+        return adminPortion * totalShippingFee;
+      }
+    }
+    // Fourth try: Use standard shipping rates based on location
+    else if (orderDetails?.addressInfo) {
+      const city = (orderDetails.addressInfo?.city || '').toLowerCase();
+      const region = (orderDetails.addressInfo?.region || '').toLowerCase();
+      const isAccra = city.includes('accra') || region.includes('accra') || region.includes('greater accra');
+      
+      // Standard shipping rate per vendor: GHS 40 for Accra, GHS 70 for others
+      return isAccra ? 40 : 70;
+    }
+    
+    return 0.00; // Default fallback
   };
 
   // Function to get only items that belong to the current admin
@@ -130,13 +168,15 @@ function AdminOrderDetailsView({ orderDetails }) {
       }
     }
     
-    // Fallback with hardcoded values that exactly match what's shown in the orders table
-    const id = orderDetails._id?.toString() || '';
-    if (id.includes('AE0387')) return 51.96;
-    if (id.includes('73250')) return 74.99;
-    if (id.includes('CEF23E')) return 384.98;
-    if (id.includes('31698E')) return 149.98;
-    if (id.includes('DF8713')) return 271.94;
+      // Calculate based on admin's items
+    const adminItems = getAdminItems();
+    if (adminItems && adminItems.length > 0) {
+      return adminItems.reduce((total, item) => {
+        const price = parseFloat(item.price) || 0;
+        const quantity = parseInt(item.quantity, 10) || 1;
+        return total + (price * quantity);
+      }, 0);
+    }
     
     // Final fallback
     return 0;
@@ -145,10 +185,21 @@ function AdminOrderDetailsView({ orderDetails }) {
   // Calculate direct values first to avoid circular dependency
   const adminSubtotal = calculateAdminSubtotal();
   
-  // CRITICAL FIX: Calculate shipping fee based on the items shown in Order Items section
+  // Get the shipping fee from metadata for admin
   const calculateShippingFee = () => {
-    // Based on the screenshot and requirements, shipping fees should be 0 for these orders
-    // This matches what's being shown in the UI
+    // Check if we have vendor-specific shipping fees in metadata
+    if (orderDetails?.metadata?.shippingDetails?.vendorShipping) {
+      const adminId = user?.id;
+      const vendorShipping = orderDetails.metadata.shippingDetails.vendorShipping;
+      
+      // If we have vendor-specific shipping fee for this admin, use it
+      if (adminId && vendorShipping[adminId]) {
+        const fee = vendorShipping[adminId].fee;
+        return typeof fee === 'object' ? fee.fee || 0 : parseFloat(fee) || 0;
+      }
+    }
+    
+    // Default to 0 as per the UI requirements
     return 0;
   };
   

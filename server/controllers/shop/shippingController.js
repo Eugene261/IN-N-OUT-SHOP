@@ -253,17 +253,74 @@ const calculateShipping = async (req, res) => {
             });
         }
         
+        console.log('SHIPPING DEBUG - Calculate shipping request received:', {
+            itemCount: cartItems.length,
+            region: addressInfo.region,
+            city: addressInfo.city
+        });
+        
         // Calculate shipping fees
         const shippingData = await calculateShippingFees(cartItems, addressInfo);
         
         // Add estimated delivery information
         const estimatedDelivery = calculateEstimatedDelivery();
         
+        // Verify we have properly formatted adminShippingFees
+        if (shippingData.adminShippingFees) {
+            Object.keys(shippingData.adminShippingFees).forEach(adminId => {
+                const fee = shippingData.adminShippingFees[adminId];
+                
+                // Ensure each shipping fee has a standardized format
+                if (typeof fee !== 'object') {
+                    // Convert primitive values to proper objects with fee property
+                    const feeValue = typeof fee === 'string' ? parseFloat(fee) : fee;
+                    shippingData.adminShippingFees[adminId] = { 
+                        fee: feeValue || 0,
+                        vendorName: 'Vendor' // Default vendor name
+                    };
+                } else if (!fee.fee && fee.fee !== 0) {
+                    // Add missing fee property
+                    shippingData.adminShippingFees[adminId].fee = 0;
+                }
+            });
+        }
+        
+        // Add shipping details for each vendor for frontend reference
+        const shippingDetails = {};
+        if (shippingData.adminShippingFees) {
+            Object.keys(shippingData.adminShippingFees).forEach(adminId => {
+                const feeObj = shippingData.adminShippingFees[adminId];
+                const vendorItems = cartItems.filter(item => item.adminId === adminId);
+                const vendorName = vendorItems.length > 0 && vendorItems[0].adminName
+                    ? vendorItems[0].adminName : 'Vendor';
+                
+                shippingDetails[adminId] = {
+                    vendorName,
+                    vendorId: adminId,
+                    baseRegion: feeObj.baseRegion || null,
+                    customerRegion: addressInfo.region || null,
+                    isSameRegion: feeObj.isSameRegion || false,
+                    appliedCapFee: feeObj.appliedCapFee || null,
+                    items: vendorItems.map(item => ({
+                        productId: item.productId,
+                        title: item.title || 'Product',
+                        quantity: item.quantity || 1
+                    }))
+                };
+            });
+        }
+        
+        console.log('SHIPPING DEBUG - Shipping calculation response:', {
+            totalShippingFee: shippingData.totalShippingFee,
+            adminCount: shippingData.adminShippingFees ? Object.keys(shippingData.adminShippingFees).length : 0
+        });
+        
         res.status(200).json({
             success: true,
             data: {
                 ...shippingData,
-                estimatedDelivery
+                estimatedDelivery,
+                shippingDetails
             }
         });
     } catch (error) {

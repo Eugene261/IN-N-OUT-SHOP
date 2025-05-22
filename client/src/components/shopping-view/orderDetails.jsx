@@ -19,12 +19,18 @@ function ShoppingOrderDetailsView({ orderDetails, user }) {
 
   // Format price ensuring it's treated as a number
   const formatPrice = (price) => {
-    if (price === undefined || price === null) return 'GHS 0.00';
+    // Added strict validation for zero values
+    if (price === undefined || price === null || price === 0) {
+      return 'GHS 0.00';
+    }
 
     // Handle case where price might be an object with a fee property
     if (typeof price === 'object' && price !== null) {
-      if (price.fee !== undefined && typeof price.fee === 'number') {
-        return `GHS ${price.fee.toFixed(2)}`;
+      if (price.fee !== undefined) {
+        const numFee = parseFloat(price.fee);
+        if (!isNaN(numFee)) {
+          return `GHS ${numFee.toFixed(2)}`;
+        }
       }
       return 'GHS 0.00';
     }
@@ -34,6 +40,13 @@ function ShoppingOrderDetailsView({ orderDetails, user }) {
 
     // Check if it's a valid number after conversion
     if (isNaN(numPrice)) return 'GHS 0.00';
+
+    // Extra debugging
+    console.log('PRICE DEBUG - Formatting price:', {
+      originalPrice: price,
+      parsedPrice: numPrice,
+      formatted: `GHS ${numPrice.toFixed(2)}`
+    });
 
     return `GHS ${numPrice.toFixed(2)}`;
   };
@@ -80,76 +93,116 @@ function ShoppingOrderDetailsView({ orderDetails, user }) {
     }
   };
 
-  // Determine shipping fee based on order data
-  // First, check if we have a shipping fee directly on the order
-  let calculatedShippingFee = 0;
+  // Handle shipping fees with better error checking and type conversion
+  let totalShippingFee = 0;
   
-  // First check if we have shipping fee in metadata (most accurate)
-  if (orderDetails.metadata && orderDetails.metadata.shippingDetails && 
-      typeof orderDetails.metadata.shippingDetails.totalShippingFee === 'number') {
-    calculatedShippingFee = orderDetails.metadata.shippingDetails.totalShippingFee;
-    console.log('Using shipping fee from metadata:', calculatedShippingFee);
-  } 
-  // Then check if we have a shipping fee directly on the order
+  // Enhanced debugging for shipping fee data
+  console.log('COMPREHENSIVE SHIPPING FEE DEBUG:', {
+    orderID: orderDetails._id,
+    directShippingFee: orderDetails.shippingFee,
+    adminShippingFeesType: typeof orderDetails.adminShippingFees,
+    adminShippingFeesValue: orderDetails.adminShippingFees,
+    hasMetadata: !!orderDetails.metadata,
+    metadataKeys: orderDetails.metadata ? Object.keys(orderDetails.metadata) : 'none',
+    shippingDetails: orderDetails.metadata?.shippingDetails,
+    metadataShippingFee: orderDetails.metadata?.shippingDetails?.totalShippingFee,
+    paymentMetadata: orderDetails.metadata?.paymentMetadata,
+    vendorShippingInfo: orderDetails.metadata?.shippingDetails?.vendorShipping
+  });
+
+  // REVISED APPROACH: Handle shipping fees with strict type checking and multiple fallbacks
+  // First priority: Use metadata.shippingDetails.totalShippingFee as the most reliable source
+  if (orderDetails.metadata?.shippingDetails?.totalShippingFee !== undefined) {
+    const parsedFee = parseFloat(orderDetails.metadata.shippingDetails.totalShippingFee);
+    if (!isNaN(parsedFee)) {
+      totalShippingFee = parsedFee;
+      console.log('Using shipping fee from metadata.shippingDetails:', totalShippingFee);
+    }
+  }
+  
+  // Second priority: Use shipping fee from payment metadata if available
+  else if (orderDetails.metadata?.paymentMetadata?.totalShippingFee) {
+    const parsedFee = parseFloat(orderDetails.metadata.paymentMetadata.totalShippingFee);
+    if (!isNaN(parsedFee)) {
+      totalShippingFee = parsedFee;
+      console.log('Using shipping fee from payment metadata:', totalShippingFee);
+    }
+  }
+  
+  // Third priority: Calculate from metadata.shippingDetails.vendorShipping if available
+  else if (orderDetails.metadata?.shippingDetails?.vendorShipping) {
+    try {
+      const vendorShipping = orderDetails.metadata.shippingDetails.vendorShipping;
+      totalShippingFee = Object.values(vendorShipping).reduce((sum, vendor) => {
+        const vendorFee = typeof vendor === 'object' ? parseFloat(vendor.fee) || 0 : 0;
+        return sum + vendorFee;
+      }, 0);
+      console.log('Calculated shipping fee from vendorShipping details:', totalShippingFee);
+    } catch (error) {
+      console.error('Error calculating from vendorShipping:', error);
+    }
+  }
+  
+  // Fourth priority: Use direct shipping fee if available and non-zero
   else if (orderDetails.shippingFee) {
-    calculatedShippingFee = orderDetails.shippingFee;
-    console.log('Using order shippingFee:', calculatedShippingFee);
-  } 
-  // Calculate from adminShippingFees if available
-  else if (orderDetails.adminShippingFees && Object.keys(orderDetails.adminShippingFees).length > 0) {
-    calculatedShippingFee = Object.values(orderDetails.adminShippingFees).reduce((total, fee) => {
-      return total + (typeof fee === 'object' ? fee.fee || 0 : fee || 0);
-    }, 0);
-    console.log('Calculated from adminShippingFees:', calculatedShippingFee);
-  } 
-  // Calculate from adminGroups if available
-  else if (orderDetails.adminGroups && orderDetails.adminGroups.length > 0) {
-    calculatedShippingFee = orderDetails.adminGroups.reduce((total, group) => {
-      return total + (group.shippingFee || 0);
-    }, 0);
-    console.log('Calculated from adminGroups:', calculatedShippingFee);
-  }
-  // If shipping fee is zero but we have a total amount, try to determine from metadata or calculate it
-  else if (calculatedShippingFee === 0 && orderDetails.totalAmount) {
-    // Check if we have shipping details in metadata
-    if (orderDetails.metadata && orderDetails.metadata.shippingDetails && orderDetails.metadata.shippingDetails.totalFee) {
-      calculatedShippingFee = orderDetails.metadata.shippingDetails.totalFee;
-    } 
-    // If we have admin shipping fees, sum them up
-    else if (orderDetails.adminShippingFees && Object.keys(orderDetails.adminShippingFees).length > 0) {
-      calculatedShippingFee = Object.entries(orderDetails.adminShippingFees)
-        .reduce((sum, [_, fee]) => sum + (typeof fee === 'object' ? fee.fee || 0 : fee || 0), 0);
+    const parsedFee = parseFloat(orderDetails.shippingFee);
+    if (!isNaN(parsedFee) && parsedFee > 0) {
+      totalShippingFee = parsedFee;
+      console.log('Using direct shipping fee field:', totalShippingFee);
     }
-    // If still zero but we have cart items, calculate based on location
-    else if (calculatedShippingFee === 0 && orderDetails.cartItems && orderDetails.cartItems.length > 0) {
-      // Group items by admin/vendor
-      const adminGroups = {};
-      
-      orderDetails.cartItems.forEach(item => {
-        const adminId = item.adminId || 'unknown';
-        if (!adminGroups[adminId]) {
-          adminGroups[adminId] = { items: [] };
+  }
+  
+  // Third priority: Calculate from adminShippingFees if both above are zero or invalid
+  if (totalShippingFee === 0 && orderDetails.adminShippingFees) {
+    // Handle both object and string formats of adminShippingFees
+    let adminFeesObj = orderDetails.adminShippingFees;
+    
+    // If it's a string, try to parse it
+    if (typeof adminFeesObj === 'string') {
+      try {
+        adminFeesObj = JSON.parse(adminFeesObj);
+      } catch (e) {
+        console.error('Failed to parse adminShippingFees string:', e);
+        adminFeesObj = {};
+      }
+    }
+    
+    // Now calculate the total from the object
+    if (typeof adminFeesObj === 'object' && adminFeesObj !== null) {
+      totalShippingFee = Object.values(adminFeesObj).reduce((sum, fee) => {
+        // Handle different formats of fee data
+        let feeValue = 0;
+        if (typeof fee === 'object' && fee !== null) {
+          feeValue = parseFloat(fee.fee) || 0;
+        } else if (typeof fee === 'string') {
+          feeValue = parseFloat(fee) || 0;
+        } else if (typeof fee === 'number') {
+          feeValue = fee;
         }
-        adminGroups[adminId].items.push(item);
-      });
-      
-      // Calculate shipping fee based on location (standard rate of 40 GHS in Accra, 70 GHS outside)
-      const city = (orderDetails.addressInfo?.city || '').toLowerCase();
-      const region = (orderDetails.addressInfo?.region || '').toLowerCase();
-      const isAccra = city.includes('accra') || region.includes('accra') || region.includes('greater accra');
-      
-      // For each vendor group, apply standard shipping fee
-      const perVendorShippingFee = isAccra ? 40 : 70;
-      calculatedShippingFee = Object.keys(adminGroups).length * perVendorShippingFee;
+        return sum + feeValue;
+      }, 0);
+      console.log('Calculated shipping fee from admin fees:', totalShippingFee);
     }
   }
   
-  // Use final calculated shipping fee
-  const totalShippingFee = calculatedShippingFee;
+  // If we still don't have a shipping fee, check if it's in the vendor shipping details
+  if (totalShippingFee === 0 && orderDetails.metadata?.shippingDetails?.vendorShipping) {
+    const vendorShipping = orderDetails.metadata.shippingDetails.vendorShipping;
+    if (Object.keys(vendorShipping).length > 0) {
+      totalShippingFee = Object.values(vendorShipping).reduce((sum, vendor) => {
+        const fee = typeof vendor === 'object' ? (vendor.fee || 0) : 0;
+        return sum + parseFloat(fee);
+      }, 0);
+      console.log('Calculated shipping fee from vendor shipping details:', totalShippingFee);
+    }
+  }
+  // If no shipping fee is available, log a warning but don't use fallbacks
+  else {
+    console.log('Warning: No admin-set shipping fees found for this order. Displaying 0.00 as shipping fee.');
+    totalShippingFee = 0;
+  }
   
-  // We don't need to modify the original orderDetails object
-  // Just use our calculated totalShippingFee for display
-  
+  // Generate vendor shipping data if not available in metadata
   // Check if we have shipping data in metadata (new format)
   const hasVendorShipping = orderDetails.metadata && 
                            orderDetails.metadata.shippingDetails && 
@@ -158,13 +211,6 @@ function ShoppingOrderDetailsView({ orderDetails, user }) {
   // Extract vendor shipping details if available
   const vendorShippingDetails = hasVendorShipping ? 
                                orderDetails.metadata.shippingDetails.vendorShipping : null;
-  
-  // Get total shipping fee from metadata if available (most accurate)
-  let metadataShippingFee = null;
-  if (orderDetails.metadata && orderDetails.metadata.shippingDetails && 
-      typeof orderDetails.metadata.shippingDetails.totalShippingFee === 'number') {
-    metadataShippingFee = orderDetails.metadata.shippingDetails.totalShippingFee;
-  }
   
   // If no vendor shipping details but we have admin groups or cart items with adminId, create vendor shipping details
   let generatedVendorShipping = null;
@@ -179,43 +225,11 @@ function ShoppingOrderDetailsView({ orderDetails, user }) {
         };
       });
     }
-    // Or try to create from cart items
-    else if (orderDetails.cartItems && orderDetails.cartItems.length > 0) {
-      const vendorGroups = {};
-      orderDetails.cartItems.forEach(item => {
-        const adminId = item.adminId || 'unknown';
-        if (!vendorGroups[adminId]) {
-          vendorGroups[adminId] = {
-            vendorName: item.adminName || 'Vendor',
-            count: 0
-          };
-        }
-        vendorGroups[adminId].count += item.quantity || 1;
-      });
-      
-      // Only create if we have multiple vendors
-      if (Object.keys(vendorGroups).length > 1) {
-        generatedVendorShipping = {};
-        const city = (orderDetails.addressInfo?.city || '').toLowerCase();
-        const region = (orderDetails.addressInfo?.region || '').toLowerCase();
-        const isAccra = city.includes('accra') || region.includes('accra') || region.includes('greater accra');
-        const perVendorFee = isAccra ? 40 : 70;
-        
-        Object.entries(vendorGroups).forEach(([adminId, details]) => {
-          generatedVendorShipping[adminId] = {
-            fee: perVendorFee,
-            vendorName: details.vendorName
-          };
-        });
-      }
-    }
   }
-  
-  // Debug logging removed
   
   // Use either existing vendor shipping details or generated ones
   const effectiveVendorShipping = vendorShippingDetails || generatedVendorShipping;
-  const hasEffectiveVendorShipping = effectiveVendorShipping && Object.keys(effectiveVendorShipping).length > 0; // Changed from > 1 to > 0
+  const hasEffectiveVendorShipping = effectiveVendorShipping && Object.keys(effectiveVendorShipping).length > 0;
   
   // Calculate subtotal by summing the prices of all items
   const subtotal = orderDetails.cartItems ? 
@@ -225,22 +239,6 @@ function ShoppingOrderDetailsView({ orderDetails, user }) {
       return sum + (itemPrice * quantity);
     }, 0) : 0;
   
-  // Calculate shipping fee from cart items and vendor info - handle case where shippingFee is 0 but we should have one
-  if (calculatedShippingFee === 0 && orderDetails.totalAmount && subtotal > 0) {
-    // If we have a valid subtotal and total amount, derive shipping fee from the difference
-    calculatedShippingFee = orderDetails.totalAmount - subtotal;
-    
-    // If we have generated vendor shipping info, distribute the total shipping fee proportionally
-    if (generatedVendorShipping && Object.keys(generatedVendorShipping).length > 0) {
-      const vendorCount = Object.keys(generatedVendorShipping).length;
-      const perVendorFee = calculatedShippingFee / vendorCount;
-      
-      // Update generated shipping fees
-      Object.keys(generatedVendorShipping).forEach(vendorId => {
-        generatedVendorShipping[vendorId].fee = perVendorFee;
-      });
-    }
-  }
 
   return (
     <DialogContent className="w-full max-w-md md:max-w-lg lg:max-w-xl mx-auto p-4 md:p-6 overflow-y-auto max-h-[90vh]">
@@ -280,106 +278,16 @@ function ShoppingOrderDetailsView({ orderDetails, user }) {
               <span className="text-gray-600 flex items-center">
                 <TruckIcon className="h-4 w-4 mr-2 text-gray-400" /> Shipping Fee:
               </span>
-              <span className="font-medium">{formatPrice(totalShippingFee)}</span>
-            </div>
-            
-            {/* Display shipping fee breakdown for vendors */}
-            <div className="ml-6 text-xs text-gray-500 space-y-1 mt-1">
-              {/* Improved shipping fee display logic - prioritize metadata shipping info */}
-              {orderDetails.cartItems && orderDetails.cartItems.length > 0 ? (
-                <>
-                  {/* First try to use metadata shipping details if available (most accurate) */}
-                  {vendorShippingDetails && Object.keys(vendorShippingDetails).length > 0 ? (
-                    // Use the vendor shipping details from metadata
-                    Object.entries(vendorShippingDetails).map(([vendorId, vendorData]) => {
-                      const vendorName = (vendorData.vendorName && vendorData.vendorName.toLowerCase() !== 'vendor')
-                        ? vendorData.vendorName
-                        : `Vendor ${vendorId.substring(0, 6)}`;
-                      
-                      // Get the fee (handling both object and primitive cases)
-                      const fee = typeof vendorData.fee === 'object' 
-                        ? vendorData.fee.fee || 0 
-                        : vendorData.fee || 0;
-                          
-                      return (
-                        <div key={vendorId} className="flex justify-between">
-                          <span>{vendorName} shipping:</span>
-                          <span>{formatPrice(fee)}</span>
-                        </div>
-                      );
-                    })
-                  ) : generatedVendorShipping && Object.keys(generatedVendorShipping).length > 0 ? (
-                    // Fallback to generated vendor shipping if metadata not available
-                    Object.entries(generatedVendorShipping).map(([vendorId, vendorData]) => {
-                      // Try to find a corresponding cart item for better vendor name
-                      const cartItem = orderDetails.cartItems.find(item => item.adminId === vendorId);
-                      const vendorName = (cartItem?.adminName && cartItem.adminName.toLowerCase() !== 'vendor')
-                        ? cartItem.adminName
-                        : (vendorData.vendorName && vendorData.vendorName.toLowerCase() !== 'vendor')
-                          ? vendorData.vendorName
-                          : `Vendor ${vendorId.substring(0, 6)}`;
-                      
-                      // Get the fee (handling both object and primitive cases)
-                      const fee = typeof vendorData.fee === 'object' 
-                        ? vendorData.fee.fee || 0 
-                        : vendorData.fee || 0;
-                          
-                      return (
-                        <div key={vendorId} className="flex justify-between">
-                          <span>{vendorName} shipping:</span>
-                          <span>{formatPrice(fee)}</span>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    // If no vendor shipping data, group cart items by admin and use best guess for fees
-                    Object.entries(
-                      orderDetails.cartItems.reduce((acc, item) => {
-                        // Get vendor ID, defaulting to unknown if missing
-                        const vendorId = item.adminId || 'unknown';
-                        if (!acc[vendorId]) {
-                          // Try to get vendor name from multiple sources
-                          const vendorName = item.adminName || 
-                            (item.vendor && typeof item.vendor === 'object' && item.vendor.username) || 
-                            `Vendor ${vendorId.substring(0, 6)}`;
-                            
-                          // If we have a total shipping fee and multiple vendors, split evenly
-                          let shippingFee = 0;
-                          if (totalShippingFee > 0) {
-                            // Count unique vendors
-                            const uniqueVendors = new Set(orderDetails.cartItems.map(i => i.adminId || 'unknown'));
-                            // Split shipping fee among vendors
-                            shippingFee = totalShippingFee / uniqueVendors.size;
-                          } else {
-                            // Fallback to location-based fee
-                            const city = (orderDetails.addressInfo?.city || '').toLowerCase();
-                            const region = (orderDetails.addressInfo?.region || '').toLowerCase();
-                            const isAccra = city.includes('accra') || region.includes('accra') || region.includes('greater accra');
-                            shippingFee = isAccra ? 40 : 70;
-                          }
-                          
-                          acc[vendorId] = {
-                            vendorName,
-                            shippingFee
-                          };
-                        }
-                        return acc;
-                      }, {})
-                    ).map(([vendorId, info]) => (
-                      <div key={vendorId} className="flex justify-between">
-                        <span>{info.vendorName} shipping:</span>
-                        <span>{formatPrice(info.shippingFee)}</span>
-                      </div>
-                    ))
-                  )}
-                </>
-              ) : totalShippingFee > 0 ? (
-                // If no cart items but we do have a shipping fee, show generic entry
-                <div className="flex justify-between">
-                  <span>Standard shipping:</span>
-                  <span>{formatPrice(totalShippingFee)}</span>
-                </div>
-              ) : null}
+              <span className="font-medium">
+                {/* Debug the raw shipping fee value before formatting */}
+                {console.log('SHIPPING FEE RENDER:', {
+                  rawValue: totalShippingFee,
+                  directFee: orderDetails.shippingFee,
+                  metadataFee: orderDetails.metadata?.shippingDetails?.totalShippingFee
+                })}
+                {/* Force use of direct shipping fee if available and valid */}
+                {formatPrice(orderDetails.shippingFee || totalShippingFee)}
+              </span>
             </div>
             <div className="border-t pt-2 mt-2">
               <div className="flex justify-between font-bold">

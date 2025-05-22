@@ -42,6 +42,10 @@ const addToCart = async(req, res) => {
 
         // Store extra product information directly in the cart item
         if(findCurrentProductIndex === -1){
+            // Always use the product's createdBy as adminId if available
+            const productAdminId = product.createdBy ? product.createdBy.toString() : null;
+            console.log('Adding product to cart with adminId:', productAdminId || adminId || 'unknown');
+            
             cart.items.push({
                 productId, 
                 quantity, 
@@ -50,7 +54,7 @@ const addToCart = async(req, res) => {
                 price: productPrice,
                 title: productTitle,
                 image: productImage,
-                adminId: adminId || product.createdBy,
+                adminId: productAdminId || adminId || 'unknown',
                 adminName: adminName || 'Vendor'
             });
             // Removed salePrice field from cart items
@@ -60,8 +64,16 @@ const addToCart = async(req, res) => {
             if (productPrice) cart.items[findCurrentProductIndex].price = productPrice;
             if (productTitle) cart.items[findCurrentProductIndex].title = productTitle;
             if (productImage) cart.items[findCurrentProductIndex].image = productImage;
-            // Update vendor information if provided
-            if (adminId) cart.items[findCurrentProductIndex].adminId = adminId;
+            
+            // Update vendor information if provided, but prioritize product.createdBy
+            const productAdminId = product.createdBy ? product.createdBy.toString() : null;
+            if (productAdminId) {
+                cart.items[findCurrentProductIndex].adminId = productAdminId;
+                console.log('Updated cart item adminId to product createdBy:', productAdminId);
+            } else if (adminId) {
+                cart.items[findCurrentProductIndex].adminId = adminId;
+            }
+            
             if (adminName) cart.items[findCurrentProductIndex].adminName = adminName;
             // Removed salePrice update
         }

@@ -32,9 +32,26 @@ const PaystackPayment = ({ amount, items, shippingAddress, shippingFees = {}, to
       const adminId = item.adminId || 'unknown';
       
       if (!adminGroups[adminId]) {
+        // Handle different shipping fee formats
+        let shippingFeeValue = 0;
+        
+        if (shippingFees[adminId]) {
+          if (typeof shippingFees[adminId] === 'object' && shippingFees[adminId] !== null) {
+            // If it's an object with a fee property
+            shippingFeeValue = shippingFees[adminId].fee || 0;
+          } else if (typeof shippingFees[adminId] === 'number') {
+            // If it's a direct number
+            shippingFeeValue = shippingFees[adminId];
+          } else if (typeof shippingFees[adminId] === 'string') {
+            // If it's a string that can be parsed to a number
+            shippingFeeValue = parseFloat(shippingFees[adminId]) || 0;
+          }
+        }
+        
         adminGroups[adminId] = {
           items: [],
-          shippingFee: shippingFees[adminId] || 0
+          shippingFee: shippingFeeValue,
+          adminName: items.find(i => i.adminId === adminId)?.adminName || 'Vendor'
         };
       }
       
@@ -63,6 +80,34 @@ const PaystackPayment = ({ amount, items, shippingAddress, shippingFees = {}, to
       // Group items by admin
       const adminGroups = groupItemsByAdmin();
       
+      // Keep the original shipping fee structure to preserve all metadata
+      console.log('SHIPPING DEBUG - Original shipping fees from checkout:', JSON.stringify(shippingFees));
+      
+      // Create a deep copy to avoid modifying the original object
+      const formattedShippingFees = JSON.parse(JSON.stringify(shippingFees));
+      
+      // Validate that each shipping fee has the expected structure
+      Object.keys(formattedShippingFees).forEach(adminId => {
+        const fee = formattedShippingFees[adminId];
+        
+        // If it's already an object with a fee property, keep it as is
+        if (typeof fee === 'object' && fee !== null && fee.fee !== undefined) {
+          // Make sure fee is a number
+          formattedShippingFees[adminId].fee = parseFloat(fee.fee) || 0;
+        } 
+        // If it's a number or string, convert to the expected object structure
+        else if (typeof fee === 'number' || typeof fee === 'string') {
+          const feeValue = typeof fee === 'string' ? parseFloat(fee) : fee;
+          formattedShippingFees[adminId] = { fee: feeValue || 0 };
+        }
+        // Default case - create an object with zero fee
+        else {
+          formattedShippingFees[adminId] = { fee: 0 };
+        }
+      });
+      
+      console.log('SHIPPING DEBUG - Formatted shipping fees for order creation:', JSON.stringify(formattedShippingFees));
+      
       // Create an order with shipping fees per admin
       const orderAction = await dispatch(createNewOrder({
         userId: user.id,
@@ -70,7 +115,7 @@ const PaystackPayment = ({ amount, items, shippingAddress, shippingFees = {}, to
         addressInfo: shippingAddress,
         totalAmount: amount,
         shippingFee: totalShippingFee, // Total shipping fee
-        adminShippingFees: shippingFees, // Keep the per-admin shipping fees
+        adminShippingFees: formattedShippingFees, // Use formatted admin shipping fees
         paymentMethod: 'paystack',
         paymentStatus: 'pending',
         orderStatus: 'pending',

@@ -84,6 +84,14 @@ app.use('/api/shop/featured-collections', shopFeaturedCollectionRouter);
 // Shipping routes
 app.use('/api/shop/shipping', shippingRouter);
 
+// Shipping diagnostic routes
+const shippingDiagnosticRouter = require('./routes/shop-view/shippingDiagnosticRoutes.js');
+app.use('/api/shop/shipping-diagnostic', shippingDiagnosticRouter);
+
+// AdminId diagnostic routes
+const adminIdDiagnosticRouter = require('./routes/shop-view/adminIdDiagnosticRoutes.js');
+app.use('/api/shop/admin-id-diagnostic', adminIdDiagnosticRouter);
+
 // User routes
 app.use('/api/users', userRouter);
 

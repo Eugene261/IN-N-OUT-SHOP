@@ -74,7 +74,35 @@ function ShoppingCheckout() {
           const result = await calculateShippingFees(cartItemsForShipping, currentSelectedAddress);
           
           if (result.success && result.data) {
-            setAdminShippingFees(result.data.adminShippingFees || {});
+            // Ensure adminShippingFees is properly formatted as an object with numeric values
+            const formattedAdminShippingFees = {};
+            
+            if (result.data.adminShippingFees) {
+              // Process each admin's shipping fee
+              Object.keys(result.data.adminShippingFees).forEach(adminId => {
+                const fee = result.data.adminShippingFees[adminId];
+                
+                // Handle different fee formats and ensure it's a proper object
+                if (typeof fee === 'object' && fee !== null) {
+                  formattedAdminShippingFees[adminId] = fee;
+                } else if (typeof fee === 'number') {
+                  formattedAdminShippingFees[adminId] = { fee: fee };
+                } else if (typeof fee === 'string') {
+                  formattedAdminShippingFees[adminId] = { fee: parseFloat(fee) || 0 };
+                } else {
+                  // Default case
+                  formattedAdminShippingFees[adminId] = { fee: 0 };
+                }
+                
+                // Add additional metadata if available
+                if (result.data.shippingDetails && result.data.shippingDetails[adminId]) {
+                  formattedAdminShippingFees[adminId].details = result.data.shippingDetails[adminId];
+                }
+              });
+            }
+            
+            console.log('Formatted admin shipping fees:', formattedAdminShippingFees);
+            setAdminShippingFees(formattedAdminShippingFees);
             setTotalShippingFee(result.data.totalShippingFee || 0);
             
             // Store estimated delivery info if available

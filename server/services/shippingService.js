@@ -348,161 +348,179 @@ const calculateShippingFees = async (cartItems, addressInfo) => {
  * @returns {Object} - The matching shipping zone
  */
 const findShippingZone = async (city, region, vendorId) => {
-    // Normalize city and region for comparison
-    const normalizedCity = (city || '').toLowerCase().trim();
-    const normalizedRegion = (region || '').toLowerCase().trim();
-    
-    console.log(`Finding shipping zone for: city=${normalizedCity}, region=${normalizedRegion}, vendorId=${vendorId}`);
-    
-    // Try to find a vendor-specific zone that matches the city or region
-    let zone = null;
-    
-    if (vendorId) {
-        try {
-            // Get the vendor's information first to know their base region
-            const User = require('../models/User');
-            const vendor = await User.findById(vendorId);
-            let vendorBaseRegion = vendor?.baseRegion || null;
-            
-            if (vendorBaseRegion) {
-                console.log(`Vendor ${vendorId} has base region: ${vendorBaseRegion}`);
-            }
-            
-            // First try to find a vendor-specific zone that exactly matches the region
-            // We prioritize exact matches for more accurate regional shipping
-            zone = await ShippingZone.findOne({
-                vendorId: vendorId,
-                region: { $regex: new RegExp(`^${normalizedRegion}$`, 'i') }
-            });
-            
-            console.log(`Vendor-specific exact region match: ${zone ? 'found' : 'not found'}`);
-            
-            // If no exact match, try to find a zone that contains the region or city name
-            if (!zone) {
+    try {
+        console.log(`Finding shipping zone for city=${city}, region=${region}, vendorId=${vendorId}`);
+        
+        // Normalize region for better matching
+        const normalizedRegion = region ? region.toLowerCase().trim() : null;
+        const normalizedCity = city ? city.toLowerCase().trim() : null;
+        
+        // Try to find a zone with exact match for this vendor
+        let zone = null;
+        
+        // Debug logging for vendorId
+        if (!vendorId || vendorId === 'unknown') {
+            console.log('WARNING: vendorId is missing or unknown. This may prevent finding vendor-specific shipping zones.');
+        } else {
+            console.log(`Looking for shipping zones for vendor: ${vendorId}`);
+        }
+        
+        // Step 1: Try to find vendor-specific zones if we have a valid vendorId
+        if (vendorId && vendorId !== 'unknown') {
+            try {
+                // Get the vendor's information first to know their base region
+                const User = require('../models/User');
+                const vendor = await User.findById(vendorId);
+                let vendorBaseRegion = vendor?.baseRegion || null;
+                
+                if (vendorBaseRegion) {
+                    console.log(`Vendor ${vendorId} has base region: ${vendorBaseRegion}`);
+                } else {
+                    console.log(`Vendor ${vendorId} has no base region set`);
+                }
+                
+                // First try to find a vendor-specific zone for this exact region
                 zone = await ShippingZone.findOne({
-                    vendorId: vendorId,
-                    $or: [
-                        { name: { $regex: normalizedCity, $options: 'i' } },
-                        { region: { $regex: normalizedRegion, $options: 'i' } }
-                    ]
+                    vendorId,
+                    region: normalizedRegion
                 });
                 
-                console.log(`Vendor-specific partial region/city match: ${zone ? 'found' : 'not found'}`);
-            }
-            
-            // If no specific zone matches, use the vendor's default zone
-            if (!zone) {
-                zone = await ShippingZone.findOne({ 
-                    vendorId: vendorId,
-                    isDefault: true 
+                if (zone) {
+                    console.log(`Found vendor-specific zone for region: ${zone.name}`);
+                    // Update zone with vendor's base region if needed
+                    if (vendorBaseRegion && (!zone.vendorRegion || zone.vendorRegion !== vendorBaseRegion)) {
+                        zone.vendorRegion = vendorBaseRegion;
+                        await zone.save();
+                        console.log(`Updated zone with vendor's base region: ${vendorBaseRegion}`);
+                    }
+                    return zone;
+                }
+                
+                // If no exact region match, try to find a default zone for this vendor
+                zone = await ShippingZone.findOne({
+                    vendorId,
+                    isDefault: true
                 });
-                console.log(`Vendor's default zone: ${zone ? 'found' : 'not found'}`);
+                
+                if (zone) {
+                    console.log(`Found vendor's default zone: ${zone.name}`);
+                    // Update zone with vendor's base region if needed
+                    if (vendorBaseRegion && (!zone.vendorRegion || zone.vendorRegion !== vendorBaseRegion)) {
+                        zone.vendorRegion = vendorBaseRegion;
+                        await zone.save();
+                        console.log(`Updated zone with vendor's base region: ${vendorBaseRegion}`);
+                    }
+                    return zone;
+                }
+            } catch (error) {
+                console.error(`Error finding vendor-specific zone:`, error);
             }
-            
-            // Update the zone with vendor's base region if needed
-            if (zone && vendorBaseRegion && (!zone.vendorRegion || zone.vendorRegion !== vendorBaseRegion)) {
-                console.log(`Updating zone with vendor's base region from user profile: ${vendorBaseRegion}`);
-                // The user has a base region set that's different from the zone's vendorRegion
-                // Update the zone for future use
-                zone.vendorRegion = vendorBaseRegion;
-                await zone.save();
-            }
-        } catch (error) {
-            console.error(`Error finding vendor-specific zone:`, error);
         }
-    }
-    
-    // If no vendor-specific zone was found, fall back to global zones
-    if (!zone) {
+        
+        // Step 2: If no vendor-specific zone was found, fall back to global zones
         try {
-            // Try to find a global zone that matches the city or region
+            // Try to find a global zone that matches the region or city
             zone = await ShippingZone.findOne({
                 $or: [
-                    { name: { $regex: normalizedCity, $options: 'i' } },
-                    { region: { $regex: normalizedRegion, $options: 'i' } }
+                    { region: { $regex: normalizedRegion, $options: 'i' } },
+                    { name: { $regex: normalizedCity, $options: 'i' } }
                 ]
             });
             
-            console.log(`Global zone search by city/region: ${zone ? 'found' : 'not found'}`);
+            if (zone) {
+                console.log(`Found global zone for region/city: ${zone.name}`);
+                return zone;
+            }
             
-            // If no zone matches, use the default zone
-            if (!zone) {
-                zone = await ShippingZone.findOne({ isDefault: true });
-                console.log(`Global default zone: ${zone ? 'found' : 'not found'}`);
+            // If no specific zone found, use the default zone
+            zone = await ShippingZone.findOne({ isDefault: true });
+            
+            if (zone) {
+                console.log(`Using global default zone: ${zone.name}`);
+                return zone;
             }
         } catch (error) {
-            console.error(`Error finding global zone:`, error);
+            console.error('Error finding global zone:', error);
         }
-    }
-    
-    // If still no zone found, create a temporary default zone
-    if (!zone) {
-        console.log(`No zone found, creating temporary default zone with baseRate=70 GHS`);
-        zone = {
-            name: 'Default Zone',
+        
+        // Step 3: If no zone found at all, create a default fallback zone object
+        if (!zone) {
+            console.log('No shipping zone found, using hardcoded default zone');
+            zone = {
+                name: 'Default Zone',
+                region: 'Ghana',
+                baseRate: 70,
+                isDefault: true,
+                additionalRates: [
+                    {
+                        type: 'price',
+                        threshold: 1000,
+                        additionalFee: -20 // Discount for orders over 1000 GHS
+                    }
+                ]
+            };
+        }
+        
+        // Log the found zone
+        console.log(`Selected zone: ${zone.name}, region: ${zone.region}, baseRate: ${zone.baseRate}, vendorRegion: ${zone.vendorRegion || 'not set'}`);
+        
+        // Check for same-region discount rule - if customer and vendor are in the same region,
+        // cap the shipping fee at the vendor-specified cap fee
+        if (zone.vendorRegion && normalizedRegion) {
+            // Need exact region match, not partial match
+            const vendorRegionLower = zone.vendorRegion.toLowerCase().trim();
+            const isExactMatch = 
+                vendorRegionLower === normalizedRegion || 
+                (vendorRegionLower === 'greater accra' && normalizedRegion === 'accra') ||
+                (vendorRegionLower === 'accra' && normalizedRegion === 'greater accra') ||
+                (vendorRegionLower === 'ashanti' && normalizedRegion === 'ashanti region') ||
+                (vendorRegionLower === 'ashanti region' && normalizedRegion === 'ashanti');
+            
+            if (isExactMatch) {
+                console.log(`SAME REGION MATCH! Customer region: ${normalizedRegion}, Vendor region: ${zone.vendorRegion}`);
+                
+                // Create a copy of the zone to avoid modifying the original
+                const modifiedZone = JSON.parse(JSON.stringify(zone));
+                
+                // Use the vendor-specified cap fee (default 40 GHS)
+                const capFee = modifiedZone.sameRegionCapFee || 40;
+                console.log(`Applying same-region cap fee: ${capFee} GHS (original base rate: ${modifiedZone.baseRate} GHS)`);
+                
+                modifiedZone.baseRate = Math.min(modifiedZone.baseRate, capFee);
+                modifiedZone.isSameRegion = true; // Mark this for reference
+                modifiedZone.appliedCapFee = capFee; // Store the applied cap fee for reference
+                
+                console.log(`After same-region discount, base rate is now: ${modifiedZone.baseRate} GHS`);
+                
+                // Also cap any additional rates to ensure total doesn't exceed the cap fee
+                if (modifiedZone.additionalRates && modifiedZone.additionalRates.length > 0) {
+                    modifiedZone.additionalRates = modifiedZone.additionalRates.map(rate => {
+                        if (rate.additionalFee > 0 && modifiedZone.baseRate + rate.additionalFee > capFee) {
+                            // Adjust the fee to cap at vendor-specified cap fee total
+                            const newFee = Math.max(0, capFee - modifiedZone.baseRate);
+                            return { ...rate, additionalFee: newFee };
+                        }
+                        return rate;
+                    });
+                }
+                
+                return modifiedZone;
+            } else {
+                console.log(`DIFFERENT REGIONS - NO DISCOUNT: Customer region: ${normalizedRegion}, Vendor region: ${zone.vendorRegion}`);
+            }
+        }
+        
+        return zone;
+    } catch (error) {
+        console.error('Error in findShippingZone:', error);
+        // Return a default zone in case of error
+        return {
+            name: 'Default Zone (Error Fallback)',
             region: 'Ghana',
             baseRate: 70,
-            isDefault: true,
-            additionalRates: [
-                {
-                    type: 'price',
-                    threshold: 1000,
-                    additionalFee: -20 // Discount for orders over 1000 GHS
-                }
-            ]
+            isDefault: true
         };
     }
-    
-    // Log the found zone
-    console.log(`Selected zone: ${zone.name}, region: ${zone.region}, baseRate: ${zone.baseRate}, vendorRegion: ${zone.vendorRegion || 'not set'}`);
-    
-    // Check for same-region discount rule - if customer and vendor are in the same region,
-    // cap the shipping fee at the vendor-specified cap fee
-    if (zone.vendorRegion && normalizedRegion) {
-        // Need exact region match, not partial match
-        const vendorRegionLower = zone.vendorRegion.toLowerCase().trim();
-        const isExactMatch = 
-            vendorRegionLower === normalizedRegion || 
-            (vendorRegionLower === 'greater accra' && normalizedRegion === 'accra') ||
-            (vendorRegionLower === 'accra' && normalizedRegion === 'greater accra') ||
-            (vendorRegionLower === 'ashanti' && normalizedRegion === 'ashanti region') ||
-            (vendorRegionLower === 'ashanti region' && normalizedRegion === 'ashanti');
-        
-        if (isExactMatch) {
-            console.log(`SAME REGION MATCH! Customer region: ${normalizedRegion}, Vendor region: ${zone.vendorRegion}`);
-            
-            // Create a copy of the zone to avoid modifying the original
-            const modifiedZone = JSON.parse(JSON.stringify(zone));
-            
-            // Use the vendor-specified cap fee (default 40 GHS)
-            const capFee = modifiedZone.sameRegionCapFee || 40;
-            console.log(`Applying same-region cap fee: ${capFee} GHS (original base rate: ${modifiedZone.baseRate} GHS)`);
-            
-            modifiedZone.baseRate = Math.min(modifiedZone.baseRate, capFee);
-            modifiedZone.isSameRegion = true; // Mark this for reference
-            modifiedZone.appliedCapFee = capFee; // Store the applied cap fee for reference
-            
-            console.log(`After same-region discount, base rate is now: ${modifiedZone.baseRate} GHS`);
-            
-            // Also cap any additional rates to ensure total doesn't exceed the cap fee
-            if (modifiedZone.additionalRates && modifiedZone.additionalRates.length > 0) {
-                modifiedZone.additionalRates = modifiedZone.additionalRates.map(rate => {
-                    if (rate.additionalFee > 0 && modifiedZone.baseRate + rate.additionalFee > capFee) {
-                        // Adjust the fee to cap at vendor-specified cap fee total
-                        const newFee = Math.max(0, capFee - modifiedZone.baseRate);
-                        return { ...rate, additionalFee: newFee };
-                    }
-                    return rate;
-                });
-            }
-            
-            return modifiedZone;
-        } else {
-            console.log(`DIFFERENT REGIONS - NO DISCOUNT: Customer region: ${normalizedRegion}, Vendor region: ${zone.vendorRegion}`);
-        }
-    }
-    
-    return zone;
 };
 
 /**
