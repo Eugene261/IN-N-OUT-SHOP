@@ -24,6 +24,15 @@ const getAllOrders = async (req, res) => {
           select: 'userName email'
         }
       })
+      .populate({
+        path: 'cartItems.productId',
+        select: 'title price images createdBy',
+        model: 'Product',
+        populate: {
+          path: 'createdBy',
+          select: 'userName email'
+        }
+      })
       .sort({ createdAt: -1 });
 
     // Process orders to handle both new and legacy structures
@@ -37,16 +46,26 @@ const getAllOrders = async (req, res) => {
 
       // Convert cartItems to items if needed
       if (orderObj.cartItems && orderObj.cartItems.length > 0 && (!orderObj.items || orderObj.items.length === 0)) {
-        orderObj.items = orderObj.cartItems.map(item => ({
-          product: {
-            _id: item.productId,
+        orderObj.items = orderObj.cartItems.map((item, index) => {
+          // CRITICAL FIX: Preserve the populated createdBy data from cartItems.productId
+          const productData = {
+            _id: item.productId?._id || item.productId,
             title: item.title,
             price: parseFloat(item.price) || 0,
             image: item.image
-          },
-          quantity: item.quantity,
-          price: parseFloat(item.price) || 0
-        }));
+          };
+          
+          // If productId was populated, preserve the createdBy data
+          if (item.productId && typeof item.productId === 'object' && item.productId.createdBy) {
+            productData.createdBy = item.productId.createdBy;
+          }
+          
+          return {
+            product: productData,
+            quantity: item.quantity,
+            price: parseFloat(item.price) || 0
+          };
+        });
       }
 
       // Normalize status field
@@ -63,15 +82,24 @@ const getAllOrders = async (req, res) => {
 
       // Calculate shipping fee for this order
       let orderShippingFee = 0;
-      if (
-        orderObj.shippingAddress &&
-        (orderObj.shippingAddress.region?.toLowerCase().includes('accra') ||
-         orderObj.shippingAddress.city?.toLowerCase().includes('accra'))
-      ) {
-        orderShippingFee = 40; // GHS 40 for Accra
-      } else {
-        orderShippingFee = 70; // GHS 70 for other regions
+      
+      // First try to use the actual shipping fee stored in the order
+      if (orderObj.shippingFee && orderObj.shippingFee > 0) {
+        orderShippingFee = parseFloat(orderObj.shippingFee);
       }
+      // Only use stored adminShippingFees data if no order-level shipping fee exists
+      else if (orderObj.adminShippingFees && Object.keys(orderObj.adminShippingFees).length > 0) {
+        // Sum up all admin shipping fees for this order
+        Object.values(orderObj.adminShippingFees).forEach(adminFeeData => {
+          if (typeof adminFeeData === 'object' && adminFeeData !== null && adminFeeData.fee) {
+            orderShippingFee += parseFloat(adminFeeData.fee) || 0;
+          } else if (typeof adminFeeData === 'number' || typeof adminFeeData === 'string') {
+            orderShippingFee += parseFloat(adminFeeData) || 0;
+          }
+        });
+      }
+      // No fallback calculations - only use real data
+      
       orderObj.shippingFee = orderShippingFee;
 
       return orderObj;
@@ -152,8 +180,6 @@ const getOrdersByAdmin = async (req, res) => {
       })
       .sort({ createdAt: -1 });
 
-    console.log(`Found ${orders.length} orders before filtering by admin`);
-
     // Process orders to handle both new and legacy structures
     const processedOrders = orders.map(order => {
       const orderObj = order.toObject();
@@ -163,16 +189,26 @@ const getOrdersByAdmin = async (req, res) => {
       }
 
       if (orderObj.cartItems && orderObj.cartItems.length > 0 && (!orderObj.items || orderObj.items.length === 0)) {
-        orderObj.items = orderObj.cartItems.map(item => ({
-          product: {
-            _id: item.productId,
+        orderObj.items = orderObj.cartItems.map((item, index) => {
+          // CRITICAL FIX: Preserve the populated createdBy data from cartItems.productId
+          const productData = {
+            _id: item.productId?._id || item.productId,
             title: item.title,
             price: parseFloat(item.price) || 0,
             image: item.image
-          },
-          quantity: item.quantity,
-          price: parseFloat(item.price) || 0
-        }));
+          };
+          
+          // If productId was populated, preserve the createdBy data
+          if (item.productId && typeof item.productId === 'object' && item.productId.createdBy) {
+            productData.createdBy = item.productId.createdBy;
+          }
+          
+          return {
+            product: productData,
+            quantity: item.quantity,
+            price: parseFloat(item.price) || 0
+          };
+        });
       }
 
       if (!orderObj.status && orderObj.orderStatus) {
@@ -188,15 +224,24 @@ const getOrdersByAdmin = async (req, res) => {
 
       // Calculate shipping fee for this order
       let orderShippingFee = 0;
-      if (
-        orderObj.shippingAddress &&
-        (orderObj.shippingAddress.region?.toLowerCase().includes('accra') ||
-         orderObj.shippingAddress.city?.toLowerCase().includes('accra'))
-      ) {
-        orderShippingFee = 40; // GHS 40 for Accra
-      } else {
-        orderShippingFee = 70; // GHS 70 for other regions
+      
+      // First try to use the actual shipping fee stored in the order
+      if (orderObj.shippingFee && orderObj.shippingFee > 0) {
+        orderShippingFee = parseFloat(orderObj.shippingFee);
       }
+      // Only use stored adminShippingFees data if no order-level shipping fee exists
+      else if (orderObj.adminShippingFees && Object.keys(orderObj.adminShippingFees).length > 0) {
+        // Sum up all admin shipping fees for this order
+        Object.values(orderObj.adminShippingFees).forEach(adminFeeData => {
+          if (typeof adminFeeData === 'object' && adminFeeData !== null && adminFeeData.fee) {
+            orderShippingFee += parseFloat(adminFeeData.fee) || 0;
+          } else if (typeof adminFeeData === 'number' || typeof adminFeeData === 'string') {
+            orderShippingFee += parseFloat(adminFeeData) || 0;
+          }
+        });
+      }
+      // No fallback calculations - only use real data
+      
       orderObj.shippingFee = orderShippingFee;
 
       return orderObj;
@@ -261,8 +306,21 @@ const getOrderStats = async (req, res) => {
       .populate({
         path: 'items.product',
         select: 'title price images createdBy',
-        populate: { path: 'createdBy', select: 'userName email' }
-      });
+        populate: {
+          path: 'createdBy',
+          select: 'userName email'
+        }
+      })
+      .populate({
+        path: 'cartItems.productId',
+        select: 'title price images createdBy',
+        model: 'Product',
+        populate: {
+          path: 'createdBy',
+          select: 'userName email'
+        }
+      })
+      .exec();
 
     console.log(`Found ${orders.length} orders in total`);
 
@@ -270,18 +328,26 @@ const getOrderStats = async (req, res) => {
       const orderTotal = parseFloat(order.totalAmount) || 0;
       totalRevenue += orderTotal;
 
+      // CRITICAL FIX: Use the real shipping fee from the order instead of hardcoded rates
       let orderShippingFee = 0;
-      let isAccra = false;
-      if (
-        order.shippingAddress &&
-        (order.shippingAddress.region?.toLowerCase().includes('accra') ||
-         order.shippingAddress.city?.toLowerCase().includes('accra'))
-      ) {
-        orderShippingFee = 40;
-        isAccra = true;
-      } else {
-        orderShippingFee = 70;
+      
+      // First try to use the actual shipping fee stored in the order
+      if (order.shippingFee && order.shippingFee > 0) {
+        orderShippingFee = parseFloat(order.shippingFee);
       }
+      // Only use stored adminShippingFees data if no order-level shipping fee exists
+      else if (order.adminShippingFees && Object.keys(order.adminShippingFees).length > 0) {
+        // Sum up all admin shipping fees for this order
+        Object.values(order.adminShippingFees).forEach(adminFeeData => {
+          if (typeof adminFeeData === 'object' && adminFeeData !== null && adminFeeData.fee) {
+            orderShippingFee += parseFloat(adminFeeData.fee) || 0;
+          } else if (typeof adminFeeData === 'number' || typeof adminFeeData === 'string') {
+            orderShippingFee += parseFloat(adminFeeData) || 0;
+          }
+        });
+      }
+      // No fallback calculations - only use real data
+      
       totalShippingFees += orderShippingFee;
 
       const orderItems = order.items || [];
@@ -295,7 +361,7 @@ const getOrderStats = async (req, res) => {
         adminMap[adminId].orderCount++;
         adminMap[adminId].shippingFees += orderShippingFee;
 
-        if (isAccra) {
+        if (orderShippingFee > 0) {
           adminMap[adminId].shippingFeesByRegion.accra += 1;
         } else {
           adminMap[adminId].shippingFeesByRegion.other += 1;
@@ -328,17 +394,26 @@ const getOrderStats = async (req, res) => {
             adminMap[adminId].revenue += itemRevenue;
             adminCredited = true;
 
-            const proportionOfOrder = itemRevenue / orderItemsTotal;
-            const adminShippingFee = orderShippingFee * proportionOfOrder;
-            adminMap[adminId].shippingFees += adminShippingFee;
-            // Make sure this contributes to the total shipping fees
-            console.log(`Adding ${adminShippingFee.toFixed(2)} shipping fee for admin ${adminMap[adminId].adminName}`);
-
-            if (isAccra) {
-              adminMap[adminId].shippingFeesByRegion.accra += proportionOfOrder;
-            } else {
-              adminMap[adminId].shippingFeesByRegion.other += proportionOfOrder;
+            // CRITICAL FIX: Use the real admin-specific shipping fees from adminShippingFees
+            let adminShippingFee = 0;
+            
+            // Only use real admin-specific shipping fees if available
+            if (order.adminShippingFees && order.adminShippingFees[adminId]) {
+              // Handle both object and primitive formats for adminShippingFees
+              const adminFeeData = order.adminShippingFees[adminId];
+              
+              if (typeof adminFeeData === 'object' && adminFeeData !== null) {
+                // Modern format: object with fee property
+                adminShippingFee = parseFloat(adminFeeData.fee) || 0;
+              } else {
+                // Legacy format: direct number/string value
+                adminShippingFee = parseFloat(adminFeeData) || 0;
+              }
+              
+              console.log(`Order ${order._id}: Using stored admin shipping fee for ${adminId}: ${adminShippingFee} GHS`);
+              adminMap[adminId].shippingFees += adminShippingFee;
             }
+            // No fallback calculations - only use real data
 
             if (!order._adminOrderCounted) {
               order._adminOrderCounted = new Set();
@@ -358,7 +433,7 @@ const getOrderStats = async (req, res) => {
           adminMap[adminId].orderCount++;
           adminMap[adminId].shippingFees += orderShippingFee;
 
-          if (isAccra) {
+          if (orderShippingFee > 0) {
             adminMap[adminId].shippingFeesByRegion.accra += 1;
           } else {
             adminMap[adminId].shippingFeesByRegion.other += 1;
@@ -382,42 +457,57 @@ const getOrderStats = async (req, res) => {
 
         if (cartItemsTotal === 0) cartItemsTotal = 1;
 
-        const productPromises = cartItems.map(async item => {
+        // Process cartItems to find which admin created each product
+        for (const item of cartItems) {
+          let adminId = null;
+
+          // Get the product to find the admin who created it
           if (item.productId) {
             try {
               const product = await Product.findById(item.productId).populate('createdBy', '_id userName');
-              return { cartItem: item, product };
+              if (product && product.createdBy && product.createdBy._id) {
+                adminId = product.createdBy._id.toString();
+              }
             } catch (err) {
               console.error(`Error finding product ${item.productId}:`, err);
-              return { cartItem: item, product: null };
+              continue;
             }
-          }
-          return { cartItem: item, product: null };
-        });
-
-        const productResults = await Promise.all(productPromises);
-
-        productResults.forEach(({ cartItem, product }) => {
-          let adminId = null;
-
-          if (product && product.createdBy && product.createdBy._id) {
-            adminId = product.createdBy._id.toString();
           }
 
           if (adminId && adminMap[adminId]) {
-            const itemRevenue = cartItem.quantity * (parseFloat(cartItem.price) || 0);
+            const itemRevenue = item.quantity * (parseFloat(item.price) || 0);
             adminMap[adminId].revenue += itemRevenue;
             adminCredited = true;
 
-            const proportionOfOrder = itemRevenue / cartItemsTotal;
-            const adminShippingFee = orderShippingFee * proportionOfOrder;
-            adminMap[adminId].shippingFees += adminShippingFee;
-
-            if (isAccra) {
-              adminMap[adminId].shippingFeesByRegion.accra += proportionOfOrder;
-            } else {
-              adminMap[adminId].shippingFeesByRegion.other += proportionOfOrder;
+            // CRITICAL FIX: Use the real admin-specific shipping fees from adminShippingFees
+            let adminShippingFee = 0;
+            
+            // Only use real admin-specific shipping fees if available
+            if (order.adminShippingFees && order.adminShippingFees[adminId]) {
+              // Handle both object and primitive formats for adminShippingFees
+              const adminFeeData = order.adminShippingFees[adminId];
+              
+              if (typeof adminFeeData === 'object' && adminFeeData !== null) {
+                // Modern format: object with fee property
+                adminShippingFee = parseFloat(adminFeeData.fee) || 0;
+              } else {
+                // Legacy format: direct number/string value
+                adminShippingFee = parseFloat(adminFeeData) || 0;
+              }
+              
+              console.log(`Order ${order._id}: Using stored admin shipping fee for ${adminId}: ${adminShippingFee} GHS`);
+              
+              // Only add if not already counted for this order
+              if (!order._adminShippingCounted) {
+                order._adminShippingCounted = new Set();
+              }
+              
+              if (!order._adminShippingCounted.has(adminId)) {
+                adminMap[adminId].shippingFees += adminShippingFee;
+                order._adminShippingCounted.add(adminId);
+              }
             }
+            // No fallback calculations - only use real data
 
             if (!order._adminOrderCounted) {
               order._adminOrderCounted = new Set();
@@ -427,7 +517,7 @@ const getOrderStats = async (req, res) => {
               order._adminOrderCounted.add(adminId);
             }
           }
-        });
+        }
 
         if (!adminCredited && adminUsers.length > 0) {
           const firstAdmin = adminUsers[0];
@@ -437,7 +527,7 @@ const getOrderStats = async (req, res) => {
           adminMap[adminId].orderCount++;
           adminMap[adminId].shippingFees += orderShippingFee;
 
-          if (isAccra) {
+          if (orderShippingFee > 0) {
             adminMap[adminId].shippingFeesByRegion.accra += 1;
           } else {
             adminMap[adminId].shippingFeesByRegion.other += 1;
@@ -501,12 +591,24 @@ const getOrderStats = async (req, res) => {
       console.log('No orders found to count statuses');
     }
 
+    // CRITICAL FIX: Calculate platform fees and net revenue for SuperAdmin dashboard
+    // Platform fees should ONLY be calculated on product revenue, NOT on shipping fees
+    const totalProductRevenue = totalRevenue - totalShippingFees; // Exclude shipping fees
+    const platformFees = totalProductRevenue * 0.05; // 5% platform fee on products only
+    const netRevenue = totalProductRevenue - platformFees; // Net after platform fees
+    
+    console.log(`Product revenue calculation: ${totalRevenue} - ${totalShippingFees} = ${totalProductRevenue} GHS`);
+    console.log(`Platform fee calculation: ${totalProductRevenue} * 0.05 = ${platformFees} GHS`);
+    console.log(`Net revenue calculation: ${totalProductRevenue} - ${platformFees} = ${netRevenue} GHS`);
+
     const responseData = {
       success: true,
       stats: {
         totalRevenue,
         totalShippingFees,
         totalOrders: orders.length,
+        platformFees, // Added missing platform fees
+        netRevenue,   // Added missing net revenue
         adminRevenue: adminRevenueArray,
         ordersByStatus
       }

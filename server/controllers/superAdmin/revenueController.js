@@ -209,12 +209,38 @@ const getAdminRevenueByTime = async (req, res) => {
             const itemRevenue = item.quantity * (parseFloat(item.price) || 0);
             const platformFee = itemRevenue * 0.05; // Calculate 5% platform fee
             
-            // Calculate share of shipping fee based on item's contribution to total order
+            // CRITICAL FIX: Use the real admin-specific shipping fees from adminShippingFees ONLY
             let shippingFeeShare = 0;
-            if (orderShippingFee > 0 && orderTotal > 0) {
-              const itemPercentage = itemRevenue / orderTotal;
-              shippingFeeShare = orderShippingFee * itemPercentage;
+            
+            // Only use admin-specific shipping fee if available in adminShippingFees
+            if (order.adminShippingFees && order.adminShippingFees[adminId]) {
+              // Handle both object and primitive formats for adminShippingFees
+              const adminFeeData = order.adminShippingFees[adminId];
+              
+              if (typeof adminFeeData === 'object' && adminFeeData !== null) {
+                // Modern format: object with fee property
+                shippingFeeShare = parseFloat(adminFeeData.fee) || 0;
+              } else {
+                // Legacy format: direct number/string value
+                shippingFeeShare = parseFloat(adminFeeData) || 0;
+              }
+              
+              console.log(`Order ${order._id}: Using stored admin shipping fee for ${adminId}: ${shippingFeeShare} GHS`);
+              
+              // CRITICAL FIX: Only add shipping fee once per admin per order
+              if (!order._adminShippingCounted) {
+                order._adminShippingCounted = new Set();
+              }
+              
+              if (!order._adminShippingCounted.has(adminId)) {
+                revenueByTime[timePeriodKey].adminRevenue[adminId].shippingFees += shippingFeeShare;
+                order._adminShippingCounted.add(adminId);
+                console.log(`Order ${order._id}: Added ${shippingFeeShare} GHS shipping fee for ${adminId} (first time)`);
+              } else {
+                console.log(`Order ${order._id}: Skipping shipping fee for ${adminId} (already counted)`);
+              }
             }
+            // NO PROPORTIONAL CALCULATIONS - only real data to prevent inflation
             
             // Update admin revenue stats
             if (!revenueByTime[timePeriodKey].adminRevenue[adminId].platformFees) {
@@ -227,7 +253,6 @@ const getAdminRevenueByTime = async (req, res) => {
             
             revenueByTime[timePeriodKey].adminRevenue[adminId].revenue += itemRevenue;
             revenueByTime[timePeriodKey].adminRevenue[adminId].platformFees += platformFee;
-            revenueByTime[timePeriodKey].adminRevenue[adminId].shippingFees += shippingFeeShare;
             adminCredited = true;
             
             // Count this order for this admin if not already counted
@@ -271,12 +296,38 @@ const getAdminRevenueByTime = async (req, res) => {
             const itemRevenue = item.quantity * (parseFloat(item.price) || 0);
             const platformFee = itemRevenue * 0.05; // Calculate 5% platform fee
             
-            // Calculate share of shipping fee based on item's contribution to total order
+            // CRITICAL FIX: Use the real admin-specific shipping fees from adminShippingFees ONLY
             let shippingFeeShare = 0;
-            if (orderShippingFee > 0 && orderTotal > 0) {
-              const itemPercentage = itemRevenue / orderTotal;
-              shippingFeeShare = orderShippingFee * itemPercentage;
+            
+            // Only use admin-specific shipping fee if available in adminShippingFees
+            if (order.adminShippingFees && order.adminShippingFees[adminId]) {
+              // Handle both object and primitive formats for adminShippingFees
+              const adminFeeData = order.adminShippingFees[adminId];
+              
+              if (typeof adminFeeData === 'object' && adminFeeData !== null) {
+                // Modern format: object with fee property
+                shippingFeeShare = parseFloat(adminFeeData.fee) || 0;
+              } else {
+                // Legacy format: direct number/string value
+                shippingFeeShare = parseFloat(adminFeeData) || 0;
+              }
+              
+              console.log(`Order ${order._id}: Using stored admin shipping fee for ${adminId}: ${shippingFeeShare} GHS`);
+              
+              // CRITICAL FIX: Only add shipping fee once per admin per order
+              if (!order._adminShippingCounted) {
+                order._adminShippingCounted = new Set();
+              }
+              
+              if (!order._adminShippingCounted.has(adminId)) {
+                revenueByTime[timePeriodKey].adminRevenue[adminId].shippingFees += shippingFeeShare;
+                order._adminShippingCounted.add(adminId);
+                console.log(`Order ${order._id}: Added ${shippingFeeShare} GHS shipping fee for ${adminId} (first time)`);
+              } else {
+                console.log(`Order ${order._id}: Skipping shipping fee for ${adminId} (already counted)`);
+              }
             }
+            // NO PROPORTIONAL CALCULATIONS - only real data to prevent inflation
             
             // Update admin revenue stats
             if (!revenueByTime[timePeriodKey].adminRevenue[adminId].platformFees) {
@@ -289,7 +340,6 @@ const getAdminRevenueByTime = async (req, res) => {
             
             revenueByTime[timePeriodKey].adminRevenue[adminId].revenue += itemRevenue;
             revenueByTime[timePeriodKey].adminRevenue[adminId].platformFees += platformFee;
-            revenueByTime[timePeriodKey].adminRevenue[adminId].shippingFees += shippingFeeShare;
             adminCredited = true;
             
             // Count this order for this admin if not already counted

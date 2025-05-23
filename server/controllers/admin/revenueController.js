@@ -65,8 +65,17 @@ const getAdminRevenue = async (req, res) => {
             
             // First check if there's a specific shipping fee for this admin in adminShippingFees
             if (order.adminShippingFees && order.adminShippingFees[adminId]) {
-                // Direct method - admin's shipping fee is already calculated and stored
-                adminShippingFee = parseFloat(order.adminShippingFees[adminId]) || 0;
+                // Handle both object and primitive formats for adminShippingFees
+                const adminFeeData = order.adminShippingFees[adminId];
+                
+                if (typeof adminFeeData === 'object' && adminFeeData !== null) {
+                    // Modern format: object with fee property
+                    adminShippingFee = parseFloat(adminFeeData.fee) || 0;
+                } else {
+                    // Legacy format: direct number/string value
+                    adminShippingFee = parseFloat(adminFeeData) || 0;
+                }
+                
                 console.log(`Order ${order._id}: Using stored admin shipping fee: ${adminShippingFee} GHS`);
                 totalShippingFees += adminShippingFee;
             } 
@@ -103,33 +112,8 @@ const getAdminRevenue = async (req, res) => {
                 }
             }
             
-            // ALWAYS track region counts for ANY order with address info that has admin items
-            // This ensures we have region data even if shipping fees aren't explicitly stored
-            if (adminItemsInOrder.length > 0 && order.addressInfo) {
-                const city = (order.addressInfo.city || '').toLowerCase();
-                const region = (order.addressInfo.region || '').toLowerCase();
-                
-                // Determine region and increment counter
-                if (city.includes('accra') || region.includes('accra') || region.includes('greater accra')) {
-                    shippingFeesByRegion.accra++;
-                    
-                    // If no shipping fee was calculated but we have items, add standard fee
-                    if (adminShippingFee <= 0) {
-                        adminShippingFee = 40; // Standard GHS 40 for Accra
-                        totalShippingFees += adminShippingFee;
-                        console.log(`Order ${order._id}: No shipping fee found, adding standard Accra fee: ${adminShippingFee} GHS`);
-                    }
-                } else {
-                    shippingFeesByRegion.other++;
-                    
-                    // If no shipping fee was calculated but we have items, add standard fee
-                    if (adminShippingFee <= 0) {
-                        adminShippingFee = 70; // Standard GHS 70 for other regions
-                        totalShippingFees += adminShippingFee;
-                        console.log(`Order ${order._id}: No shipping fee found, adding standard other region fee: ${adminShippingFee} GHS`);
-                    }
-                }
-            }
+            // Only add shipping fees if we have real data from adminShippingFees or proportional calculation
+            // DO NOT use hardcoded fallback rates - this ensures we only show real collected fees
             
             // Calculate total items sold
             const orderItemsSold = adminItemsInOrder.reduce((sum, item) => 
@@ -364,9 +348,17 @@ const getAdminRevenueByTime = async (req, res) => {
             
             // First try to get admin-specific shipping fee if available
             if (order.adminShippingFees && order.adminShippingFees[adminId]) {
-                // Use the stored admin-specific fee
-                shippingFees = parseFloat(order.adminShippingFees[adminId]) || 0;
-            } 
+                // Handle both object and primitive formats for adminShippingFees
+                const adminFeeData = order.adminShippingFees[adminId];
+                
+                if (typeof adminFeeData === 'object' && adminFeeData !== null) {
+                    // Modern format: object with fee property
+                    shippingFees = parseFloat(adminFeeData.fee) || 0;
+                } else {
+                    // Legacy format: direct number/string value
+                    shippingFees = parseFloat(adminFeeData) || 0;
+                }
+            }
             // Then try apportioning the total shipping fee
             else if (order.shippingFee) {
                 const totalShippingFee = parseFloat(order.shippingFee) || 0;
@@ -386,17 +378,9 @@ const getAdminRevenueByTime = async (req, res) => {
                 }
             }
             
-            // If no shipping fee is found but we have address info, use standard rates
-            if (shippingFees <= 0 && order.addressInfo && adminItemsInOrder.length > 0) {
-                const city = (order.addressInfo.city || '').toLowerCase();
-                const region = (order.addressInfo.region || '').toLowerCase();
-                
-                if (city.includes('accra') || region.includes('accra') || region.includes('greater accra')) {
-                    shippingFees = 40; // Standard GHS 40 for Accra
-                } else {
-                    shippingFees = 70; // Standard GHS 70 for other regions
-                }
-            }
+            // REMOVED: Hardcoded shipping fee fallbacks
+            // Only use real shipping fees from adminShippingFees or proportional calculations
+            // DO NOT add hardcoded fallback rates to ensure accuracy
             
             const orderDate = new Date(order.createdAt);
             let timeKey;
