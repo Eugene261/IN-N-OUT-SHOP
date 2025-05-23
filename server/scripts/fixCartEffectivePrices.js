@@ -6,11 +6,16 @@ require('dotenv').config();
 // Connect to MongoDB
 const connectDB = async () => {
   try {
-    // Use the environment variable or a fallback URL
-    const mongoUrl = process.env.MONGODB_URI || 'mongodb://localhost:27017/ecommerce';
-    console.log(`Connecting to MongoDB with URL: ${mongoUrl.substring(0, 20)}...`);
+    // Ensure environment variable is set
+    if (!process.env.MONGODB_URI) {
+      console.error('ERROR: MONGODB_URI environment variable is not set!');
+      console.error('Please set MONGODB_URI in your .env file');
+      process.exit(1);
+    }
     
-    await mongoose.connect(mongoUrl);
+    console.log(`Connecting to MongoDB...`);
+    
+    await mongoose.connect(process.env.MONGODB_URI);
     console.log('MongoDB connected successfully');
   } catch (error) {
     console.error('MongoDB connection error:', error);

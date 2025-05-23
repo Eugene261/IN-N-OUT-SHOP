@@ -3,7 +3,13 @@ require('dotenv').config();
 
 async function checkData() {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://kwameadarkwah8:Berryokine123@cluster0.bhw3zdt.mongodb.net/mern-ecommerce');
+    if (!process.env.MONGODB_URI) {
+      console.error('ERROR: MONGODB_URI environment variable is not set!');
+      console.error('Please set MONGODB_URI in your .env file');
+      process.exit(1);
+    }
+    
+    await mongoose.connect(process.env.MONGODB_URI);
     
     const Transaction = require('./models/Transaction');
     const User = require('./models/User');
