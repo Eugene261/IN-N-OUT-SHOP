@@ -1,8 +1,6 @@
 // App.jsx
 import { Routes, Route } from "react-router-dom";
-import AuthLayout from "./components/auth/layout";
-import AuthLogin from "./pages/auth/login";
-import AuthRegister from "./pages/auth/register";
+import AuthLayout from "./components/auth/layout";import AuthLogin from "./pages/auth/login";import AuthRegister from "./pages/auth/register";import ForgotPassword from "./pages/auth/forgot-password";import ResetPassword from "./pages/auth/reset-password";
 import AdminLayout from "./components/admin-view/layout";
 import AdminProducts from "./pages/admin-view/products";
 import AdminDashboard from "./pages/admin-view/dashboard";
@@ -112,14 +110,7 @@ function App() {
               </CheckAuth>
             }
           />
-          <Route path='/auth' element={
-            <CheckAuth isAuthenticated={isAuthenticated} user={user}>
-              <AuthLayout/>
-            </CheckAuth>
-          }>
-            <Route path='login' element={<AuthLogin />} />
-            <Route path='register' element={<AuthRegister />} />
-          </Route>
+                              <Route path='/auth' element={            <CheckAuth isAuthenticated={isAuthenticated} user={user}>              <AuthLayout/>            </CheckAuth>          }>            <Route path='login' element={<AuthLogin />} />            <Route path='register' element={<AuthRegister />} />            <Route path='forgot-password' element={<ForgotPassword />} />            <Route path='reset-password/:token' element={<ResetPassword />} />          </Route>
 
           {/* ADMIN */}
           <Route path='/admin' element={

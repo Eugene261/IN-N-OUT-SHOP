@@ -122,15 +122,7 @@ function AuthLogin() {
           </Link>
         </p>
       </div>
-      <CommonForm 
-        formControls={loginFormControls}
-        buttonText={isLoading ? 'Signing In...' : 'Sign In'}
-        formData={formData}
-        setFormData={setFormData}
-        onSubmit={onSubmit}
-        disabled={isLoading}
-      />
-    </div>
+      <CommonForm         formControls={loginFormControls}        buttonText={isLoading ? 'Signing In...' : 'Sign In'}        formData={formData}        setFormData={setFormData}        onSubmit={onSubmit}        disabled={isLoading}      />            {/* Forgot Password Link */}      <div className="text-center">        <Link           to="/auth/forgot-password"           className="text-sm text-blue-600 hover:text-blue-800 hover:underline font-medium"        >          Forgot your password?        </Link>      </div>    </div>
   );
 }
 
