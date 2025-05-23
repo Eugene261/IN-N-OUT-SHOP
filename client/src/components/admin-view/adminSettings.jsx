@@ -8,7 +8,7 @@ import {
   CardTitle, 
   CardDescription
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+
 import { Input } from '@/components/ui/input';
 import { 
   Settings, 
@@ -16,15 +16,10 @@ import {
   Clock, 
   Truck, 
   MapPin, 
-  DollarSign, 
   Map 
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import axios from 'axios';
-import { API_BASE_URL } from '@/config/api';
-import { updateUserInfo } from '@/store/auth-slice';
+import { updateUserSettings } from '@/store/auth-slice';
 
 const AdminSettings = ({ initialTab = 'general' }) => {
   const { user, isAuthenticated } = useSelector(state => state.auth);
@@ -32,19 +27,9 @@ const AdminSettings = ({ initialTab = 'general' }) => {
   const [loading, setLoading] = useState(false);
   const [timezone, setTimezone] = useState(user?.timezone || 'UTC');
   
-  // Shipping preferences state
+  // Location state
   const [baseRegion, setBaseRegion] = useState(user?.baseRegion || '');
   const [baseCity, setBaseCity] = useState(user?.baseCity || '');
-  const [enableRegionalRates, setEnableRegionalRates] = useState(
-    user?.shippingPreferences?.enableRegionalRates !== undefined ? 
-    user?.shippingPreferences?.enableRegionalRates : true
-  );
-  const [defaultBaseRate, setDefaultBaseRate] = useState(
-    user?.shippingPreferences?.defaultBaseRate || 40
-  );
-  const [defaultOutOfRegionRate, setDefaultOutOfRegionRate] = useState(
-    user?.shippingPreferences?.defaultOutOfRegionRate || 70
-  );
   
   // List of time zones
   const timeZones = [
@@ -95,65 +80,24 @@ const AdminSettings = ({ initialTab = 'general' }) => {
     try {
       setLoading(true);
       
-      const token = user.token || localStorage.getItem('token');
-      if (!token) {
-        toast.error('Authentication token missing');
-        setLoading(false);
-        return;
-      }
-      
-      // Prepare shipping preferences
-      const shippingPreferences = {
-        defaultBaseRate: parseFloat(defaultBaseRate),
-        defaultOutOfRegionRate: parseFloat(defaultOutOfRegionRate),
-        enableRegionalRates
-      };
-      
       // Prepare the data to be sent
-      const userData = {
+      const settingsData = {
         timezone,
         baseRegion,
-        baseCity,
-        shippingPreferences
+        baseCity
       };
       
-      const response = await axios.patch(
-        `${API_BASE_URL}/api/users/${user._id}/settings`,
-        userData,
-        {
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
+      // Use the updateUserSettings thunk
+      const result = await dispatch(updateUserSettings(settingsData));
       
-      if (response.data.success) {
-        // Update user in Redux store with all the new settings
-        const updatedUser = {
-          ...user,
-          timezone,
-          baseRegion,
-          baseCity,
-          shippingPreferences
-        };
-        
-        dispatch(updateUserInfo(updatedUser));
-        
-        // Update localStorage
-        const localUserData = JSON.parse(localStorage.getItem('user') || '{}');
-        localStorage.setItem('user', JSON.stringify({
-          ...localUserData,
-          ...updatedUser
-        }));
-        
+      if (result.type.endsWith('/fulfilled')) {
         toast.success('Settings saved successfully');
       } else {
-        toast.error(response.data.message || 'Failed to save settings');
+        throw new Error(result.payload?.message || 'Failed to save settings');
       }
     } catch (error) {
       console.error('Error saving settings:', error);
-      toast.error(error.response?.data?.message || 'Error saving settings');
+      toast.error(error.message || 'Error saving settings');
     } finally {
       setLoading(false);
     }
@@ -241,10 +185,10 @@ const AdminSettings = ({ initialTab = 'general' }) => {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Truck className="mr-2 h-5 w-5" />
-                Shipping Preferences
+                Location & Shipping
               </CardTitle>
               <CardDescription>
-                Configure your base location and shipping rates for different regions
+                Configure your base location and manage zone-based shipping settings
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -286,82 +230,48 @@ const AdminSettings = ({ initialTab = 'general' }) => {
                   </div>
                 </div>
                 
-                {/* Shipping Rates Section */}
-                <div className="p-4 border rounded-lg bg-slate-50">
+                {/* Shipping Zone Management */}
+                <div className="p-4 border rounded-lg bg-blue-50 border-blue-200">
                   <h3 className="text-md font-medium flex items-center mb-4">
-                    <DollarSign className="mr-2 h-5 w-5 text-green-500" />
-                    Default Shipping Rates
+                    <Map className="mr-2 h-5 w-5 text-blue-500" />
+                    Zone-Based Shipping Management
                   </h3>
                   
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center">
-                      <Switch
-                        id="regional-rates"
-                        checked={enableRegionalRates}
-                        onCheckedChange={setEnableRegionalRates}
-                      />
-                      <Label htmlFor="regional-rates" className="ml-2">
-                        Enable regional shipping rates
-                      </Label>
+                  <p className="text-sm text-blue-700 mb-4">
+                    Set up custom shipping zones and rates for different regions. This gives you complete control over your shipping costs and allows for precise pricing based on delivery location.
+                  </p>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-blue-600">
+                      <span>✓</span>
+                      <span>Create unlimited shipping zones</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-blue-600">
+                      <span>✓</span>
+                      <span>Set different rates for each region</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-blue-600">
+                      <span>✓</span>
+                      <span>Weight and price-based rate adjustments</span>
                     </div>
                   </div>
                   
-                  <p className="text-sm text-gray-600 mb-4">
-                    Set default shipping rates for orders within your base region and for orders outside your region. 
-                    {enableRegionalRates ? 
-                      " Customers in your base region will pay less for shipping." : 
-                      " All customers will pay the same shipping rate regardless of location."}
-                  </p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Base Region Rate (GHS)
-                      </label>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={defaultBaseRate}
-                        onChange={(e) => setDefaultBaseRate(e.target.value)}
-                        className={!enableRegionalRates ? "opacity-50" : ""}
-                        disabled={!enableRegionalRates}
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Rate for customers within your base region
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Other Regions Rate (GHS)
-                      </label>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={defaultOutOfRegionRate}
-                        onChange={(e) => setDefaultOutOfRegionRate(e.target.value)}
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Rate for customers outside your base region
-                      </p>
-                    </div>
+                  <div className="mt-4">
+                    <a 
+                      href="/admin/shipping-zones" 
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 font-medium"
+                    >
+                      <Map className="mr-2 h-4 w-4" />
+                      Manage Shipping Zones
+                    </a>
                   </div>
                 </div>
                 
-                <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                  <div>
-                    <p className="text-sm text-blue-600 flex items-center">
-                      <Map className="mr-1 h-4 w-4" />
-                      <a href="/admin/shipping-zones" className="hover:underline">
-                        Configure advanced shipping zones
-                      </a>
-                    </p>
-                  </div>
-                  
-                  <Button
+                <div className="flex justify-end mt-6 pt-4 border-t">
+                  <button
                     onClick={saveSettings}
                     disabled={loading}
-                    className="flex items-center"
+                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200 font-medium"
                   >
                     {loading ? (
                       <>
@@ -371,10 +281,10 @@ const AdminSettings = ({ initialTab = 'general' }) => {
                     ) : (
                       <>
                         <Save className="mr-2 h-4 w-4" />
-                        Save Settings
+                        Save Location Settings
                       </>
                     )}
-                  </Button>
+                  </button>
                 </div>
               </div>
             </CardContent>
