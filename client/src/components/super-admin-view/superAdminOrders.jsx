@@ -54,30 +54,18 @@ const SuperAdminOrders = () => {
     }
   }, [users]);
   
-  // Get admin info for a product based on product ID
+  // Get admin information for a product (using real database data only)
   const getAdminInfoForProduct = (productId) => {
-    // In a real application, this would be fetched from the database
-    // For now, we'll use a simple mapping for demonstration
-    const adminMap = {
-      'e445ff': { userName: 'Eugene', email: 'eugene@example.com', status: 'delivered' },
-      'f789aa': { userName: 'Lindy Mann', email: 'lindymann@example.com', status: 'delivered' },
-    };
-    
-    return adminMap[productId] || null;
+    // Only use real admin data from products populated with createdBy field
+    // No hardcoded mappings
+    return null;
   };
   
-  // Direct mapping for specific product titles to admins and their product statuses
+  // Get admin by product title (using real database data only)
   const getAdminByProductTitle = (title) => {
-    if (!title) return null;
-    
-    // Map specific product titles to admin information
-    const titleMap = {
-      'Snake Crew Sweatshirt': { userName: 'Eugene', email: 'eugene@example.com', status: 'delivered' },
-      'F1® Miami Men\'s Graphic Tee': { userName: 'Lindy Mann', email: 'lindymann@example.com', status: 'delivered' },
-    };
-    
-    // Check if the title is in our mapping
-    return titleMap[title] || null;
+    // Only use real admin data from products populated with createdBy field
+    // No hardcoded mappings based on product titles
+    return null;
   };
   
   // Toggle order expansion
@@ -106,11 +94,15 @@ const SuperAdminOrders = () => {
     return `GHS ${numPrice.toFixed(2)}`;
   };
   
-  // Calculate shipping fee - MUST return 0.00 to match admin dashboard
+  // Calculate shipping fee - use real backend data
   const calculateShippingFee = (order) => {
-    // All orders show 0.00 shipping fee in both admin and superAdmin views
-    // This exact value (0.00) is critical for consistency across dashboards
-    return 0.00;
+    // Use the shipping fee calculated by the backend
+    if (order && order.shippingFee !== undefined) {
+      return parseFloat(order.shippingFee) || 0;
+    }
+    
+    // Fallback: if no backend shipping fee, return 0
+    return 0;
   };
   
   // Calculate subtotal (without shipping fee)
@@ -371,22 +363,12 @@ const SuperAdminOrders = () => {
           >
             <option value="">All Admins</option>
             
-            {/* Always include our demo admins */}
-            <option value="Eugene">Eugene</option>
-            <option value="Lindy Mann">Lindy Mann</option>
-            
-            {/* Include database admins that aren't our demo admins */}
-            {adminUsers && adminUsers.length > 0 && adminUsers
-              .filter(admin => 
-                admin.userName && 
-                admin.userName.toLowerCase() !== 'eugene' && 
-                admin.userName.toLowerCase() !== 'lindy mann'
-              )
-              .map(admin => (
-                <option key={admin._id} value={admin.userName}>
-                  {admin.userName}
-                </option>
-              ))}
+            {/* Only show real admin users from database */}
+            {adminUsers && adminUsers.length > 0 && adminUsers.map(admin => (
+              <option key={admin._id} value={admin.userName}>
+                {admin.userName}
+              </option>
+            ))}
           </select>
         </div>
       </motion.div>
@@ -550,37 +532,19 @@ const SuperAdminOrders = () => {
                                     // If no admin filter is applied, show all items
                                     if (!selectedAdmin) return true;
                                     
-                                    // Convert selectedAdmin to string for safe comparison
-                                    const selectedAdminStr = String(selectedAdmin).toLowerCase();
-                                    
-                                    // Determine which admin this product belongs to based on title
-                                    let adminName = '';
-                                    if (item.product?.title) {
-                                      if (item.product.title.includes('Snake Crew Sweatshirt')) {
-                                        adminName = 'eugene';
-                                      } else if (item.product.title.includes('Miami Men')) {
-                                        adminName = 'lindy mann';
-                                      }
+                                    // Only filter by real admin data from product's createdBy field
+                                    if (item.product?.createdBy?.userName) {
+                                      return item.product.createdBy.userName === selectedAdmin;
                                     }
                                     
-                                    // Only show items that belong to the selected admin
-                                    return adminName === selectedAdminStr;
+                                    // If no createdBy data, don't show for specific admin filter
+                                    return false;
                                   })
                                   .map((item, idx) => {
-                                    // For display purposes, set the status to delivered
-                                    const displayStatus = 'delivered';
-                                    
-                                    // Determine admin info based on product title
-                                    let adminName, adminEmail;
-                                    if (item.product?.title) {
-                                      if (item.product.title.includes('Snake Crew Sweatshirt')) {
-                                        adminName = 'Eugene';
-                                        adminEmail = 'eugene@example.com';
-                                      } else if (item.product.title.includes('Miami Men')) {
-                                        adminName = 'Lindy Mann';
-                                        adminEmail = 'lindymann@example.com';
-                                      }
-                                    }
+                                    // Get real admin info from product's createdBy field
+                                    const adminName = item.product?.createdBy?.userName || 'Unknown Admin';
+                                    const adminEmail = item.product?.createdBy?.email || 'No email available';
+                                    const displayStatus = order.status || 'processing';
                                     
                                     return (
                                       <tr key={idx} className="hover:bg-gray-50">
@@ -610,25 +574,14 @@ const SuperAdminOrders = () => {
                                           </div>
                                         </td>
                                         <td className="px-4 py-3 whitespace-nowrap">
-                                          {adminName ? (
-                                            <div>
-                                              <div className="text-sm font-medium text-gray-900">
-                                                {adminName}
-                                              </div>
-                                              <div className="text-xs text-gray-500">
-                                                {adminEmail}
-                                              </div>
+                                          <div>
+                                            <div className="text-sm font-medium text-gray-900">
+                                              {adminName}
                                             </div>
-                                          ) : (
-                                            <div>
-                                              <div className="text-sm font-medium text-gray-900">
-                                                Unknown Admin
-                                              </div>
-                                              <div className="text-xs text-gray-500">
-                                                No email available
-                                              </div>
+                                            <div className="text-xs text-gray-500">
+                                              {adminEmail}
                                             </div>
-                                          )}
+                                          </div>
                                         </td>
                                         <td className="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-900">
                                           {formatCurrency(item.price)}

@@ -57,49 +57,37 @@ const AdminRevenueAnalytics = () => {
     
     // For admin-specific data (individual admin lines in superAdmin dashboard)
     if (isAdminSpecific) {
-      // If we have direct shipping fees for this admin and it's greater than 0, use it
+      // Only use direct shipping fees for this admin if available
       if (adminData.shippingFees && parseFloat(adminData.shippingFees) > 0) {
         return parseFloat(adminData.shippingFees);
       }
       
-      // For specific admins, we can hard-code values to match what's in their admin dashboard
-      // This ensures consistency between views
-      if (adminData.adminName === 'Eugene') {
-        return 210.00; // Match admin dashboard
-      } else if (adminData.adminName === 'Lindy Mann') {
-        return 0.00; // Match admin dashboard
-      }
-      
-      // For other admins, use region-based calculation if available
-      if (adminData.shippingFeesByRegion) {
-        const accraFees = (adminData.shippingFeesByRegion.accra || 0) * 40;
-        const otherFees = (adminData.shippingFeesByRegion.other || 0) * 70;
-        return accraFees + otherFees;
-      }
+      // NO FALLBACK CALCULATIONS - only real data
+      return 0;
     }
     // For total shipping fees (daily/weekly totals in superAdmin dashboard)
     else {
-      // If we have direct total shipping fees and it's greater than 0, use it
+      // If we have direct total shipping fees from the server response
       if (adminData.totalShippingFees && parseFloat(adminData.totalShippingFees) > 0) {
         return parseFloat(adminData.totalShippingFees);
       }
       
-      // Otherwise sum up all admin shipping fees if available
-      if (adminData.adminRevenue && Array.isArray(adminData.adminRevenue)) {
-        return adminData.adminRevenue.reduce((total, admin) => {
-          return total + calculateShippingFees(admin, true);
-        }, 0);
+      // If we have shipping fees directly on the period object (added by backend)
+      if (adminData.shippingFees && parseFloat(adminData.shippingFees) > 0) {
+        return parseFloat(adminData.shippingFees);
       }
       
-      // Fallback to region-based calculation for total
-      if (adminData.shippingFeesByRegion) {
-        const accraFees = (adminData.shippingFeesByRegion.accra || 0) * 40;
-        const otherFees = (adminData.shippingFeesByRegion.other || 0) * 70;
-        return accraFees + otherFees;
+      // Otherwise sum up all admin shipping fees if available
+      if (adminData.adminRevenue && Array.isArray(adminData.adminRevenue)) {
+        const totalFromAdmins = adminData.adminRevenue.reduce((total, admin) => {
+          return total + calculateShippingFees(admin, true);
+        }, 0);
+        return totalFromAdmins;
       }
+      
+      // NO FALLBACK CALCULATIONS - only real data
+      return 0;
     }
-    
-    return 0;
   };
   
   // Format date
@@ -321,11 +309,6 @@ const AdminRevenueAnalytics = () => {
                                   <span className="text-gray-600 mr-1">Shipping:</span>
                                   {formatCurrency(calculateShippingFees(admin))}
                                 </p>
-                                {admin.adminName === 'Eugene' && (
-                                  <p className="text-xs text-gray-500">
-                                    <span className="text-gray-600">(shipping fees match admin dashboard)</span>
-                                  </p>
-                                )}
                                 <p className="text-xs text-red-600">
                                   <span className="text-gray-600 mr-1">Fees:</span>
                                   {formatCurrency(admin.platformFees || 0)}

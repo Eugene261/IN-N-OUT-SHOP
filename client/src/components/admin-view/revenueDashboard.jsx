@@ -126,26 +126,9 @@ function RevenueDashboard() {
   
   // Calculate total shipping fees (only use server-provided values, no hardcoded fallbacks)
   const calculateTotalShippingFees = () => {
-    if (revenueStats?.totalShippingFees > 0) {
-      return revenueStats.totalShippingFees;
-    } else if (revenueStats?.shippingFeesByRegion) {
-      // Use the server-provided values instead of hardcoded fees
-      const totalFees = Object.values(revenueStats.shippingFeesByRegion)
-        .reduce((sum, regionStats) => {
-          // If the regionStats has an amount field, use that, otherwise use the count * average fee
-          if (regionStats.amount) {
-            return sum + regionStats.amount;
-          } else if (regionStats.count && regionStats.averageFee) {
-            return sum + (regionStats.count * regionStats.averageFee);
-          } else if (typeof regionStats === 'number') {
-            // For backward compatibility if it's just a count with no fee info
-            return sum + regionStats; // In this case, assume it's already the total fee amount
-          }
-          return sum;
-        }, 0);
-      return totalFees;
-    }
-    return 0;
+    // Only use the real totalShippingFees from the backend
+    // DO NOT use any hardcoded fallbacks or calculated values
+    return revenueStats?.totalShippingFees || 0;
   };
   
   // Get the shipping fee value for display
@@ -220,7 +203,7 @@ function RevenueDashboard() {
                 <li className="flex justify-between">
                   <span className="text-gray-600">Shipping Fees:</span>
                   <span className="font-medium">
-                    {formatCurrency(calculateTotalShippingFees())}
+                    {formatCurrency(revenueStats?.totalShippingFees || 0)}
                   </span>
                 </li>
                 <li className="flex justify-between">
@@ -249,7 +232,7 @@ function RevenueDashboard() {
             <div className="bg-blue-50 p-4 rounded-lg">
               <h4 className="font-medium text-blue-800">Total Shipping Fees</h4>
               <p className="text-2xl font-bold text-blue-900">
-                {formatCurrency(calculateTotalShippingFees())}
+                {formatCurrency(revenueStats?.totalShippingFees || 0)}
               </p>
             </div>
             <div className="border-t pt-4">
@@ -275,7 +258,7 @@ function RevenueDashboard() {
                 <li className="flex justify-between">
                   <span className="text-gray-600">Average Shipping Fee:</span>
                   <span className="font-medium">
-                    {revenueStats?.totalOrders ? formatCurrency((calculateTotalShippingFees()) / (revenueStats?.totalOrders || 1)) : 'N/A'}
+                    {revenueStats?.totalOrders ? formatCurrency((revenueStats?.totalShippingFees || 0) / (revenueStats?.totalOrders || 1)) : 'N/A'}
                   </span>
                 </li>
               </ul>
@@ -575,18 +558,8 @@ function RevenueDashboard() {
               </span>
             </div>
             <p className="text-3xl font-bold text-gray-900 mt-2">
-              {revenueStats?.totalShippingFees > 0 
-                ? formatCurrency(revenueStats.totalShippingFees)
-                : revenueStats?.shippingFeesByRegion 
-                  ? formatCurrency((revenueStats.shippingFeesByRegion.accra || 0) * 40 + (revenueStats.shippingFeesByRegion.other || 0) * 70)
-                  : formatCurrency(0)
-              }
+              {formatCurrency(revenueStats?.totalShippingFees || 0)}
             </p>
-            {revenueStats?.totalShippingFees === 0 && revenueStats?.shippingFeesByRegion && 
-              <p className="text-xs text-blue-600 mt-1">
-                Based on {revenueStats.shippingFeesByRegion.accra || 0} Accra orders and {revenueStats.shippingFeesByRegion.other || 0} other region orders
-              </p>
-            }
             <p className="text-sm text-gray-500 mt-1">Total shipping charges collected</p>
             <div className="mt-4 text-blue-600 text-sm font-medium flex items-center">
               <span>View details</span>

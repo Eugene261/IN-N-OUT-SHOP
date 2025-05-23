@@ -63,6 +63,15 @@ const SuperAdminDashboard = () => {
       })
       .catch(error => console.error('Order stats error:', error));
     
+    // CRITICAL FIX: Add missing fetchProductStats() call
+    dispatch(fetchProductStats())
+      .then(response => {
+        if (response.payload && response.payload.stats) {
+          console.log('Product stats from API:', response.payload.stats);
+        }
+      })
+      .catch(error => console.error('Product stats error:', error));
+    
     // Fetch all users to get accurate role counts
     dispatch(fetchAllUsers())
       .catch(error => console.error('All users error:', error));
@@ -256,7 +265,7 @@ const SuperAdminDashboard = () => {
                 </span>
               </div>
               <p className="text-3xl font-bold text-gray-900 mt-2">
-                {formatCurrency((orderStats?.totalRevenue || 0) * 0.05)}
+                {formatCurrency(orderStats?.platformFees || 0)}
               </p>
               <p className="text-sm text-gray-500 mt-1">5% of gross revenue</p>
             </div>
@@ -270,7 +279,7 @@ const SuperAdminDashboard = () => {
                 </span>
               </div>
               <p className="text-3xl font-bold text-gray-900 mt-2">
-                {formatCurrency((orderStats?.totalRevenue || 0) * 0.95)}
+                {formatCurrency(orderStats?.netRevenue || 0)}
               </p>
               <p className="text-sm text-gray-500 mt-1">After platform fees</p>
             </div>

@@ -38,7 +38,6 @@ const AdminRevenueAnalytics = () => {
   
   // State for filters
   const [selectedAdmin, setSelectedAdmin] = useState('all');
-  const [highlightLindy, setHighlightLindy] = useState(true); // New state to toggle Lindy Mann focus
   const [dateRange, setDateRange] = useState({
     startDate: new Date(new Date().setDate(new Date().getDate() - 30)),
     endDate: new Date()
@@ -61,27 +60,15 @@ const AdminRevenueAnalytics = () => {
     
     // For admin-specific data (individual admin lines in superAdmin dashboard)
     if (isAdminSpecific) {
-      // If we have direct shipping fees for this admin and it's greater than 0, use it
+      // Only use direct shipping fees for this admin if available
       if (adminData.shippingFees && parseFloat(adminData.shippingFees) > 0) {
         console.log(`Using direct shipping fees for ${adminData.adminName}: ${adminData.shippingFees}`);
         return parseFloat(adminData.shippingFees);
       }
       
-      // For specific admins who need hardcoded values to match admin dashboard
-      if (adminData.adminName === 'Eugene') {
-        console.log('Using hardcoded shipping fees for Eugene: 210.00');
-        return 210.00; // Match admin dashboard
-      } else if (adminData.adminName === 'Lindy Mann') {
-        return 0.00; // Match admin dashboard
-      }
-      
-      // For other admins, use region-based calculation if available
-      if (adminData.shippingFeesByRegion) {
-        const accraFees = (adminData.shippingFeesByRegion.accra || 0) * 40;
-        const otherFees = (adminData.shippingFeesByRegion.other || 0) * 70;
-        console.log(`Calculating fees from regions: ${accraFees} + ${otherFees} = ${accraFees + otherFees}`);
-        return accraFees + otherFees;
-      }
+      // NO FALLBACK CALCULATIONS - only real data
+      console.log(`No real shipping fees found for ${adminData.adminName}, returning 0`);
+      return 0;
     }
     // For total shipping fees (daily/weekly totals in superAdmin dashboard)
     else {
@@ -106,16 +93,10 @@ const AdminRevenueAnalytics = () => {
         return totalFromAdmins;
       }
       
-      // Fallback to region-based calculation for total
-      if (adminData.shippingFeesByRegion) {
-        const accraFees = (adminData.shippingFeesByRegion.accra || 0) * 40;
-        const otherFees = (adminData.shippingFeesByRegion.other || 0) * 70;
-        return accraFees + otherFees;
-      }
+      // NO FALLBACK CALCULATIONS - only real data
+      console.log('No real shipping fees found, returning 0');
+      return 0;
     }
-    
-    console.log('No shipping fees calculation method worked, returning 0');
-    return 0;
   };
   
   // Format date
@@ -330,12 +311,9 @@ const AdminRevenueAnalytics = () => {
                                   <span className="text-xs text-gray-600 mr-1">Gross:</span>
                                   {formatCurrency(admin.revenue)}
                                 </p>
-                                <p className={`text-xs ${admin.adminName === 'Lindy Mann' ? 'bg-yellow-100 p-1 rounded font-semibold text-blue-700' : 'text-blue-600'}`}>
+                                <p className="text-xs text-blue-600">
                                   <span className="text-gray-600 mr-1">Shipping:</span>
-                                  {admin.adminName === 'Eugene' ? formatCurrency(210.00) : 
-                                   admin.adminName === 'Lindy Mann' ? formatCurrency(25.40) : 
-                                   formatCurrency(calculateShippingFees(admin))}
-                                  {admin.adminName === 'Lindy Mann' && ' ✓'}
+                                  {formatCurrency(calculateShippingFees(admin))}
                                 </p>
                                 {admin.shippingFeesByRegion && (
                                   <p className="text-xxs text-gray-500 ml-14">
@@ -428,9 +406,6 @@ const AdminRevenueAnalytics = () => {
                   </option>
                 ))}
               </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                <ChevronDown className="h-4 w-4 text-gray-500" />
-              </div>
             </div>
             
             {/* Date range filter - simplified for demo */}
