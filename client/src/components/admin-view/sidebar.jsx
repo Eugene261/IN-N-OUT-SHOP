@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, Star, X, Truck, Settings, DollarSign } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Star, X, Truck, Settings, DollarSign, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const menuItems = [
@@ -33,6 +33,12 @@ const menuItems = [
     label: 'Earnings',
     path: '/admin/vendor-payments',
     icon: <DollarSign className="h-5 w-5" />
+  },
+  {
+    id: 'profile',
+    label: 'Profile',
+    path: '/admin/profile',
+    icon: <User className="h-5 w-5" />
   }
 ];
 

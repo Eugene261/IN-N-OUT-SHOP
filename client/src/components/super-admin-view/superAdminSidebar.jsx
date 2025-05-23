@@ -9,7 +9,8 @@ import {
   Star, 
   LogOut, 
   X,
-  DollarSign
+  DollarSign,
+  Crown
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { logoutUser } from '../../store/auth-slice';
@@ -96,6 +97,17 @@ function SuperAdminSidebar({ onItemClick, onClose }) {
     tap: { scale: 0.9 }
   };
 
+  const userInfoVariants = {
+    hover: {
+      backgroundColor: "rgba(59, 130, 246, 0.05)",
+      transition: { duration: 0.2 }
+    },
+    tap: { scale: 0.98 }
+  };
+
+  // Check if profile page is active
+  const isProfileActive = location.pathname.includes('/super-admin/profile');
+
   return (
     <div className="h-full flex flex-col bg-white border-r border-gray-200 text-gray-900 relative">
       {/* Close button - only visible on mobile */}
@@ -133,18 +145,54 @@ function SuperAdminSidebar({ onItemClick, onClose }) {
         </Link>
       </div>
       
-      {/* User info */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">
+      {/* Clickable User info - links to profile */}
+      <motion.div 
+        className="p-4 border-b border-gray-200"
+        whileHover="hover"
+        whileTap="tap"
+        variants={userInfoVariants}
+      >
+        <Link 
+          to="/super-admin/profile" 
+          onClick={() => onItemClick && onItemClick()}
+          className={`flex items-center space-x-3 p-2 rounded-lg transition-colors cursor-pointer relative ${
+            isProfileActive 
+              ? 'bg-yellow-50 border border-yellow-200' 
+              : 'hover:bg-blue-50'
+          }`}
+        >
+          {isProfileActive && (
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-yellow-500 rounded-r"></div>
+          )}
+          
+          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white font-medium relative">
             {user?.userName?.charAt(0).toUpperCase() || 'S'}
+            <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5">
+              <Crown className="h-3 w-3 text-yellow-500" />
+            </div>
           </div>
-          <div>
-            <p className="font-medium text-gray-900">{user?.userName || 'Super Admin'}</p>
-            <p className="text-xs text-gray-500">{user?.email || 'admin@example.com'}</p>
+          
+          <div className="flex-1 min-w-0">
+            <p className={`font-medium truncate ${
+              isProfileActive ? 'text-yellow-800' : 'text-gray-900'
+            }`}>
+              {user?.userName || 'Super Admin'}
+            </p>
+            <p className={`text-xs truncate ${
+              isProfileActive ? 'text-yellow-600' : 'text-gray-500'
+            }`}>
+              {user?.email || 'admin@example.com'}
+            </p>
+            <p className="text-xs text-yellow-600 font-medium">
+              Click to view profile
+            </p>
           </div>
-        </div>
-      </div>
+          
+          {isProfileActive && (
+            <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
+          )}
+        </Link>
+      </motion.div>
       
       <motion.div 
         className="flex-1 py-4 space-y-1"

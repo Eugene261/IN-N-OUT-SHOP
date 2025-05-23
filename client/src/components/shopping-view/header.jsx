@@ -7,7 +7,7 @@ import axios from 'axios';
 import { shoppingViewHeaderMenuItems } from '@/config';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, 
   DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '../ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { logoutUser } from '@/store/auth-slice';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -329,8 +329,16 @@ function HeaderRightContent() {
                 className="cursor-pointer relative p-1 rounded-full hover:bg-gray-50 transition-all duration-200"
               >
                 <Avatar className="h-8 w-8 border border-gray-200 shadow-sm">
+                  <AvatarImage 
+                    src={user?.avatar} 
+                    alt={user?.userName || 'User'} 
+                    className="object-cover"
+                  />
                   <AvatarFallback className="bg-gradient-to-br from-gray-900 to-gray-700 text-white text-xs font-medium">
-                    {user?.userName?.substring(0, 2).toUpperCase() || 'U'}
+                    {user?.firstName && user?.lastName 
+                      ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
+                      : user?.userName?.substring(0, 2).toUpperCase() || 'U'
+                    }
                   </AvatarFallback>
                 </Avatar>
               </motion.div>
@@ -338,7 +346,12 @@ function HeaderRightContent() {
             <DropdownMenuContent align="end" className='min-w-[240px] p-3 bg-white text-black rounded-xl shadow-lg border border-gray-100'>
               <DropdownMenuLabel className='font-normal'>
                 <div className='flex flex-col space-y-1'>
-                  <p className='font-medium text-gray-900'>{user?.userName || 'User'}</p>
+                  <p className='font-medium text-gray-900'>
+                    {user?.firstName || user?.lastName 
+                      ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
+                      : user?.userName || 'User'
+                    }
+                  </p>
                   <p className='text-xs text-gray-500 truncate'>{user?.email || ''}</p>
                 </div>
               </DropdownMenuLabel>

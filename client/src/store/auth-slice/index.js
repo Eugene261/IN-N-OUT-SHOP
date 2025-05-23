@@ -1,8 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
-
-
 const initialState = {
     isAuthenticated : false,
     isLoading : true,
@@ -33,47 +31,62 @@ export const registerUser = createAsyncThunk(
 
 export const checkAuth = createAsyncThunk(
   'auth/check-auth',
-  async ( ) => {
+  async (_, { rejectWithValue }) => {
     try {
+      console.log('CheckAuth: Starting authentication check...');
+      const token = localStorage.getItem('token');
+      console.log('CheckAuth: Token exists:', !!token);
+      
+      const config = {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control' : 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Expires' : '0'
+        },
+      };
+      
+      // Add authorization header if token exists
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+        console.log('CheckAuth: Added Authorization header');
+      }
+      
+      console.log('CheckAuth: Making request to server...');
       const response = await axios.get(
         'http://localhost:5000/api/auth/check-auth',
-        {
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control' : 'no-store, no-cache, must-revalidate, proxy-revalidate',
-            'Expires' : '0'
-          },
-        }
+        config
       );
+      
+      console.log('CheckAuth: Success response:', response.data);
       return response.data;
     } catch (error) {
+      console.log('CheckAuth error:', error.response?.status, error.message);
+      console.log('CheckAuth error data:', error.response?.data);
       // Use rejectWithValue to pass the error response data
-      return rejectWithValue(error.response?.data || { message: 'Registration failed' });
+      return rejectWithValue(error.response?.data || { message: 'Authentication check failed' });
     }
   }
 );
-
 
 export const logoutUser = createAsyncThunk(
   'auth/logout',
-  async () => {
+  async (_, { rejectWithValue }) => {
     try {
       const response = await axios.post(
         'http://localhost:5000/api/auth/logout', {},
-        
         {
           withCredentials: true,
         }
       );
       return response.data;
     } catch (error) {
+      console.log('Logout error:', error.response?.status, error.message);
       // Use rejectWithValue to pass the error response data
-      return rejectWithValue(error.response?.data || { message: 'Registration failed' });
+      return rejectWithValue(error.response?.data || { message: 'Logout failed' });
     }
   }
 );
-
 
 export const loginUser = createAsyncThunk(
   'auth/login',
@@ -93,6 +106,126 @@ export const loginUser = createAsyncThunk(
     } catch (error) {
       // Use rejectWithValue to pass the error response data
       return rejectWithValue(error.response?.data || { message: 'Registration failed' });
+    }
+  }
+);
+
+export const updateUserProfile = createAsyncThunk(
+  'auth/updateProfile',
+  async (formData, { rejectWithValue, getState }) => {
+    try {
+      console.log('=== UPDATE PROFILE API CALL ===');
+      console.log('Sending data:', formData);
+      
+      const { auth } = getState();
+      const token = localStorage.getItem('token');
+      const userId = auth.user?._id || auth.user?.id;
+      
+      console.log('Token:', token);
+      console.log('User ID:', userId);
+      console.log('Auth user:', auth.user);
+      
+      // Try multiple authentication approaches
+      const config = {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      };
+      
+      // Add authorization header if token exists
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      // Try with user ID in URL first (more explicit)
+      let response;
+      
+      if (userId) {
+        console.log('Trying with user ID in URL:', userId);
+        try {
+          response = await axios.put(
+            `http://localhost:5000/api/users/profile/${userId}`,
+            formData,
+            config
+          );
+        } catch (error) {
+          console.log('Failed with user ID, trying without:', error.response?.status);
+          if (error.response?.status !== 404) {
+            throw error; // Re-throw if not a 404
+          }
+          // Fall back to endpoint without user ID
+          response = await axios.put(
+            'http://localhost:5000/api/users/profile',
+            formData,
+            config
+          );
+        }
+      } else {
+        // No user ID available, use standard endpoint
+        response = await axios.put(
+          'http://localhost:5000/api/users/profile',
+          formData,
+          config
+        );
+      }
+      
+      console.log('API Response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      console.error('API Error response:', error.response?.data);
+      console.error('API Error status:', error.response?.status);
+      return rejectWithValue(error.response?.data || { message: 'Profile update failed' });
+    }
+  }
+);
+
+export const fetchUserProfile = createAsyncThunk(
+  'auth/fetchProfile',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        'http://localhost:5000/api/users/profile',
+        {
+          withCredentials: true,
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { message: 'Failed to fetch profile' });
+    }
+  }
+);
+
+export const updateUserSettings = createAsyncThunk(
+  'auth/updateSettings',
+  async (settingsData, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const userId = auth.user?._id || auth.user?.id;
+      
+      if (!userId) {
+        throw new Error('User ID not found');
+      }
+
+      const response = await axios.patch(
+        `http://localhost:5000/api/users/${userId}/settings`,
+        settingsData,
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { message: 'Settings update failed' });
     }
   }
 );
@@ -140,7 +273,6 @@ const authSlice = createSlice({
         state.error = action.payload?.message || 'Login failed';
       })
 
-
       /* Check-auth */
       .addCase(checkAuth.pending, (state) => {
         state.isLoading = true;
@@ -155,16 +287,85 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.user = null;
         state.isAuthenticated = false;
-        
+        console.log('Auth slice - checkAuth rejected:', action.payload);
       })
 
       /* logout */
-
       .addCase(logoutUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.user = null;
         state.isAuthenticated = false;  // You might want to change this
       })
+
+      /* Update Profile */
+      .addCase(updateUserProfile.pending, (state) => {
+        // Don't set global isLoading for profile updates to avoid affecting app loading state
+        // state.isLoading = true;
+      })
+      .addCase(updateUserProfile.fulfilled, (state, action) => {
+        // Don't set global isLoading for profile updates
+        // state.isLoading = false;
+        console.log('Auth slice - updateUserProfile fulfilled:', action.payload);
+        if (action.payload.success) {
+          state.user = { ...state.user, ...action.payload.data };
+          // Update localStorage with the new user data
+          localStorage.setItem('user', JSON.stringify(state.user));
+          console.log('Updated localStorage with new user data:', state.user);
+        }
+      })
+      .addCase(updateUserProfile.rejected, (state, action) => {
+        // Don't set global isLoading for profile updates
+        // state.isLoading = false;
+        console.log('Auth slice - updateUserProfile rejected:', action.payload);
+        state.error = action.payload?.message || 'Profile update failed';
+      })
+
+      /* Fetch Profile */
+      .addCase(fetchUserProfile.pending, (state) => {
+        // Don't set global isLoading for profile fetches to avoid infinite loops
+        // state.isLoading = true;
+      })
+      .addCase(fetchUserProfile.fulfilled, (state, action) => {
+        // Don't set global isLoading for profile fetches
+        // state.isLoading = false;
+        console.log('Auth slice - fetchUserProfile fulfilled:', action.payload);
+        if (action.payload.success) {
+          state.user = action.payload.data;
+          // Update localStorage with the fetched user data
+          localStorage.setItem('user', JSON.stringify(action.payload.data));
+          console.log('Updated localStorage with fetched user data:', action.payload.data);
+        }
+      })
+      .addCase(fetchUserProfile.rejected, (state, action) => {
+        // Don't set global isLoading for profile fetches
+        // state.isLoading = false;
+        console.log('Auth slice - fetchUserProfile rejected:', action.payload);
+        state.error = action.payload?.message || 'Failed to fetch profile';
+      })
+
+      /* Update Settings */
+      .addCase(updateUserSettings.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(updateUserSettings.fulfilled, (state, action) => {
+        state.isLoading = false;
+        console.log('Auth slice - updateUserSettings fulfilled:', action.payload);
+        if (action.payload.success) {
+          // Update user with the settings data from backend response
+          state.user = { 
+            ...state.user, 
+            baseRegion: action.payload.data?.baseRegion,
+            baseCity: action.payload.data?.baseCity,
+            timezone: action.payload.data?.timezone,
+            shippingPreferences: action.payload.data?.shippingPreferences
+          };
+        }
+      })
+      .addCase(updateUserSettings.rejected, (state, action) => {
+        state.isLoading = false;
+        console.log('Auth slice - updateUserSettings rejected:', action.payload);
+        state.error = action.payload?.message || 'Settings update failed';
+      });
   },
 });
 

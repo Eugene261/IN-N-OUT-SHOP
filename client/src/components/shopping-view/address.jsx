@@ -50,9 +50,10 @@ function Address({setCurrentSelectedAddress, selectedId}) {
     }
 
     function handleDeleteAddress(getCurrentAddress) {
-        dispatch(deleteAddress({userId: user?.id, addressId: getCurrentAddress._id})).then(data => {
+        const userId = user?.id || user?._id;
+        dispatch(deleteAddress({userId: userId, addressId: getCurrentAddress._id})).then(data => {
             if (data?.payload?.success) {
-                dispatch(fetchAllAddresses(user?.id));
+                dispatch(fetchAllAddresses(userId));
                 toast.success('Address deleted successfully', {
                     description: 'The address has been removed from your list'
                 });
@@ -67,13 +68,14 @@ function Address({setCurrentSelectedAddress, selectedId}) {
     }
 
     function handleEditAddress({addressId, formData: updatedFormData}) {
+        const userId = user?.id || user?._id;
         dispatch(editAddress({
-            userId: user?.id,
+            userId: userId,
             addressId: addressId,
             formData: updatedFormData
         })).then(data => {
             if (data?.payload?.success) {
-                dispatch(fetchAllAddresses(user?.id));
+                dispatch(fetchAllAddresses(userId));
                 toast.success('Address updated successfully', {
                     description: 'Your address information has been updated'
                 });
@@ -109,12 +111,13 @@ function Address({setCurrentSelectedAddress, selectedId}) {
             return;
         }
         
+        const userId = user?.id || user?._id;
         dispatch(addNewAddress({
             ...formData,
-            userId: user?.id
+            userId: userId
         })).then(data => {
             if (data?.payload?.success) {
-                dispatch(fetchAllAddresses(user?.id));
+                dispatch(fetchAllAddresses(userId));
                 setFormData(initialAddressFormData);
                 setShowForm(false);
                 setErrors({});
@@ -132,8 +135,11 @@ function Address({setCurrentSelectedAddress, selectedId}) {
     }
 
     useEffect(() => {
-        dispatch(fetchAllAddresses(user?.id));
-    }, [dispatch, user?.id]);
+        const userId = user?.id || user?._id;
+        if (userId) {
+            dispatch(fetchAllAddresses(userId));
+        }
+    }, [dispatch, user?.id, user?._id]);
     
     return (
         <motion.div

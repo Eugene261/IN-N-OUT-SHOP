@@ -85,11 +85,25 @@ const loginUser = async(req, res) => {
             message : "User doesn't exists! Please register first"
         });
 
+        // Check if user is active
+        if (!checkUser.isActive) {
+            return res.json({
+                success: false,
+                message: "Account is deactivated. Please contact support."
+            });
+        }
+
         const checkPasswordMatch = await bcrypt.compare(password, checkUser.password);
         if(!checkPasswordMatch) return res.json({
             success : false,
             message : "email or password incorrect"
         });
+
+        // Update last login
+        await User.findByIdAndUpdate(checkUser._id, { lastLogin: new Date() });
+
+        // Get updated user data
+        const updatedUser = await User.findById(checkUser._id);
 
         // Sign a JWT token with extended expiration time for better UX
         const token = jwt.sign({
@@ -107,10 +121,25 @@ const loginUser = async(req, res) => {
             message : 'Logged in successfully',
             token: token, // Send token in response for localStorage storage
             user: {
-                email : checkUser.email,
-                role : checkUser.role,
-                id : checkUser._id,
-                userName : checkUser.userName
+                email: updatedUser.email,
+                role: updatedUser.role,
+                id: updatedUser._id,
+                userName: updatedUser.userName,
+                firstName: updatedUser.firstName,
+                lastName: updatedUser.lastName,
+                phone: updatedUser.phone,
+                avatar: updatedUser.avatar,
+                dateOfBirth: updatedUser.dateOfBirth,
+                isActive: updatedUser.isActive,
+                lastLogin: updatedUser.lastLogin,
+                createdAt: updatedUser.createdAt,
+                updatedAt: updatedUser.updatedAt,
+                shopName: updatedUser.shopName,
+                baseRegion: updatedUser.baseRegion,
+                baseCity: updatedUser.baseCity,
+                balance: updatedUser.balance,
+                totalEarnings: updatedUser.totalEarnings,
+                shippingPreferences: updatedUser.shippingPreferences
             }
         });
         
@@ -138,25 +167,36 @@ const logoutUser = (req, res) => {
 
 // auth Middleware
 const authMiddleware = async(req, res, next) => {
-  const token = req.cookies.token;
+  // Check for token in cookies first, then Authorization header
+  let token = req.cookies.token;
+  
+  if (!token && req.headers.authorization) {
+    const authHeader = req.headers.authorization;
+    if (authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    }
+  }
 
-  if(!token) return res.status(401).json({
-    success : false,
-    message : 'Unauthorized user!'
-  });
+  if(!token) {
+    console.log('AuthMiddleware: No token found in cookies or headers');
+    return res.status(401).json({
+      success : false,
+      message : 'Unauthorized user!'
+    });
+  }
 
   try {
     const decoded = jwt.verify(token, 'CLIENT_SECRET_KEY');
+    console.log('AuthMiddleware: Token verified successfully for user:', decoded.id);
     req.user = decoded;
     next()
   } catch (error) {
+    console.log('AuthMiddleware: Token verification failed:', error.message);
     res.status(401).json({
       success : false,
-    message : 'Unauthorized user!'
+      message : 'Unauthorized user!'
     })
   }
-
-
 }
 
 // SuperAdmin middleware - checks if user has SuperAdmin role

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 
-function CheckAuth({ isAuthenticated, user, children }) {
+function CheckAuth({ isAuthenticated, user, children, requiredRole }) {
     const location = useLocation();
     const path = location.pathname;
 
@@ -11,9 +11,10 @@ function CheckAuth({ isAuthenticated, user, children }) {
             path, 
             isAuthenticated, 
             userRole: user?.role,
+            requiredRole,
             isSuperAdmin: user?.role === 'superAdmin'
         });
-    }, [path, isAuthenticated, user]);
+    }, [path, isAuthenticated, user, requiredRole]);
     
 
 
@@ -58,15 +59,7 @@ function CheckAuth({ isAuthenticated, user, children }) {
         }
     }
 
-    // Non-admin trying to access admin routes
-    if (user?.role !== 'admin' && user?.role !== 'superAdmin' && path.startsWith('/admin')) {
-        return <Navigate to="/unauth-page" replace />;
-    }
-
-    // Non-superAdmin trying to access superAdmin routes
-    if (user?.role !== 'superAdmin' && path.startsWith('/super-admin')) {
-        return <Navigate to="/unauth-page" replace />;
-    }
+        // Check required role if specified    if (requiredRole) {        if (requiredRole === 'admin' && user?.role !== 'admin' && user?.role !== 'superAdmin') {            return <Navigate to="/unauth-page" replace />;        }        if (requiredRole === 'superAdmin' && user?.role !== 'superAdmin') {            return <Navigate to="/unauth-page" replace />;        }    }    // Non-admin trying to access admin routes    if (user?.role !== 'admin' && user?.role !== 'superAdmin' && path.startsWith('/admin')) {        return <Navigate to="/unauth-page" replace />;    }    // Non-superAdmin trying to access superAdmin routes    if (user?.role !== 'superAdmin' && path.startsWith('/super-admin')) {        return <Navigate to="/unauth-page" replace />;    }
 
     // Admin trying to access shop routes
     if ((user?.role === 'admin' || user?.role === 'superAdmin') && path.startsWith('/shop')) {

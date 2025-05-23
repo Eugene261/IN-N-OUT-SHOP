@@ -10,6 +10,8 @@ import AdminOrders from "./pages/admin-view/orders";
 import AdminFeatures from "./pages/admin-view/features";
 import AdminFeaturedProducts from "./pages/admin-view/featuredProducts";
 import AdminShippingSettings from "./pages/admin-view/shippingSettings";
+import AdminProfile from "./pages/admin-view/profile";
+import AdminSettingsPage from "./pages/admin-view/settings";
 import ShoppingLayout from "./components/shopping-view/layout";
 import NotFound from "./pages/not-found";
 import ShoppingHome from "./pages/shopping-view/home";
@@ -47,6 +49,7 @@ import SuperAdminOrdersPage from "./pages/super-admin-view/orders";
 import SuperAdminProductsPage from "./pages/super-admin-view/products";
 import SuperAdminFeaturedPage from "./pages/super-admin-view/featured";
 import SuperAdminVendorPaymentsPage from "./pages/super-admin-view/vendorPayments";
+import SuperAdminProfile from "./pages/super-admin-view/profile";
 
 // Admin vendor payments
 import AdminVendorPaymentsPage from "./pages/admin-view/vendorPayments";
@@ -57,15 +60,36 @@ import ConnectionStatus from "./components/shared/ConnectionStatus";
 // Import TokenManager component
 import TokenManager from './components/common/TokenManager';
 
+// Import Toaster component
+import { Toaster } from "./components/ui/sonner";
+
 function App() {
   const {user, isAuthenticated, isLoading } = useSelector(state => state.auth);
   const dispatch = useDispatch();
 
   useEffect(() => {
+    console.log('App: Dispatching checkAuth...');
     dispatch(checkAuth());
+    
+    // Add a timeout safeguard to prevent permanent loading state
+    const timeout = setTimeout(() => {
+      console.warn('Authentication check took too long, forcing loading to false');
+      // If still loading after 10 seconds, there might be an issue
+      if (isLoading) {
+        console.error('App stuck in loading state for too long');
+      }
+    }, 10000);
+
+    return () => clearTimeout(timeout);
   }, [dispatch]);
 
+  // Add debugging for loading state
+  useEffect(() => {
+    console.log('App loading state changed:', { isLoading, isAuthenticated, user: !!user });
+  }, [isLoading, isAuthenticated, user]);
+
   if(isLoading) {
+    console.log('App: Showing loading screen');
     return (
       <div className="flex items-center justify-center h-screen">
         <ShoppingLoader />
@@ -110,11 +134,13 @@ function App() {
             <Route path='featured-products' element={<AdminFeaturedProducts />} />
             <Route path='shipping-settings' element={<AdminShippingSettings />} />
             <Route path='vendor-payments' element={<AdminVendorPaymentsPage />} />
+            <Route path='settings' element={<AdminSettingsPage />} />
+            <Route path='profile' element={<AdminProfile />} />
           </Route>
 
           {/* SUPER ADMIN */}
           <Route path='/super-admin' element={
-            <CheckAuth isAuthenticated={isAuthenticated} user={user} requiredRole="superadmin">
+            <CheckAuth isAuthenticated={isAuthenticated} user={user} requiredRole="superAdmin">
               <SuperAdminLayout/>
             </CheckAuth>
           }>
@@ -124,6 +150,7 @@ function App() {
             <Route path='products' element={<SuperAdminProductsPage />} />
             <Route path='featured' element={<SuperAdminFeaturedPage />} />
             <Route path='vendor-payments' element={<SuperAdminVendorPaymentsPage />} />
+            <Route path='profile' element={<SuperAdminProfile />} />
           </Route>
 
           {/* SHOP */}
@@ -191,6 +218,7 @@ function App() {
           <Route path="unauth-page" element={<UnauthPage/>} />
         </Routes>
       </div>
+      <Toaster />
     </>
   );
 }

@@ -3,6 +3,20 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const { verifyToken } = require('../Middleware/auth');
 
+// Profile management routes
+router.get('/profile', verifyToken, userController.getUserProfile);
+router.get('/profile/:userId', verifyToken, userController.getUserProfile);
+router.put('/profile', verifyToken, userController.updateUserProfile);
+router.put('/profile/:userId', verifyToken, userController.updateUserProfile);
+router.post('/change-password', verifyToken, userController.changePassword);
+router.post('/change-password/:userId', verifyToken, userController.changePassword);
+
+// Admin routes - User management
+router.get('/admin/users', verifyToken, userController.getAllUsers);
+router.put('/admin/users/:userId/role', verifyToken, userController.updateUserRole);
+router.patch('/admin/users/:userId/status', verifyToken, userController.toggleUserStatus);
+router.delete('/admin/users/:userId', verifyToken, userController.deleteUser);
+
 // Update user settings route
 router.patch('/:userId/settings', verifyToken, userController.updateUserSettings);
 

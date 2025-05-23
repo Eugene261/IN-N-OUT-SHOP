@@ -20,6 +20,46 @@ const UserSchema = new mongoose.Schema({
         enum: ['user', 'admin', 'superAdmin'],
         default : 'user'
     },
+    // Additional profile information
+    firstName: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    lastName: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    phone: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    avatar: {
+        type: String,
+        default: ''
+    },
+    dateOfBirth: {
+        type: Date,
+        default: null
+    },
+    isActive: {
+        type: Boolean,
+        default: true
+    },
+    lastLogin: {
+        type: Date,
+        default: null
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now
+    },
     // Vendor shipping information
     baseRegion: {
         type: String,
@@ -73,6 +113,12 @@ const UserSchema = new mongoose.Schema({
             default: true
         }
     }
+});
+
+// Update the updatedAt field before saving
+UserSchema.pre('save', function(next) {
+    this.updatedAt = Date.now();
+    next();
 });
 
 const User = mongoose.model('User', UserSchema);
