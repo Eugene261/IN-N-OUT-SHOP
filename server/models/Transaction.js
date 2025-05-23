@@ -40,7 +40,7 @@ const transactionSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ['bank', 'mobile_money', 'cash', 'paystack', 'manual', 'other'],
+      enum: ['bank_transfer', 'mobile_money', 'cash', 'paystack', 'manual', 'other', 'bank', 'Bank Transfer', 'Mobile Money'],
       default: 'manual'
     },
     paymentDetails: {
@@ -50,6 +50,19 @@ const transactionSchema = new mongoose.Schema(
       mobileNumber: String,
       provider: String,
       reference: String
+    },
+    transactionId: {
+      type: String,
+      trim: true,
+      index: true
+    },
+    receiptUrl: {
+      type: String,
+      trim: true
+    },
+    receiptName: {
+      type: String,
+      trim: true
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,

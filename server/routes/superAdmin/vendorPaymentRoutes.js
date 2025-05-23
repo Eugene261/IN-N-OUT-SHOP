@@ -5,9 +5,11 @@ const {
     getAllVendorPayments,
     getVendorPaymentDetails,
     createVendorPayment,
+    uploadReceipt,
     updatePaymentStatus,
     getVendorPaymentSummary,
-    getAdminsAndVendors
+    getAdminsAndVendors,
+    upload
 } = require('../../controllers/superAdmin/vendorPaymentController.js');
 
 // Apply auth middleware to all routes
@@ -23,8 +25,11 @@ router.get('/summary', getVendorPaymentSummary);
 // Get admins and vendors list for dropdown
 router.get('/admins-vendors', getAdminsAndVendors);
 
-// Create a new vendor payment
-router.post('/', createVendorPayment);
+// Create a new vendor payment with optional receipt upload
+router.post('/', upload.single('receipt'), createVendorPayment);
+
+// Upload receipt for existing payment
+router.post('/:paymentId/receipt', upload.single('receipt'), uploadReceipt);
 
 // Update payment status
 router.patch('/:paymentId/status', updatePaymentStatus);

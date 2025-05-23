@@ -40,6 +40,10 @@ const UserSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    totalEarningsWithdrawn: {
+        type: Number,
+        default: 0
+    },
     totalShippingFees: {
         type: Number,
         default: 0
@@ -47,6 +51,12 @@ const UserSchema = new mongoose.Schema({
     platformFees: {
         type: Number,
         default: 0
+    },
+    // Shop information
+    shopName: {
+        type: String,
+        trim: true,
+        default: ''
     },
     // Store additional shipping preferences
     shippingPreferences: {

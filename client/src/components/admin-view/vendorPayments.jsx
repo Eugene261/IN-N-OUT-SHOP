@@ -1,547 +1,627 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+  fetchVendorPayments, 
+  fetchPaymentSummary, 
+  fetchPaymentDetails,
+  clearPaymentDetails,
+  resetMessages
+} from '../../store/admin-vendor-payments-slice';
 import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogFooter,
-  DialogClose
-} from '@/components/ui/dialog';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  FileDown,
-  FileText,
-  Download,
-  Check,
-  X,
-  Clock,
-  AlertCircle,
-  Filter,
+  DollarSign, 
+  Eye, 
+  Check, 
+  X, 
+  Search, 
+  Filter, 
+  FileText, 
+  Calendar, 
+  Clock, 
   RefreshCw,
-  DollarSign,
-  Calendar,
-  Eye,
-  BadgeCheck
+  Download,
+  TrendingUp,
+  CreditCard,
+  Receipt,
+  ExternalLink,
+  ArrowLeft,
+  ChevronRight,
+  Wallet,
+  Activity,
+  BarChart3
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/components/ui/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
-import { API_BASE_URL } from '@/config/api';
+import { formatDate, formatCurrency } from '../../utils/formatters';
+import { toast } from 'sonner';
+
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { 
+    opacity: 1,
+    y: 0,
+    transition: { 
+      duration: 0.6,
+      ease: "easeOut",
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  visible: { 
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { 
+      duration: 0.5,
+      ease: "easeOut"
+    }
+  }
+};
+
+const slideVariants = {
+  hidden: { x: 300, opacity: 0 },
+  visible: { 
+    x: 0, 
+    opacity: 1,
+    transition: { 
+      type: "spring", 
+      duration: 0.5, 
+      bounce: 0.2 
+    }
+  },
+  exit: { 
+    x: 300, 
+    opacity: 0,
+    transition: { duration: 0.3 }
+  }
+};
+
+const buttonVariants = {
+  initial: { scale: 1 },
+  hover: { scale: 1.05, transition: { duration: 0.2 } },
+  tap: { scale: 0.95 }
+};
 
 const VendorPayments = () => {
   const dispatch = useDispatch();
   const { 
-    vendorPayments, 
-    pagination, 
-    paymentDetails: selectedPayment, 
-    summary: paymentSummary, 
-    isLoading: loading, 
-    error 
+    vendorPayments: rawVendorPayments, 
+    pagination: rawPagination, 
+    paymentDetails: rawPaymentDetails, 
+    summary: rawSummary, 
+    isLoading, 
+    error,
+    success,
+    message
   } = useSelector(state => state.adminVendorPayments);
   
-  // Ensure all data properties have default values to prevent null reference errors
-  const payments = vendorPayments || [];
-  const paginationData = pagination || { currentPage: 1, totalPages: 1, totalCount: 0 };
-  const summaryData = paymentSummary || {
+  // Ensure all data properties have default values
+  const vendorPayments = rawVendorPayments || [];
+  const pagination = rawPagination || { currentPage: 1, totalPages: 1, totalCount: 0 };
+  const paymentDetails = rawPaymentDetails || null;
+  const summary = rawSummary || {
     totalPaid: 0,
     pendingAmount: 0,
     paymentCount: 0,
     pendingCount: 0,
     lastPaymentDate: null,
     lastPaymentAmount: 0,
-    unviewedCount: 0
+    totalPayments: 0
   };
   
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
-  const { toast } = useToast();
+  // Component state
+  const [activeView, setActiveView] = useState('list'); // 'list' or 'details'
+  const [selectedPaymentId, setSelectedPaymentId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const [filters, setFilters] = useState({
+    status: '',
+    startDate: '',
+    endDate: ''
+  });
 
-  // Fetch payments on mount
-  useEffect(() => {
-    dispatch(fetchVendorPayments({}));
-    dispatch(fetchPaymentSummary());
-  }, [dispatch]);
-
-  // Fetch payment history
-  const handleFetchPayments = (page = 1, filters = {}) => {
-    const params = {
-      page,
-      ...(statusFilter && statusFilter !== 'all' ? { status: statusFilter } : {}),
-      ...(dateRange.startDate ? { startDate: dateRange.startDate } : {}),
-      ...(dateRange.endDate ? { endDate: dateRange.endDate } : {}),
-      ...filters
-    };
-    
-    dispatch(fetchVendorPayments(params));
-  };
-
-  // Fetch payment details
-  const handleFetchPaymentDetails = (paymentId) => {
-    dispatch(fetchPaymentDetails(paymentId));
-  };
-
-  // Handle errors
-  useEffect(() => {
-    if (error) {
-      toast({
-        title: 'Error',
-        description: error,
-        variant: 'destructive'
-      });
-    }
-  }, [error, toast]);
-
-  // Apply filters
-  const applyFilters = () => {
-    handleFetchPayments(1);
-  };
-
-  // Reset filters
-  const resetFilters = () => {
-    setStatusFilter('all');
-    setDateRange({ startDate: '', endDate: '' });
-    handleFetchPayments(1);
-  };
-
-  // Handle pagination
-  const handlePagination = (page) => {
-    handleFetchPayments(page);
-  };
-
-  // Status badge renderer
-  const renderStatusBadge = (status) => {
+  // Status badge styling
+  const getStatusBadgeClass = (status) => {
+    const baseClass = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold';
     switch (status) {
       case 'completed':
-        return <Badge className="bg-green-500"><Check className="w-3 h-3 mr-1" /> Completed</Badge>;
+        return `${baseClass} bg-emerald-100 text-emerald-800 border border-emerald-200`;
       case 'pending':
-        return <Badge className="bg-amber-500"><Clock className="w-3 h-3 mr-1" /> Pending</Badge>;
-      case 'processing':
-        return <Badge className="bg-blue-500"><RefreshCw className="w-3 h-3 mr-1" /> Processing</Badge>;
+        return `${baseClass} bg-amber-100 text-amber-800 border border-amber-200`;
       case 'failed':
-        return <Badge className="bg-red-500"><X className="w-3 h-3 mr-1" /> Failed</Badge>;
+        return `${baseClass} bg-red-100 text-red-800 border border-red-200`;
+      case 'cancelled':
+        return `${baseClass} bg-gray-100 text-gray-800 border border-gray-200`;
       default:
-        return <Badge className="bg-gray-500">{status}</Badge>;
+        return `${baseClass} bg-gray-100 text-gray-800 border border-gray-200`;
     }
   };
 
-  // Format currency
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'GHS'
-    }).format(amount);
+  // Payment method icons
+  const getPaymentMethodIcon = (method) => {
+    switch (method) {
+      case 'bank_transfer':
+      case 'Bank Transfer':
+        return <CreditCard className="h-4 w-4" />;
+      case 'mobile_money':
+      case 'Mobile Money':
+        return <DollarSign className="h-4 w-4" />;
+      case 'cash':
+        return <DollarSign className="h-4 w-4" />;
+      default:
+        return <CreditCard className="h-4 w-4" />;
+    }
   };
 
-  // Format date
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+  // Initial data load
+  useEffect(() => {
+    dispatch(fetchVendorPayments({ page: currentPage }));
+    dispatch(fetchPaymentSummary());
+  }, [dispatch, currentPage]);
+
+  // Handle errors and success
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      dispatch(resetMessages());
+    }
+    if (success) {
+      toast.success(message);
+      setTimeout(() => dispatch(resetMessages()), 3000);
+    }
+  }, [error, success, message, dispatch]);
+
+  // Handle view payment details
+  const handleViewDetails = (paymentId) => {
+    setSelectedPaymentId(paymentId);
+    dispatch(fetchPaymentDetails(paymentId));
+    setActiveView('details');
   };
 
-  return (
-    <div className="container mx-auto py-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Payment History</h1>
-          <p className="text-muted-foreground">View your payment history and receipts</p>
+  // Handle back to list
+  const handleBackToList = () => {
+    setActiveView('list');
+    setSelectedPaymentId(null);
+    dispatch(clearPaymentDetails());
+  };
+
+  // Handle filters
+  const handleFilterApply = () => {
+    dispatch(fetchVendorPayments({ page: 1, ...filters }));
+    setCurrentPage(1);
+  };
+
+  const handleResetFilters = () => {
+    setFilters({ status: '', startDate: '', endDate: '' });
+    dispatch(fetchVendorPayments({ page: 1 }));
+    setCurrentPage(1);
+  };
+
+  // Pagination
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  // Render summary cards
+  const renderSummaryCards = () => (
+    <motion.div 
+      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.div 
+        className="bg-gradient-to-br from-emerald-50 to-green-100 rounded-2xl p-6 border border-emerald-200 shadow-lg hover:shadow-xl transition-shadow duration-300"
+        variants={cardVariants}
+        whileHover={{ y: -5, transition: { duration: 0.2 } }}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-emerald-600 text-sm font-medium">Total Received</p>
+            <p className="text-3xl font-bold text-emerald-900 mt-2">{formatCurrency(summary.totalPaid)}</p>
+            <p className="text-emerald-600 text-xs mt-1">{summary.paymentCount} completed payments</p>
+          </div>
+          <div className="bg-emerald-500 rounded-full p-3">
+            <Wallet className="h-6 w-6 text-white" />
+          </div>
+        </div>
+      </motion.div>
+
+      <motion.div 
+        className="bg-gradient-to-br from-amber-50 to-orange-100 rounded-2xl p-6 border border-amber-200 shadow-lg hover:shadow-xl transition-shadow duration-300"
+        variants={cardVariants}
+        whileHover={{ y: -5, transition: { duration: 0.2 } }}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-amber-600 text-sm font-medium">Pending</p>
+            <p className="text-3xl font-bold text-amber-900 mt-2">{formatCurrency(summary.pendingAmount)}</p>
+            <p className="text-amber-600 text-xs mt-1">{summary.pendingCount} pending payments</p>
+          </div>
+          <div className="bg-amber-500 rounded-full p-3">
+            <Clock className="h-6 w-6 text-white" />
+          </div>
+        </div>
+      </motion.div>
+
+      <motion.div 
+        className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl p-6 border border-blue-200 shadow-lg hover:shadow-xl transition-shadow duration-300"
+        variants={cardVariants}
+        whileHover={{ y: -5, transition: { duration: 0.2 } }}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-blue-600 text-sm font-medium">Last Payment</p>
+            <p className="text-3xl font-bold text-blue-900 mt-2">{formatCurrency(summary.lastPaymentAmount)}</p>
+            <p className="text-blue-600 text-xs mt-1">
+              {summary.lastPaymentDate ? formatDate(summary.lastPaymentDate) : 'No payments yet'}
+            </p>
+          </div>
+          <div className="bg-blue-500 rounded-full p-3">
+            <Calendar className="h-6 w-6 text-white" />
+          </div>
+        </div>
+      </motion.div>
+
+      <motion.div 
+        className="bg-gradient-to-br from-purple-50 to-pink-100 rounded-2xl p-6 border border-purple-200 shadow-lg hover:shadow-xl transition-shadow duration-300"
+        variants={cardVariants}
+        whileHover={{ y: -5, transition: { duration: 0.2 } }}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-purple-600 text-sm font-medium">Total Payments</p>
+            <p className="text-3xl font-bold text-purple-900 mt-2">{summary.totalPayments}</p>
+            <p className="text-purple-600 text-xs mt-1">All payment records</p>
+          </div>
+          <div className="bg-purple-500 rounded-full p-3">
+            <BarChart3 className="h-6 w-6 text-white" />
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+
+  // Render payments list
+  const renderPaymentsList = () => (
+    <motion.div 
+      className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden"
+      variants={cardVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
+          <h3 className="text-xl font-bold text-gray-900">Payment History</h3>
+          <div className="flex space-x-3">
+            <motion.button 
+              className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              onClick={() => dispatch(fetchVendorPayments({ page: 1 }))}
+              variants={buttonVariants}
+              initial="initial"
+              whileHover="hover"
+              whileTap="tap"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </motion.button>
+          </div>
         </div>
       </div>
 
-      {/* Payment Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <DollarSign className="w-4 h-4 mr-2 text-green-500" />
-              Total Received
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">
-              {loading ? <Skeleton className="h-8 w-32" /> : formatCurrency(summaryData.totalPaid)}
-            </div>
-            <div className="text-muted-foreground text-sm">
-              {loading ? <Skeleton className="h-4 w-24 mt-1" /> : `${summaryData.paymentCount} completed payments`}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <Clock className="w-4 h-4 mr-2 text-amber-500" />
-              Pending
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">
-              {loading ? <Skeleton className="h-8 w-32" /> : formatCurrency(summaryData.pendingAmount)}
-            </div>
-            <div className="text-muted-foreground text-sm">
-              {loading ? <Skeleton className="h-4 w-24 mt-1" /> : `${summaryData.pendingCount} pending payments`}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <Calendar className="w-4 h-4 mr-2 text-blue-500" />
-              Last Payment
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">
-              {loading ? <Skeleton className="h-8 w-32" /> : formatCurrency(summaryData.lastPaymentAmount)}
-            </div>
-            <div className="text-muted-foreground text-sm">
-              {loading ? <Skeleton className="h-4 w-24 mt-1" /> : (
-                summaryData.lastPaymentDate 
-                  ? formatDate(summaryData.lastPaymentDate)
-                  : 'No payments yet'
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center">
-            <Filter className="w-4 h-4 mr-2" />
-            Filter Payments
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="p-6">
+        {/* Enhanced Filters */}
+        <div className="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-200">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <Label htmlFor="statusFilter">Status</Label>
-              <Select 
-                value={statusFilter} 
-                onValueChange={setStatusFilter}
+              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+              <select 
+                name="status" 
+                value={filters.status}
+                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
               >
-                <SelectTrigger id="statusFilter">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="processing">Processing</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
-                </SelectContent>
-              </Select>
+                <option value="">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="completed">Completed</option>
+                <option value="failed">Failed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
             </div>
-            
             <div>
-              <Label htmlFor="startDate">Start Date</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={dateRange.startDate}
-                onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+              <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+              <input 
+                type="date" 
+                name="startDate" 
+                value={filters.startDate}
+                onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
               />
             </div>
-            
             <div>
-              <Label htmlFor="endDate">End Date</Label>
-              <Input
-                id="endDate"
-                type="date"
-                value={dateRange.endDate}
-                onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+              <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+              <input 
+                type="date" 
+                name="endDate" 
+                value={filters.endDate}
+                onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
               />
             </div>
+            <div className="flex items-end space-x-2">
+              <motion.button 
+                className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                onClick={handleFilterApply}
+                variants={buttonVariants}
+                initial="initial"
+                whileHover="hover"
+                whileTap="tap"
+              >
+                <Filter className="h-4 w-4 inline mr-2" />
+                Apply
+              </motion.button>
+              <motion.button 
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                onClick={handleResetFilters}
+                variants={buttonVariants}
+                initial="initial"
+                whileHover="hover"
+                whileTap="tap"
+              >
+                Reset
+              </motion.button>
+            </div>
           </div>
-          
-          <div className="flex justify-end mt-4">
-            <Button 
-              variant="outline" 
-              className="mr-2"
-              onClick={resetFilters}
-            >
-              Reset
-            </Button>
-            <Button onClick={applyFilters}>
-              Apply Filters
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Payments Table */}
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Amount</TableHead>
-                <TableHead>Period</TableHead>
-                <TableHead>Payment Method</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Receipt</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                // Loading skeleton
-                Array(5).fill(0).map((_, index) => (
-                  <TableRow key={index}>
-                    {Array(7).fill(0).map((_, cellIndex) => (
-                      <TableCell key={cellIndex}>
-                        <Skeleton className="h-6 w-full" />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : payments.length === 0 ? (
-                // No payments found
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
-                    <div className="flex flex-col items-center justify-center text-muted-foreground">
-                      <FileText className="h-10 w-10 mb-2" />
-                      <p>No payment records found</p>
-                      <p className="text-sm mt-1">Try adjusting your filters or check back later</p>
+        {/* Payment Cards */}
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+          </div>
+        ) : vendorPayments.length === 0 ? (
+          <div className="text-center py-12">
+            <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg">No payment records found</p>
+            <p className="text-gray-400 text-sm mt-1">Payments will appear here when processed by the administrator</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {vendorPayments.map((payment, index) => (
+              <motion.div
+                key={payment._id}
+                className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-all duration-200 hover:border-indigo-200"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                whileHover={{ y: -2 }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="bg-emerald-100 rounded-full p-2">
+                      {getPaymentMethodIcon(payment.paymentMethod)}
                     </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                // Payment rows
-                payments.map((payment) => (
-                  <TableRow key={payment._id} className={payment.viewedAt ? '' : 'bg-blue-50'}>
-                    <TableCell className="font-medium">
-                      {formatCurrency(payment.amount)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-xs text-muted-foreground">From:</span>
-                        <span>{formatDate(payment.periodStart)}</span>
-                        <span className="text-xs text-muted-foreground mt-1">To:</span>
-                        <span>{formatDate(payment.periodEnd)}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {payment.paymentMethod}
-                      {payment.transactionId && (
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Ref: {payment.transactionId}
+                    <div>
+                      <h4 className="font-semibold text-gray-900">
+                        {payment.description || 'Vendor Payment'}
+                      </h4>
+                      <p className="text-sm text-gray-500">
+                        Method: {payment.paymentMethod}
+                        {payment.transactionId && ` • Ref: ${payment.transactionId}`}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-4">
+                    <div className="text-right">
+                      <p className="font-bold text-lg text-gray-900">{formatCurrency(payment.amount)}</p>
+                      <p className="text-sm text-gray-500">{formatDate(payment.createdAt)}</p>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <span className={getStatusBadgeClass(payment.status)}>
+                        {payment.status}
+                      </span>
+                      {payment.receiptUrl && (
+                        <div className="bg-emerald-100 rounded-full p-1">
+                          <Receipt className="h-4 w-4 text-emerald-600" />
                         </div>
                       )}
-                    </TableCell>
-                    <TableCell>
-                      {renderStatusBadge(payment.status)}
-                    </TableCell>
-                    <TableCell>
-                      {payment.receiptUrl ? (
-                        <a 
-                          href={`${API_BASE_URL}${payment.receiptUrl}`} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="flex items-center text-blue-600 hover:underline"
-                        >
-                          <Download className="h-4 w-4 mr-1" />
-                          View Receipt
-                        </a>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">No receipt</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {formatDate(payment.createdAt)}
-                      <div className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(payment.createdAt), { addSuffix: true })}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => {
-                          handleFetchPaymentDetails(payment._id);
-                        }}
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        Details
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-          
-          {/* Pagination */}
-          {!loading && payments.length > 0 && (
-            <div className="flex justify-between items-center p-4 border-t">
-              <div className="text-sm text-muted-foreground">
-                Showing {payments.length} of {pagination.totalCount} payments
-              </div>
-              <div className="flex space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={pagination.currentPage <= 1}
-                  onClick={() => handlePagination(pagination.currentPage - 1)}
-                >
-                  Previous
-                </Button>
-                {[...Array(pagination.totalPages).keys()].map((page) => (
-                  <Button
-                    key={page + 1}
-                    variant={pagination.currentPage === page + 1 ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handlePagination(page + 1)}
-                  >
-                    {page + 1}
-                  </Button>
-                ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={pagination.currentPage >= pagination.totalPages}
-                  onClick={() => handlePagination(pagination.currentPage + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Payment Details Dialog */}
-      <Dialog open={!!selectedPayment} onOpenChange={(open) => !open && setSelectedPayment(null)}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Payment Details</DialogTitle>
-          </DialogHeader>
-          {selectedPayment && (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right font-medium">Amount:</Label>
-                <div className="col-span-3">
-                  {formatCurrency(selectedPayment.amount)}
-                </div>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right font-medium">Period:</Label>
-                <div className="col-span-3">
-                  {formatDate(selectedPayment.periodStart)} to {formatDate(selectedPayment.periodEnd)}
-                </div>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right font-medium">Payment Method:</Label>
-                <div className="col-span-3">
-                  {selectedPayment.paymentMethod}
-                  {selectedPayment.transactionId && (
-                    <div className="text-sm text-muted-foreground">
-                      Reference: {selectedPayment.transactionId}
                     </div>
-                  )}
-                </div>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right font-medium">Status:</Label>
-                <div className="col-span-3">
-                  {renderStatusBadge(selectedPayment.status)}
-                  {selectedPayment.status === 'completed' && (
-                    <div className="flex items-center text-green-600 mt-1 text-sm">
-                      <BadgeCheck className="h-3 w-3 mr-1" /> 
-                      Verified payment
-                    </div>
-                  )}
-                </div>
-              </div>
-              {selectedPayment.notes && (
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right font-medium">Notes:</Label>
-                  <div className="col-span-3">
-                    {selectedPayment.notes}
-                  </div>
-                </div>
-              )}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right font-medium">Created:</Label>
-                <div className="col-span-3">
-                  {formatDate(selectedPayment.createdAt)} 
-                  <span className="text-muted-foreground ml-1 text-sm">
-                    ({formatDistanceToNow(new Date(selectedPayment.createdAt), { addSuffix: true })})
-                  </span>
-                </div>
-              </div>
-              {selectedPayment.processedAt && (
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right font-medium">Processed:</Label>
-                  <div className="col-span-3">
-                    {formatDate(selectedPayment.processedAt)}
-                    {selectedPayment.processedBy && (
-                      <span className="text-muted-foreground ml-1 text-sm">
-                        by {selectedPayment.processedBy.userName || 'Administrator'}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-              {selectedPayment.receiptUrl && (
-                <div className="mt-4">
-                  <div className="flex justify-center">
-                    <a 
-                      href={`${API_BASE_URL}${selectedPayment.receiptUrl}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
+                    
+                    <motion.button 
+                      className="bg-indigo-50 text-indigo-600 p-2 rounded-lg hover:bg-indigo-100 transition-colors"
+                      onClick={() => handleViewDetails(payment._id)}
+                      variants={buttonVariants}
+                      initial="initial"
+                      whileHover="hover"
+                      whileTap="tap"
                     >
-                      <FileDown className="h-4 w-4 mr-2" />
-                      Download Receipt
-                    </a>
+                      <Eye className="h-4 w-4" />
+                    </motion.button>
                   </div>
                 </div>
-              )}
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+
+  // Render payment details inline
+  const renderPaymentDetailsInline = () => (
+    <motion.div 
+      className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden"
+      variants={slideVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+    >
+      <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <motion.button
+              className="mr-4 p-2 rounded-full hover:bg-white hover:bg-opacity-20 transition-colors"
+              onClick={handleBackToList}
+              variants={buttonVariants}
+              initial="initial"
+              whileHover="hover"
+              whileTap="tap"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </motion.button>
+            <h3 className="text-2xl font-bold flex items-center">
+              <Receipt className="h-6 w-6 mr-3" />
+              Payment Details
+            </h3>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6">
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-600"></div>
+          </div>
+        ) : !paymentDetails ? (
+          <div className="text-center py-12">
+            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">Failed to load payment details</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Payment Overview */}
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-6 border border-emerald-200">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h4 className="text-2xl font-bold text-emerald-900">{formatCurrency(paymentDetails.amount)}</h4>
+                  <p className="text-emerald-600">{paymentDetails.description || 'Vendor Payment'}</p>
+                </div>
+                <span className={getStatusBadgeClass(paymentDetails.status)}>
+                  {paymentDetails.status}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-600 font-medium">Payment ID</p>
+                  <p className="text-gray-900">{paymentDetails._id.substring(0, 12)}...</p>
+                </div>
+                <div>
+                  <p className="text-gray-600 font-medium">Date</p>
+                  <p className="text-gray-900">{formatDate(paymentDetails.createdAt)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600 font-medium">Method</p>
+                  <p className="text-gray-900 flex items-center">
+                    {getPaymentMethodIcon(paymentDetails.paymentMethod)}
+                    <span className="ml-2">{paymentDetails.paymentMethod}</span>
+                  </p>
+                </div>
+              </div>
             </div>
-          )}
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Close</Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+
+            {/* Transaction Information */}
+            <div className="bg-gray-50 rounded-xl p-6">
+              <h5 className="font-bold text-gray-900 mb-4">Transaction Information</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600 font-medium">Description</p>
+                  <p className="text-gray-900">{paymentDetails.description || 'Vendor Payment'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 font-medium">Transaction ID</p>
+                  <p className="text-gray-900">{paymentDetails.transactionId || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 font-medium">Payment Method</p>
+                  <p className="text-gray-900">{paymentDetails.paymentMethod}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 font-medium">Platform Fee</p>
+                  <p className="text-gray-900">{formatCurrency(paymentDetails.platformFee || 0)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Processed By */}
+            {paymentDetails.createdBy && (
+              <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
+                <h5 className="font-bold text-blue-900 mb-2">Processed By</h5>
+                <p className="text-blue-800">{paymentDetails.createdBy.userName || 'Administrator'}</p>
+                <p className="text-blue-600 text-sm">{paymentDetails.createdBy.email || ''}</p>
+              </div>
+            )}
+
+            {/* Receipt */}
+            {paymentDetails.receiptUrl && (
+              <div className="bg-purple-50 rounded-xl p-6 border border-purple-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h5 className="font-bold text-purple-900 mb-2">Receipt</h5>
+                    <p className="text-purple-700">{paymentDetails.receiptName || 'Receipt file'}</p>
+                  </div>
+                  <motion.a
+                    href={`http://localhost:5000${paymentDetails.receiptUrl}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    variants={buttonVariants}
+                    initial="initial"
+                    whileHover="hover"
+                    whileTap="tap"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    View Receipt
+                  </motion.a>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+
+  return (
+    <motion.div 
+      className="min-h-screen bg-gradient-to-br from-gray-50 via-green-50 to-emerald-100 p-6"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <motion.div 
+          className="mb-8"
+          variants={cardVariants}
+        >
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">My Earnings</h1>
+          <p className="text-gray-600">Track your payment history and earnings from sales</p>
+        </motion.div>
+
+        {/* Summary Cards */}
+        {renderSummaryCards()}
+
+        {/* Main Content */}
+        <div className="space-y-8">
+          <AnimatePresence mode="wait">
+            {activeView === 'list' ? (
+              <motion.div key="list">
+                {renderPaymentsList()}
+              </motion.div>
+            ) : (
+              <motion.div key="details">
+                {renderPaymentDetailsInline()}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    </motion.div>
   );
 };
 

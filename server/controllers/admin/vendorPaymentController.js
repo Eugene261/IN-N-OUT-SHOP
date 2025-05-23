@@ -1,52 +1,47 @@
-const VendorPayment = require('../../models/VendorPayment');
+const Transaction = require('../../models/Transaction');
 
 // Get payment history for the logged-in admin
 const getPaymentHistory = async (req, res) => {
     try {
-        // For now, return dummy data
-        const dummyPayments = [
-            {
-                _id: '1',
-                amount: 1250.00,
-                periodStart: new Date('2025-05-01'),
-                periodEnd: new Date('2025-05-07'),
-                paymentMethod: 'Bank Transfer',
-                transactionId: 'TRX123456',
-                status: 'completed',
-                createdAt: new Date('2025-05-08'),
-                processedAt: new Date('2025-05-08'),
-                receiptUrl: '/uploads/receipts/receipt-123.pdf'
-            },
-            {
-                _id: '2',
-                amount: 980.50,
-                periodStart: new Date('2025-04-24'),
-                periodEnd: new Date('2025-04-30'),
-                paymentMethod: 'Mobile Money',
-                transactionId: 'TRX789012',
-                status: 'completed',
-                createdAt: new Date('2025-05-01'),
-                processedAt: new Date('2025-05-01'),
-                receiptUrl: '/uploads/receipts/receipt-124.pdf'
-            },
-            {
-                _id: '3',
-                amount: 1420.75,
-                periodStart: new Date('2025-05-08'),
-                periodEnd: new Date('2025-05-14'),
-                paymentMethod: 'Bank Transfer',
-                status: 'pending',
-                createdAt: new Date('2025-05-15')
-            }
-        ];
+        const adminId = req.user.id || req.user._id;
+        console.log('Admin fetching payments - User ID:', adminId);
+        console.log('Admin fetching payments - User object:', req.user);
+        
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+        
+        // Find payments for this admin/vendor
+        const payments = await Transaction.find({
+            vendorId: adminId,
+            transactionType: 'payment'
+        })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('createdBy', 'userName email');
+        
+        console.log('Found payments for admin:', payments.length);
+        payments.forEach(payment => {
+            console.log(`Payment: ${payment._id}, Amount: ${payment.amount}, VendorId: ${payment.vendorId}`);
+        });
+        
+        const totalCount = await Transaction.countDocuments({
+            vendorId: adminId,
+            transactionType: 'payment'
+        });
+        
+        console.log('Total count:', totalCount);
+        
+        const totalPages = Math.ceil(totalCount / limit);
         
         res.status(200).json({
             success: true,
-            count: dummyPayments.length,
-            totalCount: dummyPayments.length,
-            totalPages: 1,
-            currentPage: 1,
-            data: dummyPayments
+            count: payments.length,
+            totalCount,
+            totalPages,
+            currentPage: page,
+            data: payments
         });
     } catch (error) {
         console.error('Error fetching payment history:', error);
@@ -61,39 +56,21 @@ const getPaymentHistory = async (req, res) => {
 // Get details of a specific payment
 const getPaymentDetails = async (req, res) => {
     try {
-        // For now, return dummy data
-        const dummyPayment = {
-            _id: '1',
-            amount: 1250.00,
-            periodStart: new Date('2025-05-01'),
-            periodEnd: new Date('2025-05-07'),
-            paymentMethod: 'Bank Transfer',
-            transactionId: 'TRX123456',
-            status: 'completed',
-            createdAt: new Date('2025-05-08'),
-            processedAt: new Date('2025-05-08'),
-            receiptUrl: '/uploads/receipts/receipt-123.pdf'
-        };
-        const adminId = req.user.id;
+        const adminId = req.user.id || req.user._id;
         const { paymentId } = req.params;
         
         // Find the payment and verify it belongs to this admin
-        const payment = await VendorPayment.findOne({
+        const payment = await Transaction.findOne({
             _id: paymentId,
-            vendor: adminId
-        }).populate('processedBy', 'userName');
+            vendorId: adminId,
+            transactionType: 'payment'
+        }).populate('createdBy', 'userName email');
         
         if (!payment) {
             return res.status(404).json({
                 success: false,
                 message: 'Payment not found or access denied'
             });
-        }
-        
-        // Mark as viewed if not already
-        if (!payment.viewedAt) {
-            payment.viewedAt = new Date();
-            await payment.save();
         }
         
         res.status(200).json({
@@ -113,20 +90,45 @@ const getPaymentDetails = async (req, res) => {
 // Get payment summary (totals, etc.)
 const getPaymentSummary = async (req, res) => {
     try {
-        // For now, return dummy data
-        const dummySummary = {
-            totalPaid: 2230.50,
-            pendingAmount: 1420.75,
-            paymentCount: 2,
-            pendingCount: 1,
-            lastPaymentDate: new Date('2025-05-08'),
-            lastPaymentAmount: 1250.00,
-            unviewedCount: 1
+        const adminId = req.user.id || req.user._id;
+        console.log('Admin fetching summary - User ID:', adminId);
+        
+        // Get all payments for this admin
+        const allPayments = await Transaction.find({
+            vendorId: adminId,
+            transactionType: 'payment'
+        });
+        
+        console.log('Found payments for summary:', allPayments.length);
+        allPayments.forEach(payment => {
+            console.log(`Summary Payment: ${payment._id}, Amount: ${payment.amount}, Status: ${payment.status}, VendorId: ${payment.vendorId}`);
+        });
+        
+        // Calculate summary statistics
+        const completedPayments = allPayments.filter(p => p.status === 'completed');
+        const pendingPayments = allPayments.filter(p => p.status === 'pending');
+        
+        const totalPaid = completedPayments.reduce((sum, p) => sum + p.amount, 0);
+        const pendingAmount = pendingPayments.reduce((sum, p) => sum + p.amount, 0);
+        
+        // Get latest payment
+        const latestPayment = allPayments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+        
+        const summary = {
+            totalPaid,
+            pendingAmount,
+            paymentCount: completedPayments.length,
+            pendingCount: pendingPayments.length,
+            lastPaymentDate: latestPayment?.createdAt || null,
+            lastPaymentAmount: latestPayment?.amount || 0,
+            totalPayments: allPayments.length
         };
+        
+        console.log('Calculated summary:', summary);
         
         res.status(200).json({
             success: true,
-            data: dummySummary
+            data: summary
         });
     } catch (error) {
         console.error('Error fetching payment summary:', error);

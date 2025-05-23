@@ -1,5 +1,35 @@
 const User = require('../../models/User.js');
 const Transaction = require('../../models/Transaction.js');
+const multer = require('multer');
+const path = require('path');
+
+// Configure multer for receipt uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/receipts/');
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, `receipt-${uniqueSuffix}${path.extname(file.originalname)}`);
+    }
+});
+
+const fileFilter = (req, file, cb) => {
+    // Allow images and PDFs
+    if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
+        cb(null, true);
+    } else {
+        cb(new Error('Only images and PDF files are allowed!'), false);
+    }
+};
+
+const upload = multer({ 
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit
+    }
+});
 
 /**
  * @desc    Get all vendor payments
@@ -10,77 +40,65 @@ const getAllVendorPayments = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
         
-        // Create dummy data for testing
-        const dummyPayments = [
-            {
-                _id: '1',
-                vendorId: {
-                    _id: '101',
-                    name: 'Fashion Vendor',
-                    email: 'fashion@example.com',
-                    shopName: 'Fashion Store'
-                },
-                amount: 1250.00,
-                periodStart: new Date('2025-05-01'),
-                periodEnd: new Date('2025-05-07'),
-                paymentMethod: 'Bank Transfer',
-                transactionId: 'TRX123456',
-                status: 'completed',
-                createdAt: new Date('2025-05-08'),
-                processedAt: new Date('2025-05-08'),
-                receiptUrl: '/uploads/receipts/receipt-123.pdf'
-            },
-            {
-                _id: '2',
-                vendorId: {
-                    _id: '102',
-                    name: 'Electronics Vendor',
-                    email: 'electronics@example.com',
-                    shopName: 'Gadget World'
-                },
-                amount: 980.50,
-                periodStart: new Date('2025-05-01'),
-                periodEnd: new Date('2025-05-07'),
-                paymentMethod: 'PayPal',
-                transactionId: 'PP987654',
-                status: 'pending',
-                createdAt: new Date('2025-05-10'),
-                processedAt: null,
-                receiptUrl: null
-            },
-            {
-                _id: '3',
-                vendorId: {
-                    _id: '103',
-                    name: 'Home Decor Vendor',
-                    email: 'homedecor@example.com',
-                    shopName: 'Home Luxe'
-                },
-                amount: 750.00,
-                periodStart: new Date('2025-04-01'),
-                periodEnd: new Date('2025-04-30'),
-                paymentMethod: 'Bank Transfer',
-                transactionId: 'TRX789012',
-                status: 'completed',
-                createdAt: new Date('2025-05-02'),
-                processedAt: new Date('2025-05-02'),
-                receiptUrl: '/uploads/receipts/receipt-456.pdf'
+        // Build query filters
+        let query = { transactionType: 'payment' };
+        
+        if (req.query.status && req.query.status !== 'all') {
+            query.status = req.query.status;
+        }
+        
+        if (req.query.vendor) {
+            query.vendorId = req.query.vendor;
+        }
+        
+        if (req.query.startDate || req.query.endDate) {
+            query.createdAt = {};
+            if (req.query.startDate) {
+                query.createdAt.$gte = new Date(req.query.startDate);
             }
-        ];
+            if (req.query.endDate) {
+                query.createdAt.$lte = new Date(req.query.endDate);
+            }
+        }
         
-        // Return the dummy data with pagination
+        // Get payments with vendor information
+        const payments = await Transaction.find(query)
+            .populate('vendorId', 'userName email shopName balance')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+            
+        // Transform the data to match frontend expectations
+        const transformedPayments = payments.map(payment => ({
+            ...payment.toObject(),
+            vendorId: payment.vendorId ? {
+                ...payment.vendorId.toObject(),
+                name: payment.vendorId.userName, // Map userName to name for frontend
+                shopName: payment.vendorId.shopName || payment.vendorId.userName + "'s Shop"
+            } : null
+        }));
+        
+        // Get total count for pagination
+        const totalCount = await Transaction.countDocuments(query);
+        const totalPages = Math.ceil(totalCount / limit);
+        
         res.status(200).json({
             success: true,
-            data: dummyPayments,
+            data: transformedPayments,
             pagination: {
-                totalPages: 1,
+                totalPages,
                 currentPage: page,
-                totalItems: dummyPayments.length
+                totalItems: totalCount
             }
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Error fetching vendor payments:', error);
+        res.status(500).json({ 
+            success: false,
+            message: error.message 
+        });
     }
 };
 
@@ -93,41 +111,33 @@ const getVendorPaymentDetails = async (req, res) => {
     try {
         const paymentId = req.params.paymentId;
         
-        // Return dummy payment details for testing
-        const dummyPaymentDetails = {
-            _id: paymentId,
-            vendorId: {
-                _id: '101',
-                name: 'Fashion Vendor',
-                email: 'fashion@example.com',
-                shopName: 'Fashion Store'
-            },
-            amount: 1250.00,
-            periodStart: new Date('2025-05-01'),
-            periodEnd: new Date('2025-05-07'),
-            paymentMethod: 'Bank Transfer',
-            transactionId: 'TRX123456',
-            status: 'completed',
-            createdAt: new Date('2025-05-08'),
-            processedAt: new Date('2025-05-08'),
-            receiptUrl: '/uploads/receipts/receipt-123.pdf',
-            notes: 'Regular monthly payment for sales period',
-            orderId: {
-                _id: 'order123',
-                orderNumber: 'ORD-2025-123',
-                totalAmount: 1500.00,
-                items: [
-                    { name: 'Product 1', price: 500.00, quantity: 2 },
-                    { name: 'Product 2', price: 250.00, quantity: 2 }
-                ]
-            }
+        const payment = await Transaction.findById(paymentId)
+            .populate('vendorId', 'userName email shopName balance')
+            .populate('createdBy', 'userName email');
+            
+        if (!payment) {
+            return res.status(404).json({
+                success: false,
+                message: 'Payment not found'
+            });
+        }
+        
+        // Transform the data to match frontend expectations
+        const transformedPayment = {
+            ...payment.toObject(),
+            vendorId: payment.vendorId ? {
+                ...payment.vendorId.toObject(),
+                name: payment.vendorId.userName, // Map userName to name for frontend
+                shopName: payment.vendorId.shopName || payment.vendorId.userName + "'s Shop"
+            } : null
         };
         
         res.status(200).json({
             success: true,
-            data: dummyPaymentDetails
+            data: transformedPayment
         });
     } catch (error) {
+        console.error('Error fetching payment details:', error);
         res.status(500).json({ 
             success: false,
             message: error.message 
@@ -136,45 +146,148 @@ const getVendorPaymentDetails = async (req, res) => {
 };
 
 /**
- * @desc    Create a new vendor payment
+ * @desc    Create a new vendor payment with receipt
  * @route   POST /api/superAdmin/vendor-payments
  * @access  Super Admin
  */
 const createVendorPayment = async (req, res) => {
     try {
-        const { vendorId, amount, description, paymentMethod } = req.body;
+        const { vendorId, amount, description, paymentMethod, transactionId } = req.body;
+        
+        console.log('Creating payment with data:', {
+            vendorId,
+            amount,
+            description,
+            paymentMethod,
+            transactionId
+        });
         
         if (!vendorId || !amount) {
-            res.status(400);
-            throw new Error('Vendor ID and amount are required');
+            return res.status(400).json({
+                success: false,
+                message: 'Vendor ID and amount are required'
+            });
         }
         
         const vendor = await User.findById(vendorId);
         
+        console.log('Found vendor:', vendor ? {
+            id: vendor._id,
+            userName: vendor.userName,
+            email: vendor.email,
+            role: vendor.role
+        } : 'null');
+        
         if (!vendor || vendor.role !== 'admin') {
-            res.status(404);
-            throw new Error('Vendor not found');
+            return res.status(404).json({
+                success: false,
+                message: 'Vendor not found'
+            });
+        }
+        
+        // Handle receipt file if uploaded
+        let receiptUrl = null;
+        let receiptName = null;
+        if (req.file) {
+            receiptUrl = `/uploads/receipts/${req.file.filename}`;
+            receiptName = req.file.originalname;
         }
         
         const payment = await Transaction.create({
             vendorId,
-            amount,
+            amount: parseFloat(amount),
             description: description || 'Manual payment from super admin',
             paymentMethod: paymentMethod || 'manual',
+            transactionId: transactionId || null,
             status: 'completed',
             transactionType: 'payment',
-            platformFee: 0, // No platform fee for manual payments
+            platformFee: 0,
+            receiptUrl,
+            receiptName,
             createdBy: req.user._id
         });
         
+        console.log('Created payment:', payment);
+        
         // Update vendor balance
-        vendor.balance -= amount;
-        vendor.totalEarningsWithdrawn += amount;
+        vendor.balance = (vendor.balance || 0) - parseFloat(amount);
+        vendor.totalEarningsWithdrawn = (vendor.totalEarningsWithdrawn || 0) + parseFloat(amount);
         await vendor.save();
         
-        res.status(201).json(payment);
+        // Populate the payment with vendor information before returning
+        const populatedPayment = await Transaction.findById(payment._id)
+            .populate('vendorId', 'userName email shopName balance');
+            
+        // Transform the data to match frontend expectations
+        const transformedPayment = {
+            ...populatedPayment.toObject(),
+            vendorId: populatedPayment.vendorId ? {
+                ...populatedPayment.vendorId.toObject(),
+                name: populatedPayment.vendorId.userName,
+                shopName: populatedPayment.vendorId.shopName || populatedPayment.vendorId.userName + "'s Shop"
+            } : null
+        };
+        
+        console.log('Returning transformed payment:', transformedPayment);
+        
+        res.status(201).json({
+            success: true,
+            message: 'Payment created successfully',
+            data: transformedPayment
+        });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Error creating payment:', error);
+        res.status(500).json({ 
+            success: false,
+            message: error.message 
+        });
+    }
+};
+
+/**
+ * @desc    Upload receipt for existing payment
+ * @route   POST /api/superAdmin/vendor-payments/:paymentId/receipt
+ * @access  Super Admin
+ */
+const uploadReceipt = async (req, res) => {
+    try {
+        const paymentId = req.params.paymentId;
+        
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file uploaded'
+            });
+        }
+        
+        const payment = await Transaction.findById(paymentId);
+        
+        if (!payment) {
+            return res.status(404).json({
+                success: false,
+                message: 'Payment not found'
+            });
+        }
+        
+        // Update payment with receipt info
+        payment.receiptUrl = `/uploads/receipts/${req.file.filename}`;
+        payment.receiptName = req.file.originalname;
+        await payment.save();
+        
+        res.status(200).json({
+            success: true,
+            message: 'Receipt uploaded successfully',
+            data: {
+                receiptUrl: payment.receiptUrl,
+                receiptName: payment.receiptName
+            }
+        });
+    } catch (error) {
+        console.error('Error uploading receipt:', error);
+        res.status(500).json({ 
+            success: false,
+            message: error.message 
+        });
     }
 };
 
@@ -239,22 +352,45 @@ const updatePaymentStatus = async (req, res) => {
  */
 const getVendorPaymentSummary = async (req, res) => {
     try {
-        // Return dummy summary data for testing
-        const dummySummary = {
-            totalPaid: 2000.50,
-            pendingAmount: 980.50,
-            completedCount: 2,
-            pendingCount: 1,
-            latestPaymentDate: new Date('2025-05-08'),
-            latestPaymentAmount: 1250.00
+        // Get all payments
+        const allPayments = await Transaction.find({ transactionType: 'payment' });
+        
+        // Calculate summary statistics
+        const completedPayments = allPayments.filter(p => p.status === 'completed');
+        const pendingPayments = allPayments.filter(p => p.status === 'pending');
+        const paymentsWithReceipts = allPayments.filter(p => p.receiptUrl);
+        const paymentsWithoutReceipts = allPayments.filter(p => !p.receiptUrl);
+        
+        const totalPaid = completedPayments.reduce((sum, p) => sum + p.amount, 0);
+        const pendingAmount = pendingPayments.reduce((sum, p) => sum + p.amount, 0);
+        const totalWithReceipts = paymentsWithReceipts.reduce((sum, p) => sum + p.amount, 0);
+        const totalWithoutReceipts = paymentsWithoutReceipts.reduce((sum, p) => sum + p.amount, 0);
+        
+        // Get latest payment
+        const latestPayment = await Transaction.findOne({ transactionType: 'payment' })
+            .sort({ createdAt: -1 });
+            
+        const summary = {
+            totalPaid,
+            pendingAmount,
+            completedCount: completedPayments.length,
+            pendingCount: pendingPayments.length,
+            latestPaymentDate: latestPayment?.createdAt || null,
+            latestPaymentAmount: latestPayment?.amount || 0,
+            totalWithReceipts,
+            totalWithoutReceipts
         };
         
         res.status(200).json({
             success: true,
-            data: dummySummary
+            data: summary
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Error fetching payment summary:', error);
+        res.status(500).json({ 
+            success: false,
+            message: error.message 
+        });
     }
 };
 
@@ -268,8 +404,8 @@ const getAdminsAndVendors = async (req, res) => {
         // Find all admin users from the database
         const users = await User.find(
             { role: { $in: ['admin', 'superAdmin'] } },
-            'userName email role' // Only return necessary fields from actual schema
-        ).sort({ role: 1, userName: 1 }); // Sort by role then by userName
+            'userName email role balance totalEarningsWithdrawn' // Include balance info
+        ).sort({ role: 1, userName: 1 });
 
         console.log('Fetched users:', users);
 
@@ -291,7 +427,9 @@ module.exports = {
     getAllVendorPayments,
     getVendorPaymentDetails,
     createVendorPayment,
+    uploadReceipt,
     updatePaymentStatus,
     getVendorPaymentSummary,
-    getAdminsAndVendors
+    getAdminsAndVendors,
+    upload // Export multer middleware
 };
