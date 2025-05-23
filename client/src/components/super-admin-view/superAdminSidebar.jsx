@@ -8,7 +8,8 @@ import {
   Package, 
   Star, 
   LogOut, 
-  X
+  X,
+  DollarSign
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { logoutUser } from '../../store/auth-slice';
@@ -43,6 +44,12 @@ const menuItems = [
     label: 'Featured',
     path: '/super-admin/featured',
     icon: <Star className="h-5 w-5" />
+  },
+  {
+    id: 'vendor-payments',
+    label: 'Vendor Payments',
+    path: '/super-admin/vendor-payments',
+    icon: <DollarSign className="h-5 w-5" />
   }
 ];
 

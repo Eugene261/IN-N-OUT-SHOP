@@ -6,7 +6,8 @@ const {
     getVendorPaymentDetails,
     createVendorPayment,
     updatePaymentStatus,
-    getVendorPaymentSummary
+    getVendorPaymentSummary,
+    getAdminsAndVendors
 } = require('../../controllers/superAdmin/vendorPaymentController.js');
 
 // Apply auth middleware to all routes
@@ -18,6 +19,9 @@ router.get('/', getAllVendorPayments);
 
 // Get payment summary stats
 router.get('/summary', getVendorPaymentSummary);
+
+// Get admins and vendors list for dropdown
+router.get('/admins-vendors', getAdminsAndVendors);
 
 // Create a new vendor payment
 router.post('/', createVendorPayment);

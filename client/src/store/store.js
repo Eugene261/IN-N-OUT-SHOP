@@ -21,6 +21,10 @@ import superAdminRevenueSlice from './super-admin/revenue-slice/index.js';
 import featuredCollectionSlice from './superAdmin/featured-collection-slice/index.js';
 import shopFeaturedCollectionSlice from './shop/featured-collection-slice/index.js';
 
+// Vendor payments slices
+import adminVendorPaymentsSlice from './admin-vendor-payments-slice.js';
+import superAdminVendorPaymentsSlice from './super-admin-vendor-payments-slice.js';
+
 const store = configureStore({
     reducer: {
         auth : authReducer,
@@ -35,6 +39,10 @@ const store = configureStore({
         shopReview : shopReviewSlice,
         commonFeature: commonFeatureSlice,
         wishlist: wishlistSlice,
+        
+        // Vendor payment reducers
+        adminVendorPayments: adminVendorPaymentsSlice,
+        superAdminVendorPayments: superAdminVendorPaymentsSlice,
         
         // SuperAdmin reducers
         superAdminUsers: superAdminUsersSlice,

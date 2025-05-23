@@ -105,12 +105,14 @@ app.use('/api/superAdmin/products', superAdminProductsRouter);
 app.use('/api/superAdmin/featured', superAdminFeaturedRouter);
 app.use('/api/superAdmin/featured-collections', superAdminFeaturedCollectionRouter);
 app.use('/api/superAdmin/revenue', superAdminRevenueRouter);
+app.use('/api/superAdmin/vendor-payments', require('./routes/superAdmin/vendorPaymentRoutes'));
 
 // Test route
 app.use('/api/test', testRouter);
 
 // Add registration for admin routes
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin/vendor-payments', require('./routes/admin/vendorPaymentRoutes'));
 
 app.listen(PORT, () =>
 console.log(`Server is running on port ${PORT}`)

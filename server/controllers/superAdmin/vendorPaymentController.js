@@ -10,42 +10,73 @@ const getAllVendorPayments = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
-        const skip = (page - 1) * limit;
         
-        const filter = {};
+        // Create dummy data for testing
+        const dummyPayments = [
+            {
+                _id: '1',
+                vendorId: {
+                    _id: '101',
+                    name: 'Fashion Vendor',
+                    email: 'fashion@example.com',
+                    shopName: 'Fashion Store'
+                },
+                amount: 1250.00,
+                periodStart: new Date('2025-05-01'),
+                periodEnd: new Date('2025-05-07'),
+                paymentMethod: 'Bank Transfer',
+                transactionId: 'TRX123456',
+                status: 'completed',
+                createdAt: new Date('2025-05-08'),
+                processedAt: new Date('2025-05-08'),
+                receiptUrl: '/uploads/receipts/receipt-123.pdf'
+            },
+            {
+                _id: '2',
+                vendorId: {
+                    _id: '102',
+                    name: 'Electronics Vendor',
+                    email: 'electronics@example.com',
+                    shopName: 'Gadget World'
+                },
+                amount: 980.50,
+                periodStart: new Date('2025-05-01'),
+                periodEnd: new Date('2025-05-07'),
+                paymentMethod: 'PayPal',
+                transactionId: 'PP987654',
+                status: 'pending',
+                createdAt: new Date('2025-05-10'),
+                processedAt: null,
+                receiptUrl: null
+            },
+            {
+                _id: '3',
+                vendorId: {
+                    _id: '103',
+                    name: 'Home Decor Vendor',
+                    email: 'homedecor@example.com',
+                    shopName: 'Home Luxe'
+                },
+                amount: 750.00,
+                periodStart: new Date('2025-04-01'),
+                periodEnd: new Date('2025-04-30'),
+                paymentMethod: 'Bank Transfer',
+                transactionId: 'TRX789012',
+                status: 'completed',
+                createdAt: new Date('2025-05-02'),
+                processedAt: new Date('2025-05-02'),
+                receiptUrl: '/uploads/receipts/receipt-456.pdf'
+            }
+        ];
         
-        // Add filter for specific vendor if provided
-        if (req.query.vendorId) {
-            filter.vendorId = req.query.vendorId;
-        }
-        
-        // Add filter for payment status if provided
-        if (req.query.status) {
-            filter.status = req.query.status;
-        }
-        
-        // Add date range filter if provided
-        if (req.query.startDate && req.query.endDate) {
-            filter.createdAt = {
-                $gte: new Date(req.query.startDate),
-                $lte: new Date(req.query.endDate)
-            };
-        }
-        
-        const payments = await Transaction.find(filter)
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
-            .populate('vendorId', 'name email shopName');
-        
-        const total = await Transaction.countDocuments(filter);
-        
-        res.json({
-            payments,
+        // Return the dummy data with pagination
+        res.status(200).json({
+            success: true,
+            data: dummyPayments,
             pagination: {
-                totalPages: Math.ceil(total / limit),
+                totalPages: 1,
                 currentPage: page,
-                totalItems: total
+                totalItems: dummyPayments.length
             }
         });
     } catch (error) {
@@ -60,18 +91,47 @@ const getAllVendorPayments = async (req, res) => {
  */
 const getVendorPaymentDetails = async (req, res) => {
     try {
-        const payment = await Transaction.findById(req.params.paymentId)
-            .populate('vendorId', 'name email shopName')
-            .populate('orderId');
+        const paymentId = req.params.paymentId;
         
-        if (!payment) {
-            res.status(404);
-            throw new Error('Payment not found');
-        }
+        // Return dummy payment details for testing
+        const dummyPaymentDetails = {
+            _id: paymentId,
+            vendorId: {
+                _id: '101',
+                name: 'Fashion Vendor',
+                email: 'fashion@example.com',
+                shopName: 'Fashion Store'
+            },
+            amount: 1250.00,
+            periodStart: new Date('2025-05-01'),
+            periodEnd: new Date('2025-05-07'),
+            paymentMethod: 'Bank Transfer',
+            transactionId: 'TRX123456',
+            status: 'completed',
+            createdAt: new Date('2025-05-08'),
+            processedAt: new Date('2025-05-08'),
+            receiptUrl: '/uploads/receipts/receipt-123.pdf',
+            notes: 'Regular monthly payment for sales period',
+            orderId: {
+                _id: 'order123',
+                orderNumber: 'ORD-2025-123',
+                totalAmount: 1500.00,
+                items: [
+                    { name: 'Product 1', price: 500.00, quantity: 2 },
+                    { name: 'Product 2', price: 250.00, quantity: 2 }
+                ]
+            }
+        };
         
-        res.json(payment);
+        res.status(200).json({
+            success: true,
+            data: dummyPaymentDetails
+        });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ 
+            success: false,
+            message: error.message 
+        });
     }
 };
 
@@ -173,77 +233,57 @@ const updatePaymentStatus = async (req, res) => {
 };
 
 /**
- * @desc    Get vendor payment summary
+ * @desc    Get payment summary statistics
  * @route   GET /api/superAdmin/vendor-payments/summary
  * @access  Super Admin
  */
 const getVendorPaymentSummary = async (req, res) => {
     try {
-        // Filter options
-        const filter = {};
+        // Return dummy summary data for testing
+        const dummySummary = {
+            totalPaid: 2000.50,
+            pendingAmount: 980.50,
+            completedCount: 2,
+            pendingCount: 1,
+            latestPaymentDate: new Date('2025-05-08'),
+            latestPaymentAmount: 1250.00
+        };
         
-        // Add date range filter if provided
-        if (req.query.startDate && req.query.endDate) {
-            filter.createdAt = {
-                $gte: new Date(req.query.startDate),
-                $lte: new Date(req.query.endDate)
-            };
-        }
-        
-        // Total amount paid to vendors
-        const totalPaid = await Transaction.aggregate([
-            { $match: { ...filter, status: 'completed', transactionType: 'payment' } },
-            { $group: { _id: null, total: { $sum: '$amount' } } }
-        ]);
-        
-        // Pending payments amount
-        const totalPending = await Transaction.aggregate([
-            { $match: { ...filter, status: 'pending', transactionType: 'payment' } },
-            { $group: { _id: null, total: { $sum: '$amount' } } }
-        ]);
-        
-        // Total platform fee collected
-        const totalPlatformFee = await Transaction.aggregate([
-            { $match: { ...filter, transactionType: 'order' } },
-            { $group: { _id: null, total: { $sum: '$platformFee' } } }
-        ]);
-        
-        // Group payments by vendor
-        const paymentsByVendor = await Transaction.aggregate([
-            { $match: { ...filter, status: 'completed', transactionType: 'payment' } },
-            { $group: { _id: '$vendorId', total: { $sum: '$amount' } } },
-            { $sort: { total: -1 } },
-            { $limit: 5 },
-            { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'vendor' } },
-            { $unwind: '$vendor' },
-            {
-                $project: {
-                    _id: 1,
-                    vendorName: '$vendor.name',
-                    shopName: '$vendor.shopName',
-                    total: 1
-                }
-            }
-        ]);
-        
-        // Recent payments
-        const recentPayments = await Transaction.find({
-            ...filter,
-            transactionType: 'payment'
-        })
-            .sort({ createdAt: -1 })
-            .limit(5)
-            .populate('vendorId', 'name shopName');
-        
-        res.json({
-            totalPaid: totalPaid.length > 0 ? totalPaid[0].total : 0,
-            totalPending: totalPending.length > 0 ? totalPending[0].total : 0,
-            totalPlatformFee: totalPlatformFee.length > 0 ? totalPlatformFee[0].total : 0,
-            paymentsByVendor,
-            recentPayments
+        res.status(200).json({
+            success: true,
+            data: dummySummary
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
+    }
+};
+
+/**
+ * @desc    Get all admins and vendors for dropdown
+ * @route   GET /api/superAdmin/vendor-payments/admins-vendors
+ * @access  Super Admin
+ */
+const getAdminsAndVendors = async (req, res) => {
+    try {
+        // Find all admin users from the database
+        const users = await User.find(
+            { role: { $in: ['admin', 'superAdmin'] } },
+            'userName email role' // Only return necessary fields from actual schema
+        ).sort({ role: 1, userName: 1 }); // Sort by role then by userName
+
+        console.log('Fetched users:', users);
+
+        return res.status(200).json({
+            success: true,
+            vendors: users
+        });
+    } catch (error) {
+        console.error('Error fetching admins and vendors:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error fetching admins and vendors',
+            error: error.message
+        });
     }
 };
 
@@ -252,5 +292,6 @@ module.exports = {
     getVendorPaymentDetails,
     createVendorPayment,
     updatePaymentStatus,
-    getVendorPaymentSummary
+    getVendorPaymentSummary,
+    getAdminsAndVendors
 };

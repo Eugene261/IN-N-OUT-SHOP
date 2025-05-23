@@ -1,64 +1,112 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { motion } from 'framer-motion';
+import axios from 'axios';
 import { 
   fetchVendorPayments, 
-  fetchVendorPaymentSummary,
-  fetchVendorPaymentDetails,
-  createVendorPayment, 
+  fetchPaymentSummary,
+  fetchPaymentDetails,
+  createPayment, 
   updatePaymentStatus,
-  clearSuccess,
-  clearError
-} from '../../store/super-admin/vendor-payments-slice/vendorPaymentsSlice';
-import { 
-  Container, 
-  Card, 
-  Row, 
-  Col, 
-  Table, 
-  Badge, 
-  Button, 
-  Form, 
-  Modal, 
-  Alert, 
-  Pagination,
-  Spinner,
-  Tabs,
-  Tab
-} from 'react-bootstrap';
+  resetMessages
+} from '../../store/super-admin-vendor-payments-slice';
+import { DollarSign, Eye, Check, X, Search, Filter, Plus, FileText, Calendar, Clock, RefreshCw } from 'lucide-react';
 import { formatDate, formatCurrency } from '../../utils/formatters';
-import { FaPlus, FaSearch, FaFilter, FaFileInvoiceDollar } from 'react-icons/fa';
-import SuperAdminLayout from './superAdminLayout';
+import { toast } from 'sonner';
+
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1,
+    y: 0,
+    transition: { 
+      duration: 0.5,
+      ease: "easeOut"
+    }
+  }
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { 
+    opacity: 1,
+    y: 0,
+    transition: { 
+      duration: 0.4,
+      ease: "easeOut"
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: (custom) => ({
+    opacity: 1,
+    y: 0,
+    transition: { 
+      delay: custom * 0.1,
+      duration: 0.3,
+      ease: "easeOut"
+    }
+  })
+};
+
+const buttonVariants = {
+  initial: { scale: 1 },
+  hover: { scale: 1.05 },
+  tap: { scale: 0.95 }
+};
 
 const VendorPayments = () => {
   const dispatch = useDispatch();
   const { 
-    vendorPayments, 
-    pagination, 
-    paymentDetails, 
-    summary, 
+    vendorPayments: rawVendorPayments, 
+    pagination: rawPagination, 
+    paymentDetails: rawPaymentDetails, 
+    summary: rawSummary, 
     isLoading, 
     error, 
     success, 
     message 
   } = useSelector(state => state.superAdminVendorPayments);
   
+  // Ensure all data properties have default values to prevent null reference errors
+  const vendorPayments = rawVendorPayments || [];
+  const pagination = rawPagination || { currentPage: 1, totalPages: 1, totalCount: 0 };
+  const paymentDetails = rawPaymentDetails || null;
+  const summary = rawSummary || {
+    totalPaid: 0,
+    pendingAmount: 0,
+    paymentCount: 0,
+    pendingCount: 0,
+    lastPaymentDate: null,
+    lastPaymentAmount: 0
+  };
+  
   // Component state
   const [activeTab, setActiveTab] = useState('payments');
   const [selectedPaymentId, setSelectedPaymentId] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [vendors, setVendors] = useState([]);
+  const [isLoadingVendors, setIsLoadingVendors] = useState(false);
+  const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
   const [currentPage, setCurrentPage] = useState(1);
+  const [newPayment, setNewPayment] = useState({
+    vendorId: '',
+    amount: '',
+    periodStart: '',
+    periodEnd: '',
+    paymentMethod: 'Bank Transfer',
+    notes: ''
+  });
   const [filters, setFilters] = useState({
     vendorId: '',
     status: '',
     startDate: '',
     endDate: ''
-  });
-  const [newPayment, setNewPayment] = useState({
-    vendorId: '',
-    amount: '',
-    description: '',
-    paymentMethod: 'manual'
   });
 
   // Status colors
@@ -72,15 +120,56 @@ const VendorPayments = () => {
   // Initial data load
   useEffect(() => {
     dispatch(fetchVendorPayments({ page: currentPage }));
-    dispatch(fetchVendorPaymentSummary());
+    dispatch(fetchPaymentSummary());
+    fetchVendors();
   }, [dispatch, currentPage]);
+  
+  // Fetch vendors for the dropdown
+  const fetchVendors = async () => {
+    setIsLoadingVendors(true);
+    try {
+      console.log('Fetching admins/vendors...');
+      // Fetch admin/vendor data from your API - using absolute URL
+      // In Vite, environment variables are accessed via import.meta.env, not process.env
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      console.log('Using API base URL:', API_BASE_URL);
+      const response = await axios.get(`${API_BASE_URL}/api/superAdmin/vendor-payments/admins-vendors`, {
+        withCredentials: true
+      });
+      
+      console.log('API response:', response.data);
+      
+      if (response.data && Array.isArray(response.data.vendors)) {
+        setVendors(response.data.vendors);
+        console.log('Vendors loaded successfully:', response.data.vendors.length);
+      } else {
+        console.error('Invalid data format from API');
+        toast.error('Failed to load admins/vendors: Invalid data format');
+        setVendors([]);
+      }
+    } catch (error) {
+      console.error('Error fetching admins/vendors:', error);
+      toast.error(`Failed to load admins/vendors: ${error.message}`);
+      setVendors([]);
+    } finally {
+      setIsLoadingVendors(false);
+    }
+  };
+
+  // Handle errors
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      dispatch(resetMessages());
+    }
+  }, [error, dispatch]);
 
   // Update when success status changes
   useEffect(() => {
     if (success) {
       // Reload data after successful action
       dispatch(fetchVendorPayments({ page: currentPage }));
-      dispatch(fetchVendorPaymentSummary());
+      dispatch(fetchPaymentSummary());
       
       // Clear modals
       setShowPaymentModal(false);
@@ -96,7 +185,7 @@ const VendorPayments = () => {
       
       // Clear success message after 3 seconds
       setTimeout(() => {
-        dispatch(clearSuccess());
+        dispatch(resetMessages());
       }, 3000);
     }
   }, [success, dispatch, currentPage]);
@@ -139,7 +228,7 @@ const VendorPayments = () => {
   // Handle view payment details
   const handleViewDetails = (paymentId) => {
     setSelectedPaymentId(paymentId);
-    dispatch(fetchVendorPaymentDetails(paymentId));
+    dispatch(fetchPaymentDetails(paymentId));
     setShowDetailsModal(true);
   };
 
@@ -155,7 +244,7 @@ const VendorPayments = () => {
   // Handle payment creation
   const handleCreatePayment = (e) => {
     e.preventDefault();
-    dispatch(createVendorPayment(newPayment));
+    dispatch(createPayment(newPayment));
   };
 
   // Handle payment status update
@@ -181,186 +270,221 @@ const VendorPayments = () => {
     }
     
     return (
-      <Pagination className="justify-content-center mt-4">
-        <Pagination.Prev 
-          disabled={pagination.currentPage === 1}
-          onClick={() => handlePageChange(pagination.currentPage - 1)}
-        />
-        {items}
-        <Pagination.Next 
-          disabled={pagination.currentPage === pagination.totalPages}
-          onClick={() => handlePageChange(pagination.currentPage + 1)}
-        />
-      </Pagination>
+      <div className="flex justify-center mt-4">
+        <div className="flex space-x-2">
+          <button
+            className="px-3 py-1 rounded border border-gray-300 disabled:opacity-50"
+            disabled={pagination.currentPage === 1}
+            onClick={() => handlePageChange(pagination.currentPage - 1)}
+          >
+            Previous
+          </button>
+          {items}
+          <button
+            className="px-3 py-1 rounded border border-gray-300 disabled:opacity-50"
+            disabled={pagination.currentPage === pagination.totalPages}
+            onClick={() => handlePageChange(pagination.currentPage + 1)}
+          >
+            Next
+          </button>
+        </div>
+      </div>
     );
   };
 
   // Render payment summary cards
   const renderSummaryCards = () => (
-    <Row className="mb-4">
-      <Col md={3}>
-        <Card className="text-center h-100 shadow-sm">
-          <Card.Body>
-            <h2 className="text-primary">{formatCurrency(summary.totalPaid)}</h2>
-            <Card.Title>Total Payments Made</Card.Title>
-          </Card.Body>
-        </Card>
-      </Col>
-      <Col md={3}>
-        <Card className="text-center h-100 shadow-sm">
-          <Card.Body>
-            <h2 className="text-warning">{formatCurrency(summary.totalPending)}</h2>
-            <Card.Title>Pending Payments</Card.Title>
-          </Card.Body>
-        </Card>
-      </Col>
-      <Col md={3}>
-        <Card className="text-center h-100 shadow-sm">
-          <Card.Body>
-            <h2 className="text-success">{formatCurrency(summary.totalPlatformFee)}</h2>
-            <Card.Title>Platform Revenue</Card.Title>
-            <small className="text-muted">5% commission fee</small>
-          </Card.Body>
-        </Card>
-      </Col>
-      <Col md={3}>
-        <Card className="text-center h-100 shadow-sm">
-          <Card.Body>
-            <Button 
-              variant="primary" 
-              className="w-100"
-              onClick={() => setShowPaymentModal(true)}
-            >
-              <FaPlus className="me-2" />
-              New Payment
-            </Button>
-          </Card.Body>
-        </Card>
-      </Col>
-    </Row>
+    <motion.div 
+      className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4"
+      initial="hidden"
+      animate="visible"
+      variants={{
+        visible: {
+          transition: {
+            staggerChildren: 0.1
+          }
+        }
+      }}>
+      <div>
+        <motion.div 
+          className="bg-white rounded-lg shadow p-4 border border-gray-200 overflow-hidden"
+          variants={cardVariants}
+          whileHover={{ y: -5, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)" }}
+        >
+          <h6 className="text-sm font-medium text-gray-600">Total Payments Made</h6>
+          <p className="text-2xl font-bold mt-2">{formatCurrency(summary?.totalPaid || 0)}</p>
+        </motion.div>
+      </div>
+      <div>
+        <motion.div 
+          className="bg-white rounded-lg shadow p-4 border border-gray-200 overflow-hidden"
+          variants={cardVariants}
+          whileHover={{ y: -5, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)" }}
+        >
+          <h6 className="text-sm font-medium text-gray-600">Pending Payments</h6>
+          <p className="text-2xl font-bold mt-2 text-yellow-600">{formatCurrency(summary?.totalPending || 0)}</p>
+        </motion.div>
+      </div>
+      <div>
+        <motion.div 
+          className="bg-white rounded-lg shadow p-4 border border-gray-200 overflow-hidden"
+          variants={cardVariants}
+          whileHover={{ y: -5, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)" }}
+        >
+          <h6 className="text-sm font-medium text-gray-600">Platform Revenue</h6>
+          <p className="text-2xl font-bold mt-2">{formatCurrency(summary?.totalPlatformFee || 0)}</p>
+        </motion.div>
+      </div>
+      <div>
+        <motion.div 
+          className="bg-white rounded-lg shadow p-4 border border-gray-200 overflow-hidden"
+          variants={cardVariants}
+          whileHover={{ y: -5, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)" }}
+        >
+          <button 
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm flex items-center"
+            onClick={() => setShowPaymentModal(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Payment
+          </button>
+        </motion.div>
+      </div>
+    </motion.div>
   );
 
   // Render payment history table
   const renderPaymentsTable = () => (
-    <Card className="shadow-sm">
-      <Card.Header className="bg-light">
-        <Row className="align-items-center">
-          <Col>
-            <h5 className="m-0">Vendor Payments</h5>
-          </Col>
-          <Col md="auto">
-            <Button 
-              variant="outline-secondary" 
-              size="sm"
-              className="me-2"
+    <div className="shadow-sm border border-gray-200 rounded">
+      <div className="bg-gray-50 p-4 border-b border-gray-200">
+        <div className="flex justify-between items-center">
+          <div>
+            <h5 className="font-medium">Vendor Payments</h5>
+          </div>
+          <div>
+            <button 
+              className="border border-gray-300 bg-white text-gray-700 text-sm px-3 py-1 rounded flex items-center hover:bg-gray-50 mr-2"
               onClick={() => dispatch(fetchVendorPayments({ page: 1 }))}
             >
-              <FaSearch className="me-1" /> Refresh
-            </Button>
-          </Col>
-        </Row>
-      </Card.Header>
-      <Card.Body>
+              <Search className="h-4 w-4 mr-1" /> Refresh
+            </button>
+          </div>
+        </div>
+      </div>
+      <div className="p-4">
         {/* Filters section */}
         <div className="mb-4 p-3 border rounded">
-          <Row className="g-2 align-items-end">
-            <Col md={3}>
-              <Form.Group>
-                <Form.Label>Vendor ID</Form.Label>
-                <Form.Control 
-                  type="text" 
-                  name="vendorId" 
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+            <div className="col-span-1 md:col-span-1">
+              <div className="mb-1">
+                <label className="text-sm font-medium text-gray-700">Vendor</label>
+                <select
+                  name="vendorId"
                   value={filters.vendorId}
                   onChange={handleFilterChange}
-                  placeholder="Enter vendor ID"
-                  size="sm"
-                />
-              </Form.Group>
-            </Col>
-            <Col md={2}>
-              <Form.Group>
-                <Form.Label>Status</Form.Label>
-                <Form.Select 
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-white"
+                >
+                  <option value="">All Vendors</option>
+                  {isLoadingVendors ? (
+                    <option disabled>Loading vendors...</option>
+                  ) : (
+                    vendors.map(vendor => (
+                      <option key={vendor._id} value={vendor._id}>
+                        {vendor.userName} ({vendor.role})
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+            </div>
+            <div className="col-span-1 md:col-span-1">
+              <div className="mb-1">
+                <label className="text-sm font-medium text-gray-700">Status</label>
+                <select 
                   name="status" 
                   value={filters.status}
                   onChange={handleFilterChange}
-                  size="sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 >
                   <option value="">All</option>
                   <option value="pending">Pending</option>
                   <option value="completed">Completed</option>
                   <option value="failed">Failed</option>
                   <option value="cancelled">Cancelled</option>
-                </Form.Select>
-              </Form.Group>
-            </Col>
-            <Col md={2}>
-              <Form.Group>
-                <Form.Label>Start Date</Form.Label>
-                <Form.Control 
+                </select>
+              </div>
+            </div>
+            <div className="col-span-1 md:col-span-1">
+              <div className="mb-1">
+                <label className="text-sm font-medium text-gray-700">Start Date</label>
+                <input 
                   type="date" 
                   name="startDate" 
                   value={filters.startDate}
                   onChange={handleFilterChange}
-                  size="sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 />
-              </Form.Group>
-            </Col>
-            <Col md={2}>
-              <Form.Group>
-                <Form.Label>End Date</Form.Label>
-                <Form.Control 
+              </div>
+            </div>
+            <div className="col-span-1 md:col-span-1">
+              <div className="mb-1">
+                <label className="text-sm font-medium text-gray-700">End Date</label>
+                <input 
                   type="date" 
                   name="endDate" 
                   value={filters.endDate}
                   onChange={handleFilterChange}
-                  size="sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 />
-              </Form.Group>
-            </Col>
-            <Col md="auto">
-              <Button 
-                variant="primary" 
-                size="sm"
+              </div>
+            </div>
+            <div className="col-span-1 md:col-span-1 flex items-end">
+              <motion.button 
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-sm flex items-center"
+                variants={buttonVariants}
+                initial="initial"
+                whileHover="hover"
+                whileTap="tap"
                 onClick={handleFilterApply}
               >
-                <FaFilter className="me-1" /> Apply
-              </Button>
-            </Col>
-            <Col md="auto">
-              <Button 
-                variant="outline-secondary" 
-                size="sm"
+                <Filter className="h-4 w-4 mr-1" /> Apply
+              </motion.button>
+            </div>
+            <div className="col-span-1 md:col-span-1 flex items-end">
+              <button 
+                className="border border-gray-300 bg-white text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-50"
                 onClick={handleResetFilters}
               >
                 Reset
-              </Button>
-            </Col>
-          </Row>
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Payments table */}
         {isLoading ? (
           <div className="text-center py-5">
-            <Spinner animation="border" variant="primary" />
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600 mx-auto"></div>
           </div>
         ) : vendorPayments.length === 0 ? (
-          <Alert variant="info">No payments found.</Alert>
+          <div className="bg-blue-50 border border-blue-300 text-blue-800 px-4 py-3 rounded mb-4">
+            No payments found.
+          </div>
         ) : (
-          <div className="table-responsive">
-            <Table hover className="align-middle">
-              <thead className="bg-light">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th>ID</th>
-                  <th>Vendor</th>
-                  <th>Amount</th>
-                  <th>Date</th>
-                  <th>Status</th>
-                  <th>Method</th>
-                  <th>Actions</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="bg-white divide-y divide-gray-200">
                 {vendorPayments.map(payment => (
                   <tr key={payment._id}>
                     <td>{payment._id.substring(0, 8)}...</td>
@@ -403,67 +527,76 @@ const VendorPayments = () => {
                   </tr>
                 ))}
               </tbody>
-            </Table>
+            </table>
           </div>
         )}
         <PaginationComponent />
-      </Card.Body>
-    </Card>
+      </div>
+    </div>
   );
 
   // Render vendor payments by vendor chart
   const renderPaymentsByVendor = () => (
-    <Card className="shadow-sm mt-4">
-      <Card.Header className="bg-light">
-        <h5 className="m-0">Top Vendor Payments</h5>
-      </Card.Header>
-      <Card.Body>
+    <div className="shadow-sm border border-gray-200 rounded mt-4">
+      <div className="bg-gray-50 p-4 border-b border-gray-200">
+        <h5 className="font-medium">Top Vendor Payments</h5>
+      </div>
+      <div className="p-4">
         {isLoading ? (
           <div className="text-center py-5">
-            <Spinner animation="border" variant="primary" />
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600 mx-auto"></div>
           </div>
         ) : summary.paymentsByVendor?.length === 0 ? (
-          <Alert variant="info">No payment data available.</Alert>
+          <div className="bg-blue-50 border border-blue-300 text-blue-800 px-4 py-3 rounded mb-4">
+            No payment data available.
+          </div>
         ) : (
-          <Table className="align-middle">
-            <thead className="bg-light">
-              <tr>
-                <th>Vendor</th>
-                <th>Shop</th>
-                <th>Total Paid</th>
-              </tr>
-            </thead>
-            <tbody>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shop</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Paid</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
               {summary.paymentsByVendor?.map((vendor, index) => (
                 <tr key={index}>
-                  <td>{vendor.vendorName || 'N/A'}</td>
-                  <td>{vendor.shopName || 'N/A'}</td>
-                  <td className="fw-bold">{formatCurrency(vendor.total)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{vendor.vendorName || 'N/A'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{vendor.shopName || 'N/A'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap font-bold">{formatCurrency(vendor.total)}</td>
                 </tr>
               ))}
             </tbody>
-          </Table>
+            </table>
+          </div>
         )}
-      </Card.Body>
-    </Card>
+      </div>
+    </div>
   );
 
   // Render recent payments
   const renderRecentPayments = () => (
-    <Card className="shadow-sm mt-4">
-      <Card.Header className="bg-light">
-        <h5 className="m-0">Recent Payments</h5>
-      </Card.Header>
-      <Card.Body>
+    <motion.div 
+      className="shadow-sm mt-4 bg-white rounded-lg border border-gray-200 overflow-hidden"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3, duration: 0.5 }}
+    >
+      <div className="p-4 bg-gray-50 border-b border-gray-200">
+        <h5 className="m-0 font-medium">Recent Payments</h5>
+      </div>
+      <div className="p-4">
         {isLoading ? (
           <div className="text-center py-5">
-            <Spinner animation="border" variant="primary" />
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-indigo-600 border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
           </div>
         ) : summary.recentPayments?.length === 0 ? (
-          <Alert variant="info">No recent payments.</Alert>
+          <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative">No recent payments.</div>
         ) : (
           <div className="table-responsive">
-            <Table className="align-middle">
+            <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-light">
                 <tr>
                   <th>Vendor</th>
@@ -472,292 +605,374 @@ const VendorPayments = () => {
                   <th>Status</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-200 bg-white">
                 {summary.recentPayments?.map(payment => (
                   <tr key={payment._id}>
-                    <td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       {payment.vendorId ? (
                         <>
                           <div>{payment.vendorId.name || 'N/A'}</div>
-                          <small className="text-muted">{payment.vendorId.shopName || 'N/A'}</small>
+                          <small className="text-gray-500">{payment.vendorId.shopName || 'N/A'}</small>
                         </>
                       ) : 'Unknown Vendor'}
                     </td>
-                    <td className="fw-bold">{formatCurrency(payment.amount)}</td>
-                    <td>{formatDate(payment.createdAt)}</td>
-                    <td>
-                      <Badge bg={statusColors[payment.status] || 'secondary'}>
+                    <td className="px-6 py-4 whitespace-nowrap font-semibold">{formatCurrency(payment.amount)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{formatDate(payment.createdAt)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${payment.status === 'completed' ? 'bg-green-100 text-green-800' : payment.status === 'cancelled' ? 'bg-red-100 text-red-800' : payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}`}>
                         {payment.status}
-                      </Badge>
+                      </span>
                     </td>
                   </tr>
                 ))}
               </tbody>
-            </Table>
+            </table>
           </div>
         )}
-      </Card.Body>
-    </Card>
+      </div>
+    </motion.div>
   );
 
   // Create new payment modal
-  const renderNewPaymentModal = () => (
-    <Modal 
-      show={showPaymentModal} 
-      onHide={() => setShowPaymentModal(false)}
-      backdrop="static"
-      size="lg"
-    >
-      <Modal.Header closeButton>
-        <Modal.Title>
-          <FaFileInvoiceDollar className="me-2" />
-          Create New Vendor Payment
-        </Modal.Title>
-      </Modal.Header>
-      <Form onSubmit={handleCreatePayment}>
-        <Modal.Body>
-          {error && <Alert variant="danger">{error}</Alert>}
-          
-          <Form.Group className="mb-3">
-            <Form.Label>Vendor ID*</Form.Label>
-            <Form.Control 
-              type="text" 
-              name="vendorId" 
-              value={newPayment.vendorId}
-              onChange={handleNewPaymentChange}
-              placeholder="Enter vendor ID"
-              required
-            />
-            <Form.Text className="text-muted">
-              Enter the MongoDB ID of the vendor.
-            </Form.Text>
-          </Form.Group>
-          
-          <Form.Group className="mb-3">
-            <Form.Label>Amount (GHS)*</Form.Label>
-            <Form.Control 
-              type="number" 
-              name="amount" 
-              value={newPayment.amount}
-              onChange={handleNewPaymentChange}
-              placeholder="Enter payment amount"
-              step="0.01"
-              min="0"
-              required
-            />
-          </Form.Group>
-          
-          <Form.Group className="mb-3">
-            <Form.Label>Description</Form.Label>
-            <Form.Control 
-              as="textarea" 
-              rows={2}
-              name="description" 
-              value={newPayment.description}
-              onChange={handleNewPaymentChange}
-              placeholder="Enter payment description"
-            />
-          </Form.Group>
-          
-          <Form.Group className="mb-3">
-            <Form.Label>Payment Method</Form.Label>
-            <Form.Select 
-              name="paymentMethod" 
-              value={newPayment.paymentMethod}
-              onChange={handleNewPaymentChange}
-            >
-              <option value="manual">Manual</option>
-              <option value="bank">Bank Transfer</option>
-              <option value="mobile_money">Mobile Money</option>
-              <option value="cash">Cash</option>
-              <option value="other">Other</option>
-            </Form.Select>
-          </Form.Group>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowPaymentModal(false)}>
-            Cancel
-          </Button>
-          <Button 
-            variant="primary" 
-            type="submit"
-            disabled={isLoading || !newPayment.vendorId || !newPayment.amount}
+  const renderNewPaymentModal = () => {
+    if (!showPaymentModal) return null;
+    
+    return (
+      <motion.div 
+        className="bg-white rounded-lg shadow-xl overflow-hidden w-full mb-6 max-w-4xl mx-auto"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+      >
+        <div className="flex justify-between items-center p-4 border-b border-gray-200">
+          <h3 className="text-lg font-medium flex items-center">
+            <FileText className="h-5 w-5 mr-2" />
+            Create New Vendor Payment
+          </h3>
+          <button
+            className="text-gray-400 hover:text-gray-500"
+            onClick={() => setShowPaymentModal(false)}
           >
-            {isLoading ? (
-              <>
-                <Spinner
-                  as="span"
-                  animation="border"
-                  size="sm"
-                  role="status"
-                  aria-hidden="true"
-                  className="me-2"
-                />
-                Processing...
-              </>
-            ) : (
-              'Create Payment'
-            )}
-          </Button>
-        </Modal.Footer>
-      </Form>
-    </Modal>
-  );
-
-  // Payment details modal
-  const renderPaymentDetailsModal = () => (
-    <Modal 
-      show={showDetailsModal} 
-      onHide={() => setShowDetailsModal(false)}
-      backdrop="static"
-      size="lg"
-    >
-      <Modal.Header closeButton>
-        <Modal.Title>Payment Details</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        {isLoading ? (
-          <div className="text-center py-5">
-            <Spinner animation="border" variant="primary" />
-          </div>
-        ) : !paymentDetails ? (
-          <Alert variant="danger">Failed to load payment details.</Alert>
-        ) : (
-          <>
-            <Row className="mb-4">
-              <Col md={6}>
-                <h6>Payment ID</h6>
-                <p className="text-muted">{paymentDetails._id}</p>
-              </Col>
-              <Col md={6}>
-                <h6>Status</h6>
-                <Badge bg={statusColors[paymentDetails.status] || 'secondary'} className="fs-6">
-                  {paymentDetails.status}
-                </Badge>
-              </Col>
-            </Row>
-            
-            <Row className="mb-4">
-              <Col md={6}>
-                <h6>Amount</h6>
-                <h3 className="text-primary">{formatCurrency(paymentDetails.amount)}</h3>
-              </Col>
-              <Col md={6}>
-                <h6>Date</h6>
-                <p>{formatDate(paymentDetails.createdAt)}</p>
-              </Col>
-            </Row>
-            
-            <Row className="mb-4">
-              <Col md={6}>
-                <h6>Vendor Name</h6>
-                <p>{paymentDetails.vendorId?.name || 'N/A'}</p>
-              </Col>
-              <Col md={6}>
-                <h6>Shop Name</h6>
-                <p>{paymentDetails.vendorId?.shopName || 'N/A'}</p>
-              </Col>
-            </Row>
-            
-            <Row className="mb-4">
-              <Col md={6}>
-                <h6>Payment Method</h6>
-                <p>{paymentDetails.paymentMethod}</p>
-              </Col>
-              <Col md={6}>
-                <h6>Transaction Type</h6>
-                <p>{paymentDetails.transactionType}</p>
-              </Col>
-            </Row>
-            
-            <Row className="mb-4">
-              <Col md={12}>
-                <h6>Description</h6>
-                <p>{paymentDetails.description || 'No description provided.'}</p>
-              </Col>
-            </Row>
-            
-            {/* Show related order details if available */}
-            {paymentDetails.orderId && (
-              <div className="border-top pt-3 mt-3">
-                <h5>Related Order</h5>
-                <Row className="mb-2">
-                  <Col md={6}>
-                    <h6>Order ID</h6>
-                    <p className="text-muted">{paymentDetails.orderId._id}</p>
-                  </Col>
-                  <Col md={6}>
-                    <h6>Order Amount</h6>
-                    <p>{formatCurrency(paymentDetails.orderId.totalAmount)}</p>
-                  </Col>
-                </Row>
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <form onSubmit={handleCreatePayment}>
+          <div className="p-6">
+            {error && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <span className="block sm:inline">{error}</span>
               </div>
             )}
-          </>
-        )}
-      </Modal.Body>
-      <Modal.Footer>
-        {paymentDetails && paymentDetails.status === 'pending' && (
-          <>
-            <Button 
-              variant="success" 
-              onClick={() => handleUpdateStatus(paymentDetails._id, 'completed')}
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Vendor*</label>
+              <select
+                name="vendorId"
+                value={newPayment.vendorId}
+                onChange={handleNewPaymentChange}
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="">Select a vendor</option>
+                {isLoadingVendors ? (
+                  <option disabled>Loading vendors...</option>
+                ) : (
+                  vendors.map(vendor => (
+                    <option key={vendor._id} value={vendor._id}>
+                      {vendor.userName} ({vendor.role})
+                    </option>
+                  ))
+                )}
+              </select>
+              <p className="text-sm text-gray-500 mt-1">Select the vendor to make payment to.</p>
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Amount (GHS)*</label>
+              <input 
+                type="number" 
+                name="amount" 
+                value={newPayment.amount}
+                onChange={handleNewPaymentChange}
+                placeholder="Enter payment amount"
+                step="0.01"
+                min="0"
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea 
+                rows={2}
+                name="description" 
+                value={newPayment.description}
+                onChange={handleNewPaymentChange}
+                placeholder="Enter payment description"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+              <select 
+                name="paymentMethod" 
+                value={newPayment.paymentMethod}
+                onChange={handleNewPaymentChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="manual">Manual</option>
+                <option value="bank">Bank Transfer</option>
+                <option value="mobile_money">Mobile Money</option>
+                <option value="cash">Cash</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-200">
+            <motion.button 
+              type="submit"
+              className="bg-indigo-600 text-white px-4 py-2 rounded text-sm hover:bg-indigo-700 ml-2"
+              disabled={isLoading || !newPayment.vendorId || !newPayment.amount}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              Mark as Completed
-            </Button>
-            <Button 
-              variant="danger" 
-              onClick={() => handleUpdateStatus(paymentDetails._id, 'cancelled')}
+              {isLoading ? (
+                <>
+                  <div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite] mr-2"></div>
+                  Processing...
+                </>
+              ) : (
+                'Create Payment'
+              )}
+            </motion.button>
+            <motion.button 
+              type="button"
+              className="border border-gray-300 bg-white text-gray-700 px-4 py-2 rounded text-sm hover:bg-gray-50 ml-2"
+              onClick={() => setShowPaymentModal(false)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              Cancel Payment
-            </Button>
-          </>
-        )}
-        <Button variant="secondary" onClick={() => setShowDetailsModal(false)}>
-          Close
-        </Button>
-      </Modal.Footer>
-    </Modal>
-  );
+              Cancel
+            </motion.button>
+          </div>
+        </form>
+      </motion.div>
+    );
+  };
+
+  // Payment details modal
+  const renderPaymentDetailsModal = () => {
+    if (!showDetailsModal) return null;
+    
+    return (
+      <motion.div 
+        className="bg-white rounded-lg shadow-xl overflow-hidden w-full mb-6 max-w-4xl mx-auto"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+      >
+        <div className="flex justify-between items-center p-4 border-b border-gray-200">
+          <h3 className="text-lg font-medium">Payment Details</h3>
+          <motion.button
+            className="text-gray-400 hover:text-gray-500"
+            onClick={() => setShowDetailsModal(false)}
+            whileHover={{ scale: 1.1, rotate: 90 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <X className="h-5 w-5" />
+          </motion.button>
+        </div>
+        <div className="p-6 max-h-[70vh] overflow-y-auto">
+          {isLoading ? (
+            <div className="text-center py-5">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600 mx-auto"></div>
+            </div>
+          ) : !paymentDetails ? (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+              <span className="block sm:inline">Failed to load payment details.</span>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <h6 className="font-medium">Payment ID</h6>
+                  <p className="text-gray-500">{paymentDetails._id}</p>
+                </div>
+                <div>
+                  <h6 className="font-medium">Status</h6>
+                  <span className={`inline-block px-2 py-1 text-xs rounded ${paymentDetails.status === 'completed' ? 'bg-green-100 text-green-800' : paymentDetails.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+                    {paymentDetails.status}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <h6 className="font-medium">Amount</h6>
+                  <h3 className="text-indigo-600 text-xl font-bold">{formatCurrency(paymentDetails.amount)}</h3>
+                </div>
+                <div>
+                  <h6 className="font-medium">Date</h6>
+                  <p>{formatDate(paymentDetails.createdAt)}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <h6 className="font-medium">Vendor Name</h6>
+                  <p>{paymentDetails.vendorId?.name || 'N/A'}</p>
+                </div>
+                <div>
+                  <h6 className="font-medium">Shop Name</h6>
+                  <p>{paymentDetails.vendorId?.shopName || 'N/A'}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <h6 className="font-medium">Payment Method</h6>
+                  <p>{paymentDetails.paymentMethod}</p>
+                </div>
+                <div>
+                  <h6 className="font-medium">Transaction Type</h6>
+                  <p>{paymentDetails.transactionType}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-4 mb-4">
+                <div>
+                  <h6 className="font-medium">Description</h6>
+                  <p>{paymentDetails.description || 'No description provided.'}</p>
+                </div>
+              </div>
+              
+              {/* Show related order details if available */}
+              {paymentDetails.orderId && (
+                <div className="border-t border-gray-200 pt-3 mt-3">
+                  <h5 className="font-medium mb-2">Related Order</h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+                    <div>
+                      <h6 className="font-medium">Order ID</h6>
+                      <p className="text-gray-500">{paymentDetails.orderId._id}</p>
+                    </div>
+                    <div>
+                      <h6 className="font-medium">Order Amount</h6>
+                      <p>{formatCurrency(paymentDetails.orderId.totalAmount)}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+        <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-200">
+          {paymentDetails && paymentDetails.status === 'pending' && (
+            <>
+              <motion.button 
+                className="bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700 ml-2"
+                onClick={() => handleUpdateStatus(paymentDetails._id, 'completed')}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Mark as Completed
+              </motion.button>
+              <motion.button 
+                className="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700 ml-2"
+                onClick={() => handleUpdateStatus(paymentDetails._id, 'cancelled')}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Cancel Payment
+              </motion.button>
+            </>
+          )}
+          <motion.button 
+            className="border border-gray-300 bg-white text-gray-700 px-4 py-2 rounded text-sm hover:bg-gray-50 ml-2"
+            onClick={() => setShowDetailsModal(false)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            Close
+          </motion.button>
+        </div>
+      </motion.div>
+    );
+  };
 
   return (
-    <SuperAdminLayout>
-      <Container fluid className="py-4">
-        <h2 className="mb-4">Vendor Payments</h2>
-        
-        {error && (
-          <Alert variant="danger" dismissible onClose={() => dispatch(clearError())}>
-            {error}
-          </Alert>
-        )}
-        
-        {success && (
-          <Alert variant="success" dismissible onClose={() => dispatch(clearSuccess())}>
-            {message}
-          </Alert>
-        )}
-        
-        <Tabs
-          activeKey={activeTab}
-          onSelect={(k) => setActiveTab(k)}
-          className="mb-4"
-        >
-          <Tab eventKey="payments" title="Payments">
-            {renderSummaryCards()}
-            {renderPaymentsTable()}
-          </Tab>
-          <Tab eventKey="analytics" title="Analytics">
-            {renderSummaryCards()}
-            {renderPaymentsByVendor()}
-            {renderRecentPayments()}
-          </Tab>
-        </Tabs>
-        
-        {/* Modals */}
-        {renderNewPaymentModal()}
-        {renderPaymentDetailsModal()}
-      </Container>
-    </SuperAdminLayout>
+    <motion.div 
+      className="container mx-auto px-4 py-4"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible">
+      <h2 className="text-2xl font-bold mb-4">Vendor Payments</h2>
+      
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+          <span className="block sm:inline">{error}</span>
+          <button
+            className="absolute top-0 bottom-0 right-0 px-4 py-3"
+            onClick={() => dispatch(clearError())}
+          >
+            <X className="h-5 w-5 text-red-500" />
+          </button>
+        </div>
+      )}
+      
+      {success && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+          <span className="block sm:inline">{message}</span>
+          <button
+            className="absolute top-0 bottom-0 right-0 px-4 py-3"
+            onClick={() => dispatch(clearSuccess())}
+          >
+            <X className="h-5 w-5 text-green-500" />
+          </button>
+        </div>
+      )}
+      
+      <div className="mb-4">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex">
+            <button
+              className={`mr-8 py-2 px-1 ${activeTab === 'payments' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+              onClick={() => setActiveTab('payments')}
+            >
+              Payments
+            </button>
+            <button
+              className={`py-2 px-1 ${activeTab === 'analytics' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+              onClick={() => setActiveTab('analytics')}
+            >
+              Analytics
+            </button>
+          </nav>
+        </div>
+        <div className="mt-4">
+          {activeTab === 'payments' && (
+            <>
+              {renderSummaryCards()}
+              {renderPaymentsTable()}
+            </>
+          )}
+          {activeTab === 'analytics' && (
+            <>
+              {renderSummaryCards()}
+              {renderPaymentsByVendor()}
+              {renderRecentPayments()}
+            </>
+          )}
+        </div>
+      </div>
+      
+      {/* Modals */}
+      {renderNewPaymentModal()}
+      {showDetailsModal && renderPaymentDetailsModal()}
+    </motion.div>
   );
 };
 

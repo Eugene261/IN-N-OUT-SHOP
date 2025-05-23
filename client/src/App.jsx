@@ -46,6 +46,10 @@ import SuperAdminUsersPage from "./pages/super-admin-view/users";
 import SuperAdminOrdersPage from "./pages/super-admin-view/orders";
 import SuperAdminProductsPage from "./pages/super-admin-view/products";
 import SuperAdminFeaturedPage from "./pages/super-admin-view/featured";
+import SuperAdminVendorPaymentsPage from "./pages/super-admin-view/vendorPayments";
+
+// Admin vendor payments
+import AdminVendorPaymentsPage from "./pages/admin-view/vendorPayments";
 
 // Import ConnectionStatus component
 import ConnectionStatus from "./components/shared/ConnectionStatus";
@@ -105,6 +109,7 @@ function App() {
             <Route path='features' element={<AdminFeatures />} />
             <Route path='featured-products' element={<AdminFeaturedProducts />} />
             <Route path='shipping-settings' element={<AdminShippingSettings />} />
+            <Route path='vendor-payments' element={<AdminVendorPaymentsPage />} />
           </Route>
 
           {/* SUPER ADMIN */}
@@ -118,6 +123,7 @@ function App() {
             <Route path='orders' element={<SuperAdminOrdersPage />} />
             <Route path='products' element={<SuperAdminProductsPage />} />
             <Route path='featured' element={<SuperAdminFeaturedPage />} />
+            <Route path='vendor-payments' element={<SuperAdminVendorPaymentsPage />} />
           </Route>
 
           {/* SHOP */}

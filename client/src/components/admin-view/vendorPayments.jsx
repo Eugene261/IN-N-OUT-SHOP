@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { 
   Table, 
   TableBody, 
@@ -56,17 +57,20 @@ import { Badge } from '@/components/ui/badge';
 import { API_BASE_URL } from '@/config/api';
 
 const VendorPayments = () => {
-  const [payments, setPayments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    totalPages: 1,
-    totalCount: 0
-  });
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
-  const [selectedPayment, setSelectedPayment] = useState(null);
-  const [paymentSummary, setPaymentSummary] = useState({
+  const dispatch = useDispatch();
+  const { 
+    vendorPayments, 
+    pagination, 
+    paymentDetails: selectedPayment, 
+    summary: paymentSummary, 
+    isLoading: loading, 
+    error 
+  } = useSelector(state => state.adminVendorPayments);
+  
+  // Ensure all data properties have default values to prevent null reference errors
+  const payments = vendorPayments || [];
+  const paginationData = pagination || { currentPage: 1, totalPages: 1, totalCount: 0 };
+  const summaryData = paymentSummary || {
     totalPaid: 0,
     pendingAmount: 0,
     paymentCount: 0,
@@ -74,133 +78,62 @@ const VendorPayments = () => {
     lastPaymentDate: null,
     lastPaymentAmount: 0,
     unviewedCount: 0
-  });
+  };
+  
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
   const { toast } = useToast();
 
   // Fetch payments on mount
   useEffect(() => {
-    fetchPayments();
-    fetchPaymentSummary();
-  }, []);
+    dispatch(fetchVendorPayments({}));
+    dispatch(fetchPaymentSummary());
+  }, [dispatch]);
 
   // Fetch payment history
-  const fetchPayments = async (page = 1, filters = {}) => {
-    setLoading(true);
-    try {
-      // Build query params
-      const params = new URLSearchParams();
-      
-      params.append('page', page);
-      params.append('limit', 10);
-      
-      if (statusFilter && statusFilter !== 'all') {
-        params.append('status', statusFilter);
-      }
-      
-      if (dateRange.startDate) {
-        params.append('startDate', dateRange.startDate);
-      }
-      
-      if (dateRange.endDate) {
-        params.append('endDate', dateRange.endDate);
-      }
-      
-      // Add any additional filters
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value) params.append(key, value);
-      });
-
-      const response = await fetch(`/api/admin/vendor-payments/history?${params.toString()}`, {
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Error fetching payments: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      setPayments(data.data);
-      setPagination({
-        currentPage: data.currentPage,
-        totalPages: data.totalPages,
-        totalCount: data.totalCount
-      });
-    } catch (error) {
-      console.error('Failed to fetch payments:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch payment history. Please try again.',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fetch payment summary
-  const fetchPaymentSummary = async () => {
-    try {
-      const response = await fetch('/api/admin/vendor-payments/summary', {
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Error fetching payment summary: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      setPaymentSummary(data.data);
-      
-      // If there are unviewed payments, update the badge count
-      if (data.data.unviewedCount > 0) {
-        // You could update a global notification state here
-      }
-    } catch (error) {
-      console.error('Failed to fetch payment summary:', error);
-    }
+  const handleFetchPayments = (page = 1, filters = {}) => {
+    const params = {
+      page,
+      ...(statusFilter && statusFilter !== 'all' ? { status: statusFilter } : {}),
+      ...(dateRange.startDate ? { startDate: dateRange.startDate } : {}),
+      ...(dateRange.endDate ? { endDate: dateRange.endDate } : {}),
+      ...filters
+    };
+    
+    dispatch(fetchVendorPayments(params));
   };
 
   // Fetch payment details
-  const fetchPaymentDetails = async (paymentId) => {
-    try {
-      const response = await fetch(`/api/admin/vendor-payments/${paymentId}`, {
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Error fetching payment details: ${response.statusText}`);
-      }
+  const handleFetchPaymentDetails = (paymentId) => {
+    dispatch(fetchPaymentDetails(paymentId));
+  };
 
-      const data = await response.json();
-      setSelectedPayment(data.data);
-      
-      // Refresh summary to update unviewed count
-      fetchPaymentSummary();
-    } catch (error) {
-      console.error('Failed to fetch payment details:', error);
+  // Handle errors
+  useEffect(() => {
+    if (error) {
       toast({
         title: 'Error',
-        description: 'Failed to fetch payment details. Please try again.',
+        description: error,
         variant: 'destructive'
       });
     }
-  };
+  }, [error, toast]);
 
   // Apply filters
   const applyFilters = () => {
-    fetchPayments(1);
+    handleFetchPayments(1);
   };
 
   // Reset filters
   const resetFilters = () => {
     setStatusFilter('all');
     setDateRange({ startDate: '', endDate: '' });
-    fetchPayments(1);
+    handleFetchPayments(1);
   };
 
   // Handle pagination
   const handlePagination = (page) => {
-    fetchPayments(page);
+    handleFetchPayments(page);
   };
 
   // Status badge renderer
@@ -257,11 +190,11 @@ const VendorPayments = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              {loading ? <Skeleton className="h-8 w-32" /> : formatCurrency(paymentSummary.totalPaid)}
+              {loading ? <Skeleton className="h-8 w-32" /> : formatCurrency(summaryData.totalPaid)}
             </div>
-            <p className="text-muted-foreground text-sm">
-              {loading ? <Skeleton className="h-4 w-24 mt-1" /> : `${paymentSummary.paymentCount} completed payments`}
-            </p>
+            <div className="text-muted-foreground text-sm">
+              {loading ? <Skeleton className="h-4 w-24 mt-1" /> : `${summaryData.paymentCount} completed payments`}
+            </div>
           </CardContent>
         </Card>
 
@@ -274,11 +207,11 @@ const VendorPayments = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              {loading ? <Skeleton className="h-8 w-32" /> : formatCurrency(paymentSummary.pendingAmount)}
+              {loading ? <Skeleton className="h-8 w-32" /> : formatCurrency(summaryData.pendingAmount)}
             </div>
-            <p className="text-muted-foreground text-sm">
-              {loading ? <Skeleton className="h-4 w-24 mt-1" /> : `${paymentSummary.pendingCount} pending payments`}
-            </p>
+            <div className="text-muted-foreground text-sm">
+              {loading ? <Skeleton className="h-4 w-24 mt-1" /> : `${summaryData.pendingCount} pending payments`}
+            </div>
           </CardContent>
         </Card>
 
@@ -291,15 +224,15 @@ const VendorPayments = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              {loading ? <Skeleton className="h-8 w-32" /> : formatCurrency(paymentSummary.lastPaymentAmount)}
+              {loading ? <Skeleton className="h-8 w-32" /> : formatCurrency(summaryData.lastPaymentAmount)}
             </div>
-            <p className="text-muted-foreground text-sm">
+            <div className="text-muted-foreground text-sm">
               {loading ? <Skeleton className="h-4 w-24 mt-1" /> : (
-                paymentSummary.lastPaymentDate 
-                  ? formatDate(paymentSummary.lastPaymentDate)
+                summaryData.lastPaymentDate 
+                  ? formatDate(summaryData.lastPaymentDate)
                   : 'No payments yet'
               )}
-            </p>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -459,8 +392,7 @@ const VendorPayments = () => {
                         variant="ghost" 
                         size="sm"
                         onClick={() => {
-                          setSelectedPayment(null); // Clear first
-                          fetchPaymentDetails(payment._id);
+                          handleFetchPaymentDetails(payment._id);
                         }}
                       >
                         <Eye className="h-4 w-4 mr-1" />
