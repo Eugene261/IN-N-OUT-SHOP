@@ -26,6 +26,7 @@ function createSearchParamsHelper(filterParams){
 
   for(const [key, value] of Object.entries(filterParams)){
     if(Array.isArray(value) && value.length > 0){
+      // Convert array values to lowercase for consistent matching
       const paramValue = value.join(',')
 
       queryParams.push(`${key}=${encodeURIComponent(paramValue)}`)
@@ -49,6 +50,8 @@ function ShoppingListing() {
   const [searchParams, setSearchParams] = useSearchParams();
   const categorySearchParam = searchParams.get('category');
   const shopSearchParam = searchParams.get('shop');
+  const brandSearchParam = searchParams.get('brand');
+  const priceSearchParam = searchParams.get('price');
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
 
@@ -57,66 +60,66 @@ function ShoppingListing() {
     // Add your sorting logic here
   }
 
-  function handleFilter(getSectionId, getCurrentOption){
-    console.log('🎯 Manual filter selection:', getSectionId, getCurrentOption);
+  function handleFilter(filterType, filterValue) {
+    console.log(`Filter triggered: ${filterType} = ${filterValue}`);
     
-    let copyFilters = {...filters};
-    const indexofSection = Object.keys(copyFilters).indexOf(getSectionId);
-
-    if(indexofSection === -1){
-      copyFilters = {
-        ...copyFilters,
-        [getSectionId] : [getCurrentOption]
-      }
-    } else {
-      const indexOfCurrentOption = copyFilters[getSectionId].indexOf(getCurrentOption);
-
-      if(indexOfCurrentOption === -1) copyFilters[getSectionId].push(getCurrentOption)
-        else copyFilters[getSectionId].splice(indexOfCurrentOption , 1 )
-    }
-
-    // Remove empty filter arrays
-    Object.keys(copyFilters).forEach(key => {
-      if (Array.isArray(copyFilters[key]) && copyFilters[key].length === 0) {
-        delete copyFilters[key];
-      }
-    });
-
-    // Remove duplicates from each filter array
-    Object.keys(copyFilters).forEach(key => {
-      if (Array.isArray(copyFilters[key])) {
-        copyFilters[key] = [...new Set(copyFilters[key])];
-      }
-    });
-
-    console.log('🔄 Updating filters to:', copyFilters);
-    setFilters(copyFilters);
-    sessionStorage.setItem('filters', JSON.stringify(copyFilters));
-  }
-
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  // Helper function to clean up filters
-  const cleanupFilters = (filters) => {
-    const cleaned = {...filters};
+    // Create a fresh copy of current filters
+    const newFilters = { ...filters };
     
-    // Remove duplicates from each filter array
-    Object.keys(cleaned).forEach(key => {
-      if (Array.isArray(cleaned[key])) {
-        cleaned[key] = [...new Set(cleaned[key])];
-        // Remove empty arrays
-        if (cleaned[key].length === 0) {
-          delete cleaned[key];
+    // Special handling for category filter (single selection)
+    if (filterType === 'category') {
+      if (newFilters.category && newFilters.category.includes(filterValue)) {
+        // If already selected, remove it
+        delete newFilters.category;
+        // Also remove subcategories since they depend on category
+        if (newFilters.subCategory) {
+          delete newFilters.subCategory;
+        }
+      } else {
+        // Select this category, replacing any previous selection
+        newFilters.category = [filterValue];
+        // Remove subcategories since they may not apply to new category
+        if (newFilters.subCategory) {
+          delete newFilters.subCategory;
         }
       }
-    });
+    } 
+    // For other filter types (multi-selection)
+    else {
+      // Initialize the array if it doesn't exist
+      if (!newFilters[filterType]) {
+        newFilters[filterType] = [];
+      }
+      
+      // Check if the value is already selected
+      const valueIndex = newFilters[filterType].indexOf(filterValue);
+      
+      if (valueIndex === -1) {
+        // Add the value if not already selected
+        newFilters[filterType].push(filterValue);
+      } else {
+        // Remove the value if already selected
+        newFilters[filterType].splice(valueIndex, 1);
+        // Remove the filter type entirely if empty
+        if (newFilters[filterType].length === 0) {
+          delete newFilters[filterType];
+        }
+      }
+    }
     
-    return cleaned;
-  };
+    // Debug: Log the new filters
+    console.log('New filters:', newFilters);
+    
+    // Update filters state
+    setFilters(newFilters);
+    
+    // Save to session storage for persistence
+    sessionStorage.setItem('filters', JSON.stringify(newFilters));
+  }
 
-  // Initial setup - only run once on mount
   useEffect(() => {
-    setSort('price-lowtohigh');
+    setSort('price-lowtohigh')
+    setFilters(JSON.parse(sessionStorage.getItem('filters')) || {})
     
     // Fetch available shops for filtering
     dispatch(fetchAvailableShops());
@@ -127,60 +130,80 @@ function ShoppingListing() {
     }
   }, [dispatch, user]);
 
-  // Handle URL parameters - separate from manual filter selection
+
+  // New useEffect to handle URL parameters for filtering
   useEffect(() => {
-    if (isInitialized) return; // Only run on initial load
-    
-    // Get existing filters from session storage
-    let existingFilters = JSON.parse(sessionStorage.getItem('filters')) || {};
-    
-    // Valid product categories (not shop categories!)
-    const validCategories = ['Medicine', 'Men', 'Women', 'Kids', 'Accessories', 'Footwear', 'Devices'];
-    
-    // Apply URL parameters to filters
-    if (categorySearchParam && validCategories.includes(categorySearchParam)) {
-      existingFilters.category = [categorySearchParam];
-      console.log('📂 Setting valid category filter from URL:', categorySearchParam);
-    } else if (categorySearchParam) {
-      console.log('❌ Ignoring invalid category from URL:', categorySearchParam);
-      // Clear invalid category from session storage
-      delete existingFilters.category;
-    }
-    
-    if (shopSearchParam) {
-      existingFilters.shop = [shopSearchParam];
-      console.log('🏪 Setting shop filter from URL:', shopSearchParam);
-      
-      // If we have a shop filter, don't apply category filters to avoid conflicts
-      if (existingFilters.category) {
-        console.log('🔄 Clearing category filter to avoid conflict with shop filter');
-        delete existingFilters.category;
+    let newFilters = {};
+    const validCategories = ['Electronics', 'Fashion', 'Home & Garden', 'Sports', 'Beauty', 'Health', 'Books', 'Toys', 'Automotive', 'Industrial', 'Grocery', 'Kids', 'Outdoors', 'Pet Supplies', 'Music', 'Movies', 'Software', 'Video Games', 'Computers', 'Appliances', 'Baby', 'Office Products', 'Tools & Home Improvement', 'Arts, Crafts & Sewing', 'Collectibles & Fine Art', 'Handmade', 'Luggage & Travel Gear', 'Shoes', 'Jewelry', 'Watches', 'Clothing', 'Accessories', 'Other'];
+
+    const parseMultiValueParam = (param) => param ? decodeURIComponent(param).split(',').filter(Boolean) : [];
+
+    const shopValues = parseMultiValueParam(shopSearchParam);
+    const categoryValueFromUrl = categorySearchParam ? decodeURIComponent(categorySearchParam) : null;
+    const brandValues = parseMultiValueParam(brandSearchParam);
+    const priceValues = parseMultiValueParam(priceSearchParam);
+
+    if (shopValues.length > 0) {
+      newFilters.shop = shopValues;
+      // If a shop is specified, we still want to allow category filtering
+      if (categoryValueFromUrl) {
+        const matchedCategory = validCategories.find(
+          cat => cat.toLowerCase() === categoryValueFromUrl.toLowerCase()
+        );
+        if (matchedCategory) {
+          newFilters.category = [matchedCategory]; // Use the properly cased category
+        }
       }
-    }
-    
-    // Clean up filters to remove duplicates
-    existingFilters = cleanupFilters(existingFilters);
-    
-    // Only apply URL filters if we have URL parameters, otherwise use session storage
-    if (categorySearchParam || shopSearchParam) {
-      setFilters(existingFilters);
-      
-      // Update session storage with cleaned filters
-      if (Object.keys(existingFilters).length > 0) {
-        sessionStorage.setItem('filters', JSON.stringify(existingFilters));
-      } else {
-        sessionStorage.removeItem('filters');
+      if (brandValues.length > 0) {
+        newFilters.brand = brandValues;
+      }
+      if (priceValues.length > 0) {
+        newFilters.price = priceValues;
       }
     } else {
-      // No URL parameters, just use what's in session storage (but cleaned)
-      setFilters(existingFilters);
-      if (Object.keys(existingFilters).length > 0) {
-        sessionStorage.setItem('filters', JSON.stringify(existingFilters));
+      // No shop in URL, handle other filters
+      if (categoryValueFromUrl) {
+        const matchedCategory = validCategories.find(
+          cat => cat.toLowerCase() === categoryValueFromUrl.toLowerCase()
+        );
+        if (matchedCategory) {
+          newFilters.category = [matchedCategory]; // Use the properly cased category
+        }
+      }
+      if (brandValues.length > 0) {
+        newFilters.brand = brandValues;
+      }
+      if (priceValues.length > 0) {
+        newFilters.price = priceValues;
+      }
+
+      // If no URL parameters, try loading from session storage
+      if (Object.keys(newFilters).length === 0) {
+        const sessionFilters = JSON.parse(sessionStorage.getItem('filters')) || {};
+        if (Object.keys(sessionFilters).length > 0) {
+          // Validate category from session storage
+          if (sessionFilters.category) {
+            const matchedCategory = validCategories.find(
+              cat => cat.toLowerCase() === sessionFilters.category[0].toLowerCase()
+            );
+            if (matchedCategory) {
+              sessionFilters.category = [matchedCategory];
+            } else {
+              delete sessionFilters.category;
+            }
+          }
+          newFilters = sessionFilters;
+        }
       }
     }
     
-    setIsInitialized(true);
-  }, [categorySearchParam, shopSearchParam, isInitialized]);
+    setFilters(newFilters);
+    if (Object.keys(newFilters).length > 0) {
+      sessionStorage.setItem('filters', JSON.stringify(newFilters));
+    } else {
+      sessionStorage.removeItem('filters');
+    }
+  }, [shopSearchParam, categorySearchParam, brandSearchParam, priceSearchParam]);
 
 
   function handleGetProductDetails(getCurrentProductId){
@@ -271,10 +294,21 @@ function ShoppingListing() {
 
   useEffect(() => {
     if(filters && Object.keys(filters).length > 0){
+      // Create a query string from the current filters
       const createQueryString = createSearchParamsHelper(filters)
-      setSearchParams(new URLSearchParams(createQueryString))
+      
+      // Get the current URL search params
+      const currentParams = new URLSearchParams(window.location.search);
+      
+      // Create new search params from our filter-based query string
+      const newParams = new URLSearchParams(createQueryString);
+      
+      // Set the new search params
+      setSearchParams(newParams);
+    } else if (filters && Object.keys(filters).length === 0) {
+      setSearchParams({}); // Clear URL params if filters are empty
     }
-  }, [filters]);
+  }, [filters, setSearchParams]);
 
 
   // Add a refresh key to force re-fetch when needed
@@ -282,14 +316,50 @@ function ShoppingListing() {
   
   useEffect(() => {
     if(filters !== null && sort !== null) {
-      console.log('🚀 Listing page: Dispatching fetchAllFilteredProducts');
-      console.log('📋 Filter params:', filters);
-      console.log('🔄 Sort params:', sort);
-      console.log('🔑 Refresh key:', refreshKey);
+      console.log('===== DEBUGGING FILTERS =====');
+      console.log('Listing page: Fetching products with refresh key:', refreshKey);
+      console.log('Current filters object:', JSON.stringify(filters));
       
-      // Add timestamp to query to prevent caching
+      // Prepare filter parameters for the API call
+      // Create a new object with correct format for API
+      const apiFilters = {};
+      
+      // Process categories - convert from array format to comma-separated string
+      if (filters.category && filters.category.length > 0) {
+        apiFilters.category = filters.category.join(',');
+        console.log('Category filter being applied:', apiFilters.category);
+      }
+      
+      // Process subcategories
+      if (filters.subCategory && filters.subCategory.length > 0) {
+        apiFilters.subCategory = filters.subCategory.join(',');
+        console.log('Subcategory filter being applied:', apiFilters.subCategory);
+      }
+      
+      // Process brands
+      if (filters.brand && filters.brand.length > 0) {
+        apiFilters.brand = filters.brand.join(',');
+        console.log('Brand filter being applied:', apiFilters.brand);
+      }
+      
+      // Process shops
+      if (filters.shop && filters.shop.length > 0) {
+        apiFilters.shop = filters.shop.join(',');
+        console.log('Shop filter being applied:', apiFilters.shop);
+      }
+      
+      // Process price ranges
+      if (filters.price && filters.price.length > 0) {
+        apiFilters.price = filters.price.join(',');
+        console.log('Price filter being applied:', apiFilters.price);
+      }
+      
+      console.log('Final API filters after processing:', apiFilters);
+      console.log('===== END DEBUGGING =====');
+      
+      // Dispatch the action with properly formatted filters
       dispatch(fetchAllFilteredProducts({
-        filterParams: filters, 
+        filterParams: apiFilters, 
         sortParams: sort
       }));
     }
@@ -312,7 +382,6 @@ function ShoppingListing() {
 
   return (
     <div className='flex flex-col'>
-
       {/* Mobile Filter Toggle */}
       <div className="md:hidden p-4 pb-0">
         <button 

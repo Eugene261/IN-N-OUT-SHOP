@@ -7,7 +7,7 @@ const getFilteredProducts = async(req, res) => {
     try {
         
 
-        const {category = [], subCategory = [], brand = [], price = [], shop = [], sortBy = "price-lowtohigh" } = req.query;
+        const {category = '', subCategory = '', brand = '', price = '', shop = '', sortBy = "price-lowtohigh" } = req.query;
 
         let filters = {};
 

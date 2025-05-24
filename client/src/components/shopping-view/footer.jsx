@@ -87,25 +87,19 @@ const Footer = () => {
               </h3>
             </div>
             <div className="space-y-2.5">
-              {[
-                { name: 'Electronics', path: '/shop/listing?category=Electronics' },
-                { name: 'Fashion', path: '/shop/listing?category=Fashion' },
-                { name: 'Home & Garden', path: '/shop/listing?category=Home & Garden' },
-                { name: 'Sports', path: '/shop/listing?category=Sports' },
-                { name: 'Beauty', path: '/shop/listing?category=Beauty' }
-              ].map((item, i) => (
+              {['Men\'s Top Wear', 'Women\'s Top Wear', 'Men\'s Bottom Wear', 'Women\'s Bottom Wear'].map((item, i) => (
                 <motion.div
                   key={i}
                   whileHover={{ x: 5 }}
                   transition={{ type: 'spring', stiffness: 300 }}
                 >
                   <Link 
-                    to={item.path} 
+                    to="#" 
                     className="text-gray-600 hover:text-indigo-600 transition-colors flex items-center gap-2 text-sm
                     p-2 hover:bg-indigo-50/50 rounded-lg group"
                   >
                     <ChevronRight className="h-4 w-4 text-indigo-400 group-hover:text-indigo-500 transition-colors" />
-                    {item.name}
+                    {item}
                   </Link>
                 </motion.div>
               ))}

@@ -20,7 +20,8 @@ import {
   CheckCircle, 
   Loader2, 
   X, 
-  Filter
+  Filter,
+  Search
 } from 'lucide-react';
 
 const UserManagement = () => {
@@ -43,12 +44,31 @@ const UserManagement = () => {
     role: ''
   });
   
-  // Filter state
+  // Filter and search states
   const [activeFilter, setActiveFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredUsers, setFilteredUsers] = useState([]);
   
   useEffect(() => {
     dispatch(fetchAllUsers());
   }, [dispatch]);
+  
+  // Filter users based on search term
+  useEffect(() => {
+    if (!users) return;
+    
+    if (searchTerm.trim() === '') {
+      setFilteredUsers(users);
+    } else {
+      const lowercaseSearch = searchTerm.toLowerCase();
+      const filtered = users.filter(
+        user => 
+          user.userName.toLowerCase().includes(lowercaseSearch) ||
+          user.email.toLowerCase().includes(lowercaseSearch)
+      );
+      setFilteredUsers(filtered);
+    }
+  }, [users, searchTerm]);
   
   useEffect(() => {
     if (success) {
@@ -202,51 +222,70 @@ const UserManagement = () => {
           </button>
         </div>
         
-        <div className="flex items-center space-x-2 bg-gray-100 p-1 rounded-lg">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => handleFilterChange('all')}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center ${
+            className={`px-3 py-2 text-sm rounded-md flex items-center ${
               activeFilter === 'all' 
-                ? 'bg-white text-blue-600 shadow-sm' 
-                : 'text-gray-600 hover:text-gray-800'
+                ? 'bg-blue-100 text-blue-700 border border-blue-300' 
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
             }`}
           >
-            <Filter className="h-3.5 w-3.5 mr-1.5" />
-            All
-          </button>
-          <button
-            onClick={() => handleFilterChange('admin')}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center ${
-              activeFilter === 'admin' 
-                ? 'bg-white text-blue-600 shadow-sm' 
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            <Shield className="h-3.5 w-3.5 mr-1.5" />
-            Admins
+            <Filter className="h-4 w-4 mr-2" />
+            All Users
           </button>
           <button
             onClick={() => handleFilterChange('superAdmin')}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center ${
+            className={`px-3 py-2 text-sm rounded-md flex items-center ${
               activeFilter === 'superAdmin' 
-                ? 'bg-white text-blue-600 shadow-sm' 
-                : 'text-gray-600 hover:text-gray-800'
+                ? 'bg-purple-100 text-purple-700 border border-purple-300' 
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
             }`}
           >
-            <Shield className="h-3.5 w-3.5 mr-1.5" />
             Super Admins
           </button>
           <button
-            onClick={() => handleFilterChange('user')}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center ${
-              activeFilter === 'user' 
-                ? 'bg-white text-blue-600 shadow-sm' 
-                : 'text-gray-600 hover:text-gray-800'
+            onClick={() => handleFilterChange('admin')}
+            className={`px-3 py-2 text-sm rounded-md flex items-center ${
+              activeFilter === 'admin' 
+                ? 'bg-blue-100 text-blue-700 border border-blue-300' 
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
             }`}
           >
-            <User className="h-3.5 w-3.5 mr-1.5" />
-            Users
+            Admins
           </button>
+          <button
+            onClick={() => handleFilterChange('user')}
+            className={`px-3 py-2 text-sm rounded-md flex items-center ${
+              activeFilter === 'user' 
+                ? 'bg-green-100 text-green-700 border border-green-300' 
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            Regular Users
+          </button>
+        </div>
+        
+        {/* Search input */}
+        <div className="relative w-full md:w-64">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-4 w-4 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search by name or email"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+          {searchTerm && (
+            <button 
+              onClick={() => setSearchTerm('')}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+            >
+              <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+            </button>
+          )}
         </div>
       </motion.div>
       
@@ -472,8 +511,8 @@ const UserManagement = () => {
                     <p className="mt-2 text-sm text-gray-500">Loading users...</p>
                   </td>
                 </tr>
-              ) : users && users.length > 0 ? (
-                users.map(user => (
+              ) : filteredUsers && filteredUsers.length > 0 ? (
+                filteredUsers.map(user => (
                   <motion.tr 
                     key={user._id}
                     initial={{ opacity: 0 }}
@@ -537,9 +576,11 @@ const UserManagement = () => {
                     <User className="h-12 w-12 mx-auto text-gray-300 mb-2" />
                     <p className="text-lg font-medium text-gray-500">No users found</p>
                     <p className="text-sm text-gray-400">
-                      {activeFilter !== 'all' 
-                        ? `No users with role "${activeFilter}" found` 
-                        : 'No users have been added yet'}
+                      {searchTerm
+                        ? `No users matching "${searchTerm}" found`
+                        : activeFilter !== 'all' 
+                          ? `No users with role "${activeFilter}" found` 
+                          : 'No users have been added yet'}
                     </p>
                   </td>
                 </tr>

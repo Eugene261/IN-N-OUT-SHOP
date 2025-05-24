@@ -46,10 +46,10 @@ function EnhancedProductFilter({filters, handleFilter, availableShops = []}) {
       ]
     };
 
-    // Add subcategories dynamically based on selected category
-    const selectedCategory = filters?.category?.[0];
-    if (selectedCategory) {
-      const categoryObj = categories.find(cat => cat.name.toLowerCase() === selectedCategory);
+    // Add subcategories dynamically based on selected category from filters prop
+    const currentSelectedCategoryName = filters?.category?.[0];
+    if (currentSelectedCategoryName) {
+      const categoryObj = categories.find(cat => cat.name.toLowerCase() === currentSelectedCategoryName);
       if (categoryObj) {
         const categorySubcategories = subcategories.filter(subcat => {
           const subcatCategoryId = typeof subcat.category === 'object' ? subcat.category._id : subcat.category;
@@ -71,12 +71,6 @@ function EnhancedProductFilter({filters, handleFilter, availableShops = []}) {
 
   const dynamicFilterOptions = getDynamicFilterOptions();
 
-  useEffect(() => {
-    if (filters && filters.category && filters.category.length > 0) {
-      setExpandedCategories(['category', 'brand', 'shop']);
-    }
-  }, [filters]);
-
   const toggleCategory = (category) => {
     if (expandedCategories.includes(category)) {
       setExpandedCategories(prev => prev.filter(item => item !== category));
@@ -91,12 +85,12 @@ function EnhancedProductFilter({filters, handleFilter, availableShops = []}) {
     }
   };
 
-  // Simplified isChecked function that works for all filter types
-  const isChecked = (filterType, optionId) => {
+  const isChecked = (keyItem, optionId) => {
+    // Very simple checkbox state check - return true if the option is in the filters
     return Boolean(
       filters && 
-      filters[filterType] && 
-      filters[filterType].includes(optionId)
+      filters[keyItem] && 
+      filters[keyItem].includes(optionId)
     );
   };
 
@@ -159,10 +153,6 @@ function EnhancedProductFilter({filters, handleFilter, availableShops = []}) {
                         <Checkbox 
                           checked={isChecked(keyItem, option.id)}
                           onCheckedChange={() => {
-                            console.log('🎯 Filter clicked:', keyItem, option.id);
-                            console.log('📋 Current checked state:', isChecked(keyItem, option.id));
-                            
-                            // Use the standard handleFilter for all filter types
                             handleFilter(keyItem, option.id);
                           }}
                           className="border-gray-300 dark:border-gray-600 data-[state=checked]:bg-black 

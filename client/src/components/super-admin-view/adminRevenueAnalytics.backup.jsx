@@ -52,8 +52,8 @@ const AdminRevenueAnalytics = () => {
   const calculateShippingFees = (adminData, isAdminSpecific = true) => {
     if (!adminData) return 0;
     
-    // For debugging purposes - removed for performance
-    // console.log('Calculating shipping fees for:', adminData);
+    // For debugging purposes
+    console.log('Calculating shipping fees for:', adminData);
     
     // SuperAdmin dashboard shows the total shipping fees (all admins)
     // Admin dashboard shows only that admin's portion of shipping fees
@@ -62,25 +62,25 @@ const AdminRevenueAnalytics = () => {
     if (isAdminSpecific) {
       // Only use direct shipping fees for this admin if available
       if (adminData.shippingFees && parseFloat(adminData.shippingFees) > 0) {
-        // console.log(`Using direct shipping fees for ${adminData.adminName}: ${adminData.shippingFees}`);
+        console.log(`Using direct shipping fees for ${adminData.adminName}: ${adminData.shippingFees}`);
         return parseFloat(adminData.shippingFees);
       }
       
       // NO FALLBACK CALCULATIONS - only real data
-      // console.log(`No real shipping fees found for ${adminData.adminName}, returning 0`);
+      console.log(`No real shipping fees found for ${adminData.adminName}, returning 0`);
       return 0;
     }
     // For total shipping fees (daily/weekly totals in superAdmin dashboard)
     else {
       // If we have direct total shipping fees from the server response
       if (adminData.totalShippingFees && parseFloat(adminData.totalShippingFees) > 0) {
-        // console.log(`Using totalShippingFees from backend: ${adminData.totalShippingFees}`);
+        console.log(`Using totalShippingFees from backend: ${adminData.totalShippingFees}`);
         return parseFloat(adminData.totalShippingFees);
       }
       
       // If we have shipping fees directly on the period object (added by backend)
       if (adminData.shippingFees && parseFloat(adminData.shippingFees) > 0) {
-        // console.log(`Using period-level shippingFees: ${adminData.shippingFees}`);
+        console.log(`Using period-level shippingFees: ${adminData.shippingFees}`);
         return parseFloat(adminData.shippingFees);
       }
       
@@ -89,12 +89,12 @@ const AdminRevenueAnalytics = () => {
         const totalFromAdmins = adminData.adminRevenue.reduce((total, admin) => {
           return total + calculateShippingFees(admin, true);
         }, 0);
-        // console.log(`Calculated total shipping fees from admins: ${totalFromAdmins}`);
+        console.log(`Calculated total shipping fees from admins: ${totalFromAdmins}`);
         return totalFromAdmins;
       }
       
       // NO FALLBACK CALCULATIONS - only real data
-      // console.log('No real shipping fees found, returning 0');
+      console.log('No real shipping fees found, returning 0');
       return 0;
     }
   };
@@ -114,28 +114,30 @@ const AdminRevenueAnalytics = () => {
   };
   
   // Refresh data
-  const refreshData = useCallback(() => {
+  const refreshData = () => {
     dispatch(fetchOrderStats());
     dispatch(fetchAdminRevenueByTime('daily'));
     dispatch(fetchAdminRevenueByTime('weekly'));
     dispatch(fetchAdminRevenueByTime('monthly'));
     dispatch(fetchAdminRevenueByTime('yearly'));
-  }, [dispatch]);
+  };
   
   // Initial data fetch with timeout protection
   useEffect(() => {
-    // Start fetching data
+    // Set a loading timeout to prevent indefinite loading
+    const timeoutId = setTimeout(() => {
+      if (revenueLoading) {
+        console.log('Revenue data fetch timeout - continuing with available data');
+        // Dispatch to set loading state to false in Redux
+        dispatch({ type: 'superAdminRevenue/fetchTimeout' });
+      }
+    }, 10000); // 10 second timeout
+    
     refreshData();
     
-    // Set timeout to prevent infinite loading
-    const timeoutId = setTimeout(() => {
-      console.log('Revenue data fetch timeout triggered');
-      dispatch(fetchTimeout());
-    }, 10000); // 10 seconds timeout
-    
-    // Cleanup timeout on unmount
+    // Clear timeout on component unmount
     return () => clearTimeout(timeoutId);
-  }, [refreshData, dispatch]);
+  }, []);
   
   // Debug logging only on component mount to prevent re-render loops
   useEffect(() => {
@@ -149,10 +151,10 @@ const AdminRevenueAnalytics = () => {
   
   // Helper functions for date formatting
   const getWeekNumber = (date) => {
-    const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() + 4 - (d.getDay() || 7));
-    const yearStart = new Date(d.getFullYear(), 0, 1);
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
     return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
   };
   
@@ -170,7 +172,7 @@ const AdminRevenueAnalytics = () => {
     return new Date(d.setDate(diff));
   };
   
-  // Memoize the filtered data calculation to prevent recalculations
+  // Filter data based on selected admin and date range - memoized to prevent recalculations
   const getFilteredData = useCallback((data) => {
     if (!data || !Array.isArray(data)) return [];
     
@@ -277,81 +279,74 @@ const AdminRevenueAnalytics = () => {
                 {filteredData.map((period, index) => (
                   <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-100">
                     <div className="flex justify-between items-center mb-3">
-                      <div className="flex items-center">
-                        <CalendarClock className="h-5 w-5 text-blue-500 mr-2" />
-                        <h3 className="font-medium text-gray-700">
-                          {timeUnit === 'daily' && period.date && formatDate(period.date)}
-                          {timeUnit === 'weekly' && period.startDate && period.endDate && (
-                            <>Week {getWeekNumber(period.startDate)}: {formatDate(period.startDate)} - {formatDate(period.endDate)}</>
-                          )}
-                          {timeUnit === 'monthly' && period.month && (
-                            `${new Date(2000, period.month - 1, 1).toLocaleString('default', { month: 'long' })} ${period.year}`
-                          )}
-                          {timeUnit === 'yearly' && period.year && (
-                            `${period.year}`
-                          )}
-                        </h3>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-sm text-gray-500">Total Revenue</span>
-                        <p className="font-bold text-blue-600">{formatCurrency(period.totalRevenue)}</p>
-                      </div>
+                      <h4 className="font-medium text-gray-800">{period.displayDate || period.dateString}</h4>
+                      {period.adminRevenue && period.adminRevenue.length > 0 && (
+                        <div className="text-right">
+                          <div>
+                            <span className="text-sm text-gray-500 mr-2">Gross:</span>
+                            <span className="font-bold text-gray-900">
+                              {formatCurrency(period.adminRevenue.reduce((total, admin) => total + (parseFloat(admin.revenue) || 0), 0))}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-xs text-gray-500 mr-2">Shipping:</span>
+                            <span className="text-xs text-blue-600">
+                              {formatCurrency(calculateShippingFees(period, false))}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div className="bg-white p-3 rounded border border-gray-100">
-                        <div className="flex items-center mb-1">
-                          <DollarSign className="h-4 w-4 text-green-500 mr-1" />
-                          <span className="text-xs text-gray-500">Product Revenue</span>
-                        </div>
-                        <p className="font-semibold text-gray-800">{formatCurrency(period.productRevenue)}</p>
-                      </div>
-                      
-                      <div className="bg-white p-3 rounded border border-gray-100">
-                        <div className="flex items-center mb-1">
-                          <TruckIcon className="h-4 w-4 text-indigo-500 mr-1" />
-                          <span className="text-xs text-gray-500">Shipping Fees</span>
-                        </div>
-                        <p className="font-semibold text-gray-800">{formatCurrency(calculateShippingFees(period, false))}</p>
-                      </div>
-                      
-                      <div className="bg-white p-3 rounded border border-gray-100">
-                        <div className="flex items-center mb-1">
-                          <Users className="h-4 w-4 text-purple-500 mr-1" />
-                          <span className="text-xs text-gray-500">Active Admins</span>
-                        </div>
-                        <p className="font-semibold text-gray-800">{period.adminRevenue ? period.adminRevenue.length : 0}</p>
-                      </div>
-                      
-                      <div className="bg-white p-3 rounded border border-gray-100">
-                        <div className="flex items-center mb-1">
-                          <BarChart3 className="h-4 w-4 text-amber-500 mr-1" />
-                          <span className="text-xs text-gray-500">Avg. Per Admin</span>
-                        </div>
-                        <p className="font-semibold text-gray-800">
-                          {formatCurrency(
-                            period.adminRevenue && period.adminRevenue.length > 0 
-                              ? period.productRevenue / period.adminRevenue.length 
-                              : 0
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* Admin Revenue Breakdown */}
-                    {period.adminRevenue && period.adminRevenue.length > 0 && (
-                      <div className="mt-4">
-                        <h4 className="text-sm font-medium text-gray-700 mb-2">Admin Revenue Breakdown</h4>
-                        <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                          {period.adminRevenue.map((admin, adminIndex) => (
-                            <div key={adminIndex} className="flex justify-between items-center bg-white p-2 rounded border border-gray-100">
-                              <span className="text-sm text-gray-700">{admin.adminName}</span>
-                              <span className="font-medium text-blue-600">{formatCurrency(admin.revenue)}</span>
+                    <div className="space-y-3">
+                      {period.adminRevenue && period.adminRevenue.length > 0 ? (
+                        period.adminRevenue.map((admin, adminIndex) => (
+                          <div 
+                            key={adminIndex}
+                            className="flex items-center justify-between p-2 bg-white rounded border border-gray-100"
+                          >
+                            <div className="flex items-center">
+                              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                                <Users className="h-4 w-4 text-blue-600" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-800">{admin.adminName}</p>
+                                <p className="text-xs text-gray-500">{admin.orderCount} orders</p>
+                              </div>
                             </div>
-                          ))}
+                            <div className="text-right">
+                              <div className="flex flex-col gap-1">
+                                <p className="font-bold text-gray-900">
+                                  <span className="text-xs text-gray-600 mr-1">Gross:</span>
+                                  {formatCurrency(admin.revenue)}
+                                </p>
+                                <p className="text-xs text-blue-600">
+                                  <span className="text-gray-600 mr-1">Shipping:</span>
+                                  {formatCurrency(calculateShippingFees(admin))}
+                                </p>
+                                {admin.shippingFeesByRegion && (
+                                  <p className="text-xxs text-gray-500 ml-14">
+                                    ({admin.shippingFeesByRegion.accra || 0} Accra, {admin.shippingFeesByRegion.other || 0} other regions)
+                                  </p>
+                                )}
+                                <p className="text-xs text-red-600">
+                                  <span className="text-gray-600 mr-1">Fees:</span>
+                                  {formatCurrency(admin.platformFees || 0)}
+                                </p>
+                                <p className="text-sm text-green-600 font-semibold">
+                                  <span className="text-gray-600 mr-1">Net:</span>
+                                  {formatCurrency((admin.revenue || 0) - (admin.platformFees || 0))}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-4">
+                          <p className="text-gray-500">No admin revenue data for this period</p>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

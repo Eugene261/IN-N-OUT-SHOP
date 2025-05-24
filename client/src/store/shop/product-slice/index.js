@@ -20,32 +20,26 @@ const initialState = {
 
 export const fetchAllFilteredProducts = createAsyncThunk('/products/fetchAllFilteredProducts',  
     async ({ filterParams, sortParams }) => {
-        // Convert filter arrays to comma-separated strings for the backend
-        const queryParams = {};
+        // Create a proper query object
+        const queryObj = {
+            sortBy: sortParams,
+            _t: Date.now() // Add timestamp to prevent caching
+        };
         
-        Object.keys(filterParams).forEach(key => {
-            const value = filterParams[key];
-            if (Array.isArray(value) && value.length > 0) {
-                // Join array values with commas as backend expects
-                queryParams[key] = value.join(',');
-            } else if (value && !Array.isArray(value)) {
-                // Handle non-array values
-                queryParams[key] = value;
+        // Add all filter parameters
+        // Make sure we're only adding params that have values
+        Object.entries(filterParams).forEach(([key, value]) => {
+            if (value) {
+                queryObj[key] = value;
             }
         });
         
-        // Add sort and timestamp
-        queryParams.sortBy = sortParams;
-        queryParams._t = Date.now();
+        // Create the URLSearchParams object
+        const query = new URLSearchParams(queryObj);
         
-        const query = new URLSearchParams(queryParams);
-        const url = `http://localhost:5000/api/shop/products/get?${query}`;
-        
-        console.log('🌐 Fetching products from URL:', url);
-        console.log('📊 Filter params sent:', queryParams);
-        
-        const response = await axios.get(url);
-        console.log('📦 Fetched products response:', response?.data);
+        console.log('Fetching products with query params:', queryObj);
+        const response = await axios.get(`http://localhost:5000/api/shop/products/get?${query}`);
+        console.log('Fetched products response:', response?.data);
         return response?.data;
     }
 );

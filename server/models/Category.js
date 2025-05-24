@@ -71,7 +71,7 @@ categorySchema.pre('save', function(next) {
 
 // Create indexes
 categorySchema.index({ name: 1 });
-categorySchema.index({ slug: 1 });
+// slug already has unique:true which creates an index
 categorySchema.index({ isActive: 1 });
 categorySchema.index({ sortOrder: 1 });
 

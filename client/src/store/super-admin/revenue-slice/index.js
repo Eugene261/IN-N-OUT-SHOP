@@ -37,6 +37,11 @@ const superAdminRevenueSlice = createSlice({
   reducers: {
     clearError: (state) => {
       state.error = null;
+    },
+    fetchTimeout: (state) => {
+      // Handle timeout by setting loading to false and adding a warning
+      state.isLoading = false;
+      state.error = 'Some revenue data is taking too long to load. Displaying available data.'
     }
   },
   extraReducers: (builder) => {
@@ -82,5 +87,5 @@ const superAdminRevenueSlice = createSlice({
   }
 });
 
-export const { clearError } = superAdminRevenueSlice.actions;
+export const { clearError, fetchTimeout } = superAdminRevenueSlice.actions;
 export default superAdminRevenueSlice.reducer;

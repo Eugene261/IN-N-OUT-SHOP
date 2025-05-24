@@ -63,7 +63,6 @@ subcategorySchema.pre('save', function(next) {
 
 // Create compound indexes for unique subcategory names within each category
 subcategorySchema.index({ category: 1, name: 1 }, { unique: true });
-subcategorySchema.index({ category: 1, slug: 1 }, { unique: true });
 subcategorySchema.index({ isActive: 1 });
 subcategorySchema.index({ sortOrder: 1 });
 

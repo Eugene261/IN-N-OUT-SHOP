@@ -82,8 +82,7 @@ brandSchema.pre('save', function(next) {
 });
 
 // Create indexes
-brandSchema.index({ name: 1 });
-brandSchema.index({ slug: 1 });
+// name and slug already have unique:true which creates indexes
 brandSchema.index({ isActive: 1 });
 brandSchema.index({ sortOrder: 1 });
 

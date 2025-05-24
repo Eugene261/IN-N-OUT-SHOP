@@ -13,8 +13,16 @@ function ShopsDirectory() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({});
-
   const navigate = useNavigate();
+
+  const buttonStyles = {
+    base: 'px-4 py-2 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200',
+    primary: 'bg-black text-white hover:bg-gray-800 focus:ring-black',
+    outline: 'border border-gray-300 text-gray-700 hover:bg-gray-100 focus:ring-gray-500',
+    small: 'text-sm px-3 py-1.5',
+    full: 'w-full',
+    disabled: 'opacity-50 cursor-not-allowed',
+  };
 
   const categories = [
     'all',
@@ -26,17 +34,9 @@ function ShopsDirectory() {
     'Other'
   ];
 
-  // Custom button styles
-  const buttonStyles = {
-    base: "px-4 py-2 rounded-md font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2",
-    primary: "bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 focus:ring-purple-500",
-    outline: "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-gray-500",
-    small: "px-3 py-1 text-sm",
-    full: "w-full",
-    disabled: "opacity-50 cursor-not-allowed"
-  };
-
-    useEffect(() => {    fetchShops();  }, [selectedCategory, searchTerm, currentPage]);
+  useEffect(() => {
+    fetchShops();
+  }, [selectedCategory, searchTerm, currentPage]);
 
   const fetchShops = async () => {
     try {
@@ -47,76 +47,36 @@ function ShopsDirectory() {
       if (selectedCategory !== 'all') params.append('category', selectedCategory);
       if (searchTerm) params.append('search', searchTerm);
       
-      const url = `/api/admin/shop/all?${params.toString()}`;
-      
-      const response = await fetch(url, {
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
+      const response = await fetch(`/api/admin/shop/all?${params.toString()}`);
       const data = await response.json();
       
       if (data.success) {
-        setShops(data.shops || []);
-        setPagination(data.pagination || {});
-      } else {
-        console.error('API returned success: false', data);
+        setShops(data.shops);
+        setPagination(data.pagination);
       }
     } catch (error) {
       console.error('Failed to fetch shops:', error);
-      setShops([]);
-      setPagination({});
     } finally {
       setLoading(false);
     }
   };
 
   const handleShopClick = (shopId) => {
-    console.log('🏪 Shop clicked:', shopId);
     navigate(`/shop/vendor/${shopId}`);
   };
 
   const handleViewProducts = (shopName) => {
-    console.log('👀 View Products clicked for:', shopName);
     navigate(`/shop/listing?shop=${encodeURIComponent(shopName)}`);
   };
 
   const handleSearchChange = (e) => {
-    const value = e.target.value;
-    console.log('🔍 Search changed to:', value);
-    setSearchTerm(value);
-    setCurrentPage(1);
+    setSearchTerm(e.target.value);
+    setCurrentPage(1); // Reset to first page when searching
   };
 
   const handleCategoryChange = (category) => {
-    console.log('🏷️ Category change clicked:', category);
-    console.log('🏷️ Previous category:', selectedCategory);
-    
-    // Force a state update with explicit logging
-    setSelectedCategory(prevCategory => {
-      console.log('🏷️ Setting category from', prevCategory, 'to', category);
-      return category;
-    });
-    
-    setCurrentPage(1);
-    
-    // Extra debug
-    setTimeout(() => {
-      console.log('🏷️ Category after timeout:', selectedCategory);
-    }, 100);
-  };
-
-  // Force refresh button for testing
-  const handleForceRefresh = () => {
-    console.log('🔄 Force refresh triggered');
-    fetchShops();
+    setSelectedCategory(category);
+    setCurrentPage(1); // Reset to first page when filtering
   };
 
   return (
@@ -160,24 +120,10 @@ function ShopsDirectory() {
             <button
               key={category}
               type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                console.log('🎯 Button clicked for category:', category);
-                handleCategoryChange(category);
-              }}
-              onMouseDown={(e) => {
-                console.log('🖱️ Mouse down on category:', category);
-              }}
-              className={`${buttonStyles.base} ${buttonStyles.small} ${
-                selectedCategory === category ? buttonStyles.primary : buttonStyles.outline
-              } ${selectedCategory === category ? 'ring-2 ring-purple-500' : ''}`}
-              style={{ 
-                backgroundColor: selectedCategory === category ? '#7c3aed' : 'white',
-                color: selectedCategory === category ? 'white' : '#374151'
-              }}
+              onClick={() => handleCategoryChange(category)}
+              className={`${buttonStyles.base} ${selectedCategory === category ? buttonStyles.primary : buttonStyles.outline} ${buttonStyles.small}`}
             >
               {category.charAt(0).toUpperCase() + category.slice(1)}
-              {selectedCategory === category && ' ✓'}
             </button>
           ))}
         </div>
@@ -286,9 +232,9 @@ function ShopsDirectory() {
                   
                   {/* Action Button */}
                   <div className="px-6 pb-6">
-                    <button 
+                    <button
                       type="button"
-                      className={`${buttonStyles.base} ${buttonStyles.full} ${buttonStyles.primary}`}
+                      className={`${buttonStyles.base} ${buttonStyles.primary} ${buttonStyles.full}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleViewProducts(shop.shopName);
@@ -310,44 +256,57 @@ function ShopsDirectory() {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3, delay: 0.5 }}
             >
+              {currentPage > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  className={`${buttonStyles.base} ${buttonStyles.outline}`}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </button>
+              )}
+              {[...Array(pagination.totalPages).keys()].map(num => (
+                <button
+                  key={num + 1}
+                  type="button"
+                  onClick={() => setCurrentPage(num + 1)}
+                  className={`${buttonStyles.base} ${currentPage === num + 1 ? buttonStyles.primary : buttonStyles.outline}`}
+                >
+                  {num + 1}
+                </button>
+              ))}
+              {currentPage < pagination.totalPages && (
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+                  className={`${buttonStyles.base} ${buttonStyles.outline}`}
+                  disabled={currentPage === pagination.totalPages}
+                >
+                  Next
+                </button>
+              )}
+            </motion.div>
+          )}
+
+          {/* Clear Filters Button - Example of an additional button */}
+          {(selectedCategory !== 'all' || searchTerm) && (
+             <motion.div 
+              className="mt-8 flex justify-center"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3, delay: 0.6 }}
+            >
               <button
                 type="button"
-                disabled={!pagination.hasPrev}
-                onClick={() => setCurrentPage(prev => prev - 1)}
-                className={`${buttonStyles.base} ${buttonStyles.outline} ${
-                  !pagination.hasPrev ? buttonStyles.disabled : ''
-                }`}
+                onClick={() => {
+                  setSelectedCategory('all');
+                  setSearchTerm('');
+                  setCurrentPage(1);
+                }}
+                className={`${buttonStyles.base} ${buttonStyles.outline}`}
               >
-                Previous
-              </button>
-              
-              <div className="flex items-center gap-2">
-                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                  const pageNum = i + 1;
-                  return (
-                    <button
-                      key={pageNum}
-                      type="button"
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`${buttonStyles.base} ${buttonStyles.small} ${
-                        currentPage === pageNum ? buttonStyles.primary : buttonStyles.outline
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-              </div>
-              
-              <button
-                type="button"
-                disabled={!pagination.hasNext}
-                onClick={() => setCurrentPage(prev => prev + 1)}
-                className={`${buttonStyles.base} ${buttonStyles.outline} ${
-                  !pagination.hasNext ? buttonStyles.disabled : ''
-                }`}
-              >
-                Next
+                Clear Filters
               </button>
             </motion.div>
           )}
@@ -372,7 +331,7 @@ function ShopsDirectory() {
               setSelectedCategory('all');
               setCurrentPage(1);
             }}
-            className={`${buttonStyles.base} ${buttonStyles.primary}`}
+            className={`${buttonStyles.base} ${buttonStyles.outline}`}
           >
             Clear Filters
           </button>

@@ -27,131 +27,44 @@ const SuperAdminDashboard = () => {
   const { isLoading: revenueLoading, error: revenueError } = useSelector(state => state.superAdminRevenue);
   
   const [adminUsers, setAdminUsers] = useState([]);
-  const [forceLoaded, setForceLoaded] = useState(false);
   
-  // Function to fetch all necessary data for the dashboard
-  const fetchDashboardData = useCallback(() => {
-    console.log('Fetching SuperAdmin dashboard data...');
-    
-    // We'll skip fetchAllOrders and just use fetchOrderStats since that's what we need for the dashboard
-    // This prevents the ordersLoading state from getting stuck
-    // If we need all orders data later, we can uncomment this
-    /*
-    dispatch(fetchAllOrders())
-      .then(response => {
-        if (response.payload && response.payload.orders) {
-          // Log order statuses for debugging
-          const statusCounts = {};
-          response.payload.orders.forEach(order => {
-            const status = order.status || order.orderStatus || 'unknown';
-            statusCounts[status] = (statusCounts[status] || 0) + 1;
-          });
-          console.log('Order status counts from orders endpoint:', statusCounts);
-        }
-      })
-      .catch(error => {
-        console.error('All orders error:', error);
-      });
-    */
-    
-    // Fetch order stats for the dashboard
-    dispatch(fetchOrderStats())
-      .then(response => {
-        if (response.payload && response.payload.stats) {
-          console.log('Order status counts from stats endpoint:', response.payload.stats.ordersByStatus);
-        }
-      })
-      .catch(error => console.error('Order stats error:', error));
-    
-    // CRITICAL FIX: Add missing fetchProductStats() call
-    dispatch(fetchProductStats())
-      .then(response => {
-        if (response.payload && response.payload.stats) {
-          console.log('Product stats from API:', response.payload.stats);
-        }
-      })
-      .catch(error => console.error('Product stats error:', error));
-    
-    // Fetch all users to get accurate role counts
-    dispatch(fetchAllUsers())
-      .catch(error => console.error('All users error:', error));
-    
-    // Fetch admin users specifically
-    dispatch(fetchUsersByRole('admin'))
-      .then(response => {
-        if (response.payload && response.payload.users) {
-          setAdminUsers(response.payload.users);
-        }
-      })
-      .catch(error => console.error('Admin users error:', error));
-      
-    // Fetch revenue data for all time periods
-    dispatch(fetchAdminRevenueByTime('daily'))
-      .catch(error => console.error('Daily revenue error:', error));
-    dispatch(fetchAdminRevenueByTime('weekly'))
-      .catch(error => console.error('Weekly revenue error:', error));
-    dispatch(fetchAdminRevenueByTime('monthly'))
-      .catch(error => console.error('Monthly revenue error:', error));
-    dispatch(fetchAdminRevenueByTime('yearly'))
-      .catch(error => console.error('Yearly revenue error:', error));
+  // Function to fetch data progressively
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      // First batch: Critical stats
+      await Promise.all([
+        dispatch(fetchOrderStats()),
+        dispatch(fetchProductStats())
+      ]);
+
+      // Second batch: User data
+      await Promise.all([
+        dispatch(fetchAllUsers()),
+        dispatch(fetchUsersByRole('admin'))
+      ]);
+
+      // Third batch: Revenue data (can load in background)
+      await Promise.all([
+        dispatch(fetchAdminRevenueByTime('daily')),
+        dispatch(fetchAdminRevenueByTime('weekly')),
+        dispatch(fetchAdminRevenueByTime('monthly')),
+        dispatch(fetchAdminRevenueByTime('yearly'))
+      ]);
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    }
   }, [dispatch]);
   
   // Initial data fetch on component mount
   useEffect(() => {
-    console.log('SuperAdmin dashboard mounted, fetching initial data...');
     fetchDashboardData();
-    
-    // We'll disable polling for now to prevent loading state issues
-    // If you want to re-enable it later, uncomment this code
-    /*
-    const pollingInterval = setInterval(() => {
-      console.log('Polling for updated dashboard data...');
-      fetchDashboardData();
-    }, 300000); // 5 minutes instead of 2 minutes
-    
-    // Clean up interval on component unmount
-    return () => {
-      console.log('SuperAdmin dashboard unmounting, clearing polling interval...');
-      clearInterval(pollingInterval);
-    };
-    */
   }, [fetchDashboardData]);
-  
-  // Force loading to complete after timeout - reduced to 2 seconds
-  useEffect(() => {
-    // Set force loaded to true immediately after mounting
-    const initialTimer = setTimeout(() => {
-      console.log('Initial force loading timeout triggered');
-      setForceLoaded(true);
-    }, 2000); // 2 seconds timeout
-    
-    // Also set up a listener for loading state changes
-    const loadingTimer = setTimeout(() => {
-      console.log('Checking if dashboard is still loading after timeout');
-      // Use the current loading states directly instead of isLoading
-      if (ordersLoading || productsLoading || usersLoading || revenueLoading) {
-        console.log('Forcing dashboard to load after loading state timeout');
-        setForceLoaded(true);
-      }
-    }, 3000); // 3 seconds timeout
-    
-    return () => {
-      clearTimeout(initialTimer);
-      clearTimeout(loadingTimer);
-    };
-  }, [ordersLoading, productsLoading, usersLoading, revenueLoading]);
-  
-  // Debug the current orderStats
-  useEffect(() => {
-    if (orderStats) {
-      console.log('Current orderStats in component:', orderStats);
-      console.log('Admin revenue data in orderStats:', orderStats.adminRevenue);
-    }
-  }, [orderStats]);
-  
+
+  // Update adminUsers when users data changes
   useEffect(() => {
     if (users && users.length > 0) {
-      setAdminUsers(users);
+      setAdminUsers(users.filter(user => user.role === 'admin'));
     }
   }, [users]);
   
@@ -180,19 +93,13 @@ const SuperAdminDashboard = () => {
       transition: { duration: 0.3 }
     }
   };
-  
-  const isLoading = (ordersLoading || productsLoading || usersLoading || revenueLoading) && !forceLoaded;
+
+  // Separate core content loading from additional data loading
+  const coreDataLoading = ordersLoading || productsLoading;
+  const userDataLoading = usersLoading;
+  const revenueDataLoading = revenueLoading;
+  const isLoading = coreDataLoading;
   const error = ordersError || productsError || usersError || revenueError;
-  
-  // Debug loading states
-  console.log('Loading states:', { 
-    ordersLoading, 
-    productsLoading, 
-    usersLoading, 
-    revenueLoading,
-    forceLoaded,
-    isLoading
-  });
 
   return (
     <motion.div
@@ -205,7 +112,7 @@ const SuperAdminDashboard = () => {
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Super Admin Dashboard</h1>
         <p className="text-gray-600">Overview of all store statistics and admin performance</p>
       </motion.div>
-      
+
       {error && (
         <motion.div
           variants={itemVariants}
@@ -215,7 +122,7 @@ const SuperAdminDashboard = () => {
           <span className="text-red-700">{error}</span>
         </motion.div>
       )}
-      
+
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-12">
           <Loader2 className="h-12 w-12 text-blue-500 animate-spin mb-4" />
@@ -241,7 +148,7 @@ const SuperAdminDashboard = () => {
               </p>
               <p className="text-sm text-gray-500 mt-1">Total revenue before fees</p>
             </div>
-            
+
             {/* Shipping Fees */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all">
               <div className="flex items-center justify-between">
@@ -326,9 +233,19 @@ const SuperAdminDashboard = () => {
               <p className="text-sm text-gray-500 mt-1">Active administrators</p>
             </div>
           </motion.div>
-          
+
           {/* Admin Revenue Analytics Section */}
-          <AdminRevenueAnalytics />
+          <motion.div variants={itemVariants} className="mb-8">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">Admin Revenue Analytics</h2>
+            {revenueDataLoading ? (
+              <div className="bg-white rounded-lg shadow-sm p-4 h-64 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                <span className="ml-2 text-gray-500">Loading revenue data...</span>
+              </div>
+            ) : (
+              <AdminRevenueAnalytics />
+            )}
+          </motion.div>
           
           {/* Order Status Section */}
           <motion.div variants={itemVariants}>
