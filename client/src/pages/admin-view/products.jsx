@@ -12,6 +12,7 @@ import { updateProduct } from '@/utils/productUpdater';
 import { toast } from 'sonner';
 import AdminProductTile from '@/components/admin-view/productTile';
 import DeleteConfirmationDialog from '@/components/admin-view/DeleteConfirmationDialog';
+import { fetchAllTaxonomyData } from '@/store/superAdmin/taxonomy-slice';
 
 const initialFormData = {
   image: null,
@@ -19,6 +20,7 @@ const initialFormData = {
   title: '',
   description: '',
   category: '',
+  subCategory: '',
   gender: '',
   brand: '',
   sizes: [], // Initialize as empty array
@@ -47,6 +49,7 @@ function AdminProducts() {
   // Get products and current user from redux store
   const { productList, isLoading, error } = useSelector(state => state.adminProducts);
   const { user } = useSelector(state => state.auth);
+  const { categories, subcategories, brands, sizes, colors } = useSelector(state => state.taxonomy);
   
   const dispatch = useDispatch(); 
 
@@ -60,13 +63,36 @@ function AdminProducts() {
     evt.preventDefault();
     
     try {
-      // Prepare form data with arrays properly initialized
+      // Convert form data for submission (ensure names are properly formatted)
       const submissionData = {
         ...formData,
         sizes: formData.sizes || [],
         colors: formData.colors || [],
         additionalImages: additionalImageUrls || []
       };
+      
+      // Ensure category and subcategory values are stored as their display names
+      // The form uses lowercase IDs but we want to store the actual display names
+      if (submissionData.category && categories.length > 0) {
+        const categoryObj = categories.find(cat => cat.name.toLowerCase() === submissionData.category);
+        if (categoryObj) {
+          submissionData.category = categoryObj.name;
+        }
+      }
+      
+      if (submissionData.subCategory && subcategories.length > 0) {
+        const subcategoryObj = subcategories.find(subcat => subcat.name.toLowerCase() === submissionData.subCategory);
+        if (subcategoryObj) {
+          submissionData.subCategory = subcategoryObj.name;
+        }
+      }
+      
+      if (submissionData.brand && brands.length > 0) {
+        const brandObj = brands.find(brand => brand.name.toLowerCase() === submissionData.brand);
+        if (brandObj) {
+          submissionData.brand = brandObj.name;
+        }
+      }
 
       if (currentEditedId !== null) {
         // Handle product update
@@ -268,6 +294,8 @@ function AdminProducts() {
     if (user && (user.id || user._id)) {
       console.log('Dispatching fetchAllProducts with user ID:', user.id || user._id);
       dispatch(fetchAllProducts());
+      // Also fetch taxonomy data for dynamic form options
+      dispatch(fetchAllTaxonomyData());
     } else {
       console.log('User not authenticated or missing ID');
     }
@@ -279,6 +307,82 @@ function AdminProducts() {
     // Force a re-render when the product list changes
     setRefreshKey(prev => prev + 1);
   }, [productList]);
+
+  // Generate dynamic form elements using taxonomy data
+  const getDynamicFormElements = () => {
+    const baseFormElements = [...addProductFormElements];
+    
+    // Update category options
+    const categoryIndex = baseFormElements.findIndex(el => el.name === 'category');
+    if (categoryIndex !== -1 && categories.length > 0) {
+      baseFormElements[categoryIndex] = {
+        ...baseFormElements[categoryIndex],
+        options: categories.map(cat => ({
+          id: cat.name.toLowerCase(), // Use lowercase name as ID for consistency 
+          label: cat.name,
+          _id: cat._id // Keep the actual ID for reference
+        }))
+      };
+    }
+    
+    // Update subcategory options
+    const subcategoryIndex = baseFormElements.findIndex(el => el.name === 'subCategory');
+    if (subcategoryIndex !== -1) {
+      baseFormElements[subcategoryIndex] = {
+        ...baseFormElements[subcategoryIndex],
+        dynamicOptions: true,
+        options: subcategories.map(subcat => ({
+          id: subcat.name.toLowerCase(), // Use lowercase name as ID
+          label: subcat.name,
+          _id: subcat._id, // Keep the actual ID for reference
+          // Extract category name properly whether it's populated or not
+          categories: [typeof subcat.category === 'object' ? subcat.category.name.toLowerCase() : '']
+        }))
+      };
+    }
+    
+    // Update brand options with real data
+    const brandIndex = baseFormElements.findIndex(el => el.name === 'brand');
+    if (brandIndex !== -1 && brands.length > 0) {
+      baseFormElements[brandIndex] = {
+        ...baseFormElements[brandIndex],
+        options: brands.map(brand => ({
+          id: brand.name.toLowerCase(), // Use lowercase name as ID
+          label: brand.name,
+          _id: brand._id // Keep the actual ID for reference
+        }))
+      };
+    }
+    
+    // Update size options with real data
+    const sizeIndex = baseFormElements.findIndex(el => el.name === 'sizes');
+    if (sizeIndex !== -1 && sizes.length > 0) {
+      baseFormElements[sizeIndex] = {
+        ...baseFormElements[sizeIndex],
+        options: sizes.map(size => ({
+          id: size.name.toLowerCase(), // Use lowercase name as ID
+          label: size.name,
+          _id: size._id, // Keep the actual ID for reference
+          categories: size.category ? [size.category.toLowerCase()] : []
+        }))
+      };
+    }
+    
+    // Update color options with real data
+    const colorIndex = baseFormElements.findIndex(el => el.name === 'colors');
+    if (colorIndex !== -1 && colors.length > 0) {
+      baseFormElements[colorIndex] = {
+        ...baseFormElements[colorIndex],
+        options: colors.map(color => ({
+          id: color.name.toLowerCase(), // Use lowercase name as ID
+          label: color.name,
+          _id: color._id // Keep the actual ID for reference
+        }))
+      };
+    }
+    
+    return baseFormElements;
+  };
 
   // Calculate stock summary when productList changes
   useEffect(() => {
@@ -452,7 +556,7 @@ function AdminProducts() {
             formData={formData}
             setFormData={setFormData}
             buttonText={currentEditedId !== null ? 'Update Product' : 'Add Product'}
-            formControls={addProductFormElements}
+            formControls={getDynamicFormElements()}
             buttonDisabled={!isFormValid() || imageLoadingState}
           />
           </div>

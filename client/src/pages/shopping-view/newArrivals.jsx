@@ -5,8 +5,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { fetchNewArrivalProducts } from '../../store/shop/product-slice/index';
 import { addToWishlist, removeFromWishlist, fetchWishlistItems } from '../../store/shop/wishlist-slice/index';
 import { addToCart, fetchCartItems } from '../../store/shop/cart-slice';
-import RenderImage from '../../components/common/renderImage';
-import { ChevronLeftIcon, ChevronRightIcon, Heart, ShoppingBag } from 'lucide-react';
+import EnhancedShoppingProductTile from '../../components/shopping-view/enhanced-product-tile';
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import ShoppingLoader from '../../components/common/ShoppingLoader';
@@ -175,14 +175,18 @@ const NewArrivals = () => {
   return (
     <section className="py-12 bg-gray-50">
       <div className="container mx-auto px-4">
-        <motion.h2 
+        <motion.div 
+          className="text-center mb-12"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-3xl text-center font-bold mb-8"
         >
-          New Arrivals
-        </motion.h2>
+          <span className="text-sm uppercase tracking-widest text-gray-500 mb-2 block">Fresh Collection</span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-800 to-gray-600 inline-block">
+            New Arrivals
+          </h2>
+          <div className="w-24 h-1 bg-gradient-to-r from-black to-gray-400 rounded-full mt-4 mx-auto"></div>
+        </motion.div>
         
         {loading ? (
           <div className="flex items-center justify-center min-h-[300px] w-full">
@@ -222,7 +226,7 @@ const NewArrivals = () => {
               {/* Product cards */}
               <motion.div 
                 ref={scrollContainerRef}
-                className="flex overflow-x-auto pb-6 hide-scrollbar"
+                className="flex overflow-x-auto pb-6 hide-scrollbar gap-4"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
@@ -236,46 +240,16 @@ const NewArrivals = () => {
                   return (
                     <motion.div
                       key={product._id}
-                      className="flex-shrink-0 w-64 mx-2 first:ml-0 last:mr-0 bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                      className="flex-shrink-0 w-72"
                       variants={itemVariants}
-                      onClick={() => handleProductClick(product)}
                     >
-                      <div className="relative h-64 overflow-hidden">
-                        <RenderImage 
-                          src={product.image} 
-                          alt={product.name} 
-                          className="w-full h-full object-cover"
-                        />
-                        <button 
-                          className={`absolute top-2 right-2 p-2 rounded-full ${isInWishlist ? 'bg-red-50' : 'bg-white'}`}
-                          onClick={(e) => handleToggleWishlist(e, product)}
-                        >
-                          <Heart 
-                            className={`h-5 w-5 ${isInWishlist ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} 
-                          />
-                        </button>
-                      </div>
-                      
-                      <div className="p-4">
-                        <h3 className="font-medium text-gray-900 mb-1 truncate">{product.name}</h3>
-                        <p className="text-gray-500 text-sm mb-2 truncate">{product.brand}</p>
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold">GHS {product.price.toFixed(2)}</span>
-                          <div className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">
-                            New
-                          </div>
-                        </div>
-                        <button
-                          className="mt-3 w-full bg-black text-white py-2 rounded-md flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAddToCart(product);
-                          }}
-                        >
-                          <ShoppingBag className="w-4 h-4" />
-                          Add to Cart
-                        </button>
-                      </div>
+                      <EnhancedShoppingProductTile
+                        product={product}
+                        handleGetProductDetails={() => handleProductClick(product)}
+                        handleAddToCart={() => handleAddToCart(product)}
+                        handleAddToWishlist={(productId) => handleToggleWishlist({ stopPropagation: () => {} }, product)}
+                        isInWishlist={isInWishlist}
+                      />
                     </motion.div>
                   );
                 })}
@@ -305,3 +279,20 @@ const NewArrivals = () => {
 };
 
 export default NewArrivals;
+
+// CSS for hiding scrollbars
+const styles = `
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+`;
+
+if (typeof document !== 'undefined') {
+  const styleElement = document.createElement('style');
+  styleElement.textContent = styles;
+  document.head.appendChild(styleElement);
+}

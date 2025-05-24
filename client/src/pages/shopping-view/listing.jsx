@@ -1,4 +1,4 @@
-import ProductFilter from '../../components/shopping-view/filter';
+import EnhancedProductFilter from '../../components/shopping-view/enhanced-filter';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -11,10 +11,11 @@ import { ArrowUpDown, Filter } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react'
 import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchAllFilteredProducts, fetchProductDetails } from '../../store/shop/product-slice';
-import ShoppingProductTile from '../../components/shopping-view/productTile';
+import { fetchAllFilteredProducts, fetchProductDetails, fetchAvailableShops } from '../../store/shop/product-slice';
+import EnhancedShoppingProductTile from '../../components/shopping-view/enhanced-product-tile';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { addToCart, fetchCartItems } from '../../store/shop/cart-slice';
+import { addToWishlist, removeFromWishlist, fetchWishlistItems } from '../../store/shop/wishlist-slice';
 import { toast } from 'sonner';
 import ShoppingLoader from '../../components/common/ShoppingLoader';
 import ProductOptionsModal from '../../components/shopping-view/productOptionsModal';
@@ -37,9 +38,11 @@ function createSearchParamsHelper(filterParams){
 
 function ShoppingListing() {
   const dispatch = useDispatch();
-  const { productList, isLoading } = useSelector(state => state.shopProducts);
+  const { productList, isLoading, availableShops, shopsLoading } = useSelector(state => state.shopProducts);
   const {cartItems} = useSelector(state => state.shopCart);
+  const { wishlistItems } = useSelector(state => state.wishlist);
   const {user} = useSelector(state => state.auth);
+  const navigate = useNavigate();
   const [filters, setFilters ] = useState({});
   const [sort, setSort] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -76,7 +79,15 @@ function ShoppingListing() {
   useEffect(() => {
     setSort('price-lowtohigh')
     setFilters(JSON.parse(sessionStorage.getItem('filters')) || {})
-  }, [categorySearchParam]);
+    
+    // Fetch available shops for filtering
+    dispatch(fetchAvailableShops());
+    
+    // Fetch wishlist items if user is logged in
+    if (user && (user._id || user.id)) {
+      dispatch(fetchWishlistItems(user._id || user.id));
+    }
+  }, [categorySearchParam, dispatch, user]);
 
 
   function handleGetProductDetails(getCurrentProductId){
@@ -121,6 +132,46 @@ function ShoppingListing() {
         position: 'top-center',
         duration: 2000
       });
+    }
+  }
+
+  function handleAddToWishlist(getCurrentProductId) {
+    // Check if user is authenticated
+    if (!user || !user.id) {
+      toast.error("Please login to add items to your wishlist", {
+        position: 'top-center',
+        duration: 2000
+      });
+      return;
+    }
+
+    const userId = user._id || user.id;
+    
+    // Check if product is already in wishlist
+    const isInWishlist = wishlistItems?.some(item => item.productId === getCurrentProductId);
+    
+    if (isInWishlist) {
+      // Remove from wishlist
+      dispatch(removeFromWishlist({ userId, productId: getCurrentProductId }))
+        .then((result) => {
+          if (result?.payload?.success) {
+            toast.success("Removed from wishlist", {
+              position: 'top-center',
+              duration: 2000
+            });
+          }
+        });
+    } else {
+      // Add to wishlist
+      dispatch(addToWishlist({ userId, productId: getCurrentProductId }))
+        .then((result) => {
+          if (result?.payload?.success) {
+            toast.success("Added to wishlist", {
+              position: 'top-center',
+              duration: 2000
+            });
+          }
+        });
     }
   }
 
@@ -179,7 +230,11 @@ function ShoppingListing() {
       <div className='grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6 p-4 md:p-6'>
         {/* Mobile filters - only visible when toggled */}
         <div className={`${showFilters ? 'block' : 'hidden'} md:block`}>
-          <ProductFilter filters={filters}  handleFilter={handleFilter}/>
+          <EnhancedProductFilter 
+            filters={filters}  
+            handleFilter={handleFilter}
+            availableShops={availableShops}
+          />
         </div>
 
         <div className="bg-background w-full rounded-lg shadow-sm">
@@ -228,14 +283,19 @@ function ShoppingListing() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 p-3">
-              {productList?.map((productItem, index) => (
-                <ShoppingProductTile 
-                  handleGetProductDetails={handleGetProductDetails}
-                  key={`product-${productItem.id || index}`}
-                  product={productItem} 
-                  handleAddToCart={handleAddToCart}
-                />
-              ))}
+              {productList?.map((productItem, index) => {
+                const isInWishlist = wishlistItems?.some(item => item.productId === productItem._id);
+                return (
+                  <EnhancedShoppingProductTile 
+                    handleGetProductDetails={handleGetProductDetails}
+                    key={`product-${productItem.id || index}`}
+                    product={productItem} 
+                    handleAddToCart={handleAddToCart}
+                    handleAddToWishlist={handleAddToWishlist}
+                    isInWishlist={isInWishlist}
+                  />
+                );
+              })}
             </div>
           )}
 

@@ -34,12 +34,17 @@ function CheckAuth({ isAuthenticated, user, children, requiredRole }) {
         }
     }
 
-    // Early return if no auth check needed
-    if (!isAuthenticated && (path === '/auth/login' || path === '/auth/register')) {
+    // Early return if no auth check needed - allow password reset pages for non-authenticated users
+    if (!isAuthenticated && (
+        path === '/auth/login' || 
+        path === '/auth/register' || 
+        path === '/auth/forgot-password' || 
+        path.startsWith('/auth/reset-password')
+    )) {
         return <>{children}</>;
     }
 
-    // Not authenticated - redirect to login except for shop pages
+    // Not authenticated - redirect to login except for shop pages and password reset pages
     if (!isAuthenticated) {
         // Allow access to shop pages without authentication
         if (path.startsWith('/shop')) {
@@ -48,7 +53,7 @@ function CheckAuth({ isAuthenticated, user, children, requiredRole }) {
         return <Navigate to="/auth/login" replace />;
     }
 
-    // Authenticated but on auth pages - redirect based on role
+    // Authenticated but on auth pages - redirect based on role (but allow password reset pages)
     if (path === '/auth/login' || path === '/auth/register') {
         if (user?.role === 'superAdmin') {
             return <Navigate to="/super-admin/dashboard" replace />;
@@ -59,7 +64,25 @@ function CheckAuth({ isAuthenticated, user, children, requiredRole }) {
         }
     }
 
-        // Check required role if specified    if (requiredRole) {        if (requiredRole === 'admin' && user?.role !== 'admin' && user?.role !== 'superAdmin') {            return <Navigate to="/unauth-page" replace />;        }        if (requiredRole === 'superAdmin' && user?.role !== 'superAdmin') {            return <Navigate to="/unauth-page" replace />;        }    }    // Non-admin trying to access admin routes    if (user?.role !== 'admin' && user?.role !== 'superAdmin' && path.startsWith('/admin')) {        return <Navigate to="/unauth-page" replace />;    }    // Non-superAdmin trying to access superAdmin routes    if (user?.role !== 'superAdmin' && path.startsWith('/super-admin')) {        return <Navigate to="/unauth-page" replace />;    }
+    // Check required role if specified
+    if (requiredRole) {
+        if (requiredRole === 'admin' && user?.role !== 'admin' && user?.role !== 'superAdmin') {
+            return <Navigate to="/unauth-page" replace />;
+        }
+        if (requiredRole === 'superAdmin' && user?.role !== 'superAdmin') {
+            return <Navigate to="/unauth-page" replace />;
+        }
+    }
+
+    // Non-admin trying to access admin routes
+    if (user?.role !== 'admin' && user?.role !== 'superAdmin' && path.startsWith('/admin')) {
+        return <Navigate to="/unauth-page" replace />;
+    }
+
+    // Non-superAdmin trying to access superAdmin routes
+    if (user?.role !== 'superAdmin' && path.startsWith('/super-admin')) {
+        return <Navigate to="/unauth-page" replace />;
+    }
 
     // Admin trying to access shop routes
     if ((user?.role === 'admin' || user?.role === 'superAdmin') && path.startsWith('/shop')) {

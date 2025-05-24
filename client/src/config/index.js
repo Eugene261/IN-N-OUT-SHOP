@@ -316,14 +316,7 @@ export const addProductFormElements = [
   },
 ];
 
-export const shoppingViewHeaderMenuItems = [
-    {
-        id: "products",
-        label: "All Products",
-        path: "/shop/listing",
-    },
-    {
-        id: 'men',
+export const shoppingViewHeaderMenuItems = [    {        id: "products",        label: "All Products",        path: "/shop/listing",    },    {        id: "shops",        label: "Shops",        path: "/shop/shops",    },    {        id: 'men',
         label: 'Men',
         path: '/shop/listing',
         hasSubmenu: true,
@@ -530,6 +523,9 @@ export const filterOptions = {
       { id: "accessories", label: "Accessories" },
       { id: "footwear", label: "Footwear" },
       { id: "devices", label: "Devices" },
+    ],
+    shop: [
+      // This will be dynamically populated from the API
     ],
     price: [
       { id: "0-50", label: "Under GHS 50" },

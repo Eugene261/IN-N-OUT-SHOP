@@ -109,9 +109,10 @@ function AdminProductTile({
               const productData = {
                 title: product.title,
                 description: product.description,
-                category: product.category,
+                category: product.category ? product.category.toLowerCase() : '',
+                subCategory: product.subCategory ? product.subCategory.toLowerCase() : '',
                 gender: product.gender || '',
-                brand: product.brand,
+                brand: product.brand ? product.brand.toLowerCase() : '',
                 sizes: product.sizes || [],
                 colors: product.colors || [],
                 price: product.price,

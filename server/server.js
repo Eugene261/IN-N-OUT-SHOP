@@ -15,8 +15,13 @@ const adminRevenueRouter = require('./routes/admin/revenueRoutes.js');
 const shopSearchRouter = require('./routes/shop-view/searchRoutes.js');
 const shopReviewRouter = require('./routes/shop-view/reviewRoutes.js');
 const commonFeatureRouter = require('./routes/common/featureRoutes.js');
+const contactRouter = require('./routes/common/contactRoutes.js');
 const wishlistRouter = require('./routes/wishlistRoutes.js');
 const shopFeaturedCollectionRouter = require('./routes/shop/featuredCollectionRoutes.js');
+
+// Stats and testimonials routes
+const statsRouter = require('./routes/shop/stats-routes.js');
+const testimonialsRouter = require('./routes/shop/testimonials-routes.js');
 
 // Payment routes
 const paystackRouter = require('./routes/payment/paystackRoutes.js');
@@ -28,6 +33,7 @@ const superAdminProductsRouter = require('./routes/superAdmin/productsRoutes.js'
 const superAdminFeaturedRouter = require('./routes/superAdmin/featuredRoutes.js');
 const superAdminFeaturedCollectionRouter = require('./routes/superAdmin/featuredCollectionRoutes.js');
 const superAdminRevenueRouter = require('./routes/superAdmin/revenueRoutes.js');
+const superAdminTaxonomyRouter = require('./routes/superAdmin/taxonomyRoutes.js');
 
 // Shipping routes
 const shippingRouter = require('./routes/shop/shippingRoutes.js');
@@ -38,8 +44,9 @@ const userRouter = require('./routes/userRoutes.js');
 // Test route
 const testRouter = require('./routes/testRoute.js');
 
-// Add registration for admin routes
+// Admin routes
 const adminRoutes = require('./routes/admin/adminRoutes');
+const shopRoutes = require('./routes/admin/shopRoutes');
 
 const app = express()
 const PORT = process.env.PORT || 5000;
@@ -47,7 +54,11 @@ connectDB();
 
 app.use(
     cors({
-        origin: process.env.CLIENT_URL || 'http://localhost:5173',
+        origin: [
+            'http://localhost:3000',
+            'http://localhost:5173',
+            process.env.CLIENT_URL
+        ].filter(Boolean), // Remove any undefined values
         methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
         allowedHeaders: [
             "Content-Type",
@@ -78,8 +89,13 @@ app.use('/api/admin/revenue', adminRevenueRouter);
 app.use('/api/shop/search', shopSearchRouter);
 app.use('/api/shop/review', shopReviewRouter);
 app.use('/api/common/feature', commonFeatureRouter);
+app.use('/api/common', contactRouter);
 app.use('/api/shop/wishlist', wishlistRouter);
 app.use('/api/shop/featured-collections', shopFeaturedCollectionRouter);
+
+// Stats and testimonials routes
+app.use('/api/shop/stats', statsRouter);
+app.use('/api/shop/testimonials', testimonialsRouter);
 
 // Shipping routes
 app.use('/api/shop/shipping', shippingRouter);
@@ -105,13 +121,15 @@ app.use('/api/superAdmin/products', superAdminProductsRouter);
 app.use('/api/superAdmin/featured', superAdminFeaturedRouter);
 app.use('/api/superAdmin/featured-collections', superAdminFeaturedCollectionRouter);
 app.use('/api/superAdmin/revenue', superAdminRevenueRouter);
+app.use('/api/superAdmin/taxonomy', superAdminTaxonomyRouter);
 app.use('/api/superAdmin/vendor-payments', require('./routes/superAdmin/vendorPaymentRoutes'));
 
 // Test route
 app.use('/api/test', testRouter);
 
-// Add registration for admin routes
+// Admin routes
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin/shop', shopRoutes);
 app.use('/api/admin/vendor-payments', require('./routes/admin/vendorPaymentRoutes'));
 
 app.listen(PORT, () =>

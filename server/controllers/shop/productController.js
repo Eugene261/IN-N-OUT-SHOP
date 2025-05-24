@@ -1,12 +1,13 @@
 
 
 const Product = require('../../models/Products.js');
+const User = require('../../models/User.js');
 
 const getFilteredProducts = async(req, res) => {
     try {
         
 
-        const {category = [], brand = [], price = [], sortBy = "price-lowtohigh" } = req.query;
+        const {category = [], subCategory = [], brand = [], price = [], shop = [], sortBy = "price-lowtohigh" } = req.query;
 
         let filters = {};
 
@@ -14,8 +15,26 @@ const getFilteredProducts = async(req, res) => {
            
             filters.category = {$in: category.split(',')}
         }
+        if(subCategory.length){
+            filters.subCategory = {$in: subCategory.split(',')}
+        }
         if(brand.length){
             filters.brand = {$in: brand.split(',')}
+        }
+        
+        // Handle shop filtering
+        if(shop.length){
+            const shopNames = shop.split(',');
+            const shopAdmins = await User.find({
+                shopName: {$in: shopNames},
+                role: 'admin',
+                isActive: true
+            }).select('_id');
+            
+            if(shopAdmins.length > 0) {
+                const adminIds = shopAdmins.map(admin => admin._id);
+                filters.createdBy = {$in: adminIds};
+            }
         }
         
         // Handle price range filtering
@@ -72,7 +91,7 @@ const getFilteredProducts = async(req, res) => {
 
 
         const products = await Product.find(filters)
-            .populate('createdBy', 'userName email')
+            .populate('createdBy', 'userName email shopName shopLogo shopCategory shopRating shopReviewCount baseRegion baseCity')
             .sort(sort);
 
         // Add cache control headers to prevent browser caching
@@ -105,7 +124,7 @@ const getProductDetails = async (req, res) => {
         
         const {id} = req.params;
         const product = await Product.findById(id)
-            .populate('createdBy', 'userName email');
+            .populate('createdBy', 'userName email shopName shopLogo shopCategory shopRating shopReviewCount baseRegion baseCity shopDescription shopWebsite shopEstablished');
 
 
         if(!product) return res.status(404).json({
@@ -147,7 +166,7 @@ const fetchBestsellerProducts = async (req, res) => {
         console.log('Fetching bestseller products...');
         
         const bestsellerProducts = await Product.find({ isBestseller: true })
-            .populate('createdBy', 'userName email');
+            .populate('createdBy', 'userName email shopName shopLogo shopCategory shopRating baseRegion baseCity');
         
         console.log(`Found ${bestsellerProducts.length} bestseller products`);
         console.log('Sample product (if available):', bestsellerProducts[0]);
@@ -181,7 +200,7 @@ const fetchNewArrivalProducts = async (req, res) => {
         console.log('Fetching new arrival products...');
         
         const newArrivalProducts = await Product.find({ isNewArrival: true })
-            .populate('createdBy', 'userName email');
+            .populate('createdBy', 'userName email shopName shopLogo shopCategory shopRating baseRegion baseCity');
         
         console.log(`Found ${newArrivalProducts.length} new arrival products`);
         console.log('Sample product (if available):', newArrivalProducts[0]);
@@ -234,7 +253,7 @@ const getSimilarProducts = async (req, res) => {
                 ]}
             ]
         })
-        .populate('createdBy', 'userName email')
+        .populate('createdBy', 'userName email shopName shopLogo shopCategory shopRating baseRegion baseCity')
         .limit(8); // Limit to 8 similar products
         
         // Add cache control headers to prevent browser caching
@@ -351,6 +370,49 @@ const toggleNewArrival = async (req, res) => {
 
 
 
+// Get available shops for filtering
+const getAvailableShops = async (req, res) => {
+    try {
+        const shops = await User.find({
+            role: 'admin',
+            isActive: true,
+            shopName: { $ne: '', $exists: true }
+        })
+        .select('shopName shopLogo shopCategory')
+        .sort({ shopName: 1 });
+
+        // Get product count for each shop
+        const shopsWithCounts = await Promise.all(
+            shops.map(async (shop) => {
+                const productCount = await Product.countDocuments({ createdBy: shop._id });
+                return {
+                    _id: shop._id,
+                    shopName: shop.shopName,
+                    shopLogo: shop.shopLogo,
+                    shopCategory: shop.shopCategory,
+                    productCount
+                };
+            })
+        );
+
+        // Filter out shops with no products
+        const shopsWithProducts = shopsWithCounts.filter(shop => shop.productCount > 0);
+
+        res.status(200).json({
+            success: true,
+            data: shopsWithProducts,
+            timestamp: Date.now()
+        });
+
+    } catch (error) {
+        console.error("Error in getAvailableShops:", error);
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred fetching available shops'
+        });
+    }
+};
+
 module.exports = {
     getFilteredProducts,
     getProductDetails,
@@ -358,5 +420,6 @@ module.exports = {
     fetchNewArrivalProducts,
     toggleBestseller,
     toggleNewArrival,
-    getSimilarProducts
+    getSimilarProducts,
+    getAvailableShops
 };

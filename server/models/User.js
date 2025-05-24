@@ -98,6 +98,58 @@ const UserSchema = new mongoose.Schema({
         trim: true,
         default: ''
     },
+    shopDescription: {
+        type: String,
+        trim: true,
+        default: '',
+        maxlength: 500
+    },
+    shopLogo: {
+        type: String,
+        default: ''
+    },
+    shopBanner: {
+        type: String,
+        default: ''
+    },
+    shopCategory: {
+        type: String,
+        trim: true,
+        default: 'Other'
+    },
+    shopWebsite: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    shopRating: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 5
+    },
+    shopReviewCount: {
+        type: Number,
+        default: 0
+    },
+    shopEstablished: {
+        type: Date,
+        default: null
+    },
+    shopPolicies: {
+        returnPolicy: {
+            type: String,
+            default: ''
+        },
+        shippingPolicy: {
+            type: String,
+            default: ''
+        },
+        warrantyPolicy: {
+            type: String,
+            default: ''
+        }
+    },
     // Store additional shipping preferences
     shippingPreferences: {
         defaultBaseRate: {

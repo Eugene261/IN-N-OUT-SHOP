@@ -10,7 +10,12 @@ const initialState = {
     similarProducts: [],
     bestsellerLoading: false,
     newArrivalLoading: false,
-    similarProductsLoading: false
+    similarProductsLoading: false,
+    availableShops: [],
+    shopsLoading: false,
+    shopDetails: null,
+    allShops: [],
+    shopCategories: []
 }
 
 export const fetchAllFilteredProducts = createAsyncThunk('/products/fetchAllFilteredProducts',  
@@ -66,6 +71,54 @@ export const fetchSimilarProducts = createAsyncThunk(
         console.log('Fetching similar products with timestamp to prevent caching');
         const response = await axios.get(`http://localhost:5000/api/shop/products/similar/${productId}?limit=8&_t=${Date.now()}`);
         console.log('Fetched similar products response:', response?.data);
+        return response?.data;
+    }
+);
+
+// Thunk for fetching available shops for filtering
+export const fetchAvailableShops = createAsyncThunk(
+    '/products/fetchAvailableShops',
+    async () => {
+        console.log('Fetching available shops for filtering');
+        const response = await axios.get(`http://localhost:5000/api/shop/products/available-shops?_t=${Date.now()}`);
+        console.log('Fetched available shops response:', response?.data);
+        return response?.data;
+    }
+);
+
+// Thunk for fetching all shops for directory
+export const fetchAllShops = createAsyncThunk(
+    '/products/fetchAllShops',
+    async (params = {}) => {
+        console.log('Fetching all shops for directory');
+        const queryParams = new URLSearchParams({
+            ...params,
+            _t: Date.now()
+        });
+        const response = await axios.get(`http://localhost:5000/api/admin/shop/all?${queryParams}`);
+        console.log('Fetched all shops response:', response?.data);
+        return response?.data;
+    }
+);
+
+// Thunk for fetching shop categories
+export const fetchShopCategories = createAsyncThunk(
+    '/products/fetchShopCategories',
+    async () => {
+        console.log('Fetching shop categories');
+        const response = await axios.get(`http://localhost:5000/api/admin/shop/categories?_t=${Date.now()}`);
+        console.log('Fetched shop categories response:', response?.data);
+        return response?.data;
+    }
+);
+
+// Thunk for fetching shop details
+export const fetchShopDetails = createAsyncThunk(
+    '/products/fetchShopDetails',
+    async (shopId) => {
+        console.log('Fetching shop details for ID:', shopId);
+        const response = await axios.get(`http://localhost:5000/api/admin/shop/${shopId}?_t=${Date.now()}`);
+        console.log('Fetched shop details response:', response?.data);
         return response?.data;
     }
 );
@@ -305,6 +358,53 @@ const shoppingProductSlice = createSlice({
         .addCase(fetchSimilarProducts.rejected, (state) => {
             state.similarProductsLoading = false;
             state.similarProducts = [];
+        })
+        
+        // Cases for available shops
+        .addCase(fetchAvailableShops.pending, (state) => {
+            state.shopsLoading = true;
+        })
+        .addCase(fetchAvailableShops.fulfilled, (state, action) => {
+            state.shopsLoading = false;
+            state.availableShops = action.payload.data || [];
+        })
+        .addCase(fetchAvailableShops.rejected, (state) => {
+            state.shopsLoading = false;
+            state.availableShops = [];
+        })
+        
+        // Cases for all shops
+        .addCase(fetchAllShops.pending, (state) => {
+            state.shopsLoading = true;
+        })
+        .addCase(fetchAllShops.fulfilled, (state, action) => {
+            state.shopsLoading = false;
+            state.allShops = action.payload.shops || [];
+        })
+        .addCase(fetchAllShops.rejected, (state) => {
+            state.shopsLoading = false;
+            state.allShops = [];
+        })
+        
+        // Cases for shop categories
+        .addCase(fetchShopCategories.fulfilled, (state, action) => {
+            state.shopCategories = action.payload.categories || [];
+        })
+        .addCase(fetchShopCategories.rejected, (state) => {
+            state.shopCategories = [];
+        })
+        
+        // Cases for shop details
+        .addCase(fetchShopDetails.pending, (state) => {
+            state.isLoading = true;
+        })
+        .addCase(fetchShopDetails.fulfilled, (state, action) => {
+            state.isLoading = false;
+            state.shopDetails = action.payload.shop || null;
+        })
+        .addCase(fetchShopDetails.rejected, (state) => {
+            state.isLoading = false;
+            state.shopDetails = null;
         })
     }
 })

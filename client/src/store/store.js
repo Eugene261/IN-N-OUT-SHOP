@@ -13,12 +13,17 @@ import shopReviewSlice from './shop/review-slice/index.js';
 import commonFeatureSlice from './common-slice/index.js';
 import wishlistSlice from './shop/wishlist-slice/index.js';
 
+// Stats and testimonials slices
+import statsSlice from './shop/stats-slice/index.js';
+import testimonialsSlice from './shop/testimonials-slice/index.js';
+
 // SuperAdmin slices
 import superAdminUsersSlice from './super-admin/user-slice/index.js';
 import superAdminOrdersSlice from './super-admin/orders-slice/index.js';
 import superAdminProductsSlice from './super-admin/products-slice/index.js';
 import superAdminRevenueSlice from './super-admin/revenue-slice/index.js';
 import featuredCollectionSlice from './superAdmin/featured-collection-slice/index.js';
+import taxonomySlice from './superAdmin/taxonomy-slice/index.js';
 import shopFeaturedCollectionSlice from './shop/featured-collection-slice/index.js';
 
 // Vendor payments slices
@@ -40,6 +45,10 @@ const store = configureStore({
         commonFeature: commonFeatureSlice,
         wishlist: wishlistSlice,
         
+        // Stats and testimonials reducers
+        stats: statsSlice,
+        testimonials: testimonialsSlice,
+        
         // Vendor payment reducers
         adminVendorPayments: adminVendorPaymentsSlice,
         superAdminVendorPayments: superAdminVendorPaymentsSlice,
@@ -50,6 +59,7 @@ const store = configureStore({
         superAdminProducts: superAdminProductsSlice,
         superAdminRevenue: superAdminRevenueSlice,
         featuredCollections: featuredCollectionSlice,
+        taxonomy: taxonomySlice,
         
         // Shop public reducers
         shopFeaturedCollections: shopFeaturedCollectionSlice

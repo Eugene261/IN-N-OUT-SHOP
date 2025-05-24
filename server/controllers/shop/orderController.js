@@ -3,6 +3,7 @@ const Order = require('../../models/Order.js');
 const Cart = require('../../models/cart.js');
 const Product = require('../../models/Products.js');
 const User = require('../../models/User.js');
+const emailService = require('../../services/emailService.js');
 
 // Helper function to ensure order has metadata - useful for backward compatibility with older orders
 const ensureOrderMetadata = async (order) => {
@@ -614,6 +615,72 @@ const createOrder = async(req, res) => {
             // First, perform just a minimal save to get the order ID
             console.log('Step 1: Performing initial save to get order ID');
             await newlyCreatedOrder.save();
+            
+            // Send order confirmation email to customer
+            try {
+                const user = await User.findById(userId);
+                if (user) {
+                    const orderDetails = {
+                        orderId: newlyCreatedOrder._id,
+                        orderDate: newlyCreatedOrder.orderDate,
+                        totalAmount: newlyCreatedOrder.totalAmount,
+                        paymentMethod: newlyCreatedOrder.paymentMethod,
+                        estimatedDelivery: '3-5 business days',
+                        items: newlyCreatedOrder.cartItems?.map(item => ({
+                            title: item.title,
+                            image: item.image,
+                            quantity: item.quantity,
+                            price: item.price
+                        })) || [],
+                        shippingAddress: newlyCreatedOrder.addressInfo
+                    };
+                    
+                    await emailService.sendOrderConfirmationEmail(
+                        user.email,
+                        user.userName,
+                        orderDetails
+                    );
+                    console.log('Order confirmation email sent to customer:', user.email);
+                }
+            } catch (emailError) {
+                console.error('Failed to send order confirmation email:', emailError);
+                // Don't fail the order creation if email fails
+            }
+            
+            // Send product sold notifications to admins/vendors
+            if (newlyCreatedOrder.cartItems && newlyCreatedOrder.cartItems.length > 0) {
+                for (const item of newlyCreatedOrder.cartItems) {
+                    try {
+                        // Find the admin who owns this product
+                        const product = await Product.findById(item.productId).populate('adminId');
+                        if (product && product.adminId) {
+                            await emailService.sendProductSoldNotificationEmail(
+                                product.adminId.email,
+                                product.adminId.userName,
+                                {
+                                    id: product._id,
+                                    title: product.title,
+                                    image: product.image,
+                                    salePrice: item.price,
+                                    category: product.category,
+                                    sku: product.sku
+                                },
+                                {
+                                    orderId: newlyCreatedOrder._id,
+                                    customerName: newlyCreatedOrder.customerName || 'Customer',
+                                    orderDate: newlyCreatedOrder.orderDate,
+                                    quantity: item.quantity,
+                                    status: 'confirmed'
+                                }
+                            );
+                            console.log(`Product sold notification sent to admin: ${product.adminId.email}`);
+                        }
+                    } catch (emailError) {
+                        console.error('Failed to send product sold notification:', emailError);
+                        // Continue with next item even if email fails
+                    }
+                }
+            }
             
             // Now do a direct database update with all the complex fields
             console.log('Step 2: Performing direct database update with shipping data');

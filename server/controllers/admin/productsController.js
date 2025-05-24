@@ -1,5 +1,7 @@
 const { ImageUploadUtil } = require("../../helpers/cloudinary");
 const Product = require('../../models/Products.js');
+const User = require('../../models/User.js');
+const emailService = require('../../services/emailService.js');
 
 const handleImageUpload = async (req, res) => {
     try {
@@ -46,6 +48,7 @@ const addProduct = async(req, res) => {
             title, 
             description, 
             category, 
+            subCategory, 
             brand, 
             price, 
             salePrice, 
@@ -83,6 +86,7 @@ const addProduct = async(req, res) => {
             title, 
             description, 
             category, 
+            subCategory: subCategory || '', 
             brand, 
             price: price || 0, 
             salePrice: salePrice || 0, 
@@ -97,6 +101,40 @@ const addProduct = async(req, res) => {
         console.log('Saving product with data:', newlyCreatedProducts);
         const savedProduct = await newlyCreatedProducts.save();
         console.log('Product saved successfully:', savedProduct);
+        
+        // Send notification to SuperAdmins about new product
+        try {
+            const superAdmins = await User.find({ role: 'superAdmin' });
+            const admin = await User.findById(adminId);
+            
+            if (admin && superAdmins.length > 0) {
+                for (const superAdmin of superAdmins) {
+                    await emailService.sendProductAddedNotificationEmail(
+                        superAdmin.email,
+                        {
+                            userName: admin.userName,
+                            email: admin.email,
+                            shopName: admin.shopName,
+                            createdAt: admin.createdAt
+                        },
+                        {
+                            id: savedProduct._id,
+                            title: savedProduct.title,
+                            description: savedProduct.description,
+                            price: savedProduct.price,
+                            category: savedProduct.category,
+                            brand: savedProduct.brand,
+                            totalStock: savedProduct.totalStock,
+                            image: savedProduct.image
+                        }
+                    );
+                }
+                console.log(`Product added notifications sent to ${superAdmins.length} SuperAdmins`);
+            }
+        } catch (emailError) {
+            console.error('Failed to send product added notifications:', emailError);
+            // Don't fail the product creation if email fails
+        }
 
         res.status(201).json({
             success: true,
@@ -180,6 +218,7 @@ const editProduct = async (req, res) => {
             title, 
             description, 
             category, 
+            subCategory, 
             brand, 
             price, 
             salePrice, 
@@ -218,6 +257,7 @@ const editProduct = async (req, res) => {
         if (title !== undefined) updateData.title = title;
         if (description !== undefined) updateData.description = description;
         if (category !== undefined) updateData.category = category;
+        if (subCategory !== undefined) updateData.subCategory = subCategory;
         if (brand !== undefined) updateData.brand = brand;
         if (price !== undefined) updateData.price = price === '' ? 0 : Number(price);
         if (salePrice !== undefined) updateData.salePrice = salePrice === '' ? 0 : Number(salePrice);
@@ -267,6 +307,30 @@ const editProduct = async (req, res) => {
         console.log('Product updated successfully with ID:', updatedProduct._id);
         console.log('Updated product title:', updatedProduct.title);
         console.log('Updated product price:', updatedProduct.price);
+        
+        // Check if stock is low and send alert
+        if (updatedProduct.totalStock <= 5 && updatedProduct.totalStock > 0) {
+            try {
+                const admin = await User.findById(updatedProduct.createdBy);
+                if (admin) {
+                    await emailService.sendLowStockAlert(
+                        admin.email,
+                        admin.userName,
+                        {
+                            id: updatedProduct._id,
+                            title: updatedProduct.title,
+                            price: updatedProduct.price,
+                            totalStock: updatedProduct.totalStock,
+                            image: updatedProduct.image
+                        }
+                    );
+                    console.log(`Low stock alert sent for product: ${updatedProduct.title} (${updatedProduct.totalStock} units left)`);
+                }
+            } catch (emailError) {
+                console.error('Failed to send low stock alert:', emailError);
+                // Don't fail the product update if email fails
+            }
+        }
         
         // Return the updated product data to the client
         res.status(200).json({

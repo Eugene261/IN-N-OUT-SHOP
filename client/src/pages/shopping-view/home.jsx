@@ -24,14 +24,19 @@ import { useDispatch, useSelector } from 'react-redux'
 import { fetchAllFilteredProducts, fetchProductDetails, fetchBestsellerProducts, fetchNewArrivalProducts } from '@/store/shop/product-slice'
 import { getFeatureImages } from '../../store/common-slice/index'
 
-import ShoppingProductTile from '@/components/shopping-view/productTile'
+import EnhancedShoppingProductTile from '@/components/shopping-view/enhanced-product-tile'
 import { useNavigate } from 'react-router-dom'
 import { addToCart, fetchCartItems } from '@/store/shop/cart-slice'
+import { addToWishlist, removeFromWishlist, fetchWishlistItems } from '@/store/shop/wishlist-slice'
 import BestSeller from './bestSeller';
 import NewArrivals from './newArrivals';
 import FeaturedCollection from '../../components/shopping-view/featuredCollection';
 import FeaturedSection from '../../components/shopping-view/featuredSection';
 import ProductOptionsModal from '../../components/shopping-view/productOptionsModal';
+import ValueProposition from '../../components/shopping-view/ValueProposition';
+import CustomerTestimonials from '../../components/shopping-view/CustomerTestimonials';
+import NewsletterSection from '../../components/shopping-view/NewsletterSection';
+import StatsSection from '../../components/shopping-view/StatsSection';
 
 const categoriesWithIcon = [
   { id: "men", label: "Men", icon: Shirt },
@@ -57,6 +62,7 @@ function ShoppingHome() {
   const navigate = useNavigate();
   const { user } = useSelector(state => state.auth);
   const { cartItems } = useSelector(state => state.shopCart);
+  const { wishlistItems } = useSelector(state => state.wishlist);
   const [productsToShow, setProductsToShow] = useState([]);
   const { FeatureImageList } = useSelector(state => state.commonFeature);
   const dispatch = useDispatch();
@@ -134,6 +140,46 @@ function ShoppingHome() {
         position: 'top-center',
         duration: 2000
       });
+    }
+  }
+
+  function handleAddToWishlist(getCurrentProductId) {
+    // Check if user is authenticated
+    if (!user || !user.id) {
+      toast.error("Please login to add items to your wishlist", {
+        position: 'top-center',
+        duration: 2000
+      });
+      return;
+    }
+
+    const userId = user._id || user.id;
+    
+    // Check if product is already in wishlist
+    const isInWishlist = wishlistItems?.some(item => item.productId === getCurrentProductId);
+    
+    if (isInWishlist) {
+      // Remove from wishlist
+      dispatch(removeFromWishlist({ userId, productId: getCurrentProductId }))
+        .then((result) => {
+          if (result?.payload?.success) {
+            toast.success("Removed from wishlist", {
+              position: 'top-center',
+              duration: 2000
+            });
+          }
+        });
+    } else {
+      // Add to wishlist
+      dispatch(addToWishlist({ userId, productId: getCurrentProductId }))
+        .then((result) => {
+          if (result?.payload?.success) {
+            toast.success("Added to wishlist", {
+              position: 'top-center',
+              duration: 2000
+            });
+          }
+        });
     }
   }
 
@@ -218,7 +264,12 @@ function ShoppingHome() {
     // Also fetch bestsellers and new arrivals to ensure they're up to date
     dispatch(fetchBestsellerProducts());
     dispatch(fetchNewArrivalProducts());
-  }, [dispatch, refreshKey]);
+    
+    // Fetch wishlist items if user is logged in
+    if (user && (user._id || user.id)) {
+      dispatch(fetchWishlistItems(user._id || user.id));
+    }
+  }, [dispatch, refreshKey, user]);
 
 
 
@@ -461,21 +512,9 @@ function ShoppingHome() {
           </div>
         </motion.section>
   
-        {/* Section Divider */}
-        <div className="relative py-12 bg-white">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-full border-t border-gray-200/60"></div>
-          </div>
-        </div>
-  
+                <ValueProposition />
+
         <BestSeller />
-  
-        {/* Section Divider */}
-        <div className="relative py-12 bg-white">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-full border-t border-gray-200/60"></div>
-          </div>
-        </div>
   
         {/* Featured Products */}
         <motion.section 
@@ -503,18 +542,23 @@ function ShoppingHome() {
               className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8"
               variants={staggerVariants}
             >
-              {productsToShow?.map((productItem) => ( 
-                <motion.div 
-                  key={productItem._id}
-                  variants={itemVariants}
-                >
-                  <ShoppingProductTile 
-                    handleGetProductDetails={handleGetProductDetails}
-                    product={productItem} 
-                    handleAddToCart={handleAddToCart}
-                  />
-                </motion.div>
-              ))}
+              {productsToShow?.map((productItem) => {
+                const isInWishlist = wishlistItems?.some(item => item.productId === productItem._id);
+                return (
+                  <motion.div 
+                    key={productItem._id}
+                    variants={itemVariants}
+                  >
+                    <EnhancedShoppingProductTile 
+                      handleGetProductDetails={handleGetProductDetails}
+                      product={productItem} 
+                      handleAddToCart={handleAddToCart}
+                      handleAddToWishlist={handleAddToWishlist}
+                      isInWishlist={isInWishlist}
+                    />
+                  </motion.div>
+                );
+              })}
             </motion.div>
             
             {/* Explore All Button */}
@@ -539,37 +583,22 @@ function ShoppingHome() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
                   </svg>
                 </motion.button>
-              </motion.div>
+                            </motion.div>
             )}
           </div>
         </motion.section>
-  
-        {/* Section Divider */}
-        <div className="relative py-12 bg-white">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-full border-t border-gray-200/60"></div>
-          </div>
-        </div>
-  
+
+        <StatsSection />
+
         <NewArrivals />
   
-        {/* Section Divider */}
-        <div className="relative py-12 bg-white">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-full border-t border-gray-200/60"></div>
-          </div>
-        </div>
-  
         <FeaturedCollection />
-  
-        {/* Section Divider */}
-        <div className="relative py-12 bg-white">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-full border-t border-gray-200/60"></div>
-          </div>
-        </div>
-  
+
+        <CustomerTestimonials />
+
         <FeaturedSection />
+
+        <NewsletterSection />
 
         {/* Back to Top Button */}
         <AnimatePresence>

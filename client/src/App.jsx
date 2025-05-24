@@ -24,13 +24,7 @@ import { checkAuth } from "./store/auth-slice";
 import ShoppingLoader from "./components/common/ShoppingLoader";
 // PayPal import removed
 import OrderConfirmationPage from "./pages/shopping-view/orderConfirmation";
-import SearchProducts from "./components/shopping-view/search";
-import WishlistPage from "./pages/shopping-view/wishlist";
-import TermsOfService from "./pages/shopping-view/termsOfService";
-import PrivacyPolicy from "./pages/shopping-view/privacyPolicy";
-import CookiePolicy from "./pages/shopping-view/cookiePolicy";
-import ProductDetailsPage from "./pages/shopping-view/productDetailsPage";
-import ShippingPage from "./pages/shopping-view/shipping";
+import SearchProducts from "./components/shopping-view/search";import WishlistPage from "./pages/shopping-view/wishlist";import TermsOfService from "./pages/shopping-view/termsOfService";import PrivacyPolicy from "./pages/shopping-view/privacyPolicy";import CookiePolicy from "./pages/shopping-view/cookiePolicy";import ProductDetailsPage from "./pages/shopping-view/productDetailsPage";import ShippingPage from "./pages/shopping-view/shipping";import ShopsDirectory from "./pages/shopping-view/shops";
 
 // Import new pages
 import ContactUs from "./pages/ContactUs";
@@ -47,7 +41,7 @@ import SuperAdminOrdersPage from "./pages/super-admin-view/orders";
 import SuperAdminProductsPage from "./pages/super-admin-view/products";
 import SuperAdminFeaturedPage from "./pages/super-admin-view/featured";
 import SuperAdminVendorPaymentsPage from "./pages/super-admin-view/vendorPayments";
-import SuperAdminProfile from "./pages/super-admin-view/profile";
+import SuperAdminProfile from "./pages/super-admin-view/profile";import TaxonomyManagement from "./pages/superAdmin-view/TaxonomyManagement";
 
 // Admin vendor payments
 import AdminVendorPaymentsPage from "./pages/admin-view/vendorPayments";
@@ -139,18 +133,10 @@ function App() {
             <Route path='users' element={<SuperAdminUsersPage />} />
             <Route path='orders' element={<SuperAdminOrdersPage />} />
             <Route path='products' element={<SuperAdminProductsPage />} />
-            <Route path='featured' element={<SuperAdminFeaturedPage />} />
-            <Route path='vendor-payments' element={<SuperAdminVendorPaymentsPage />} />
-            <Route path='profile' element={<SuperAdminProfile />} />
+                        <Route path='featured' element={<SuperAdminFeaturedPage />} />            <Route path='taxonomy' element={<TaxonomyManagement />} />            <Route path='vendor-payments' element={<SuperAdminVendorPaymentsPage />} />            <Route path='profile' element={<SuperAdminProfile />} />
           </Route>
 
-          {/* SHOP */}
-          <Route path='/shop' element={<ShoppingLayout />}>
-            <Route path='' element={<ShoppingHome />} />
-            <Route path='home' element={<ShoppingHome />} />
-            <Route path='listing' element={<ShoppingListing />} />
-            <Route path='search' element={<SearchProducts />} />
-            <Route path='product/:productId' element={<ProductDetailsPage />} />
+                    {/* SHOP */}          <Route path='/shop' element={<ShoppingLayout />}>            <Route path='' element={<ShoppingHome />} />            <Route path='home' element={<ShoppingHome />} />            <Route path='listing' element={<ShoppingListing />} />            <Route path='shops' element={<ShopsDirectory />} />            <Route path='search' element={<SearchProducts />} />            <Route path='product/:productId' element={<ProductDetailsPage />} />
             
             {/* Routes that require authentication */}
             <Route path='checkout' element={

@@ -2,6 +2,7 @@ const Order = require('../../models/Order.js');
 const Cart = require('../../models/cart.js');
 const Product = require('../../models/Products.js');
 const User = require('../../models/User.js');
+const emailService = require('../../services/emailService.js');
 
 const createOrder = async(req, res) => {
     try {
@@ -538,6 +539,31 @@ const updateOrderStatus = async (req, res) => {
         
         await order.save();
         
+        // Send order status update email to customer
+        try {
+            const user = await User.findById(order.user);
+            if (user) {
+                const orderDetails = {
+                    orderId: order._id,
+                    orderDate: order.orderDate,
+                    totalAmount: order.totalAmount,
+                    trackingNumber: order.trackingNumber,
+                    estimatedDelivery: '2-3 business days'
+                };
+                
+                await emailService.sendOrderStatusUpdateEmail(
+                    user.email,
+                    user.userName,
+                    orderDetails,
+                    status
+                );
+                console.log(`Order status update email sent to customer: ${user.email} (Status: ${status})`);
+            }
+        } catch (emailError) {
+            console.error('Failed to send order status update email:', emailError);
+            // Don't fail the status update if email fails
+        }
+        
         res.status(200).json({
             success: true,
             message: 'Order status updated successfully',
@@ -838,6 +864,72 @@ const createOrderAfterPayment = async (req, res) => {
             }
             
             console.log('Order saved successfully with ID:', savedOrder._id);
+            
+            // Send order confirmation email to customer
+            try {
+                const user = await User.findById(orderData.userId);
+                if (user) {
+                    const orderDetails = {
+                        orderId: savedOrder._id,
+                        orderDate: savedOrder.orderDate,
+                        totalAmount: savedOrder.totalAmount,
+                        paymentMethod: savedOrder.paymentMethod,
+                        estimatedDelivery: '3-5 business days',
+                        items: savedOrder.cartItems?.map(item => ({
+                            title: item.title,
+                            image: item.image,
+                            quantity: item.quantity,
+                            price: item.price
+                        })) || [],
+                        shippingAddress: savedOrder.addressInfo
+                    };
+                    
+                    await emailService.sendOrderConfirmationEmail(
+                        user.email,
+                        user.userName,
+                        orderDetails
+                    );
+                    console.log('Order confirmation email sent to customer:', user.email);
+                }
+            } catch (emailError) {
+                console.error('Failed to send order confirmation email:', emailError);
+                // Don't fail the order creation if email fails
+            }
+            
+            // Send product sold notifications to admins/vendors
+            if (savedOrder.cartItems && savedOrder.cartItems.length > 0) {
+                for (const item of savedOrder.cartItems) {
+                    try {
+                        // Find the admin who owns this product
+                        const product = await Product.findById(item.productId).populate('adminId');
+                        if (product && product.adminId) {
+                            await emailService.sendProductSoldNotificationEmail(
+                                product.adminId.email,
+                                product.adminId.userName,
+                                {
+                                    id: product._id,
+                                    title: product.title,
+                                    image: product.image,
+                                    salePrice: item.price,
+                                    category: product.category,
+                                    sku: product.sku
+                                },
+                                {
+                                    orderId: savedOrder._id,
+                                    customerName: savedOrder.customerName || 'Customer',
+                                    orderDate: savedOrder.orderDate,
+                                    quantity: item.quantity,
+                                    status: 'confirmed'
+                                }
+                            );
+                            console.log(`Product sold notification sent to admin: ${product.adminId.email}`);
+                        }
+                    } catch (emailError) {
+                        console.error('Failed to send product sold notification:', emailError);
+                        // Continue with next item even if email fails
+                    }
+                }
+            }
             
             // Clear the cart after successful order creation
             if (orderData.userId) {

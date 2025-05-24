@@ -123,15 +123,15 @@ const BestSeller = () => {
                 className="lg:col-span-2 relative overflow-hidden"
                 variants={itemVariants}
               >
-                <div className="relative h-[700px] overflow-hidden">
+                <div className="relative h-[700px] overflow-hidden bg-gradient-to-br from-gray-50 to-white">
                   {mainImage && (
                     <RenderImage 
                       src={mainImage} 
                       alt="Bestseller product" 
-                      className="object-cover w-full h-full transition-transform duration-700 hover:scale-105"
+                      className="object-contain w-full h-full transition-transform duration-700 hover:scale-105 filter drop-shadow-2xl p-8"
                     />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
                   
                   {/* Product info overlay */}
                   {bestsellerProducts.slice(0, 1).map((product, index) => (
@@ -202,22 +202,27 @@ const BestSeller = () => {
                     {bestsellerProducts.slice(0, 4).map((product, index) => (
                       <motion.div 
                         key={product._id || index}
-                        className={`cursor-pointer rounded-xl overflow-hidden transition-all duration-300 ${product.image === mainImage ? 'ring-2 ring-black scale-105' : 'hover:shadow-lg'}`}
+                        className={`cursor-pointer rounded-xl overflow-hidden transition-all duration-300 bg-white shadow-sm border ${product.image === mainImage ? 'ring-2 ring-black scale-105 shadow-lg' : 'hover:shadow-lg hover:scale-102'}`}
                         onClick={() => setMainImage(product.image)}
-                        whileHover={{ y: -5 }}
+                        whileHover={{ y: -3 }}
                         whileTap={{ scale: 0.98 }}
                       >
                         <div className="relative">
-                          <RenderImage 
-                            src={product.image} 
-                            alt={product.title} 
-                            className="w-full h-36 object-cover"
-                          />
+                          <div className="h-36 overflow-hidden bg-gradient-to-br from-gray-50 to-white">
+                            <RenderImage 
+                              src={product.image} 
+                              alt={product.title} 
+                              className="w-full h-full object-contain p-2 transition-transform duration-300 hover:scale-105"
+                            />
+                          </div>
                           {product.image === mainImage && (
-                            <div className="absolute top-2 right-2 w-5 h-5 bg-black rounded-full flex items-center justify-center">
+                            <div className="absolute top-2 right-2 w-6 h-6 bg-black rounded-full flex items-center justify-center shadow-lg">
                               <div className="w-2 h-2 bg-white rounded-full"></div>
                             </div>
                           )}
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                            <p className="text-white text-xs font-medium truncate">{product.title}</p>
+                          </div>
                         </div>
                       </motion.div>
                     ))}

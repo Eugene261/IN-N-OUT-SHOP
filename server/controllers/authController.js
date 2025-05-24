@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User.js');
+const emailService = require('../services/emailService.js');
 
 
 // register
@@ -54,7 +55,14 @@ const registerUser = async (req, res) => {
   
       await newUser.save();
   
-      
+      // Send welcome email (optional - don't fail registration if email fails)
+      try {
+        await emailService.sendWelcomeEmail(email, userName);
+        console.log('Welcome email sent to:', email);
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+        // Continue with registration even if email fails
+      }
   
       // Return success response (excluding password)
       res.status(201).json({
@@ -251,33 +259,32 @@ const forgotPassword = async (req, res) => {
     user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
     await user.save();
 
-    // In a real application, you would send an email here
-    // For now, we'll just log the reset URL
+    // Send password reset email
     const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/auth/reset-password/${resetToken}`;
     
-    console.log('=== PASSWORD RESET REQUEST ===');
-    console.log('Email:', email);
-    console.log('Reset URL:', resetUrl);
-    console.log('Token expires in 1 hour');
-    console.log('==================================');
-
-    // TODO: Replace this with actual email sending
-    // Example with nodemailer:
-    /*
-    const transporter = nodemailer.createTransporter({...});
-    await transporter.sendMail({
-      to: email,
-      subject: 'Password Reset Request',
-      html: `Click <a href="${resetUrl}">here</a> to reset your password. This link expires in 1 hour.`
-    });
-    */
-
-    res.status(200).json({
-      success: true,
-      message: 'Password reset link sent to your email',
-      // Remove this in production - only for development
-      resetUrl: process.env.NODE_ENV === 'development' ? resetUrl : undefined
-    });
+    try {
+      await emailService.sendPasswordResetEmail(email, resetUrl, user.userName);
+      console.log('Password reset email sent to:', email);
+      
+      res.status(200).json({
+        success: true,
+        message: 'Password reset link sent to your email',
+        // Remove this in production - only for development
+        resetUrl: process.env.NODE_ENV === 'development' ? resetUrl : undefined
+      });
+    } catch (emailError) {
+      console.error('Failed to send password reset email:', emailError);
+      
+      // Clean up the reset token if email failed
+      user.resetPasswordToken = null;
+      user.resetPasswordExpires = null;
+      await user.save();
+      
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send password reset email. Please try again later.'
+      });
+    }
 
   } catch (error) {
     console.error('Error in forgotPassword:', error);

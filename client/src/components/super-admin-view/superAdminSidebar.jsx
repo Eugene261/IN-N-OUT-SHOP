@@ -1,17 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  LayoutDashboard, 
-  Users, 
-  ShoppingBag, 
-  Package, 
-  Star, 
-  LogOut, 
-  X,
-  DollarSign,
-  Crown
-} from 'lucide-react';
+import {   LayoutDashboard,   Users,   ShoppingBag,   Package,   Star,   LogOut,   X,  DollarSign,  Crown,  FolderTree} from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { logoutUser } from '../../store/auth-slice';
 
@@ -45,6 +35,12 @@ const menuItems = [
     label: 'Featured',
     path: '/super-admin/featured',
     icon: <Star className="h-5 w-5" />
+  },
+  {
+    id: 'taxonomy',
+    label: 'Taxonomy',
+    path: '/super-admin/taxonomy',
+    icon: <FolderTree className="h-5 w-5" />
   },
   {
     id: 'vendor-payments',
