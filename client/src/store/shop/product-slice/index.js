@@ -20,15 +20,32 @@ const initialState = {
 
 export const fetchAllFilteredProducts = createAsyncThunk('/products/fetchAllFilteredProducts',  
     async ({ filterParams, sortParams }) => {
-        const query = new URLSearchParams({
-            ...filterParams,
-            sortBy: sortParams,
-            _t: Date.now() // Add timestamp to prevent caching
-        })
-
-        console.log('Fetching products with timestamp to prevent caching');
-        const response = await axios.get(`http://localhost:5000/api/shop/products/get?${query}`);
-        console.log('Fetched products response:', response?.data);
+        // Convert filter arrays to comma-separated strings for the backend
+        const queryParams = {};
+        
+        Object.keys(filterParams).forEach(key => {
+            const value = filterParams[key];
+            if (Array.isArray(value) && value.length > 0) {
+                // Join array values with commas as backend expects
+                queryParams[key] = value.join(',');
+            } else if (value && !Array.isArray(value)) {
+                // Handle non-array values
+                queryParams[key] = value;
+            }
+        });
+        
+        // Add sort and timestamp
+        queryParams.sortBy = sortParams;
+        queryParams._t = Date.now();
+        
+        const query = new URLSearchParams(queryParams);
+        const url = `http://localhost:5000/api/shop/products/get?${query}`;
+        
+        console.log('🌐 Fetching products from URL:', url);
+        console.log('📊 Filter params sent:', queryParams);
+        
+        const response = await axios.get(url);
+        console.log('📦 Fetched products response:', response?.data);
         return response?.data;
     }
 );

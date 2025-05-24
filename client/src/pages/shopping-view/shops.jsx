@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Star, MapPin, Store, Package, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -14,6 +13,7 @@ function ShopsDirectory() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({});
+
   const navigate = useNavigate();
 
   const categories = [
@@ -26,9 +26,17 @@ function ShopsDirectory() {
     'Other'
   ];
 
-  useEffect(() => {
-    fetchShops();
-  }, [selectedCategory, searchTerm, currentPage]);
+  // Custom button styles
+  const buttonStyles = {
+    base: "px-4 py-2 rounded-md font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2",
+    primary: "bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 focus:ring-purple-500",
+    outline: "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-gray-500",
+    small: "px-3 py-1 text-sm",
+    full: "w-full",
+    disabled: "opacity-50 cursor-not-allowed"
+  };
+
+    useEffect(() => {    fetchShops();  }, [selectedCategory, searchTerm, currentPage]);
 
   const fetchShops = async () => {
     try {
@@ -39,36 +47,76 @@ function ShopsDirectory() {
       if (selectedCategory !== 'all') params.append('category', selectedCategory);
       if (searchTerm) params.append('search', searchTerm);
       
-      const response = await fetch(`/api/admin/shop/all?${params.toString()}`);
+      const url = `/api/admin/shop/all?${params.toString()}`;
+      
+      const response = await fetch(url, {
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       
       if (data.success) {
-        setShops(data.shops);
-        setPagination(data.pagination);
+        setShops(data.shops || []);
+        setPagination(data.pagination || {});
+      } else {
+        console.error('API returned success: false', data);
       }
     } catch (error) {
       console.error('Failed to fetch shops:', error);
+      setShops([]);
+      setPagination({});
     } finally {
       setLoading(false);
     }
   };
 
   const handleShopClick = (shopId) => {
+    console.log('🏪 Shop clicked:', shopId);
     navigate(`/shop/vendor/${shopId}`);
   };
 
   const handleViewProducts = (shopName) => {
+    console.log('👀 View Products clicked for:', shopName);
     navigate(`/shop/listing?shop=${encodeURIComponent(shopName)}`);
   };
 
   const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
-    setCurrentPage(1); // Reset to first page when searching
+    const value = e.target.value;
+    console.log('🔍 Search changed to:', value);
+    setSearchTerm(value);
+    setCurrentPage(1);
   };
 
   const handleCategoryChange = (category) => {
-    setSelectedCategory(category);
-    setCurrentPage(1); // Reset to first page when filtering
+    console.log('🏷️ Category change clicked:', category);
+    console.log('🏷️ Previous category:', selectedCategory);
+    
+    // Force a state update with explicit logging
+    setSelectedCategory(prevCategory => {
+      console.log('🏷️ Setting category from', prevCategory, 'to', category);
+      return category;
+    });
+    
+    setCurrentPage(1);
+    
+    // Extra debug
+    setTimeout(() => {
+      console.log('🏷️ Category after timeout:', selectedCategory);
+    }, 100);
+  };
+
+  // Force refresh button for testing
+  const handleForceRefresh = () => {
+    console.log('🔄 Force refresh triggered');
+    fetchShops();
   };
 
   return (
@@ -109,15 +157,28 @@ function ShopsDirectory() {
         {/* Category Filters */}
         <div className="flex gap-2 flex-wrap justify-center">
           {categories.map(category => (
-            <Button
+            <button
               key={category}
-              variant={selectedCategory === category ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleCategoryChange(category)}
-              className="transition-all duration-200"
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                console.log('🎯 Button clicked for category:', category);
+                handleCategoryChange(category);
+              }}
+              onMouseDown={(e) => {
+                console.log('🖱️ Mouse down on category:', category);
+              }}
+              className={`${buttonStyles.base} ${buttonStyles.small} ${
+                selectedCategory === category ? buttonStyles.primary : buttonStyles.outline
+              } ${selectedCategory === category ? 'ring-2 ring-purple-500' : ''}`}
+              style={{ 
+                backgroundColor: selectedCategory === category ? '#7c3aed' : 'white',
+                color: selectedCategory === category ? 'white' : '#374151'
+              }}
             >
               {category.charAt(0).toUpperCase() + category.slice(1)}
-            </Button>
+              {selectedCategory === category && ' ✓'}
+            </button>
           ))}
         </div>
       </motion.div>
@@ -225,15 +286,16 @@ function ShopsDirectory() {
                   
                   {/* Action Button */}
                   <div className="px-6 pb-6">
-                    <Button 
-                      className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700" 
+                    <button 
+                      type="button"
+                      className={`${buttonStyles.base} ${buttonStyles.full} ${buttonStyles.primary}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleViewProducts(shop.shopName);
                       }}
                     >
                       View Products
-                    </Button>
+                    </button>
                   </div>
                 </Card>
               </motion.div>
@@ -248,37 +310,45 @@ function ShopsDirectory() {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3, delay: 0.5 }}
             >
-              <Button
-                variant="outline"
+              <button
+                type="button"
                 disabled={!pagination.hasPrev}
                 onClick={() => setCurrentPage(prev => prev - 1)}
+                className={`${buttonStyles.base} ${buttonStyles.outline} ${
+                  !pagination.hasPrev ? buttonStyles.disabled : ''
+                }`}
               >
                 Previous
-              </Button>
+              </button>
               
               <div className="flex items-center gap-2">
                 {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
                   const pageNum = i + 1;
                   return (
-                    <Button
+                    <button
                       key={pageNum}
-                      variant={currentPage === pageNum ? "default" : "outline"}
-                      size="sm"
+                      type="button"
                       onClick={() => setCurrentPage(pageNum)}
+                      className={`${buttonStyles.base} ${buttonStyles.small} ${
+                        currentPage === pageNum ? buttonStyles.primary : buttonStyles.outline
+                      }`}
                     >
                       {pageNum}
-                    </Button>
+                    </button>
                   );
                 })}
               </div>
               
-              <Button
-                variant="outline"
+              <button
+                type="button"
                 disabled={!pagination.hasNext}
                 onClick={() => setCurrentPage(prev => prev + 1)}
+                className={`${buttonStyles.base} ${buttonStyles.outline} ${
+                  !pagination.hasNext ? buttonStyles.disabled : ''
+                }`}
               >
                 Next
-              </Button>
+              </button>
             </motion.div>
           )}
         </>
@@ -295,13 +365,17 @@ function ShopsDirectory() {
           <Store className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No shops found</h3>
           <p className="text-gray-600 mb-4">Try adjusting your search or filters</p>
-          <Button onClick={() => {
-            setSearchTerm('');
-            setSelectedCategory('all');
-            setCurrentPage(1);
-          }}>
+          <button 
+            type="button"
+            onClick={() => {
+              setSearchTerm('');
+              setSelectedCategory('all');
+              setCurrentPage(1);
+            }}
+            className={`${buttonStyles.base} ${buttonStyles.primary}`}
+          >
             Clear Filters
-          </Button>
+          </button>
         </motion.div>
       )}
     </div>

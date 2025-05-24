@@ -12,7 +12,6 @@ function EnhancedProductFilter({filters, handleFilter, availableShops = []}) {
   const dispatch = useDispatch();
   const { categories, subcategories, brands } = useSelector(state => state.taxonomy);
   const [expandedCategories, setExpandedCategories] = useState(['category']);
-  const [selectedCategory, setSelectedCategory] = useState(null);
 
   // Fetch taxonomy data on component mount
   useEffect(() => {
@@ -48,6 +47,7 @@ function EnhancedProductFilter({filters, handleFilter, availableShops = []}) {
     };
 
     // Add subcategories dynamically based on selected category
+    const selectedCategory = filters?.category?.[0];
     if (selectedCategory) {
       const categoryObj = categories.find(cat => cat.name.toLowerCase() === selectedCategory);
       if (categoryObj) {
@@ -73,8 +73,6 @@ function EnhancedProductFilter({filters, handleFilter, availableShops = []}) {
 
   useEffect(() => {
     if (filters && filters.category && filters.category.length > 0) {
-      const category = filters.category[0];
-      setSelectedCategory(category);
       setExpandedCategories(['category', 'brand', 'shop']);
     }
   }, [filters]);
@@ -93,15 +91,12 @@ function EnhancedProductFilter({filters, handleFilter, availableShops = []}) {
     }
   };
 
-  const isChecked = (category, optionId) => {
-    if (category === 'category' && selectedCategory === optionId) {
-      return true;
-    }
-    
+  // Simplified isChecked function that works for all filter types
+  const isChecked = (filterType, optionId) => {
     return Boolean(
       filters && 
-      filters[category] && 
-      filters[category].includes(optionId)
+      filters[filterType] && 
+      filters[filterType].includes(optionId)
     );
   };
 
@@ -164,35 +159,11 @@ function EnhancedProductFilter({filters, handleFilter, availableShops = []}) {
                         <Checkbox 
                           checked={isChecked(keyItem, option.id)}
                           onCheckedChange={() => {
-                            if (keyItem === 'category') {
-                              const newFilters = {...filters};
-                              if (!isChecked(keyItem, option.id)) {
-                                newFilters.category = [option.id];
-                                setSelectedCategory(option.id);
-                                // Clear subcategory and other related filters when category changes
-                                if (newFilters.subCategory) {
-                                  delete newFilters.subCategory;
-                                }
-                                if (newFilters.brand && newFilters.brand.length > 0) {
-                                  delete newFilters.brand;
-                                }
-                                if (newFilters.shop && newFilters.shop.length > 0) {
-                                  delete newFilters.shop;
-                                }
-                              } else {
-                                delete newFilters.category;
-                                setSelectedCategory(null);
-                              }
-                              
-                              Object.keys(newFilters).forEach(key => {
-                                if (newFilters[key] && newFilters[key].length > 0) {
-                                  handleFilter(key, newFilters[key]);
-                                }
-                              });
-                              sessionStorage.setItem('filters', JSON.stringify(newFilters));
-                            } else {
-                              handleFilter(keyItem, option.id);
-                            }
+                            console.log('🎯 Filter clicked:', keyItem, option.id);
+                            console.log('📋 Current checked state:', isChecked(keyItem, option.id));
+                            
+                            // Use the standard handleFilter for all filter types
+                            handleFilter(keyItem, option.id);
                           }}
                           className="border-gray-300 dark:border-gray-600 data-[state=checked]:bg-black 
                           data-[state=checked]:border-black dark:data-[state=checked]:bg-white 

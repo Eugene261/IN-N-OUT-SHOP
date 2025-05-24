@@ -48,6 +48,7 @@ function ShoppingListing() {
   const [showFilters, setShowFilters] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const categorySearchParam = searchParams.get('category');
+  const shopSearchParam = searchParams.get('shop');
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
 
@@ -57,6 +58,8 @@ function ShoppingListing() {
   }
 
   function handleFilter(getSectionId, getCurrentOption){
+    console.log('🎯 Manual filter selection:', getSectionId, getCurrentOption);
+    
     let copyFilters = {...filters};
     const indexofSection = Object.keys(copyFilters).indexOf(getSectionId);
 
@@ -72,13 +75,48 @@ function ShoppingListing() {
         else copyFilters[getSectionId].splice(indexOfCurrentOption , 1 )
     }
 
+    // Remove empty filter arrays
+    Object.keys(copyFilters).forEach(key => {
+      if (Array.isArray(copyFilters[key]) && copyFilters[key].length === 0) {
+        delete copyFilters[key];
+      }
+    });
+
+    // Remove duplicates from each filter array
+    Object.keys(copyFilters).forEach(key => {
+      if (Array.isArray(copyFilters[key])) {
+        copyFilters[key] = [...new Set(copyFilters[key])];
+      }
+    });
+
+    console.log('🔄 Updating filters to:', copyFilters);
     setFilters(copyFilters);
     sessionStorage.setItem('filters', JSON.stringify(copyFilters));
   }
 
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Helper function to clean up filters
+  const cleanupFilters = (filters) => {
+    const cleaned = {...filters};
+    
+    // Remove duplicates from each filter array
+    Object.keys(cleaned).forEach(key => {
+      if (Array.isArray(cleaned[key])) {
+        cleaned[key] = [...new Set(cleaned[key])];
+        // Remove empty arrays
+        if (cleaned[key].length === 0) {
+          delete cleaned[key];
+        }
+      }
+    });
+    
+    return cleaned;
+  };
+
+  // Initial setup - only run once on mount
   useEffect(() => {
-    setSort('price-lowtohigh')
-    setFilters(JSON.parse(sessionStorage.getItem('filters')) || {})
+    setSort('price-lowtohigh');
     
     // Fetch available shops for filtering
     dispatch(fetchAvailableShops());
@@ -87,7 +125,62 @@ function ShoppingListing() {
     if (user && (user._id || user.id)) {
       dispatch(fetchWishlistItems(user._id || user.id));
     }
-  }, [categorySearchParam, dispatch, user]);
+  }, [dispatch, user]);
+
+  // Handle URL parameters - separate from manual filter selection
+  useEffect(() => {
+    if (isInitialized) return; // Only run on initial load
+    
+    // Get existing filters from session storage
+    let existingFilters = JSON.parse(sessionStorage.getItem('filters')) || {};
+    
+    // Valid product categories (not shop categories!)
+    const validCategories = ['Medicine', 'Men', 'Women', 'Kids', 'Accessories', 'Footwear', 'Devices'];
+    
+    // Apply URL parameters to filters
+    if (categorySearchParam && validCategories.includes(categorySearchParam)) {
+      existingFilters.category = [categorySearchParam];
+      console.log('📂 Setting valid category filter from URL:', categorySearchParam);
+    } else if (categorySearchParam) {
+      console.log('❌ Ignoring invalid category from URL:', categorySearchParam);
+      // Clear invalid category from session storage
+      delete existingFilters.category;
+    }
+    
+    if (shopSearchParam) {
+      existingFilters.shop = [shopSearchParam];
+      console.log('🏪 Setting shop filter from URL:', shopSearchParam);
+      
+      // If we have a shop filter, don't apply category filters to avoid conflicts
+      if (existingFilters.category) {
+        console.log('🔄 Clearing category filter to avoid conflict with shop filter');
+        delete existingFilters.category;
+      }
+    }
+    
+    // Clean up filters to remove duplicates
+    existingFilters = cleanupFilters(existingFilters);
+    
+    // Only apply URL filters if we have URL parameters, otherwise use session storage
+    if (categorySearchParam || shopSearchParam) {
+      setFilters(existingFilters);
+      
+      // Update session storage with cleaned filters
+      if (Object.keys(existingFilters).length > 0) {
+        sessionStorage.setItem('filters', JSON.stringify(existingFilters));
+      } else {
+        sessionStorage.removeItem('filters');
+      }
+    } else {
+      // No URL parameters, just use what's in session storage (but cleaned)
+      setFilters(existingFilters);
+      if (Object.keys(existingFilters).length > 0) {
+        sessionStorage.setItem('filters', JSON.stringify(existingFilters));
+      }
+    }
+    
+    setIsInitialized(true);
+  }, [categorySearchParam, shopSearchParam, isInitialized]);
 
 
   function handleGetProductDetails(getCurrentProductId){
@@ -189,7 +282,11 @@ function ShoppingListing() {
   
   useEffect(() => {
     if(filters !== null && sort !== null) {
-      console.log('Listing page: Fetching products with refresh key:', refreshKey);
+      console.log('🚀 Listing page: Dispatching fetchAllFilteredProducts');
+      console.log('📋 Filter params:', filters);
+      console.log('🔄 Sort params:', sort);
+      console.log('🔑 Refresh key:', refreshKey);
+      
       // Add timestamp to query to prevent caching
       dispatch(fetchAllFilteredProducts({
         filterParams: filters, 
@@ -215,6 +312,7 @@ function ShoppingListing() {
 
   return (
     <div className='flex flex-col'>
+
       {/* Mobile Filter Toggle */}
       <div className="md:hidden p-4 pb-0">
         <button 
