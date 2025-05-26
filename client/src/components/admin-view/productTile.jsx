@@ -57,11 +57,15 @@ function AdminProductTile({
           {/* Image container */}
           <div className="relative overflow-hidden h-[300px] w-full">
             <motion.img
-              src={product?.image}
+              src={product?.image && product.image.trim() !== '' ? product.image : 'https://via.placeholder.com/300x300?text=No+Image'}
               alt={product?.title}
               className="w-full h-full object-cover"
               animate={{ scale: isHovered ? 1.05 : 1 }}
               transition={{ duration: 0.3 }}
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = 'https://via.placeholder.com/300x300?text=No+Image';
+              }}
             />
             
             {/* Overlay gradient */}

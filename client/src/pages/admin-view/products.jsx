@@ -94,6 +94,23 @@ function AdminProducts() {
         }
       }
 
+      // FIX: Convert size and color IDs back to human-readable names
+      if (submissionData.sizes && submissionData.sizes.length > 0 && sizes.length > 0) {
+        submissionData.sizes = submissionData.sizes.map(sizeId => {
+          const sizeObj = sizes.find(size => size._id === sizeId);
+          return sizeObj ? sizeObj.name : sizeId; // Fallback to original ID if not found
+        });
+        console.log('✅ Converted size IDs to names:', submissionData.sizes);
+      }
+      
+      if (submissionData.colors && submissionData.colors.length > 0 && colors.length > 0) {
+        submissionData.colors = submissionData.colors.map(colorId => {
+          const colorObj = colors.find(color => color._id === colorId);
+          return colorObj ? colorObj.name : colorId; // Fallback to original ID if not found
+        });
+        console.log('✅ Converted color IDs to names:', submissionData.colors);
+      }
+
       if (currentEditedId !== null) {
         // Handle product update
         toast.loading('Updating product...', { id: 'product-update' });
@@ -312,6 +329,15 @@ function AdminProducts() {
   const getDynamicFormElements = () => {
     const baseFormElements = [...addProductFormElements];
     
+    // DEBUG: Log taxonomy data
+    console.log('🔍 Taxonomy data in getDynamicFormElements:');
+    console.log('Categories:', categories.length, categories);
+    console.log('Subcategories:', subcategories.length, subcategories);
+    console.log('Brands:', brands.length, brands);
+    console.log('Sizes:', sizes.length, sizes);
+    console.log('Colors:', colors.length, colors);
+    console.log('Current formData.category:', formData.category);
+    
     // Update category options
     const categoryIndex = baseFormElements.findIndex(el => el.name === 'category');
     if (categoryIndex !== -1 && categories.length > 0) {
@@ -323,62 +349,103 @@ function AdminProducts() {
           _id: cat._id // Keep the actual ID for reference
         }))
       };
+      console.log('✅ Updated category options:', baseFormElements[categoryIndex].options);
     }
     
-    // Update subcategory options
+    // Update subcategory options - FIX: Ensure unique IDs by including category
     const subcategoryIndex = baseFormElements.findIndex(el => el.name === 'subCategory');
     if (subcategoryIndex !== -1) {
       baseFormElements[subcategoryIndex] = {
         ...baseFormElements[subcategoryIndex],
         dynamicOptions: true,
-        options: subcategories.map(subcat => ({
-          id: subcat.name.toLowerCase(), // Use lowercase name as ID
-          label: subcat.name,
-          _id: subcat._id, // Keep the actual ID for reference
+        options: subcategories.map(subcat => {
           // Extract category name properly whether it's populated or not
-          categories: [typeof subcat.category === 'object' ? subcat.category.name.toLowerCase() : '']
-        }))
+          const categoryName = typeof subcat.category === 'object' ? subcat.category.name : '';
+          
+          return {
+            // FIX: Create unique ID by combining category and subcategory name
+            id: `${categoryName.toLowerCase()}-${subcat.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+            label: subcat.name,
+            _id: subcat._id, // Keep the actual ID for reference
+            categories: [categoryName.toLowerCase()]
+          };
+        })
       };
+      console.log('✅ Updated subcategory options:', baseFormElements[subcategoryIndex].options);
     }
     
-    // Update brand options with real data
+    // Update brand options with real data - FIX: Ensure unique IDs
     const brandIndex = baseFormElements.findIndex(el => el.name === 'brand');
     if (brandIndex !== -1 && brands.length > 0) {
       baseFormElements[brandIndex] = {
         ...baseFormElements[brandIndex],
-        options: brands.map(brand => ({
-          id: brand.name.toLowerCase(), // Use lowercase name as ID
+        options: brands.map((brand, index) => ({
+          // FIX: Use brand ID or create unique identifier
+          id: brand._id || `brand-${brand.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${index}`,
           label: brand.name,
-          _id: brand._id // Keep the actual ID for reference
+          _id: brand._id, // Keep the actual ID for reference
+          // FIX: Brands should be available for all categories since they don't have category restrictions in the DB
+          categories: ['men', 'women', 'kids', 'footwear', 'accessories', 'devices'] // Make brands available for all categories
         }))
       };
+      console.log('✅ Updated brand options:', baseFormElements[brandIndex].options);
     }
     
-    // Update size options with real data
+    // Update size options with real data - FIX: Ensure unique IDs
     const sizeIndex = baseFormElements.findIndex(el => el.name === 'sizes');
     if (sizeIndex !== -1 && sizes.length > 0) {
       baseFormElements[sizeIndex] = {
         ...baseFormElements[sizeIndex],
-        options: sizes.map(size => ({
-          id: size.name.toLowerCase(), // Use lowercase name as ID
-          label: size.name,
-          _id: size._id, // Keep the actual ID for reference
-          categories: size.category ? [size.category.toLowerCase()] : []
-        }))
+        options: sizes.map((size, index) => {
+          // Map size categories from database to form categories
+          let sizeCategories = [];
+          
+          if (size.category) {
+            // Map database size categories to form categories
+            switch (size.category.toLowerCase()) {
+              case 'clothing':
+                sizeCategories = ['men', 'women', 'kids'];
+                break;
+              case 'footwear':
+                sizeCategories = ['footwear'];
+                break;
+              case 'accessories':
+                sizeCategories = ['accessories'];
+                break;
+              default:
+                // If unknown category, make available for all clothing categories
+                sizeCategories = ['men', 'women', 'kids'];
+            }
+          } else {
+            // If no category specified, make available for all
+            sizeCategories = ['men', 'women', 'kids', 'footwear', 'accessories'];
+          }
+          
+          return {
+            // FIX: Use size ID or create unique identifier with category
+            id: size._id || `${size.category || 'general'}-${size.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${index}`,
+            label: size.name,
+            _id: size._id, // Keep the actual ID for reference
+            categories: sizeCategories
+          };
+        })
       };
+      console.log('✅ Updated size options:', baseFormElements[sizeIndex].options);
     }
     
-    // Update color options with real data
+    // Update color options with real data - FIX: Ensure unique IDs
     const colorIndex = baseFormElements.findIndex(el => el.name === 'colors');
     if (colorIndex !== -1 && colors.length > 0) {
       baseFormElements[colorIndex] = {
         ...baseFormElements[colorIndex],
-        options: colors.map(color => ({
-          id: color.name.toLowerCase(), // Use lowercase name as ID
+        options: colors.map((color, index) => ({
+          // FIX: Use color ID or create unique identifier
+          id: color._id || `color-${color.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${index}`,
           label: color.name,
           _id: color._id // Keep the actual ID for reference
         }))
       };
+      console.log('✅ Updated color options:', baseFormElements[colorIndex].options);
     }
     
     return baseFormElements;

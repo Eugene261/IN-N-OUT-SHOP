@@ -3,8 +3,8 @@ import { Fragment } from 'react';
 import { Label } from '../ui/label';
 import { Checkbox } from '../ui/checkbox';
 import { Separator } from '../ui/separator';
-import { motion } from 'framer-motion';
-import { ChevronDown, Store } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, ChevronRight, Store } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAllTaxonomyData } from '@/store/superAdmin/taxonomy-slice';
 
@@ -12,22 +12,61 @@ function EnhancedProductFilter({filters, handleFilter, availableShops = []}) {
   const dispatch = useDispatch();
   const { categories, subcategories, brands } = useSelector(state => state.taxonomy);
   const [expandedCategories, setExpandedCategories] = useState(['category']);
+  const [expandedSubcategories, setExpandedSubcategories] = useState({});
 
   // Fetch taxonomy data on component mount
   useEffect(() => {
     dispatch(fetchAllTaxonomyData());
   }, [dispatch]);
 
+  // Auto-expand subcategories when a category is selected
+  useEffect(() => {
+    if (filters?.category && filters.category.length > 0) {
+      const selectedCategory = filters.category[0];
+      const categorySubcategories = getSubcategoriesForCategory(selectedCategory);
+      
+      if (categorySubcategories.length > 0) {
+        // Auto-expand subcategories for the selected category
+        setExpandedSubcategories(prev => ({
+          ...prev,
+          [selectedCategory]: true
+        }));
+      }
+    } else {
+      // Collapse all subcategories when no category is selected
+      setExpandedSubcategories({});
+    }
+  }, [filters?.category, categories, subcategories]);
+
+  // Get subcategories for a specific category
+  const getSubcategoriesForCategory = (categoryName) => {
+    const categoryObj = categories.find(cat => cat.name === categoryName);
+    if (!categoryObj) return [];
+    
+    return subcategories.filter(subcat => {
+      const subcatCategoryId = typeof subcat.category === 'object' ? subcat.category._id : subcat.category;
+      return subcatCategoryId === categoryObj._id;
+    });
+  };
+
+  // Toggle subcategory dropdown for a specific category
+  const toggleSubcategoryDropdown = (categoryName) => {
+    setExpandedSubcategories(prev => ({
+      ...prev,
+      [categoryName]: !prev[categoryName]
+    }));
+  };
+
   // Create dynamic filter options using real taxonomy data
   const getDynamicFilterOptions = () => {
+    console.log('🔍 Enhanced Filter Debug:');
+    console.log('Categories loaded:', categories.length, categories.map(c => c.name));
+    console.log('Brands loaded:', brands.length, brands.map(b => b.name));
+    console.log('Current filters:', filters);
+    
     const dynamicOptions = {
-      category: categories.map(cat => ({
-        id: cat.name.toLowerCase(),
-        label: cat.name,
-        _id: cat._id
-      })),
       brand: brands.map(brand => ({
-        id: brand.name.toLowerCase(),
+        id: brand.name,
         label: brand.name,
         _id: brand._id
       })),
@@ -46,26 +85,7 @@ function EnhancedProductFilter({filters, handleFilter, availableShops = []}) {
       ]
     };
 
-    // Add subcategories dynamically based on selected category from filters prop
-    const currentSelectedCategoryName = filters?.category?.[0];
-    if (currentSelectedCategoryName) {
-      const categoryObj = categories.find(cat => cat.name.toLowerCase() === currentSelectedCategoryName);
-      if (categoryObj) {
-        const categorySubcategories = subcategories.filter(subcat => {
-          const subcatCategoryId = typeof subcat.category === 'object' ? subcat.category._id : subcat.category;
-          return subcatCategoryId === categoryObj._id;
-        });
-        
-        if (categorySubcategories.length > 0) {
-          dynamicOptions.subCategory = categorySubcategories.map(subcat => ({
-            id: subcat.name.toLowerCase(),
-            label: subcat.name,
-            _id: subcat._id
-          }));
-        }
-      }
-    }
-
+    console.log('Final dynamic options:', dynamicOptions);
     return dynamicOptions;
   };
 
@@ -75,23 +95,24 @@ function EnhancedProductFilter({filters, handleFilter, availableShops = []}) {
     if (expandedCategories.includes(category)) {
       setExpandedCategories(prev => prev.filter(item => item !== category));
     } else {
-      if (category === 'category') {
-        setExpandedCategories(prev => 
-          prev.includes('brand') ? ['category', 'brand', 'shop'] : ['category', 'shop']
-        );
-      } else {
-        setExpandedCategories(prev => [...prev, category]);
-      }
+      setExpandedCategories(prev => [...prev, category]);
     }
   };
 
   const isChecked = (keyItem, optionId) => {
-    // Very simple checkbox state check - return true if the option is in the filters
     return Boolean(
       filters && 
       filters[keyItem] && 
       filters[keyItem].includes(optionId)
     );
+  };
+
+  const isCategorySelected = (categoryName) => {
+    return Boolean(filters?.category?.includes(categoryName));
+  };
+
+  const isSubcategorySelected = (subcategoryName) => {
+    return Boolean(filters?.subCategory?.includes(subcategoryName));
   };
 
   return (
@@ -105,14 +126,142 @@ function EnhancedProductFilter({filters, handleFilter, availableShops = []}) {
         <h2 className="text-lg font-bold text-black dark:text-white">Filters</h2>
       </div>
       <div className="p-4 space-y-4">
-        {/* Filter categories including shops */}
-        {Object.keys(dynamicFilterOptions)
-          .map((keyItem, index) => (
+        
+        {/* Categories with Subcategory Dropdowns */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="font-medium text-gray-900 dark:text-white">Categories</h3>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => toggleCategory('category')}
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+            >
+              <ChevronDown 
+                className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${
+                  expandedCategories.includes('category') ? 'rotate-180' : ''
+                }`} 
+              />
+            </motion.button>
+          </div>
+
+          {expandedCategories.includes('category') && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="mt-2 space-y-1"
+            >
+              {categories.map((category, categoryIndex) => {
+                const categorySubcategories = getSubcategoriesForCategory(category.name);
+                const hasSubcategories = categorySubcategories.length > 0;
+                const isSelected = isCategorySelected(category.name);
+                const isSubcategoryExpanded = expandedSubcategories[category.name];
+
+                return (
+                  <motion.div
+                    key={category._id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: categoryIndex * 0.05 }}
+                    className="space-y-1"
+                  >
+                    {/* Main Category */}
+                    <div className="flex items-center justify-between group">
+                      <Label className="flex font-medium items-center gap-2 text-gray-600 dark:text-gray-300 
+                      hover:text-black dark:hover:text-white cursor-pointer group flex-1">
+                        <Checkbox 
+                          checked={isSelected}
+                          onCheckedChange={() => handleFilter('category', category.name)}
+                          className="border-gray-300 dark:border-gray-600 data-[state=checked]:bg-black 
+                          data-[state=checked]:border-black dark:data-[state=checked]:bg-white 
+                          dark:data-[state=checked]:border-white" 
+                        />
+                        <span className="group-hover:text-black dark:group-hover:text-white transition-colors duration-200 text-sm">
+                          {category.name}
+                        </span>
+                      </Label>
+                      
+                                             {/* Subcategory Toggle Button */}
+                       {hasSubcategories && isSelected && (
+                         <motion.button
+                           whileHover={{ scale: 1.1 }}
+                           whileTap={{ scale: 0.9 }}
+                           onClick={() => toggleSubcategoryDropdown(category.name)}
+                           className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded ml-2"
+                         >
+                           <ChevronRight 
+                             className={`w-3 h-3 text-gray-400 transition-transform duration-200 ${
+                               isSubcategoryExpanded ? 'rotate-90' : ''
+                             }`} 
+                           />
+                         </motion.button>
+                       )}
+                    </div>
+
+                    {/* Subcategories Dropdown */}
+                    <AnimatePresence>
+                      {hasSubcategories && isSelected && isSubcategoryExpanded && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="ml-6 pl-2 border-l border-gray-200 dark:border-gray-700 space-y-1"
+                        >
+                          {categorySubcategories.map((subcategory, subIndex) => (
+                            <motion.div
+                              key={subcategory._id}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: subIndex * 0.03 }}
+                            >
+                              <Label className="flex font-medium items-center gap-2 text-gray-500 dark:text-gray-400 
+                              hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer group">
+                                <Checkbox 
+                                  checked={isSubcategorySelected(subcategory.name)}
+                                  onCheckedChange={() => handleFilter('subCategory', subcategory.name)}
+                                  className="border-gray-300 dark:border-gray-600 data-[state=checked]:bg-gray-700 
+                                  data-[state=checked]:border-gray-700 dark:data-[state=checked]:bg-gray-300 
+                                  dark:data-[state=checked]:border-gray-300" 
+                                />
+                                <span className="group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors duration-200 text-xs">
+                                  {subcategory.name}
+                                </span>
+                              </Label>
+                            </motion.div>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
+              
+              {/* Show loading state while taxonomy data is being fetched */}
+              {categories.length === 0 && (
+                <div className="text-sm text-gray-500 italic">
+                  Loading categories...
+                </div>
+              )}
+            </motion.div>
+          )}
+        </motion.div>
+
+        <Separator className="my-3 bg-gray-200 dark:bg-gray-800" />
+
+        {/* Other Filter Categories */}
+        {Object.keys(dynamicFilterOptions).map((keyItem, index) => (
           <motion.div
             key={keyItem}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: index * 0.1 }}
+            transition={{ delay: (index + 1) * 0.1 }}
           >
             <Fragment>
               <div className="flex items-center justify-between">
@@ -168,8 +317,7 @@ function EnhancedProductFilter({filters, handleFilter, availableShops = []}) {
                   ))}
                   
                   {/* Show loading state while taxonomy data is being fetched */}
-                  {(keyItem === 'category' || keyItem === 'brand') && 
-                   dynamicFilterOptions[keyItem]?.length === 0 && (
+                  {keyItem === 'brand' && dynamicFilterOptions[keyItem]?.length === 0 && (
                     <div className="text-sm text-gray-500 italic">
                       Loading {keyItem}...
                     </div>

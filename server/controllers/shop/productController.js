@@ -1,5 +1,3 @@
-
-
 const Product = require('../../models/Products.js');
 const User = require('../../models/User.js');
 
@@ -10,16 +8,129 @@ const getFilteredProducts = async(req, res) => {
         const {category = '', subCategory = '', brand = '', price = '', shop = '', sortBy = "price-lowtohigh" } = req.query;
 
         let filters = {};
+        let shouldFilterBySubcategory = false;
 
         if(category.length){
-           
-            filters.category = {$in: category.split(',')}
+            // Handle both legacy lowercase categories and new proper case categories
+            const categoryValues = category.split(',');
+            const categoryFilters = [];
+            
+            categoryValues.forEach(cat => {
+                // Add the original category value
+                categoryFilters.push(cat);
+                
+                // Also add the lowercase version for legacy products
+                if (cat !== cat.toLowerCase()) {
+                    categoryFilters.push(cat.toLowerCase());
+                }
+                
+                // Also add the proper case version for new products
+                if (cat !== cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase()) {
+                    categoryFilters.push(cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase());
+                }
+            });
+            
+            // Remove duplicates
+            const uniqueCategoryFilters = [...new Set(categoryFilters)];
+            
+            filters.category = {$in: uniqueCategoryFilters};
         }
+        
         if(subCategory.length){
-            filters.subCategory = {$in: subCategory.split(',')}
+            // Handle both legacy and new subcategory formats
+            const subcategoryValues = subCategory.split(',');
+            const subcategoryFilters = [];
+            
+            // Helper function to generate database-style subcategory names
+            const generateDbSubcategoryVariations = (subcat, categoryFilters) => {
+                const variations = [];
+                
+                // Convert subcategory to database format (lowercase, hyphenated)
+                const dbFormat = subcat.toLowerCase()
+                    .replace(/\s+&\s+/g, '-')  // Replace " & " with "-"
+                    .replace(/\s+/g, '-')      // Replace spaces with hyphens
+                    .replace(/[^\w-]/g, '');   // Remove special characters except hyphens
+                
+                // Add variations with category prefixes
+                if (categoryFilters && categoryFilters.$in) {
+                    categoryFilters.$in.forEach(cat => {
+                        const catPrefix = cat.toLowerCase();
+                        variations.push(`${catPrefix}-${dbFormat}`);
+                    });
+                }
+                
+                // Also add without category prefix
+                variations.push(dbFormat);
+                
+                return variations;
+            };
+            
+            subcategoryValues.forEach(subcat => {
+                // Add original subcategory
+                subcategoryFilters.push(subcat);
+                
+                // Add case variations
+                subcategoryFilters.push(subcat.toLowerCase());
+                subcategoryFilters.push(subcat.charAt(0).toUpperCase() + subcat.slice(1).toLowerCase());
+                
+                // Generate database-style variations
+                const dbVariations = generateDbSubcategoryVariations(subcat, filters.category);
+                subcategoryFilters.push(...dbVariations);
+                
+                // Add common variations for different subcategories
+                if (subcat.includes('T-Shirts') || subcat.includes('t-shirts')) {
+                    subcategoryFilters.push('t-shirts & tops', 'T-shirts & Tops', 'tshirts', 'T-Shirts', 't-shirts');
+                }
+                if (subcat.includes('Pants') || subcat.includes('pants')) {
+                    subcategoryFilters.push('pants', 'Pants', 'trousers', 'Trousers');
+                }
+                if (subcat.includes('Shorts') || subcat.includes('shorts')) {
+                    subcategoryFilters.push('shorts', 'Shorts');
+                }
+                if (subcat.includes('Hoodies') || subcat.includes('hoodies')) {
+                    subcategoryFilters.push('hoodies', 'Hoodies', 'hoodies & sweatshirts', 'Hoodies & Sweatshirts');
+                }
+                if (subcat.includes('Jackets') || subcat.includes('jackets')) {
+                    subcategoryFilters.push('jackets', 'Jackets', 'jackets & outerwear', 'Jackets & Outerwear');
+                }
+            });
+            
+            const uniqueSubcategoryFilters = [...new Set(subcategoryFilters)];
+            
+            // First, try to find products with both category and subcategory
+            const testFilters = { ...filters, subCategory: {$in: uniqueSubcategoryFilters} };
+            const testProducts = await Product.find(testFilters).limit(1);
+            
+            if (testProducts.length > 0) {
+                // Products found with subcategory filter, use it
+                filters.subCategory = {$in: uniqueSubcategoryFilters};
+                shouldFilterBySubcategory = true;
+            } else {
+                // No products found with subcategory filter, skip it and just use category
+                shouldFilterBySubcategory = false;
+                // Don't add subcategory filter if no products match
+            }
         }
         if(brand.length){
-            filters.brand = {$in: brand.split(',')}
+            // Handle both legacy and new brand formats
+            const brandValues = brand.split(',');
+            const brandFilters = [];
+            
+            brandValues.forEach(brandName => {
+                brandFilters.push(brandName);
+                // Add lowercase version for legacy products
+                if (brandName !== brandName.toLowerCase()) {
+                    brandFilters.push(brandName.toLowerCase());
+                }
+                // Add proper case version for new products
+                if (brandName !== brandName.charAt(0).toUpperCase() + brandName.slice(1).toLowerCase()) {
+                    brandFilters.push(brandName.charAt(0).toUpperCase() + brandName.slice(1).toLowerCase());
+                }
+            });
+            
+            const uniqueBrandFilters = [...new Set(brandFilters)];
+            console.log('Brand filter values:', uniqueBrandFilters);
+            filters.brand = {$in: uniqueBrandFilters};
         }
         
         // Handle shop filtering
@@ -413,6 +524,123 @@ const getAvailableShops = async (req, res) => {
     }
 };
 
+// Debug endpoint to see available subcategories
+const getDebugSubcategories = async (req, res) => {
+    try {
+        const { category } = req.query;
+        
+        let filter = {};
+        if (category) {
+            filter.category = { $regex: new RegExp(category, 'i') };
+        }
+        
+        const products = await Product.find(filter)
+            .select('title category subCategory');
+        
+        // Group by category
+        const categoryGroups = {};
+        products.forEach(product => {
+            if (!categoryGroups[product.category]) {
+                categoryGroups[product.category] = new Set();
+            }
+            if (product.subCategory) {
+                categoryGroups[product.category].add(product.subCategory);
+            }
+        });
+        
+        // Convert sets to arrays
+        const result = {};
+        Object.keys(categoryGroups).forEach(cat => {
+            result[cat] = Array.from(categoryGroups[cat]);
+        });
+        
+        res.status(200).json({
+            success: true,
+            data: result,
+            totalProducts: products.length
+        });
+        
+    } catch (error) {
+        console.error('Error in getDebugSubcategories:', error);
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred'
+        });
+    }
+};
+
+// Test endpoint to create sample products for testing multiple subcategories
+const createTestProducts = async (req, res) => {
+    try {
+        // Find an admin user to assign as creator
+        const adminUser = await User.findOne({ role: 'admin', isActive: true });
+        
+        if (!adminUser) {
+            return res.status(400).json({
+                success: false,
+                message: 'No admin user found to create test products'
+            });
+        }
+
+        const testProducts = [
+            {
+                title: 'Men\'s Casual Pants',
+                description: 'Comfortable casual pants for men',
+                category: 'Men',
+                subCategory: 'men-pants',
+                brand: 'TestBrand',
+                price: 45,
+                salePrice: 40,
+                totalStock: 10,
+                image: 'https://via.placeholder.com/300x300?text=Pants',
+                additionalImages: [],
+                createdBy: adminUser._id
+            },
+            {
+                title: 'Men\'s Summer Shorts',
+                description: 'Lightweight summer shorts',
+                category: 'Men',
+                subCategory: 'men-shorts',
+                brand: 'TestBrand',
+                price: 25,
+                salePrice: 20,
+                totalStock: 15,
+                image: 'https://via.placeholder.com/300x300?text=Shorts',
+                additionalImages: [],
+                createdBy: adminUser._id
+            },
+            {
+                title: 'Men\'s Hoodie',
+                description: 'Warm and comfortable hoodie',
+                category: 'Men',
+                subCategory: 'men-hoodies-sweatshirts',
+                brand: 'TestBrand',
+                price: 60,
+                salePrice: 55,
+                totalStock: 8,
+                image: 'https://via.placeholder.com/300x300?text=Hoodie',
+                additionalImages: [],
+                createdBy: adminUser._id
+            }
+        ];
+
+        const createdProducts = await Product.insertMany(testProducts);
+
+        res.status(200).json({
+            success: true,
+            message: `Created ${createdProducts.length} test products`,
+            data: createdProducts
+        });
+
+    } catch (error) {
+        console.error('Error creating test products:', error);
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred creating test products'
+        });
+    }
+};
+
 module.exports = {
     getFilteredProducts,
     getProductDetails,
@@ -421,5 +649,7 @@ module.exports = {
     toggleBestseller,
     toggleNewArrival,
     getSimilarProducts,
-    getAvailableShops
+    getAvailableShops,
+    getDebugSubcategories,
+    createTestProducts
 };

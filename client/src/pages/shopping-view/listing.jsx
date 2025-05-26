@@ -84,6 +84,34 @@ function ShoppingListing() {
         }
       }
     } 
+    // Special handling for subcategory filter (category-dependent)
+    else if (filterType === 'subCategory') {
+      // Only allow subcategory selection if a category is selected
+      if (!newFilters.category || newFilters.category.length === 0) {
+        console.log('Cannot select subcategory without selecting a category first');
+        return;
+      }
+      
+      // Initialize the array if it doesn't exist
+      if (!newFilters[filterType]) {
+        newFilters[filterType] = [];
+      }
+      
+      // Check if the value is already selected
+      const valueIndex = newFilters[filterType].indexOf(filterValue);
+      
+      if (valueIndex === -1) {
+        // Add the value if not already selected
+        newFilters[filterType].push(filterValue);
+      } else {
+        // Remove the value if already selected
+        newFilters[filterType].splice(valueIndex, 1);
+        // Remove the filter type entirely if empty
+        if (newFilters[filterType].length === 0) {
+          delete newFilters[filterType];
+        }
+      }
+    }
     // For other filter types (multi-selection)
     else {
       // Initialize the array if it doesn't exist
@@ -131,28 +159,94 @@ function ShoppingListing() {
   }, [dispatch, user]);
 
 
+  // Function to map lowercase URL categories to proper case
+  const mapUrlCategoryToProperCase = (urlCategory) => {
+    const categoryMapping = {
+      'men': 'Men',
+      'women': 'Women', 
+      'kids': 'Kids',
+      'accessories': 'Accessories',
+      'footwear': 'Footwear',
+      'devices': 'Devices'
+    };
+    return categoryMapping[urlCategory?.toLowerCase()] || urlCategory;
+  };
+
+  // Function to map URL subcategories to proper case
+  const mapUrlSubcategoryToProperCase = (urlSubcategory) => {
+    // Common subcategory mappings
+    const subcategoryMapping = {
+      'tshirts': 'T-Shirts & Tops',
+      't-shirts': 'T-Shirts & Tops',
+      'pants': 'Pants',
+      'trousers': 'Trousers',
+      'shorts': 'Shorts',
+      'hoodies': 'Hoodies & Sweatshirts',
+      'jackets': 'Jackets & Outerwear',
+      'tracksuits': 'Tracksuits',
+      'running': 'Running',
+      'basketball': 'Basketball',
+      'training': 'Training & Gym',
+      'lifestyle': 'Lifestyle',
+      'soccer': 'Soccer',
+      'shoes': 'All Shoes',
+      'bags': 'Bags & Backpacks',
+      'hats': 'Hats & Beanies',
+      'socks': 'Socks & Underwear',
+      'equipment': 'Sports Equipment',
+      'smartphones': 'Smartphones',
+      'tablets': 'Tablets',
+      'laptops': 'Laptops',
+      'smartwatches': 'Smartwatches',
+      'headphones': 'Headphones',
+      'speakers': 'Speakers'
+    };
+    return subcategoryMapping[urlSubcategory?.toLowerCase()] || urlSubcategory;
+  };
+
   // New useEffect to handle URL parameters for filtering
   useEffect(() => {
+    console.log('🔍 URL Parameters Debug:');
+    console.log('categorySearchParam:', categorySearchParam);
+    console.log('shopSearchParam:', shopSearchParam);
+    console.log('brandSearchParam:', brandSearchParam);
+    console.log('priceSearchParam:', priceSearchParam);
+    
+    // Get subcategory from URL
+    const subCategorySearchParam = searchParams.get('subCategory');
+    console.log('subCategorySearchParam:', subCategorySearchParam);
+    
     let newFilters = {};
-    const validCategories = ['Electronics', 'Fashion', 'Home & Garden', 'Sports', 'Beauty', 'Health', 'Books', 'Toys', 'Automotive', 'Industrial', 'Grocery', 'Kids', 'Outdoors', 'Pet Supplies', 'Music', 'Movies', 'Software', 'Video Games', 'Computers', 'Appliances', 'Baby', 'Office Products', 'Tools & Home Improvement', 'Arts, Crafts & Sewing', 'Collectibles & Fine Art', 'Handmade', 'Luggage & Travel Gear', 'Shoes', 'Jewelry', 'Watches', 'Clothing', 'Accessories', 'Other'];
 
     const parseMultiValueParam = (param) => param ? decodeURIComponent(param).split(',').filter(Boolean) : [];
 
     const shopValues = parseMultiValueParam(shopSearchParam);
     const categoryValueFromUrl = categorySearchParam ? decodeURIComponent(categorySearchParam) : null;
+    const subCategoryValuesFromUrl = parseMultiValueParam(subCategorySearchParam);
     const brandValues = parseMultiValueParam(brandSearchParam);
     const priceValues = parseMultiValueParam(priceSearchParam);
+
+    console.log('Parsed values:');
+    console.log('- shopValues:', shopValues);
+    console.log('- categoryValueFromUrl (raw):', categoryValueFromUrl);
+    console.log('- subCategoryValuesFromUrl (raw):', subCategoryValuesFromUrl);
+    console.log('- brandValues:', brandValues);
+    console.log('- priceValues:', priceValues);
+
+    // Map category and subcategory to proper case
+    const mappedCategory = categoryValueFromUrl ? mapUrlCategoryToProperCase(categoryValueFromUrl) : null;
+    const mappedSubCategories = subCategoryValuesFromUrl.map(subcat => mapUrlSubcategoryToProperCase(subcat));
+    console.log('- categoryValueFromUrl (mapped):', mappedCategory);
+    console.log('- subCategoryValuesFromUrl (mapped):', mappedSubCategories);
 
     if (shopValues.length > 0) {
       newFilters.shop = shopValues;
       // If a shop is specified, we still want to allow category filtering
-      if (categoryValueFromUrl) {
-        const matchedCategory = validCategories.find(
-          cat => cat.toLowerCase() === categoryValueFromUrl.toLowerCase()
-        );
-        if (matchedCategory) {
-          newFilters.category = [matchedCategory]; // Use the properly cased category
-        }
+      if (mappedCategory) {
+        newFilters.category = [mappedCategory];
+      }
+      if (mappedSubCategories.length > 0) {
+        newFilters.subCategory = mappedSubCategories;
       }
       if (brandValues.length > 0) {
         newFilters.brand = brandValues;
@@ -162,13 +256,11 @@ function ShoppingListing() {
       }
     } else {
       // No shop in URL, handle other filters
-      if (categoryValueFromUrl) {
-        const matchedCategory = validCategories.find(
-          cat => cat.toLowerCase() === categoryValueFromUrl.toLowerCase()
-        );
-        if (matchedCategory) {
-          newFilters.category = [matchedCategory]; // Use the properly cased category
-        }
+      if (mappedCategory) {
+        newFilters.category = [mappedCategory];
+      }
+      if (mappedSubCategories.length > 0) {
+        newFilters.subCategory = mappedSubCategories;
       }
       if (brandValues.length > 0) {
         newFilters.brand = brandValues;
@@ -181,29 +273,20 @@ function ShoppingListing() {
       if (Object.keys(newFilters).length === 0) {
         const sessionFilters = JSON.parse(sessionStorage.getItem('filters')) || {};
         if (Object.keys(sessionFilters).length > 0) {
-          // Validate category from session storage
-          if (sessionFilters.category) {
-            const matchedCategory = validCategories.find(
-              cat => cat.toLowerCase() === sessionFilters.category[0].toLowerCase()
-            );
-            if (matchedCategory) {
-              sessionFilters.category = [matchedCategory];
-            } else {
-              delete sessionFilters.category;
-            }
-          }
+          // Use session filters as-is, no validation
           newFilters = sessionFilters;
         }
       }
     }
     
+    console.log('Final newFilters:', newFilters);
     setFilters(newFilters);
     if (Object.keys(newFilters).length > 0) {
       sessionStorage.setItem('filters', JSON.stringify(newFilters));
     } else {
       sessionStorage.removeItem('filters');
     }
-  }, [shopSearchParam, categorySearchParam, brandSearchParam, priceSearchParam]);
+  }, [shopSearchParam, categorySearchParam, brandSearchParam, priceSearchParam, searchParams]);
 
 
   function handleGetProductDetails(getCurrentProductId){
@@ -328,6 +411,8 @@ function ShoppingListing() {
       if (filters.category && filters.category.length > 0) {
         apiFilters.category = filters.category.join(',');
         console.log('Category filter being applied:', apiFilters.category);
+        console.log('Category filter type:', typeof apiFilters.category);
+        console.log('Category filter array:', filters.category);
       }
       
       // Process subcategories
@@ -355,13 +440,28 @@ function ShoppingListing() {
       }
       
       console.log('Final API filters after processing:', apiFilters);
+      console.log('Sort parameter:', sort);
       console.log('===== END DEBUGGING =====');
       
       // Dispatch the action with properly formatted filters
       dispatch(fetchAllFilteredProducts({
         filterParams: apiFilters, 
         sortParams: sort
-      }));
+      }))
+      .then((result) => {
+        console.log('===== API RESPONSE DEBUGGING =====');
+        console.log('API response:', result);
+        if (result.payload && result.payload.data) {
+          console.log('Number of products returned:', result.payload.data.length);
+          if (result.payload.data.length > 0) {
+            console.log('Sample product categories:', result.payload.data.slice(0, 3).map(p => p.category));
+          }
+        }
+        console.log('===== END API RESPONSE DEBUGGING =====');
+      })
+      .catch((error) => {
+        console.error('API call failed:', error);
+      });
     }
   }, [dispatch, sort, filters, refreshKey]);
   

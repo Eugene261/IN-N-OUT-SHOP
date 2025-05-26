@@ -143,18 +143,28 @@ function CommonForm({
         // Filter options for dynamic fields like subcategory and brand
         let selectOptions = controlItem.options || [];
         
+        // DEBUG: Log select options
+        console.log(`🔍 Select field: ${controlItem.name}`);
+        console.log('All options:', controlItem.options);
+        console.log('Current category:', formData.category);
+        console.log('Dynamic options?', controlItem.dynamicOptions);
+        
         if (controlItem.dynamicOptions && formData.category) {
           if (controlItem.name === 'subCategory') {
             // Filter subcategory options based on the selected category
             selectOptions = controlItem.options.filter(option => 
               option.categories && option.categories.includes(formData.category)
             );
+            console.log('Filtered subcategory options:', selectOptions);
           } else if (controlItem.name === 'brand') {
             // Filter brand options based on the selected category
             selectOptions = controlItem.options.filter(option => 
               option.categories && option.categories.includes(formData.category)
             );
+            console.log('Filtered brand options:', selectOptions);
           }
+        } else {
+          console.log('Using all options (no filtering):', selectOptions);
         }
         
         return (
@@ -213,6 +223,12 @@ function CommonForm({
         let filteredOptions = controlItem.options || [];
         let isRequired = controlItem.required || false;
         
+        // DEBUG: Log multiselect options
+        console.log(`🔍 Multiselect field: ${controlItem.name}`);
+        console.log('All options:', controlItem.options);
+        console.log('Current category:', formData.category);
+        console.log('Dynamic options?', controlItem.dynamicOptions);
+        
         if (controlItem.dynamicOptions && controlItem.name === 'sizes') {
           // Determine if sizes are required based on category
           if (formData.category === 'men' || formData.category === 'women' || formData.category === 'kids' || formData.category === 'footwear' || formData.category === 'trousers') {
@@ -257,6 +273,8 @@ function CommonForm({
             );
           }
         }
+        
+        console.log('Final filtered options for', controlItem.name, ':', filteredOptions);
         
         return (
           <div className="space-y-1">

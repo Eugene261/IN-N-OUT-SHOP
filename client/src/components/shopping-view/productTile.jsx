@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardFooter } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { motion } from 'framer-motion';
@@ -9,12 +9,39 @@ import { toast } from 'sonner';
 import { brandOptionsMap, categoryOptionsMap } from '@/config';
 import { useNavigate } from 'react-router-dom';
 import LazyImage from '../common/LazyImage';
+import { fetchAllTaxonomyData } from '@/store/superAdmin/taxonomy-slice';
 
 function ShoppingProductTile({ product, handleAddToCart, onAddToCart }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useSelector(state => state.auth);
   const { wishlistItems } = useSelector(state => state.wishlist);
+  const { brands, categories } = useSelector(state => state.taxonomy);
+  
+  // Fetch taxonomy data on component mount
+  useEffect(() => {
+    if (!brands || brands.length === 0) {
+      dispatch(fetchAllTaxonomyData());
+    }
+  }, [dispatch, brands]);
+  
+  // Utility function to convert database IDs to human-readable names
+  const convertIdToName = (id, taxonomyArray, fallbackMap = {}) => {
+    if (!id) return '';
+    
+    // If it's already a human-readable name (not a MongoDB ObjectId), return as is
+    if (typeof id === 'string' && id.length !== 24) {
+      return fallbackMap[id] || id;
+    }
+    
+    // Find the taxonomy item by ID
+    const item = taxonomyArray?.find(item => item._id === id);
+    return item ? item.name : (fallbackMap[id] || id);
+  };
+
+  // Get display names for brand and category
+  const displayBrand = convertIdToName(product?.brand, brands, brandOptionsMap);
+  const displayCategory = convertIdToName(product?.category, categories, categoryOptionsMap);
   
   // Check if product is in wishlist
   const isInWishlist = wishlistItems?.some(item => 
@@ -183,10 +210,10 @@ function ShoppingProductTile({ product, handleAddToCart, onAddToCart }) {
           {/* Brand and category */}
           <div className="flex justify-between items-center mb-2">
             <span className="text-xs uppercase tracking-wider text-gray-500 font-medium">
-              {brandOptionsMap[product?.brand]}
+              {displayBrand}
             </span>
             <span className="text-xs uppercase tracking-wider text-gray-500 font-medium">
-              {categoryOptionsMap[product?.category]}
+              {displayCategory}
             </span>
           </div>
           

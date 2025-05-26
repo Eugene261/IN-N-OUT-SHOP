@@ -13,6 +13,7 @@ import ReviewsDisplay from '../shopping-view/reviewDisplay';
 import ShoppingProductTile from '../../components/shopping-view/productTile';
 import ProductOptionsModal from '../../components/shopping-view/productOptionsModal';
 import NewArrivals from './newArrivals';
+import { fetchAllTaxonomyData } from '@/store/superAdmin/taxonomy-slice';
 
 // Image Gallery Component for Product Details - Valentino style layout
 function ImageGallery({ productDetails }) {
@@ -170,6 +171,7 @@ function ProductDetailsPage() {
   } = useSelector(state => state.shopProducts);
   const { wishlistItems } = useSelector(state => state.wishlist);
   const { user } = useSelector(state => state.auth);
+  const { sizes, colors } = useSelector(state => state.taxonomy);
   const isAuthenticated = !!user;
 
   const [quantity, setQuantity] = useState(1);
@@ -190,6 +192,29 @@ function ProductDetailsPage() {
   const [showLeftButton, setShowLeftButton] = useState(false);
   const [showRightButton, setShowRightButton] = useState(true);
 
+  // Utility function to convert database IDs to human-readable names
+  const convertIdToName = (id, taxonomyArray) => {
+    if (!id || !taxonomyArray || taxonomyArray.length === 0) return id;
+    
+    // If it's already a human-readable name (not a MongoDB ObjectId), return as is
+    if (typeof id === 'string' && id.length !== 24) return id;
+    
+    // Find the taxonomy item by ID
+    const item = taxonomyArray.find(item => item._id === id);
+    return item ? item.name : id;
+  };
+
+  // Convert product sizes and colors for display
+  const getDisplaySizes = () => {
+    if (!productDetails?.sizes) return [];
+    return productDetails.sizes.map(size => convertIdToName(size, sizes));
+  };
+
+  const getDisplayColors = () => {
+    if (!productDetails?.colors) return [];
+    return productDetails.colors.map(color => convertIdToName(color, colors));
+  };
+
   useEffect(() => {
     if (productId) {
       dispatch(fetchProductDetails(productId));
@@ -198,6 +223,8 @@ function ProductDetailsPage() {
           console.log('Similar products response:', response.payload);
         });
     }
+    // Fetch taxonomy data for ID to name conversion
+    dispatch(fetchAllTaxonomyData());
   }, [productId, dispatch]);
 
   useEffect(() => {
@@ -457,7 +484,7 @@ function ProductDetailsPage() {
               </div>
             </div>
 
-            {productDetails?.sizes?.length > 0 && (
+            {getDisplaySizes().length > 0 && (
               <div className="mb-6">
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="text-base font-medium text-gray-800 flex items-center gap-2">
@@ -473,7 +500,7 @@ function ProductDetailsPage() {
                   </button>
                 </div>
                 <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
-                  {productDetails.sizes.map((size) => {
+                  {getDisplaySizes().map((size) => {
                     const isDisabled = false;
                     return (
                       <button
@@ -501,7 +528,7 @@ function ProductDetailsPage() {
               </div>
             )}
 
-            {productDetails?.colors?.length > 0 && (
+            {getDisplayColors().length > 0 && (
               <div className="mb-6">
                 <h3 className="text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
                   <div className="w-5 h-5 rounded-full border border-gray-300 overflow-hidden flex-shrink-0">
@@ -521,7 +548,7 @@ function ProductDetailsPage() {
                 </h3>
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="grid grid-cols-5 sm:grid-cols-6 gap-3">
-                    {productDetails.colors.map((color) => {
+                    {getDisplayColors().map((color) => {
                       const colorMap = {
                         white: '#FFFFFF',
                         black: '#000000',
@@ -760,8 +787,8 @@ function ProductDetailsPage() {
                         </div>
                         <div className="p-4">
                           <div className="mb-1 text-xs text-gray-500 uppercase tracking-wide">
-                            {product.brand}
-                            {product.category && <span className="ml-2">{product.category}</span>}
+                            {convertIdToName(product.brand, brands, {})}
+                            {product.category && <span className="ml-2">{convertIdToName(product.category, categories, {})}</span>}
                           </div>
                           <h3
                             className="font-medium text-gray-900 mb-1 truncate cursor-pointer hover:text-black hover:underline"

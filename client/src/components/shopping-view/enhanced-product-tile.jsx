@@ -1,6 +1,9 @@
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardFooter } from "../ui/card";
 import { Heart, Star, Store, MapPin } from "lucide-react";
+import { useDispatch, useSelector } from 'react-redux';
+import { useEffect } from 'react';
+import { fetchAllTaxonomyData } from '@/store/superAdmin/taxonomy-slice';
 
 function EnhancedShoppingProductTile({
   product,
@@ -9,7 +12,34 @@ function EnhancedShoppingProductTile({
   handleAddToWishlist,
   isInWishlist = false
 }) {
+  const dispatch = useDispatch();
+  const { brands, categories } = useSelector(state => state.taxonomy);
   const shop = product?.createdBy;
+
+  // Fetch taxonomy data on component mount
+  useEffect(() => {
+    if (!brands || brands.length === 0) {
+      dispatch(fetchAllTaxonomyData());
+    }
+  }, [dispatch, brands]);
+
+  // Utility function to convert database IDs to human-readable names
+  const convertIdToName = (id, taxonomyArray) => {
+    if (!id) return '';
+    
+    // If it's already a human-readable name (not a MongoDB ObjectId), return as is
+    if (typeof id === 'string' && id.length !== 24) {
+      return id;
+    }
+    
+    // Find the taxonomy item by ID
+    const item = taxonomyArray?.find(item => item._id === id);
+    return item ? item.name : id;
+  };
+
+  // Get display names for brand and category
+  const displayBrand = convertIdToName(product?.brand, brands);
+  const displayCategory = convertIdToName(product?.category, categories);
 
   return (
     <Card className="w-full max-w-sm mx-auto cursor-pointer relative group transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-gray-200 dark:border-gray-700 bg-white overflow-hidden">
@@ -100,11 +130,11 @@ function EnhancedShoppingProductTile({
           {/* Product Categories */}
           <div className="flex items-center gap-2 mb-3">
             <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
-              {product?.category}
+              {displayCategory}
             </Badge>
-            {product?.brand && (
+            {displayBrand && (
               <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100">
-                {product?.brand}
+                {displayBrand}
               </Badge>
             )}
           </div>
