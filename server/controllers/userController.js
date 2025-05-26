@@ -601,8 +601,7 @@ const getVendorShippingSettings = async (req, res) => {
                 baseRegion: user.baseRegion || '',
                 baseCity: user.baseCity || '',
                 shippingPreferences: user.shippingPreferences || {
-                    defaultBaseRate: 40,
-                    defaultOutOfRegionRate: 70,
+                    defaultBaseRate: 0,
                     enableRegionalRates: true
                 }
             }

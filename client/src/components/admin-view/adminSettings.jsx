@@ -31,6 +31,12 @@ const AdminSettings = ({ initialTab = 'general' }) => {
   const [baseRegion, setBaseRegion] = useState(user?.baseRegion || '');
   const [baseCity, setBaseCity] = useState(user?.baseCity || '');
   
+  // Shipping preferences state
+  const [shippingPreferences, setShippingPreferences] = useState({
+    defaultBaseRate: user?.shippingPreferences?.defaultBaseRate || 0,
+    enableRegionalRates: user?.shippingPreferences?.enableRegionalRates !== false
+  });
+  
   // List of time zones
   const timeZones = [
     'UTC',
@@ -84,7 +90,8 @@ const AdminSettings = ({ initialTab = 'general' }) => {
       const settingsData = {
         timezone,
         baseRegion,
-        baseCity
+        baseCity,
+        shippingPreferences
       };
       
       // Use the updateUserSettings thunk
@@ -264,6 +271,42 @@ const AdminSettings = ({ initialTab = 'general' }) => {
                       <Map className="mr-2 h-4 w-4" />
                       Manage Shipping Zones
                     </a>
+                  </div>
+                </div>
+                
+                {/* Shipping Preferences Section */}
+                <div className="p-4 border rounded-lg bg-green-50 border-green-200">
+                  <h3 className="text-md font-medium flex items-center mb-4">
+                    <Truck className="mr-2 h-5 w-5 text-green-500" />
+                    Shipping Rate Preferences
+                  </h3>
+                  
+                  <p className="text-sm text-green-700 mb-4">
+                    Set your default shipping rates. These will be used automatically for all orders based on customer location.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Default Fallback Rate (GHS)</label>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        value={shippingPreferences.defaultBaseRate}
+                        min="0"
+                        step="0.01"
+                        className="bg-white"
+                        onChange={(e) => setShippingPreferences(prev => ({
+                          ...prev,
+                          defaultBaseRate: parseFloat(e.target.value) || 0
+                        }))}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Used when no specific region rates are configured in Shipping Zones</p>
+                    </div>
+                  </div>
+                  
+                  <div className="text-xs text-blue-600 bg-blue-50 p-3 rounded">
+                    <strong>💡 Tip:</strong> Configure specific rates for each region in the "Shipping Zones" section. 
+                    This fallback rate is only used when no specific zone is configured for a customer's region.
                   </div>
                 </div>
                 

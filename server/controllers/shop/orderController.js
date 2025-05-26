@@ -1344,11 +1344,12 @@ const fixShippingFees = async(req, res) => {
                     adminGroups[adminId].push(item);
                 });
                 
-                // Apply default shipping fees per admin
-                const calculatedShippingFee = 0;
+                // Apply default shipping fees per admin - use 0 instead of hardcoded values
+                let calculatedShippingFee = 0;
                 const calculatedAdminShippingFees = {};
                 Object.keys(adminGroups).forEach(adminId => {
-                    const defaultFee = isAccra ? 40 : 70; // 40 GHS for Accra, 70 GHS for other regions
+                    // Default to 0 to avoid unexpected charges when vendor rates aren't configured
+                    const defaultFee = 0;
                     calculatedAdminShippingFees[adminId] = defaultFee;
                     calculatedShippingFee += defaultFee;
                 });

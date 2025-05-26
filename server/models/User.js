@@ -150,15 +150,11 @@ const UserSchema = new mongoose.Schema({
             default: ''
         }
     },
-    // Store additional shipping preferences
+    // Store additional shipping preferences (fallback rates when no specific zones are configured)
     shippingPreferences: {
         defaultBaseRate: {
             type: Number,
-            default: 40 // Default base rate in GHS
-        },
-        defaultOutOfRegionRate: {
-            type: Number,
-            default: 70 // Default out-of-region rate in GHS
+            default: 0 // Default fallback rate when no specific region zones are configured
         },
         enableRegionalRates: {
             type: Boolean,

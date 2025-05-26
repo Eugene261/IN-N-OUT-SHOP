@@ -68,10 +68,10 @@ const createShippingZone = async (req, res) => {
         const { name, region, baseRate, isDefault, additionalRates, vendorRegion } = req.body;
         
         // Validate required fields
-        if (!name || !region || baseRate === undefined) {
+        if (!name || !region) {
             return res.status(400).json({
                 success: false,
-                message: 'Please provide all required fields: name, region, baseRate'
+                message: 'Please provide all required fields: name, region'
             });
         }
         

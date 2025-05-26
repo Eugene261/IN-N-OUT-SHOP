@@ -1,6 +1,7 @@
 import { deleteCartItem, updateCartQuantity } from '@/store/shop/cart-slice';
+import { fetchAllTaxonomyData } from '@/store/superAdmin/taxonomy-slice';
 import { Minus, Plus, Trash } from 'lucide-react';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -30,6 +31,24 @@ function UserCartItemsContent({ cartItem }) {
   const { user } = useSelector(state => state.auth);
   const { cartItems } = useSelector(state => state.shopCart);
   const { productList } = useSelector(state => state.shopProducts);
+  const { sizes: taxonomySizes, colors: taxonomyColors } = useSelector(state => state.taxonomy);
+
+  // Fetch taxonomy data when component mounts
+  useEffect(() => {
+    dispatch(fetchAllTaxonomyData());
+  }, [dispatch]);
+
+  // Utility function to convert database IDs to human-readable names
+  const convertIdToName = (id, taxonomyArray) => {
+    if (!id || !taxonomyArray || taxonomyArray.length === 0) return id;
+    
+    // If it's already a human-readable name (not a MongoDB ObjectId), return as is
+    if (typeof id === 'string' && id.length !== 24) return id;
+    
+    // Find the taxonomy item by ID
+    const item = taxonomyArray.find(item => item._id === id);
+    return item ? item.name : id;
+  };
 
   // Function to get color code from color name
   function getColorCode(colorName) {
@@ -250,16 +269,20 @@ function UserCartItemsContent({ cartItem }) {
           <div className="flex flex-col space-y-1">
             <div className="flex items-center space-x-2">
               <span className="text-xs text-gray-500">Size:</span>
-              <span className="text-xs font-medium uppercase">{cartItem?.size || 'N/A'}</span>
+              <span className="text-xs font-medium uppercase">
+                {convertIdToName(cartItem?.size, taxonomySizes) || 'N/A'}
+              </span>
             </div>
             <div className="flex items-center space-x-2">
               <span className="text-xs text-gray-500">Color:</span>
-              <span className="text-xs font-medium captalize">{cartItem?.color || 'N/A'}</span>
+              <span className="text-xs font-medium capitalize">
+                {convertIdToName(cartItem?.color, taxonomyColors) || 'N/A'}
+              </span>
               {cartItem?.color && (
                 <div 
                   className="w-3 h-3 rounded-full border border-gray-300" 
                   style={{
-                    background: getColorCode(cartItem?.color),
+                    background: getColorCode(convertIdToName(cartItem?.color, taxonomyColors)),
                     display: 'inline-block'
                   }}
                 ></div>

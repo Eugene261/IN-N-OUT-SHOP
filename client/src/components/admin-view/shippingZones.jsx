@@ -619,6 +619,43 @@ const ShippingZones = () => {
       {/* Base Region Modal */}
       {showBaseRegionModal && <BaseRegionModal />}
 
+      {/* Admin Shipping Preferences Info */}
+      {!authError && (
+        <Card className="mb-6 bg-blue-50 border-blue-200">
+          <CardHeader>
+            <CardTitle className="flex items-center text-blue-700">
+              <Truck className="mr-2 h-5 w-5" />
+              Your Shipping Preferences
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div className="bg-white p-3 rounded-lg">
+                <span className="text-gray-600">Default Fallback Rate:</span>
+                <div className="font-semibold text-lg text-blue-600">
+                  GHS {user?.shippingPreferences?.defaultBaseRate || 0}
+                </div>
+              </div>
+              <div className="bg-white p-3 rounded-lg">
+                <span className="text-gray-600">Other Regions Rate:</span>
+                <div className="font-semibold text-lg text-orange-600">
+                  GHS {user?.shippingPreferences?.defaultOutOfRegionRate || 0}
+                </div>
+              </div>
+              <div className="bg-white p-3 rounded-lg">
+                <span className="text-gray-600">Regional Rates:</span>
+                <div className="font-semibold text-lg text-blue-600">
+                  {user?.shippingPreferences?.enableRegionalRates !== false ? 'Enabled' : 'Disabled'}
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-blue-600 mt-3">
+              These rates are used by default for all shipping calculations. Shipping zones only add additional weight/price-based fees.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Authentication Error */}
       {authError && (
         <div className="bg-red-50 border border-red-200 rounded-md p-4 flex items-center text-red-700">
@@ -671,15 +708,18 @@ const ShippingZones = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Base Rate (GHS)</label>
+                  <label className="block text-sm font-medium mb-1">Base Rate (GHS) - Optional</label>
                   <Input
                     type="number"
                     value={newZone.baseRate}
-                    onChange={(e) => setNewZone({ ...newZone, baseRate: parseFloat(e.target.value) })}
+                    onChange={(e) => setNewZone({ ...newZone, baseRate: parseFloat(e.target.value) || 0 })}
                     min="0"
                     step="0.01"
-                    required
+                    placeholder="0 (uses admin preferences)"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Leave as 0 to use your admin shipping preferences instead
+                  </p>
                 </div>
               </div>
 

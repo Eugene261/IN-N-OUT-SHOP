@@ -51,11 +51,7 @@ function AuthLogin() {
         if (resultAction.payload?.success) {
           const user = resultAction.payload.user;
           
-          // Store the JWT token in localStorage for auth across browser sessions
-          if (resultAction.payload.token) {
-            localStorage.setItem('token', resultAction.payload.token);
-            console.log('Token saved to localStorage');
-          }
+          // Token is now automatically stored in Redux slice
           
           toast.success('Login Successful', {
             position: 'top-center',

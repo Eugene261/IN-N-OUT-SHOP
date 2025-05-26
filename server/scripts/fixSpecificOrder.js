@@ -61,7 +61,8 @@ async function fixSpecificOrder() {
       const adminShippingFees = {};
       
       Object.keys(adminGroups).forEach(adminId => {
-        const fee = isAccra ? 40 : 70;
+        // Default to 0 to avoid unexpected charges when vendor rates aren't configured
+        const fee = 0;
         adminShippingFees[adminId] = fee;
         adminGroups[adminId].shippingFee = fee;
       });

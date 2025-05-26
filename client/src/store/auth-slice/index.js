@@ -37,20 +37,41 @@ export const checkAuth = createAsyncThunk(
       const token = localStorage.getItem('token');
       console.log('CheckAuth: Token exists:', !!token);
       
+      // If no token, immediately reject
+      if (!token) {
+        console.log('CheckAuth: No token found, rejecting');
+        return rejectWithValue({ message: 'No token found' });
+      }
+      
+      // Check if token is expired before making request
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const currentTime = Date.now() / 1000;
+        
+        if (payload.exp < currentTime) {
+          console.log('CheckAuth: Token is expired, clearing auth data');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          return rejectWithValue({ message: 'Token expired', tokenExpired: true });
+        }
+      } catch (tokenError) {
+        console.log('CheckAuth: Invalid token format, clearing auth data');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        return rejectWithValue({ message: 'Invalid token format' });
+      }
+      
       const config = {
         withCredentials: true,
         headers: {
           'Content-Type': 'application/json',
           'Cache-Control' : 'no-store, no-cache, must-revalidate, proxy-revalidate',
-          'Expires' : '0'
+          'Expires' : '0',
+          'Authorization': `Bearer ${token}`
         },
       };
-      
-      // Add authorization header if token exists
-      if (token) {
-        config.headers['Authorization'] = `Bearer ${token}`;
-        console.log('CheckAuth: Added Authorization header');
-      }
       
       console.log('CheckAuth: Making request to server...');
       const response = await axios.get(
@@ -63,6 +84,14 @@ export const checkAuth = createAsyncThunk(
     } catch (error) {
       console.log('CheckAuth error:', error.response?.status, error.message);
       console.log('CheckAuth error data:', error.response?.data);
+      
+      // If it's a 401 error, clear auth data
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      }
+      
       // Use rejectWithValue to pass the error response data
       return rejectWithValue(error.response?.data || { message: 'Authentication check failed' });
     }
@@ -73,6 +102,13 @@ export const logoutUser = createAsyncThunk(
   'auth/logout',
   async (_, { rejectWithValue }) => {
     try {
+      // Clear localStorage immediately
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
+      // Clear cookies
+      document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      
       const response = await axios.post(
         'http://localhost:5000/api/auth/logout', {},
         {
@@ -82,6 +118,7 @@ export const logoutUser = createAsyncThunk(
       return response.data;
     } catch (error) {
       console.log('Logout error:', error.response?.status, error.message);
+      // Even if server logout fails, we've cleared local data
       // Use rejectWithValue to pass the error response data
       return rejectWithValue(error.response?.data || { message: 'Logout failed' });
     }
@@ -264,7 +301,13 @@ const authSlice = createSlice({
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.user = action.payload.success ?  action.payload.user : null;
-        state.isAuthenticated = action.payload.success ? true : false; // You might want to change this
+        state.isAuthenticated = action.payload.success ? true : false;
+        
+        // Store token in localStorage if login was successful
+        if (action.payload.success && action.payload.token) {
+          localStorage.setItem('token', action.payload.token);
+          localStorage.setItem('user', JSON.stringify(action.payload.user));
+        }
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;

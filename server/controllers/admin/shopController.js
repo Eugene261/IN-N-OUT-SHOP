@@ -128,8 +128,7 @@ const updateShopProfile = async (req, res) => {
         // Update shipping preferences if provided
         if (shippingPreferences) {
             updateData.shippingPreferences = {
-                defaultBaseRate: parseFloat(shippingPreferences.defaultBaseRate) || 40,
-                defaultOutOfRegionRate: parseFloat(shippingPreferences.defaultOutOfRegionRate) || 70,
+                defaultBaseRate: parseFloat(shippingPreferences.defaultBaseRate) || 0,
                 enableRegionalRates: Boolean(shippingPreferences.enableRegionalRates)
             };
         }

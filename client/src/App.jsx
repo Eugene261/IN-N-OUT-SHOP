@@ -55,11 +55,17 @@ import TokenManager from './components/common/TokenManager';
 // Import Toaster component
 import { Toaster } from "./components/ui/sonner";
 
+// Import axios interceptor
+import setupAxiosInterceptors from "./utils/axiosInterceptor";
+
 function App() {
   const {user, isAuthenticated, isLoading } = useSelector(state => state.auth);
   const dispatch = useDispatch();
 
   useEffect(() => {
+    // Setup axios interceptors for token expiration handling
+    setupAxiosInterceptors();
+    
     console.log('App: Dispatching checkAuth...');
     dispatch(checkAuth());
     

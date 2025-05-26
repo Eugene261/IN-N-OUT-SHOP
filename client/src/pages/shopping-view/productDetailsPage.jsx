@@ -171,7 +171,7 @@ function ProductDetailsPage() {
   } = useSelector(state => state.shopProducts);
   const { wishlistItems } = useSelector(state => state.wishlist);
   const { user } = useSelector(state => state.auth);
-  const { sizes, colors } = useSelector(state => state.taxonomy);
+  const { sizes, colors, brands, categories } = useSelector(state => state.taxonomy);
   const isAuthenticated = !!user;
 
   const [quantity, setQuantity] = useState(1);
@@ -787,8 +787,8 @@ function ProductDetailsPage() {
                         </div>
                         <div className="p-4">
                           <div className="mb-1 text-xs text-gray-500 uppercase tracking-wide">
-                            {convertIdToName(product.brand, brands, {})}
-                            {product.category && <span className="ml-2">{convertIdToName(product.category, categories, {})}</span>}
+                            {convertIdToName(product.brand, brands)}
+                            {product.category && <span className="ml-2">{convertIdToName(product.category, categories)}</span>}
                           </div>
                           <h3
                             className="font-medium text-gray-900 mb-1 truncate cursor-pointer hover:text-black hover:underline"

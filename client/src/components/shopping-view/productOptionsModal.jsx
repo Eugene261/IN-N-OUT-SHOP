@@ -5,49 +5,72 @@ import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { ShoppingBag, X, Minus, Plus } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart, fetchCartItems, openCart } from '../../store/shop/cart-slice';
+import { fetchAllTaxonomyData } from '@/store/superAdmin/taxonomy-slice';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const ProductOptionsModal = ({ isOpen, onClose, product, onAddToCart }) => {
   const dispatch = useDispatch();
   const { user } = useSelector(state => state.auth);
+  const { sizes: taxonomySizes, colors: taxonomyColors } = useSelector(state => state.taxonomy);
   const [selectedSize, setSelectedSize] = useState('M');
   const [selectedColor, setSelectedColor] = useState('Black');
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Utility function to convert database IDs to human-readable names
+  const convertIdToName = (id, taxonomyArray) => {
+    if (!id || !taxonomyArray || taxonomyArray.length === 0) return id;
+    
+    // If it's already a human-readable name (not a MongoDB ObjectId), return as is
+    if (typeof id === 'string' && id.length !== 24) return id;
+    
+    // Find the taxonomy item by ID
+    const item = taxonomyArray.find(item => item._id === id);
+    return item ? item.name : id;
+  };
+
+  // Convert product sizes and colors for display
+  const getDisplaySizes = () => {
+    if (!product?.sizes) return ['S', 'M', 'L', 'XL'];
+    return product.sizes.map(size => convertIdToName(size, taxonomySizes));
+  };
+
+  const getDisplayColors = () => {
+    if (!product?.colors) return ['Black'];
+    return product.colors.map(color => convertIdToName(color, taxonomyColors));
+  };
+
+  // Fetch taxonomy data when component mounts
+  useEffect(() => {
+    dispatch(fetchAllTaxonomyData());
+  }, [dispatch]);
+
   // Reset selections when modal opens with a new product
   useEffect(() => {
     if (isOpen && product) {
-      // If product has sizes and colors, select the first one by default
-      // Otherwise fallback to default values
-      if (product.sizes && product.sizes.length > 0) {
-        setSelectedSize(product.sizes[0]);
+      const displaySizes = getDisplaySizes();
+      const displayColors = getDisplayColors();
+      
+      // Set first available size and color as default
+      if (displaySizes.length > 0) {
+        setSelectedSize(displaySizes[0]);
       } else {
         setSelectedSize('M');
       }
       
-      if (product.colors && product.colors.length > 0) {
-        setSelectedColor(product.colors[0]);
+      if (displayColors.length > 0) {
+        setSelectedColor(displayColors[0]);
       } else {
         setSelectedColor('Black');
       }
       
       setQuantity(1);
       console.log("Product data in modal:", product);
+      console.log("Display sizes:", displaySizes);
+      console.log("Display colors:", displayColors);
     }
-  }, [isOpen, product]);
-
-  // Use product's actual sizes and colors if present, otherwise use fallbacks
-  const sizes = product?.sizes && product.sizes.length > 0 
-    ? product.sizes 
-    : ['S', 'M', 'L', 'XL'];
-    
-  const colors = product?.colors && product.colors.length > 0 
-    ? product.colors 
-    : ['Black'];
-  
-  console.log("Using sizes:", sizes, "and colors:", colors);
+  }, [isOpen, product, taxonomySizes, taxonomyColors]);
 
   const handleAddToCart = () => {
     if (!user) {
@@ -180,7 +203,7 @@ const ProductOptionsModal = ({ isOpen, onClose, product, onAddToCart }) => {
               </button>
             </Label>
             <div className="grid grid-cols-4 gap-2">
-              {sizes.map(size => {
+              {getDisplaySizes().map(size => {
                 // Ensure size is capitalized
                 const capitalizedSize = size.toUpperCase();
                 return (
@@ -209,7 +232,7 @@ const ProductOptionsModal = ({ isOpen, onClose, product, onAddToCart }) => {
             </Label>
             
             <div className="flex flex-wrap gap-4">
-              {colors.map(color => {
+              {getDisplayColors().map(color => {
                 // Map color names to actual CSS color values - exact shades matching the image
                 const colorMap = {
                   'white': '#FFFFFF',

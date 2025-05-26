@@ -67,7 +67,8 @@ async function updateOrderShippingFees() {
         
         const adminShippingFees = {};
         Object.keys(adminGroups).forEach(adminId => {
-          adminShippingFees[adminId] = isAccra ? 40 : 70;
+          // Default to 0 to avoid unexpected charges when vendor rates aren't configured
+          adminShippingFees[adminId] = 0;
         });
         
         // Calculate total shipping fee

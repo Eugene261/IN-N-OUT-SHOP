@@ -114,17 +114,17 @@ const loginUser = async(req, res) => {
         // Get updated user data
         const updatedUser = await User.findById(checkUser._id);
 
-        // Sign a JWT token with extended expiration time for better UX
+        // Sign a JWT token with 1 hour expiration for better security
         const token = jwt.sign({
             id : checkUser._id, role : checkUser.role, email : checkUser.email, userName : checkUser.userName
-        }, 'CLIENT_SECRET_KEY', {expiresIn : '1h'}); // Changed from 24h to 1h for better security
+        }, 'CLIENT_SECRET_KEY', {expiresIn : '1h'}); // 1 hour expiration
 
         // Send token both in cookie (for server API calls) and in response (for localStorage)
         res.cookie('token', token, {
             httpOnly: false, // Allow JS access
             secure: process.env.NODE_ENV === 'production', // Use secure in production
             sameSite: 'lax', // Better compatibility with different browsers
-            maxAge: 24 * 60 * 60 * 1000 // 24 hours
+            maxAge: 60 * 60 * 1000 // 1 hour - matches JWT expiration
         }).json({
             success : true,
             message : 'Logged in successfully',
@@ -201,9 +201,19 @@ const authMiddleware = async(req, res, next) => {
     next()
   } catch (error) {
     console.log('AuthMiddleware: Token verification failed:', error.message);
+    
+    // Provide specific error messages for different token issues
+    let message = 'Unauthorized user!';
+    if (error.name === 'TokenExpiredError') {
+      message = 'Token has expired. Please login again.';
+    } else if (error.name === 'JsonWebTokenError') {
+      message = 'Invalid token. Please login again.';
+    }
+    
     res.status(401).json({
       success : false,
-      message : 'Unauthorized user!'
+      message : message,
+      tokenExpired: error.name === 'TokenExpiredError'
     })
   }
 }

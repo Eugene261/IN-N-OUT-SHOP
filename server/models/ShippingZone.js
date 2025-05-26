@@ -13,8 +13,9 @@ const shippingZoneSchema = new mongoose.Schema({
     },
     baseRate: {
         type: Number,
-        required: true,
-        min: 0
+        required: false,
+        min: 0,
+        default: 0
     },
     isDefault: {
         type: Boolean,

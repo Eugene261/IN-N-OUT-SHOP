@@ -29,9 +29,9 @@ const ShippingPage = () => {
 
   // Updated shipping rate data
   const domesticShippingRates = [
-    { region: 'Accra (City)', cost: 40, time: '1-2 business days' },
-    { region: 'Greater Accra Region', cost: 40, time: '1-3 business days' },
-    { region: 'All Other Regions', cost: 70, time: '3-5 business days' },
+    { region: 'Same Region as Vendor', cost: 'Vendor-specific', time: '1-3 business days' },
+    { region: 'Different Region from Vendor', cost: 'Vendor-specific', time: '3-5 business days' },
+    { region: 'Remote Areas', cost: 'Vendor-specific', time: '5-7 business days' },
   ];
 
   return (
@@ -79,14 +79,14 @@ const ShippingPage = () => {
             </div>
             <div className="flex flex-col items-center md:items-end">
               <div className="flex items-center">
-                <span className="text-lg font-semibold mr-2">GHS 40</span>
+                <span className="text-lg font-semibold mr-2">Variable</span>
                 <span className="text-sm text-gray-600 bg-white px-2 py-1 rounded-full">Same Region Rate</span>
               </div>
               <div className="flex items-center mt-2">
-                <span className="text-lg font-semibold mr-2">GHS 70</span>
+                <span className="text-lg font-semibold mr-2">Variable</span>
                 <span className="text-sm text-gray-600 bg-white px-2 py-1 rounded-full">Other Regions Rate</span>
               </div>
-              <div className="text-xs text-gray-500 mt-1 italic">Rates may vary by vendor</div>
+              <div className="text-xs text-gray-500 mt-1 italic">Each vendor sets their own rates</div>
             </div>
           </div>
         </motion.div>
@@ -199,7 +199,7 @@ const ShippingPage = () => {
                   <thead className="bg-gray-50 border-b">
                     <tr>
                       <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Region</th>
-                      <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost (GHS)</th>
+                      <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
                       <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estimated Delivery</th>
                     </tr>
                   </thead>
@@ -313,13 +313,13 @@ const ShippingPage = () => {
               <div>
                 <h3 className="text-lg font-semibold mb-2">How are shipping costs calculated in a multi-vendor order?</h3>
                 <p className="text-gray-600">
-                  In our multi-vendor platform, each vendor sets their own shipping rates based on their location. 
-                  The standard rates are GHS 40 for deliveries within the vendor's region, and GHS 70 for deliveries to other regions.
+                  In our multi-vendor platform, each vendor sets their own shipping rates based on their location and preferences. 
+                  Vendors can configure different rates for customers in their region versus customers in other regions.
                   When you order from multiple vendors, each vendor's shipping fee is calculated separately and added to your total.
                 </p>
                 <div className="mt-2 p-3 bg-gray-50 rounded border border-gray-200 text-sm">
-                  <strong>Example:</strong> If you order from three different vendors and one is in your region while
-                  two are in different regions, your shipping total might be: GHS 40 + GHS 70 + GHS 70 = GHS 180
+                  <strong>Example:</strong> If you order from three different vendors, each vendor's configured shipping rate will apply.
+                  The total shipping cost will be the sum of all individual vendor shipping fees.
                 </div>
               </div>
 

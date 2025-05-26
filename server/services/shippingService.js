@@ -135,45 +135,29 @@ const calculateShippingFees = async (cartItems, addressInfo) => {
             // Find the shipping zone for this admin and destination
             const destinationZone = await findShippingZone(city, region, adminId);
             
-            // Apply base rate - prioritize shipping zone if defined, fall back to vendor preferences
+            // Use direct region-to-rate lookup - no "same region" vs "different region" logic
             let adminFee = 0;
-            if (destinationZone && destinationZone.baseRate) {
-                // Use custom shipping zone rate if defined
+            
+            // First priority: Check if vendor has configured a specific zone for this region
+            if (destinationZone && destinationZone.baseRate !== undefined) {
                 adminFee = destinationZone.baseRate;
-                console.log(`Initial shipping fee for ${adminId}: ${adminFee} GHS (using zone: ${destinationZone.name})`);
-            } else if (vendorShippingPrefs) {
-                // Fall back to vendor shipping preferences if no custom zone is found
-                // Default to out-of-region rate first
-                adminFee = vendorShippingPrefs.defaultOutOfRegionRate || 0;
-                console.log(`Initial shipping fee for ${adminId}: ${adminFee} GHS (using vendor default out-of-region rate)`);
+                console.log(`Initial shipping fee for ${adminId}: ${adminFee} GHS (using configured rate for ${region})`);
             } else {
-                // Get any zone configuration from database as fallback
-                try {
-                    // Try to find a default zone first
-                    const defaultZone = await ShippingZone.findOne({ isDefault: true });
-                    
-                    if (defaultZone) {
-                        adminFee = defaultZone.baseRate || 0;
-                        console.log(`Initial shipping fee for ${adminId}: ${adminFee} GHS (using default zone: ${defaultZone.name})`);
-                    } else {
-                        // If no default zone, try to get any zone
-                        const anyZone = await ShippingZone.findOne();
-                        adminFee = anyZone ? anyZone.baseRate || 0 : 0;
-                        console.log(`Initial shipping fee for ${adminId}: ${adminFee} GHS (using any available zone)`);
-                    }
-                } catch (error) {
-                    console.error('Error fetching zone for initial fee:', error);
-                    adminFee = 0; // Set to zero if all else fails
-                    console.log(`Initial shipping fee for ${adminId}: ${adminFee} GHS (using zero as last resort)`);
+                // Second priority: Use vendor's default shipping preferences as fallback
+                if (vendorShippingPrefs && vendorShippingPrefs.defaultBaseRate !== undefined) {
+                    adminFee = vendorShippingPrefs.defaultBaseRate;
+                    console.log(`Initial shipping fee for ${adminId}: ${adminFee} GHS (using vendor default rate - no specific region configured)`);
+                } else {
+                    // Last resort: No rates configured at all
+                    adminFee = 0;
+                    console.log(`Initial shipping fee for ${adminId}: ${adminFee} GHS (no rates configured for this vendor)`);
                 }
             }
             
-            // Store basic shipping information without same-region discount logic
-            // Simply using the shipping zone rate as determined by the zone lookup
-            console.log(`Using shipping fee of ${adminFee} GHS for ${adminId} based on shipping zone configuration`);
+            console.log(`Using shipping fee of ${adminFee} GHS for ${adminId} based on admin preferences`);
             
-            // Apply additional rates based on weight or cart value
-            if (destinationZone.additionalRates && destinationZone.additionalRates.length > 0) {
+            // Apply additional rates from shipping zones (if any)
+            if (destinationZone && destinationZone.additionalRates && destinationZone.additionalRates.length > 0) {
                 for (const rate of destinationZone.additionalRates) {
                     if (rate.type === 'weight' && group.totalWeight > rate.threshold) {
                         adminFee += rate.additionalFee;
@@ -259,69 +243,82 @@ const calculateShippingFees = async (cartItems, addressInfo) => {
         const region = (addressInfo.region || '').toLowerCase().trim();
         // No hardcoded region checks - we'll use the normalizeRegionName function defined earlier
         
-        // Calculate fallback shipping fees with same-region discount attempts
+        // Calculate fallback shipping fees using admin preferences
         const adminShippingFees = {};
         let totalFee = 0;
         
-        // Try to get vendor data for same-region discounts
+        // Try to get vendor data for admin preferences
         const User = require('../models/User');
         
         for (const adminId of Object.keys(adminGroups)) {
             try {
-                // Try to find the vendor's base region and shipping preferences
+                // Try to find a specific shipping zone for this vendor and region first
+                const ShippingZone = require('../models/ShippingZone');
+                
+                // Look for vendor-specific zone for this region
+                let vendorZone = await ShippingZone.findOne({
+                    vendorId: adminId,
+                    $or: [
+                        { region: { $regex: region, $options: 'i' } },
+                        { name: { $regex: city, $options: 'i' } }
+                    ]
+                }).sort({ updatedAt: -1 });
+                
+                if (vendorZone && vendorZone.baseRate !== undefined) {
+                    const fee = vendorZone.baseRate;
+                    console.log(`Fallback - Found configured rate for ${region}: GHS ${fee}`);
+                    adminShippingFees[adminId] = fee;
+                    totalFee += fee;
+                    continue;
+                }
+                
+                // If no specific zone found, try vendor's default shipping preferences
                 const vendor = await User.findById(adminId);
-                if (vendor) {
-                    // Get vendor region and shipping preferences
-                    const vendorRegion = vendor.baseRegion?.toLowerCase();
-                    const vendorShippingPrefs = vendor.shippingPreferences || null;
-                    const customerRegion = region.toLowerCase();
-                    
-                    // Check if vendor has regional rates enabled
-                    const enableRegionalRates = vendorShippingPrefs ? 
-                        vendorShippingPrefs.enableRegionalRates !== false : true; // Default to true
-                    
-                    // Use our region normalization function for consistent comparison
-                    const normalizeRegionName = (regionName) => {
-                        if (!regionName) return '';
-                        // Remove common suffixes and prefixes
-                        let normalized = regionName.replace(/\s*region$/i, '').trim();
-                        normalized = normalized.replace(/^greater\s*/i, '').trim();
-                        return normalized.toLowerCase();
-                    };
-                    
-                    const normalizedVendorRegion = normalizeRegionName(vendorRegion);
-                    const normalizedCustomerRegion = normalizeRegionName(customerRegion);
-                    
-                    // Check for exact region match using normalized names
-                    const isExactMatch = vendorRegion && normalizedVendorRegion === normalizedCustomerRegion;
-                    
-                    if (isExactMatch && enableRegionalRates) {
-                        // Get base region fee based on vendor preferences
-                        const sameRegionFee = vendorShippingPrefs?.defaultBaseRate || 40; // Default same-region cap fee
-                        console.log(`Fallback - SAME REGION MATCH! Customer: ${region}, Vendor: ${vendorRegion}, applying vendor base rate of GHS ${sameRegionFee}`);
-                        adminShippingFees[adminId] = sameRegionFee;
-                        totalFee += sameRegionFee;
-                        continue;
-                    } else if (vendorShippingPrefs && !isExactMatch) {
-                        // Apply vendor-specific out-of-region rate - no hardcoded region checks
-                        const outOfRegionFee = vendorShippingPrefs.defaultOutOfRegionRate || fallbackRate;
-                        console.log(`Fallback - DIFFERENT REGIONS - using vendor out-of-region rate: GHS ${outOfRegionFee}`);
-                        adminShippingFees[adminId] = outOfRegionFee;
-                        totalFee += outOfRegionFee;
-                        continue;
-                    } else if (isExactMatch && !enableRegionalRates) {
-                        console.log(`Fallback - SAME REGION but vendor has disabled regional rates`);
-                    }
+                if (vendor && vendor.shippingPreferences && vendor.shippingPreferences.defaultBaseRate !== undefined) {
+                    const fee = vendor.shippingPreferences.defaultBaseRate;
+                    console.log(`Fallback - Using vendor default rate: GHS ${fee}`);
+                    adminShippingFees[adminId] = fee;
+                    totalFee += fee;
+                    continue;
                 }
             } catch (vendorError) {
-                console.error(`Error fetching vendor ${adminId} for same-region check:`, vendorError);
+                console.error(`Error fetching vendor ${adminId} shipping configuration:`, vendorError);
                 // Continue with standard fallback below
             }
             
-            // Standard fallback - no hardcoded region checks
-            const fee = fallbackRate; // Use the single fallback rate we retrieved from the database
-            adminShippingFees[adminId] = fee;
-            totalFee += fee;
+            // Standard fallback when no admin preferences found - try to get from shipping zones
+            try {
+                const ShippingZone = require('../models/ShippingZone');
+                
+                // Try to find a vendor-specific zone first
+                let vendorZone = await ShippingZone.findOne({
+                    vendorId: adminId,
+                    $or: [
+                        { region: { $regex: region, $options: 'i' } },
+                        { name: { $regex: city, $options: 'i' } }
+                    ]
+                }).sort({ updatedAt: -1 });
+                
+                // If no vendor-specific zone, try default zone for this vendor
+                if (!vendorZone) {
+                    vendorZone = await ShippingZone.findOne({
+                        vendorId: adminId,
+                        isDefault: true
+                    });
+                }
+                
+                const fee = vendorZone ? vendorZone.baseRate : 0;
+                console.log(`Fallback - No admin preferences found for ${adminId}, using zone rate: GHS ${fee}`);
+                adminShippingFees[adminId] = fee;
+                totalFee += fee;
+            } catch (zoneError) {
+                console.error(`Error fetching shipping zone for ${adminId}:`, zoneError);
+                // If all else fails, use 0 to avoid unexpected charges
+                const fee = 0;
+                console.log(`Fallback - Error fetching zone for ${adminId}, using zero rate: GHS ${fee}`);
+                adminShippingFees[adminId] = fee;
+                totalFee += fee;
+            }
         }
         
         return {
