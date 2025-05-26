@@ -117,7 +117,7 @@ const loginUser = async(req, res) => {
         // Sign a JWT token with extended expiration time for better UX
         const token = jwt.sign({
             id : checkUser._id, role : checkUser.role, email : checkUser.email, userName : checkUser.userName
-        }, 'CLIENT_SECRET_KEY', {expiresIn : '24h'}); // Extended to 24 hours
+        }, 'CLIENT_SECRET_KEY', {expiresIn : '1h'}); // Changed from 24h to 1h for better security
 
         // Send token both in cookie (for server API calls) and in response (for localStorage)
         res.cookie('token', token, {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { motion } from 'framer-motion';
 import { 
@@ -16,22 +16,29 @@ import {
   CalendarRange,
   CalendarClock,
   Loader2,
-  TruckIcon
+  TruckIcon,
+  Percent
 } from 'lucide-react';
 import { fetchOrderStats } from '../../store/super-admin/orders-slice';
-import { fetchAdminRevenueByTime, fetchTimeout } from '../../store/super-admin/revenue-slice';
+import { fetchAdminRevenueByTime, fetchTimeout, clearPeriodError } from '../../store/super-admin/revenue-slice';
 
 const AdminRevenueAnalytics = () => {
   const dispatch = useDispatch();
   const { orderStats, isLoading: ordersLoading } = useSelector(state => state.superAdminOrders);
+  const { user, isAuthenticated } = useSelector(state => state.auth);
   const { 
     dailyRevenue, 
     weeklyRevenue, 
     monthlyRevenue, 
     yearlyRevenue, 
     isLoading: revenueLoading,
+    loadingStates,
+    errors,
     error: revenueError 
   } = useSelector(state => state.superAdminRevenue);
+  
+  // Use ref to track if we've already fetched data for this user session
+  const hasFetchedData = useRef(false);
   
   // State for accordion sections
   const [openSection, setOpenSection] = useState('daily');
@@ -52,36 +59,24 @@ const AdminRevenueAnalytics = () => {
   const calculateShippingFees = (adminData, isAdminSpecific = true) => {
     if (!adminData) return 0;
     
-    // For debugging purposes - removed for performance
-    // console.log('Calculating shipping fees for:', adminData);
-    
     // SuperAdmin dashboard shows the total shipping fees (all admins)
     // Admin dashboard shows only that admin's portion of shipping fees
     
     // For admin-specific data (individual admin lines in superAdmin dashboard)
     if (isAdminSpecific) {
       // Only use direct shipping fees for this admin if available
-      if (adminData.shippingFees && parseFloat(adminData.shippingFees) > 0) {
-        // console.log(`Using direct shipping fees for ${adminData.adminName}: ${adminData.shippingFees}`);
-        return parseFloat(adminData.shippingFees);
+      if (adminData.shippingFees !== undefined && adminData.shippingFees !== null) {
+        return parseFloat(adminData.shippingFees) || 0;
       }
       
       // NO FALLBACK CALCULATIONS - only real data
-      // console.log(`No real shipping fees found for ${adminData.adminName}, returning 0`);
       return 0;
     }
     // For total shipping fees (daily/weekly totals in superAdmin dashboard)
     else {
       // If we have direct total shipping fees from the server response
-      if (adminData.totalShippingFees && parseFloat(adminData.totalShippingFees) > 0) {
-        // console.log(`Using totalShippingFees from backend: ${adminData.totalShippingFees}`);
-        return parseFloat(adminData.totalShippingFees);
-      }
-      
-      // If we have shipping fees directly on the period object (added by backend)
-      if (adminData.shippingFees && parseFloat(adminData.shippingFees) > 0) {
-        // console.log(`Using period-level shippingFees: ${adminData.shippingFees}`);
-        return parseFloat(adminData.shippingFees);
+      if (adminData.totalShippingFees !== undefined && adminData.totalShippingFees !== null) {
+        return parseFloat(adminData.totalShippingFees) || 0;
       }
       
       // Otherwise sum up all admin shipping fees if available
@@ -89,12 +84,10 @@ const AdminRevenueAnalytics = () => {
         const totalFromAdmins = adminData.adminRevenue.reduce((total, admin) => {
           return total + calculateShippingFees(admin, true);
         }, 0);
-        // console.log(`Calculated total shipping fees from admins: ${totalFromAdmins}`);
         return totalFromAdmins;
       }
       
       // NO FALLBACK CALCULATIONS - only real data
-      // console.log('No real shipping fees found, returning 0');
       return 0;
     }
   };
@@ -113,29 +106,69 @@ const AdminRevenueAnalytics = () => {
     setOpenSection(openSection === section ? null : section);
   };
   
-  // Refresh data
-  const refreshData = useCallback(() => {
-    dispatch(fetchOrderStats());
-    dispatch(fetchAdminRevenueByTime('daily'));
-    dispatch(fetchAdminRevenueByTime('weekly'));
-    dispatch(fetchAdminRevenueByTime('monthly'));
-    dispatch(fetchAdminRevenueByTime('yearly'));
-  }, [dispatch]);
-  
-  // Initial data fetch with timeout protection
+  // Debug logging for auth state
   useEffect(() => {
-    // Start fetching data
-    refreshData();
+    console.log('AdminRevenueAnalytics: Auth state:', {
+      isAuthenticated,
+      user: user ? { id: user.id, role: user.role, email: user.email } : null,
+      token: localStorage.getItem('token') ? 'exists' : 'missing'
+    });
+  }, [isAuthenticated, user]);
+  
+  // Initial data fetch with timeout protection - ONLY RUNS ONCE PER COMPONENT MOUNT
+  useEffect(() => {
+    console.log('AdminRevenueAnalytics: useEffect triggered', {
+      isAuthenticated,
+      userRole: user?.role,
+      hasFetchedData: hasFetchedData.current
+    });
     
-    // Set timeout to prevent infinite loading
-    const timeoutId = setTimeout(() => {
-      console.log('Revenue data fetch timeout triggered');
-      dispatch(fetchTimeout());
-    }, 10000); // 10 seconds timeout
-    
-    // Cleanup timeout on unmount
-    return () => clearTimeout(timeoutId);
-  }, [refreshData, dispatch]);
+    // Only fetch data if:
+    // 1. User is authenticated and is superAdmin
+    // 2. We haven't already fetched data
+    if (isAuthenticated && user && user.role === 'superAdmin' && !hasFetchedData.current) {
+      console.log('AdminRevenueAnalytics: Starting data fetch...');
+      console.log('AdminRevenueAnalytics: User is authenticated as superAdmin, fetching data...');
+      
+      // Mark that we've fetched data
+      hasFetchedData.current = true;
+      
+      dispatch(fetchOrderStats());
+      dispatch(fetchAdminRevenueByTime('daily'));
+      dispatch(fetchAdminRevenueByTime('weekly'));
+      dispatch(fetchAdminRevenueByTime('monthly'));
+      dispatch(fetchAdminRevenueByTime('yearly'));
+      
+      // Set timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        console.log('Revenue data fetch timeout triggered');
+        dispatch(fetchTimeout());
+      }, 10000); // 10 seconds timeout
+      
+      // Cleanup timeout on unmount
+      return () => clearTimeout(timeoutId);
+    } else {
+      console.log('AdminRevenueAnalytics: Skipping data fetch', {
+        isAuthenticated,
+        userRole: user?.role,
+        hasFetchedData: hasFetchedData.current,
+        reason: !isAuthenticated ? 'not authenticated' : 
+                !user ? 'no user' :
+                user.role !== 'superAdmin' ? 'not superAdmin' :
+                hasFetchedData.current ? 'already fetched' : 'unknown'
+      });
+    }
+  }, []); // EMPTY DEPENDENCY ARRAY - only run on mount
+  
+  // Debug logging for loading states
+  useEffect(() => {
+    console.log('AdminRevenueAnalytics: Loading states changed:', {
+      revenueLoading,
+      loadingStates,
+      errors,
+      revenueError
+    });
+  }, [revenueLoading, loadingStates, errors, revenueError]);
   
   // Debug logging only on component mount to prevent re-render loops
   useEffect(() => {
@@ -145,6 +178,17 @@ const AdminRevenueAnalytics = () => {
       monthlyRevenue,
       yearlyRevenue
     });
+    
+    // Log detailed structure of daily revenue if available
+    if (dailyRevenue && dailyRevenue.length > 0) {
+      console.log('Sample daily revenue period structure:', {
+        period: dailyRevenue[0],
+        hasProductRevenue: 'productRevenue' in dailyRevenue[0],
+        hasTotalRevenue: 'totalRevenue' in dailyRevenue[0],
+        productRevenueValue: dailyRevenue[0].productRevenue,
+        totalRevenueValue: dailyRevenue[0].totalRevenue
+      });
+    }
   }, []);
   
   // Helper functions for date formatting
@@ -243,6 +287,8 @@ const AdminRevenueAnalytics = () => {
   // Render accordion section
   const renderAccordionSection = (title, data, icon, timeUnit) => {
     const filteredData = getFilteredData(data);
+    const isLoading = loadingStates?.[timeUnit] || false;
+    const periodError = errors?.[timeUnit];
     
     return (
       <motion.div
@@ -257,6 +303,17 @@ const AdminRevenueAnalytics = () => {
             {icon}
             <span className="ml-2 font-medium text-gray-800">{title}</span>
             <span className="ml-2 text-sm text-gray-500">({filteredData.length} periods)</span>
+            {isLoading && (
+              <div className="ml-2 flex items-center text-xs text-blue-600">
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                <span>Loading...</span>
+              </div>
+            )}
+            {periodError && !isLoading && (
+              <div className="ml-2 flex items-center text-xs text-red-600">
+                <span>Error</span>
+              </div>
+            )}
           </div>
           {openSection === timeUnit ? (
             <ChevronUp className="h-5 w-5 text-gray-500" />
@@ -267,10 +324,28 @@ const AdminRevenueAnalytics = () => {
         
         {openSection === timeUnit && (
           <div className="p-4 bg-white">
-            {revenueLoading ? (
+            {isLoading ? (
               <div className="text-center py-8">
                 <Loader2 className="h-12 w-12 mx-auto text-blue-300 mb-2 animate-spin" />
-                <p className="text-gray-500">Loading revenue data...</p>
+                <p className="text-gray-500">Loading {title.toLowerCase()}...</p>
+              </div>
+            ) : periodError ? (
+              <div className="text-center py-8">
+                <div className="mb-4">
+                  <BarChart3 className="h-12 w-12 mx-auto text-red-300 mb-2" />
+                  <p className="text-red-500 font-medium">Failed to load {title.toLowerCase()}</p>
+                  <p className="text-red-400 text-sm mt-1">{periodError}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    dispatch(clearPeriodError(timeUnit));
+                    dispatch(fetchAdminRevenueByTime(timeUnit));
+                  }}
+                  className="px-4 py-2 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition-colors text-sm"
+                >
+                  <RefreshCw className="h-4 w-4 inline mr-1" />
+                  Retry
+                </button>
               </div>
             ) : filteredData && filteredData.length > 0 ? (
               <div className="space-y-4">
@@ -289,6 +364,12 @@ const AdminRevenueAnalytics = () => {
                           )}
                           {timeUnit === 'yearly' && period.year && (
                             `${period.year}`
+                          )}
+                          {/* Debug: Show raw date data */}
+                          {process.env.NODE_ENV === 'development' && (
+                            <span className="text-xs text-gray-400 ml-2">
+                              (Raw: {period.displayDate || period.timePeriodKey})
+                            </span>
                           )}
                         </h3>
                       </div>
@@ -317,24 +398,53 @@ const AdminRevenueAnalytics = () => {
                       
                       <div className="bg-white p-3 rounded border border-gray-100">
                         <div className="flex items-center mb-1">
+                          <Percent className="h-4 w-4 text-red-500 mr-1" />
+                          <span className="text-xs text-gray-500">Platform Fees</span>
+                        </div>
+                        <p className="font-semibold text-gray-800">{formatCurrency(period.totalPlatformFees || 0)}</p>
+                      </div>
+                      
+                      <div className="bg-white p-3 rounded border border-gray-100">
+                        <div className="flex items-center mb-1">
                           <Users className="h-4 w-4 text-purple-500 mr-1" />
                           <span className="text-xs text-gray-500">Active Admins</span>
                         </div>
                         <p className="font-semibold text-gray-800">{period.adminRevenue ? period.adminRevenue.length : 0}</p>
                       </div>
-                      
-                      <div className="bg-white p-3 rounded border border-gray-100">
-                        <div className="flex items-center mb-1">
-                          <BarChart3 className="h-4 w-4 text-amber-500 mr-1" />
-                          <span className="text-xs text-gray-500">Avg. Per Admin</span>
+                    </div>
+                    
+                    {/* Summary Row */}
+                    <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+                        <div>
+                          <p className="text-xs text-blue-600 font-medium">Total Revenue</p>
+                          <p className="text-lg font-bold text-blue-800">{formatCurrency(period.totalRevenue)}</p>
                         </div>
-                        <p className="font-semibold text-gray-800">
-                          {formatCurrency(
-                            period.adminRevenue && period.adminRevenue.length > 0 
-                              ? period.productRevenue / period.adminRevenue.length 
-                              : 0
-                          )}
-                        </p>
+                        <div>
+                          <p className="text-xs text-green-600 font-medium">Net Revenue</p>
+                          <p className="text-lg font-bold text-green-800">
+                            {formatCurrency((period.productRevenue || 0) - (period.totalPlatformFees || 0))}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-amber-600 font-medium">Avg. Per Admin</p>
+                          <p className="text-lg font-bold text-amber-800">
+                            {formatCurrency(
+                              period.adminRevenue && period.adminRevenue.length > 0 
+                                ? period.productRevenue / period.adminRevenue.length 
+                                : 0
+                            )}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-purple-600 font-medium">Platform Share</p>
+                          <p className="text-lg font-bold text-purple-800">
+                            {period.productRevenue > 0 
+                              ? `${(((period.totalPlatformFees || 0) / period.productRevenue) * 100).toFixed(1)}%`
+                              : '0%'
+                            }
+                          </p>
+                        </div>
                       </div>
                     </div>
                     
@@ -344,9 +454,33 @@ const AdminRevenueAnalytics = () => {
                         <h4 className="text-sm font-medium text-gray-700 mb-2">Admin Revenue Breakdown</h4>
                         <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                           {period.adminRevenue.map((admin, adminIndex) => (
-                            <div key={adminIndex} className="flex justify-between items-center bg-white p-2 rounded border border-gray-100">
-                              <span className="text-sm text-gray-700">{admin.adminName}</span>
-                              <span className="font-medium text-blue-600">{formatCurrency(admin.revenue)}</span>
+                            <div key={adminIndex} className="flex justify-between items-center bg-white p-3 rounded border border-gray-100">
+                              <div className="flex-1">
+                                <span className="text-sm font-medium text-gray-700">{admin.adminName}</span>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {admin.orderCount || 0} orders • {admin.itemsSold || 0} items
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="flex flex-col gap-1">
+                                  <p className="font-bold text-gray-900">
+                                    <span className="text-xs text-gray-600 mr-1">Gross:</span>
+                                    {formatCurrency(admin.revenue)}
+                                  </p>
+                                  <p className="text-xs text-blue-600">
+                                    <span className="text-gray-600 mr-1">Shipping:</span>
+                                    {formatCurrency(admin.shippingFees || 0)}
+                                  </p>
+                                  <p className="text-xs text-red-600">
+                                    <span className="text-gray-600 mr-1">Platform:</span>
+                                    {formatCurrency(admin.platformFees || 0)}
+                                  </p>
+                                  <p className="text-sm text-green-600 font-semibold">
+                                    <span className="text-gray-600 mr-1">Net:</span>
+                                    {formatCurrency((admin.revenue || 0) - (admin.platformFees || 0))}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -359,8 +493,8 @@ const AdminRevenueAnalytics = () => {
               <div className="text-center py-8">
                 <BarChart3 className="h-12 w-12 mx-auto text-gray-300 mb-2" />
                 <p className="text-gray-500">No data available for the selected filters</p>
-                {revenueError && (
-                  <p className="text-red-500 mt-2 text-sm">{revenueError}</p>
+                {(revenueError || periodError) && (
+                  <p className="text-red-500 mt-2 text-sm">{periodError || revenueError}</p>
                 )}
               </div>
             )}
@@ -387,15 +521,72 @@ const AdminRevenueAnalytics = () => {
               <span>Loading data...</span>
             </div>
           )}
+          {!revenueLoading && loadingStates && Object.values(loadingStates).some(loading => loading) && (
+            <div className="ml-3 flex items-center text-sm text-orange-600">
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              <span>Loading some periods...</span>
+            </div>
+          )}
         </div>
-        <button 
-          onClick={refreshData}
-          className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
-          disabled={ordersLoading || revenueLoading}
-        >
-          <RefreshCw className={`h-5 w-5 ${(ordersLoading || revenueLoading) ? 'animate-spin' : ''}`} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => {
+              console.log('Manual refresh triggered');
+              hasFetchedData.current = false; // Reset fetch flag
+              dispatch(fetchOrderStats());
+              dispatch(fetchAdminRevenueByTime('daily'));
+              dispatch(fetchAdminRevenueByTime('weekly'));
+              dispatch(fetchAdminRevenueByTime('monthly'));
+              dispatch(fetchAdminRevenueByTime('yearly'));
+            }}
+            className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            disabled={ordersLoading || revenueLoading}
+          >
+            {(ordersLoading || revenueLoading) ? 'Loading...' : 'Refresh Data'}
+          </button>
+          <button 
+            onClick={() => {
+              dispatch(fetchOrderStats());
+              dispatch(fetchAdminRevenueByTime('daily'));
+              dispatch(fetchAdminRevenueByTime('weekly'));
+              dispatch(fetchAdminRevenueByTime('monthly'));
+              dispatch(fetchAdminRevenueByTime('yearly'));
+            }}
+            className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+            disabled={ordersLoading || revenueLoading}
+          >
+            <RefreshCw className={`h-5 w-5 ${(ordersLoading || revenueLoading) ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       </motion.div>
+      
+      {/* Authentication check */}
+      {(!isAuthenticated || !user || user.role !== 'superAdmin') && (
+        <motion.div variants={itemVariants} className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-center text-red-700">
+            <Users className="h-5 w-5 mr-2" />
+            <span className="font-medium">Authentication Required</span>
+          </div>
+          <p className="text-red-600 text-sm mt-1">
+            {!isAuthenticated ? 'Please log in to access revenue analytics.' : 
+             !user ? 'User data not loaded.' :
+             user.role !== 'superAdmin' ? `Access denied. SuperAdmin role required. Current role: ${user.role}` :
+             'Unknown authentication issue.'}
+          </p>
+        </motion.div>
+      )}
+      
+      {/* Debug info - remove in production */}
+      {process.env.NODE_ENV === 'development' && (
+        <motion.div variants={itemVariants} className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="text-xs text-blue-700">
+            <strong>Debug Info:</strong> Fetch Status: {hasFetchedData.current ? 'Completed' : 'Pending'} | 
+            User: {user?.role || 'None'} | 
+            Auth: {isAuthenticated ? 'Yes' : 'No'} | 
+            Loading: {revenueLoading ? 'Yes' : 'No'}
+          </div>
+        </motion.div>
+      )}
       
       {/* Filters */}
       <motion.div variants={itemVariants} className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-100">

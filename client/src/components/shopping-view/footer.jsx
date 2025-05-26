@@ -166,7 +166,7 @@ const Footer = () => {
             </div>
             <div className="space-y-3">
               {[
-                { icon: Phone, text: '0123-456-789', color: 'bg-blue-50 border-blue-100 text-blue-600' },
+                { icon: Phone, text: '05-9786-***', color: 'bg-blue-50 border-blue-100 text-blue-600' },
                 { icon: Mail, text: 'support@704labs.com', color: 'bg-purple-50 border-purple-100 text-purple-600' },
                 { icon: MapPin, text: '704 Fashion Street, NY', color: 'bg-amber-50 border-amber-100 text-amber-600' }
               ].map((item, i) => (

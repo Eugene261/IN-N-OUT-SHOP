@@ -240,7 +240,48 @@ const getAdminRevenueByTime = async (req, res) => {
                 console.log(`Order ${order._id}: Skipping shipping fee for ${adminId} (already counted)`);
               }
             }
-            // NO PROPORTIONAL CALCULATIONS - only real data to prevent inflation
+            // ENHANCED: Add proportional shipping fee calculation as fallback (matching admin logic)
+            else if (order.shippingFee) {
+              let totalShippingFee = 0;
+              
+              // Parse the shipping fee value
+              if (typeof order.shippingFee === 'number') {
+                totalShippingFee = order.shippingFee;
+              } else if (typeof order.shippingFee === 'string') {
+                totalShippingFee = parseFloat(order.shippingFee) || 0;
+              }
+              
+              // Only proceed if we have a valid shipping fee
+              if (totalShippingFee > 0) {
+                // Calculate the total order value from all items
+                const totalOrderValue = (order.items || []).reduce((total, orderItem) => {
+                  return total + (parseFloat(orderItem.price || 0) * (orderItem.quantity || 1));
+                }, 0);
+                
+                // Calculate admin's percentage of the order
+                if (totalOrderValue > 0) {
+                  const adminPercentageOfOrder = itemRevenue / totalOrderValue;
+                  
+                  // Apportion shipping fee based on admin's percentage
+                  shippingFeeShare = totalShippingFee * adminPercentageOfOrder;
+                  
+                  console.log(`Order ${order._id}: Admin gets ${(adminPercentageOfOrder*100).toFixed(2)}% (${shippingFeeShare.toFixed(2)} GHS) of total shipping fee: ${totalShippingFee.toFixed(2)} GHS`);
+                  
+                  // CRITICAL FIX: Only add shipping fee once per admin per order
+                  if (!order._adminShippingCounted) {
+                    order._adminShippingCounted = new Set();
+                  }
+                  
+                  if (!order._adminShippingCounted.has(adminId)) {
+                    revenueByTime[timePeriodKey].adminRevenue[adminId].shippingFees += shippingFeeShare;
+                    order._adminShippingCounted.add(adminId);
+                    console.log(`Order ${order._id}: Added proportional ${shippingFeeShare} GHS shipping fee for ${adminId} (first time)`);
+                  } else {
+                    console.log(`Order ${order._id}: Skipping proportional shipping fee for ${adminId} (already counted)`);
+                  }
+                }
+              }
+            }
             
             // Update admin revenue stats
             if (!revenueByTime[timePeriodKey].adminRevenue[adminId].platformFees) {
@@ -327,7 +368,48 @@ const getAdminRevenueByTime = async (req, res) => {
                 console.log(`Order ${order._id}: Skipping shipping fee for ${adminId} (already counted)`);
               }
             }
-            // NO PROPORTIONAL CALCULATIONS - only real data to prevent inflation
+            // ENHANCED: Add proportional shipping fee calculation as fallback (matching admin logic)
+            else if (order.shippingFee) {
+              let totalShippingFee = 0;
+              
+              // Parse the shipping fee value
+              if (typeof order.shippingFee === 'number') {
+                totalShippingFee = order.shippingFee;
+              } else if (typeof order.shippingFee === 'string') {
+                totalShippingFee = parseFloat(order.shippingFee) || 0;
+              }
+              
+              // Only proceed if we have a valid shipping fee
+              if (totalShippingFee > 0) {
+                // Calculate the total order value from cartItems (legacy structure)
+                const totalOrderValue = (order.cartItems || []).reduce((total, cartItem) => {
+                  return total + (parseFloat(cartItem.price || 0) * (cartItem.quantity || 1));
+                }, 0);
+                
+                // Calculate admin's percentage of the order
+                if (totalOrderValue > 0) {
+                  const adminPercentageOfOrder = itemRevenue / totalOrderValue;
+                  
+                  // Apportion shipping fee based on admin's percentage
+                  shippingFeeShare = totalShippingFee * adminPercentageOfOrder;
+                  
+                  console.log(`Order ${order._id}: Admin gets ${(adminPercentageOfOrder*100).toFixed(2)}% (${shippingFeeShare.toFixed(2)} GHS) of total shipping fee: ${totalShippingFee.toFixed(2)} GHS`);
+                  
+                  // CRITICAL FIX: Only add shipping fee once per admin per order
+                  if (!order._adminShippingCounted) {
+                    order._adminShippingCounted = new Set();
+                  }
+                  
+                  if (!order._adminShippingCounted.has(adminId)) {
+                    revenueByTime[timePeriodKey].adminRevenue[adminId].shippingFees += shippingFeeShare;
+                    order._adminShippingCounted.add(adminId);
+                    console.log(`Order ${order._id}: Added proportional ${shippingFeeShare} GHS shipping fee for ${adminId} (first time)`);
+                  } else {
+                    console.log(`Order ${order._id}: Skipping proportional shipping fee for ${adminId} (already counted)`);
+                  }
+                }
+              }
+            }
             
             // Update admin revenue stats
             if (!revenueByTime[timePeriodKey].adminRevenue[adminId].platformFees) {
@@ -377,10 +459,30 @@ const getAdminRevenueByTime = async (req, res) => {
     // Convert to array and sort by date (newest first)
     const revenueData = Object.values(revenueByTime)
       .sort((a, b) => b.date - a.date)
-      .map(period => ({
-        ...period,
-        adminRevenue: Object.values(period.adminRevenue)
-      }));
+      .map(period => {
+        const adminRevenueArray = Object.values(period.adminRevenue);
+        
+        // Calculate totals for this period
+        const totalRevenue = adminRevenueArray.reduce((sum, admin) => sum + (admin.revenue || 0), 0);
+        const totalShippingFees = adminRevenueArray.reduce((sum, admin) => sum + (admin.shippingFees || 0), 0);
+        const totalPlatformFees = adminRevenueArray.reduce((sum, admin) => sum + (admin.platformFees || 0), 0);
+        
+        // Product revenue is the same as total revenue (revenue from products)
+        const productRevenue = totalRevenue;
+        
+        const result = {
+          ...period,
+          adminRevenue: adminRevenueArray,
+          totalRevenue: totalRevenue + totalShippingFees, // Total includes shipping
+          productRevenue: productRevenue, // Revenue from products only
+          totalShippingFees: totalShippingFees,
+          totalPlatformFees: totalPlatformFees
+        };
+        
+        console.log(`Period ${period.timePeriodKey}: Product Revenue: ${productRevenue}, Total Revenue: ${result.totalRevenue}, Shipping: ${totalShippingFees}`);
+        
+        return result;
+      });
     
     console.log(`Generated revenue data for ${revenueData.length} time periods`);
     

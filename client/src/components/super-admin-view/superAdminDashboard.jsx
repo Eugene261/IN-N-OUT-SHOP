@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { fetchAllOrders, fetchOrderStats } from '../../store/super-admin/orders-slice';
 import { fetchProductStats } from '../../store/super-admin/products-slice';
 import { fetchAllUsers, fetchUsersByRole } from '../../store/super-admin/user-slice';
-import { fetchAdminRevenueByTime } from '../../store/super-admin/revenue-slice';
+// Revenue data fetching is handled by AdminRevenueAnalytics component
 import AdminRevenueAnalytics from './adminRevenueAnalytics';
 import { 
   DollarSign, 
@@ -24,9 +24,23 @@ const SuperAdminDashboard = () => {
   const { orderStats, isLoading: ordersLoading, error: ordersError } = useSelector(state => state.superAdminOrders);
   const { productStats, isLoading: productsLoading, error: productsError } = useSelector(state => state.superAdminProducts);
   const { users, isLoading: usersLoading, error: usersError } = useSelector(state => state.superAdminUsers);
-  const { isLoading: revenueLoading, error: revenueError } = useSelector(state => state.superAdminRevenue);
+  // Revenue loading state is managed by AdminRevenueAnalytics component itself
   
   const [adminUsers, setAdminUsers] = useState([]);
+  
+  // Simplified loading logic - only show loading if we don't have any data yet
+  const [hasInitialData, setHasInitialData] = useState(false);
+  
+  useEffect(() => {
+    // Consider we have initial data if we have either order stats or product stats
+    if (orderStats || productStats) {
+      setHasInitialData(true);
+    }
+  }, [orderStats, productStats]);
+  
+  // Only show loading if we don't have any data and something is actually loading
+  const isLoading = !hasInitialData && (ordersLoading || productsLoading);
+  const error = ordersError || productsError || usersError;
   
   // Function to fetch data progressively
   const fetchDashboardData = useCallback(async () => {
@@ -43,13 +57,8 @@ const SuperAdminDashboard = () => {
         dispatch(fetchUsersByRole('admin'))
       ]);
 
-      // Third batch: Revenue data (can load in background)
-      await Promise.all([
-        dispatch(fetchAdminRevenueByTime('daily')),
-        dispatch(fetchAdminRevenueByTime('weekly')),
-        dispatch(fetchAdminRevenueByTime('monthly')),
-        dispatch(fetchAdminRevenueByTime('yearly'))
-      ]);
+      // Revenue data will be fetched by AdminRevenueAnalytics component itself
+      // No need to fetch it here to avoid conflicts
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -68,9 +77,44 @@ const SuperAdminDashboard = () => {
     }
   }, [users]);
   
+  // Debug logging for data
+  useEffect(() => {
+    console.log('Dashboard loading states:', {
+      ordersLoading,
+      productsLoading,
+      usersLoading,
+      hasInitialData,
+      isLoading,
+      hasOrderStats: !!orderStats,
+      hasProductStats: !!productStats,
+      adminUsersCount: adminUsers.length,
+      error
+    });
+    
+    if (orderStats) {
+      console.log('Order stats received:', {
+        totalRevenue: orderStats.totalRevenue,
+        totalShippingFees: orderStats.totalShippingFees,
+        platformFees: orderStats.platformFees,
+        netRevenue: orderStats.netRevenue,
+        totalOrders: orderStats.totalOrders
+      });
+    }
+    
+    if (productStats) {
+      console.log('Product stats received:', {
+        totalProducts: productStats.totalProducts
+      });
+    }
+    
+    if (error) {
+      console.error('Dashboard error:', error);
+    }
+  }, [ordersLoading, productsLoading, usersLoading, hasInitialData, isLoading, orderStats, productStats, adminUsers, error]);
+  
   // Format currency
   const formatCurrency = (amount) => {
-    return `GH₵${parseFloat(amount || 0).toFixed(2)}`;
+    return `GHS ${parseFloat(amount || 0).toFixed(2)}`;
   };
   
   // Animation variants
@@ -93,13 +137,6 @@ const SuperAdminDashboard = () => {
       transition: { duration: 0.3 }
     }
   };
-
-  // Separate core content loading from additional data loading
-  const coreDataLoading = ordersLoading || productsLoading;
-  const userDataLoading = usersLoading;
-  const revenueDataLoading = revenueLoading;
-  const isLoading = coreDataLoading;
-  const error = ordersError || productsError || usersError || revenueError;
 
   return (
     <motion.div
@@ -127,6 +164,17 @@ const SuperAdminDashboard = () => {
         <div className="flex flex-col items-center justify-center py-12">
           <Loader2 className="h-12 w-12 text-blue-500 animate-spin mb-4" />
           <p className="text-gray-600">Loading dashboard data...</p>
+          <div className="mt-4 text-sm text-gray-500">
+            <p>Orders Loading: {ordersLoading ? 'Yes' : 'No'}</p>
+            <p>Products Loading: {productsLoading ? 'Yes' : 'No'}</p>
+            <p>Users Loading: {usersLoading ? 'Yes' : 'No'}</p>
+          </div>
+          <button 
+            onClick={() => setHasInitialData(true)}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Force Show Content (Debug)
+          </button>
         </div>
       ) : (
         <>
@@ -236,15 +284,7 @@ const SuperAdminDashboard = () => {
 
           {/* Admin Revenue Analytics Section */}
           <motion.div variants={itemVariants} className="mb-8">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Admin Revenue Analytics</h2>
-            {revenueDataLoading ? (
-              <div className="bg-white rounded-lg shadow-sm p-4 h-64 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-                <span className="ml-2 text-gray-500">Loading revenue data...</span>
-              </div>
-            ) : (
-              <AdminRevenueAnalytics />
-            )}
+            <AdminRevenueAnalytics />
           </motion.div>
           
           {/* Order Status Section */}

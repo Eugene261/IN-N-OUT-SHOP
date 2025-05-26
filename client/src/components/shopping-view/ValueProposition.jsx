@@ -14,7 +14,7 @@ const ValueProposition = () => {
     {
       icon: Truck,
       title: "Free Shipping",
-      description: "Free delivery on orders over GHS 100",
+      description: "Free delivery on orders over GHS 1000",
       gradient: "from-blue-500 to-cyan-500"
     },
     {

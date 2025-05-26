@@ -296,8 +296,8 @@ class EmailService {
               month: 'long',
               day: 'numeric'
             })}</td></tr>
-            <tr><td>Total Amount</td><td><strong>$${orderDetails.totalAmount}</strong></td></tr>
-            <tr><td>Payment Method</td><td>${orderDetails.paymentMethod || 'Card Payment'}</td></tr>
+            <tr><td>Total Amount</td><td><strong>Gh₵${orderDetails.totalAmount}</strong></td></tr>
+            <tr><td>Payment Method</td><td>${orderDetails.paymentMethod || 'Mobile Money Payment'}</td></tr>
             <tr><td>Order Status</td><td><span class="status-badge" style="background: #28a745;">CONFIRMED</span></td></tr>
           </table>
         </div>
@@ -309,8 +309,8 @@ class EmailService {
               <img src="${item.image}" alt="${item.title}" class="item-image">
               <div class="item-details">
                 <h4>${item.title}</h4>
-                <p>Quantity: ${item.quantity} × $${item.price}</p>
-                <p class="item-total">$${(item.quantity * item.price).toFixed(2)}</p>
+                <p>Quantity: ${item.quantity} × Gh₵${item.price}</p>
+                <p class="item-total">Gh₵${(item.quantity * item.price).toFixed(2)}</p>
               </div>
             </div>
           `).join('') || '<p>Order items will be listed here.</p>'}
@@ -421,7 +421,7 @@ class EmailService {
         
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-number">$${(productDetails.salePrice * orderDetails.quantity).toFixed(2)}</div>
+            <div class="stat-number">Gh₵${(productDetails.salePrice * orderDetails.quantity).toFixed(2)}</div>
             <div class="stat-label">Sale Amount</div>
           </div>
           <div class="stat-card">
@@ -429,7 +429,7 @@ class EmailService {
             <div class="stat-label">Units Sold</div>
           </div>
           <div class="stat-card">
-            <div class="stat-number">$${(productDetails.salePrice * orderDetails.quantity * 0.8).toFixed(2)}</div>
+            <div class="stat-number">Gh₵${(productDetails.salePrice * orderDetails.quantity * 0.8).toFixed(2)}</div>
             <div class="stat-label">Your Earnings</div>
           </div>
         </div>
@@ -440,7 +440,7 @@ class EmailService {
             <img src="${productDetails.image}" alt="${productDetails.title}" class="product-image">
             <div class="product-info">
               <h4>${productDetails.title}</h4>
-              <p class="product-price">Sale Price: $${productDetails.salePrice}</p>
+              <p class="product-price">Sale Price: Gh₵${productDetails.salePrice}</p>
               <p>Category: ${productDetails.category}</p>
               <p>SKU: ${productDetails.sku || 'N/A'}</p>
             </div>
@@ -476,7 +476,7 @@ class EmailService {
 
     return await this.sendEmail({
       to: adminEmail,
-      subject: `🎉 Sale Alert: "${productDetails.title}" - $${(productDetails.salePrice * orderDetails.quantity).toFixed(2)}`,
+      subject: `🎉 Sale Alert: "${productDetails.title}" - Gh₵${(productDetails.salePrice * orderDetails.quantity).toFixed(2)}`,
       html: htmlContent
     });
   }
@@ -508,7 +508,7 @@ class EmailService {
             <img src="${productDetails.image}" alt="${productDetails.title}" class="product-image">
             <div class="product-info">
               <h4>${productDetails.title}</h4>
-              <p class="product-price">Price: $${productDetails.price}</p>
+              <p class="product-price">Price: Gh₵${productDetails.price}</p>
               <p><strong>Category:</strong> ${productDetails.category}</p>
               <p><strong>Brand:</strong> ${productDetails.brand}</p>
               <p><strong>Stock:</strong> ${productDetails.totalStock} units</p>
@@ -655,7 +655,7 @@ class EmailService {
             <img src="${productDetails.image}" alt="${productDetails.title}" class="product-image">
             <div class="product-info">
               <h4>${productDetails.title}</h4>
-              <p class="product-price">Price: $${productDetails.price}</p>
+              <p class="product-price">Price: Gh₵${productDetails.price}</p>
               <p style="color: #dc3545; font-weight: 600; font-size: 18px;">⚠️ Only ${productDetails.totalStock} units left!</p>
               <p>Recommended minimum: 10 units</p>
             </div>
@@ -700,7 +700,7 @@ class EmailService {
             <div class="stat-label">Items</div>
           </div>
           <div class="stat-card">
-            <div class="stat-number">$${totalValue.toFixed(2)}</div>
+            <div class="stat-number">Gh₵${totalValue.toFixed(2)}</div>
             <div class="stat-label">Total Value</div>
           </div>
         </div>
@@ -712,7 +712,7 @@ class EmailService {
               <img src="${item.image}" alt="${item.title}" class="item-image">
               <div class="item-details">
                 <h4>${item.title}</h4>
-                <p>Quantity: ${item.quantity} × $${item.price}</p>
+                <p>Quantity: ${item.quantity} × Gh₵${item.price}</p>
                 <p class="item-total">$${(item.quantity * item.price).toFixed(2)}</p>
               </div>
             </div>
@@ -738,7 +738,7 @@ class EmailService {
 
     return await this.sendEmail({
       to: email,
-      subject: `🛒 ${userName}, your cart is waiting! (${cartItems.length} items, $${totalValue.toFixed(2)})`,
+      subject: `🛒 ${userName}, your cart is waiting! (${cartItems.length} items, Gh₵${totalValue.toFixed(2)})`,
       html: htmlContent
     });
   }
@@ -810,7 +810,7 @@ class EmailService {
         
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-number">$${reportData.totalSales || 0}</div>
+            <div class="stat-number">Gh₵${reportData.totalSales || 0}</div>
             <div class="stat-label">Total Sales</div>
           </div>
           <div class="stat-card">
@@ -818,7 +818,7 @@ class EmailService {
             <div class="stat-label">Orders</div>
           </div>
           <div class="stat-card">
-            <div class="stat-number">$${reportData.earnings || 0}</div>
+            <div class="stat-number">Gh₵${reportData.earnings || 0}</div>
             <div class="stat-label">Your Earnings</div>
           </div>
           <div class="stat-card" style="background: ${growthColor};">
@@ -831,7 +831,7 @@ class EmailService {
           <h3>📈 Detailed Performance</h3>
           <table class="order-table">
             <tr><td>Products Sold</td><td>${reportData.productsSold || 0} units</td></tr>
-            <tr><td>Average Order Value</td><td>$${reportData.avgOrderValue || 0}</td></tr>
+            <tr><td>Average Order Value</td><td>Gh₵${reportData.avgOrderValue || 0}</td></tr>
             <tr><td>Return Rate</td><td>${reportData.returnRate || 0}%</td></tr>
             <tr><td>Customer Satisfaction</td><td>${reportData.satisfaction || 0}% ⭐</td></tr>
           </table>
@@ -844,7 +844,7 @@ class EmailService {
               <img src="${product.image}" alt="${product.title}" class="item-image">
               <div class="item-details">
                 <h4>#${index + 1} ${product.title}</h4>
-                <p>Units Sold: ${product.unitsSold} | Revenue: $${product.revenue}</p>
+                <p>Units Sold: ${product.unitsSold} | Revenue: Gh₵${product.revenue}</p>
                 <p class="item-total">⭐ ${product.rating || 'N/A'} rating</p>
               </div>
             </div>
@@ -870,7 +870,7 @@ class EmailService {
 
     return await this.sendEmail({
       to: adminEmail,
-      subject: `📊 Your Monthly Report - ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} | $${reportData.totalSales || 0} in sales`,
+      subject: `📊 Your Monthly Report - ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} | Gh₵${reportData.totalSales || 0} in sales`,
       html: htmlContent
     });
   }

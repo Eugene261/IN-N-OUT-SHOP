@@ -130,25 +130,30 @@ const superAdminOrdersSlice = createSlice({
       // Fetch all orders
       .addCase(fetchAllOrders.pending, (state) => {
         state.isFetching.orders = true;
+        state.isLoading = true;
         state.error = null;
       })
       .addCase(fetchAllOrders.fulfilled, (state, action) => {
         state.isFetching.orders = false;
+        state.isLoading = false;
         state.orders = action.payload.orders;
         state.lastFetchTime = action.payload.timestamp;
       })
       .addCase(fetchAllOrders.rejected, (state, action) => {
         state.isFetching.orders = false;
+        state.isLoading = false;
         state.error = action.payload;
       })
       
       // Fetch orders by admin
       .addCase(fetchOrdersByAdmin.pending, (state) => {
         state.isFetching.adminOrders = true;
+        state.isLoading = true;
         state.error = null;
       })
       .addCase(fetchOrdersByAdmin.fulfilled, (state, action) => {
         state.isFetching.adminOrders = false;
+        state.isLoading = false;
         state.filteredOrders = action.payload.orders;
         if (action.payload.adminId) {
           state.adminOrdersCache[`admin_${action.payload.adminId}`] = {
@@ -159,16 +164,19 @@ const superAdminOrdersSlice = createSlice({
       })
       .addCase(fetchOrdersByAdmin.rejected, (state, action) => {
         state.isFetching.adminOrders = false;
+        state.isLoading = false;
         state.error = action.payload;
       })
       
       // Fetch order statistics
       .addCase(fetchOrderStats.pending, (state) => {
         state.isFetching.stats = true;
+        state.isLoading = true;
         state.error = null;
       })
       .addCase(fetchOrderStats.fulfilled, (state, action) => {
         state.isFetching.stats = false;
+        state.isLoading = false;
         if (action.payload && action.payload.stats) {
           state.orderStats = action.payload.stats;
           state.statsLastFetchTime = action.payload.timestamp;
@@ -179,6 +187,7 @@ const superAdminOrdersSlice = createSlice({
       })
       .addCase(fetchOrderStats.rejected, (state, action) => {
         state.isFetching.stats = false;
+        state.isLoading = false;
         state.error = action.payload;
       });
   }
