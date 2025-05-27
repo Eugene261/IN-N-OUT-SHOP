@@ -57,3 +57,29 @@ yarn-error.log*
 
 # Cloudinary credentials and other sensitive information
 # (already moved to environment variables)
+
+# Additional security files
+credentials.json
+service-account.json
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.backup
+*.bak
+*.old
+
+# Test and temporary files
+test-*.js
+*-test.js
+check-*.js
+setup-*.js
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Vercel deployment
+.vercel
