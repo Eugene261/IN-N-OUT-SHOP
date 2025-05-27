@@ -164,10 +164,19 @@ const changePassword = async (req, res) => {
         }
         
         // Validate input
-        if (!newPassword || newPassword.length < 6) {
+        if (!newPassword || newPassword.length < 8) {
             return res.status(400).json({
                 success: false,
-                message: 'New password must be at least 6 characters long'
+                message: 'New password must be at least 8 characters long'
+            });
+        }
+        
+        // Check password pattern (uppercase, lowercase, number, special character)
+        const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        if (!passwordPattern.test(newPassword)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password must include at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)'
             });
         }
         

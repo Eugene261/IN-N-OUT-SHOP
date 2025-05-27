@@ -390,34 +390,115 @@ function CommonForm({
     }
   };
   
-  // Custom rendering for password fields with visibility toggle
+  // Custom rendering for password fields with visibility toggle and requirements
   const renderPasswordField = (controlItem, commonProps, error) => {
     const isVisible = passwordVisibility[controlItem.name] || false;
+    const currentValue = formData[controlItem.name] || '';
+    
+    // Check password requirements if they exist
+    const checkRequirement = (requirement) => {
+      return requirement.regex.test(currentValue);
+    };
     
     return (
-      <div className="relative">
-        <Input
-          {...commonProps}
-          type={isVisible ? 'text' : 'password'}
-          onChange={(e) => handleInputChange(
-            controlItem.name,
-            e.target.value,
-            controlItem.validation
-          )}
-          aria-invalid={error ? 'true' : 'false'}
-          className={`${commonProps.className} pr-10`}
-        />
-        <button
-          type="button"
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-          onClick={() => togglePasswordVisibility(controlItem.name)}
-        >
-          {isVisible ? (
-            <EyeOff className="h-4 w-4" />
-          ) : (
-            <Eye className="h-4 w-4" />
-          )}
-        </button>
+      <div className="space-y-2">
+        <div className="relative">
+          <Input
+            {...commonProps}
+            type={isVisible ? 'text' : 'password'}
+            onChange={(e) => handleInputChange(
+              controlItem.name,
+              e.target.value,
+              controlItem.validation
+            )}
+            aria-invalid={error ? 'true' : 'false'}
+            className={`${commonProps.className} pr-10`}
+          />
+          <button
+            type="button"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+            onClick={() => togglePasswordVisibility(controlItem.name)}
+          >
+            {isVisible ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+        
+        {/* Password Requirements */}
+        {controlItem.showPasswordRequirements && controlItem.passwordRequirements && (
+          <div className="mt-3 p-3 bg-gray-50 rounded-lg border">
+            <p className="text-sm font-medium text-gray-700 mb-2">Password Requirements:</p>
+            <div className="space-y-1">
+              {controlItem.passwordRequirements.map((requirement) => {
+                const isValid = checkRequirement(requirement);
+                return (
+                  <div key={requirement.id} className="flex items-center gap-2 text-sm">
+                    <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
+                      isValid ? 'bg-green-500' : 'bg-gray-300'
+                    }`}>
+                      {isValid && (
+                        <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
+                    <span className={isValid ? 'text-green-600' : 'text-gray-600'}>
+                      {requirement.text}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* Password Strength Indicator */}
+            {currentValue && (
+              <div className="mt-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-700">Strength:</span>
+                  <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        controlItem.passwordRequirements.filter(req => checkRequirement(req)).length < 2 
+                          ? 'bg-red-500 w-1/4' 
+                          : controlItem.passwordRequirements.filter(req => checkRequirement(req)).length < 4
+                          ? 'bg-yellow-500 w-2/4'
+                          : controlItem.passwordRequirements.filter(req => checkRequirement(req)).length < 5
+                          ? 'bg-blue-500 w-3/4'
+                          : 'bg-green-500 w-full'
+                      }`}
+                    />
+                  </div>
+                  <span className={`text-sm font-medium ${
+                    controlItem.passwordRequirements.filter(req => checkRequirement(req)).length < 2 
+                      ? 'text-red-500' 
+                      : controlItem.passwordRequirements.filter(req => checkRequirement(req)).length < 4
+                      ? 'text-yellow-500'
+                      : controlItem.passwordRequirements.filter(req => checkRequirement(req)).length < 5
+                      ? 'text-blue-500'
+                      : 'text-green-500'
+                  }`}>
+                    {controlItem.passwordRequirements.filter(req => checkRequirement(req)).length < 2 
+                      ? 'Weak' 
+                      : controlItem.passwordRequirements.filter(req => checkRequirement(req)).length < 4
+                      ? 'Fair'
+                      : controlItem.passwordRequirements.filter(req => checkRequirement(req)).length < 5
+                      ? 'Good'
+                      : 'Strong'
+                    }
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Help text for non-password-requirement fields */}
+        {controlItem.helpText && !controlItem.showPasswordRequirements && (
+          <p className="text-xs text-gray-500 mt-1">{controlItem.helpText}</p>
+        )}
       </div>
     );
   };

@@ -6,7 +6,8 @@ const {
   getUsersByRole, 
   addUser, 
   updateUserRole, 
-  deleteUser 
+  deleteUser,
+  getAdminProfile 
 } = require('../../controllers/superAdmin/userController.js');
 
 // Apply auth middleware to all routes
@@ -26,5 +27,8 @@ router.put('/update-role/:userId', updateUserRole);
 
 // Delete a user
 router.delete('/delete/:userId', deleteUser);
+
+// Get detailed admin profile
+router.get('/profile/:adminId', getAdminProfile);
 
 module.exports = router;

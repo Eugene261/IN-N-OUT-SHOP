@@ -647,6 +647,35 @@ const createOrder = async(req, res) => {
                 // Don't fail the order creation if email fails
             }
             
+            // Send order confirmation email to customer
+            try {
+                const customer = await User.findById(userId);
+                if (customer) {
+                    await emailService.sendOrderConfirmationEmail(
+                        customer.email,
+                        customer.userName,
+                        {
+                            orderId: newlyCreatedOrder._id,
+                            orderDate: newlyCreatedOrder.orderDate,
+                            totalAmount: newlyCreatedOrder.totalAmount,
+                            paymentMethod: newlyCreatedOrder.paymentMethod,
+                            estimatedDelivery: '3-5 business days',
+                            items: newlyCreatedOrder.cartItems.map(item => ({
+                                title: item.title,
+                                image: item.image,
+                                quantity: item.quantity,
+                                price: item.price
+                            })),
+                            shippingAddress: newlyCreatedOrder.addressInfo
+                        }
+                    );
+                    console.log(`Order confirmation email sent to customer: ${customer.email}`);
+                }
+            } catch (emailError) {
+                console.error('Failed to send order confirmation email:', emailError);
+                // Don't fail the order creation if email fails
+            }
+
             // Send product sold notifications to admins/vendors
             if (newlyCreatedOrder.cartItems && newlyCreatedOrder.cartItems.length > 0) {
                 for (const item of newlyCreatedOrder.cartItems) {

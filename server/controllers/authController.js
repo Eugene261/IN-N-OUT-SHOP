@@ -26,11 +26,20 @@ const registerUser = async (req, res) => {
         });
       }
   
-      // Check password length
-      if (password.length < 6) {
+      // Check password requirements
+      if (password.length < 8) {
         return res.status(400).json({
           success: false,
-          message: 'Password must be at least 6 characters',
+          message: 'Password must be at least 8 characters',
+        });
+      }
+      
+      // Check password pattern (uppercase, lowercase, number, special character)
+      const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      if (!passwordPattern.test(password)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password must include at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)',
         });
       }
   
@@ -360,10 +369,19 @@ const resetPassword = async (req, res) => {
       });
     }
 
-    if (newPassword.length < 6) {
+    if (newPassword.length < 8) {
       return res.status(400).json({
         success: false,
-        message: 'Password must be at least 6 characters long'
+        message: 'Password must be at least 8 characters long'
+      });
+    }
+    
+    // Check password pattern (uppercase, lowercase, number, special character)
+    const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordPattern.test(newPassword)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must include at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)'
       });
     }
 

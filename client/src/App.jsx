@@ -37,6 +37,7 @@ import Features from "./pages/Features";
 import SuperAdminLayout from "./components/super-admin-view/superAdminLayout";
 import SuperAdminDashboardPage from "./pages/super-admin-view/dashboard";
 import SuperAdminUsersPage from "./pages/super-admin-view/users";
+import AdminProfileView from "./components/super-admin-view/adminProfileView";
 import SuperAdminOrdersPage from "./pages/super-admin-view/orders";
 import SuperAdminProductsPage from "./pages/super-admin-view/products";
 import SuperAdminFeaturedPage from "./pages/super-admin-view/featured";
@@ -52,8 +53,7 @@ import ConnectionStatus from "./components/shared/ConnectionStatus";
 // Import TokenManager component
 import TokenManager from './components/common/TokenManager';
 
-// Import Toaster component
-import { Toaster } from "./components/ui/sonner";
+// Toaster component is already imported in main.jsx - removed to prevent duplicates
 
 // Import axios interceptor
 import setupAxiosInterceptors from "./utils/axiosInterceptor";
@@ -137,6 +137,7 @@ function App() {
           }>
             <Route path='dashboard' element={<SuperAdminDashboardPage />} />
             <Route path='users' element={<SuperAdminUsersPage />} />
+            <Route path='users/profile/:adminId' element={<AdminProfileView />} />
             <Route path='orders' element={<SuperAdminOrdersPage />} />
             <Route path='products' element={<SuperAdminProductsPage />} />
                         <Route path='featured' element={<SuperAdminFeaturedPage />} />            <Route path='taxonomy' element={<TaxonomyManagement />} />            <Route path='vendor-payments' element={<SuperAdminVendorPaymentsPage />} />            <Route path='profile' element={<SuperAdminProfile />} />
@@ -201,7 +202,6 @@ function App() {
           <Route path="unauth-page" element={<UnauthPage/>} />
         </Routes>
       </div>
-      <Toaster />
     </>
   );
 }

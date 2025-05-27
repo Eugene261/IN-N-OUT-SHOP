@@ -558,6 +558,33 @@ const updateOrderStatus = async (req, res) => {
                     status
                 );
                 console.log(`Order status update email sent to customer: ${user.email} (Status: ${status})`);
+                
+                // If order is delivered, send review request email after a delay
+                if (status === 'delivered') {
+                    setTimeout(async () => {
+                        try {
+                            // Send review request for each product in the order
+                            for (const item of order.cartItems) {
+                                await emailService.sendProductReviewRequestEmail(
+                                    user.email,
+                                    user.userName,
+                                    {
+                                        orderId: order._id,
+                                        deliveryDate: new Date()
+                                    },
+                                    {
+                                        id: item.productId,
+                                        title: item.title,
+                                        image: item.image
+                                    }
+                                );
+                            }
+                            console.log(`Review request emails sent to customer: ${user.email}`);
+                        } catch (reviewEmailError) {
+                            console.error('Failed to send review request emails:', reviewEmailError);
+                        }
+                    }, 24 * 60 * 60 * 1000); // Send after 24 hours
+                }
             }
         } catch (emailError) {
             console.error('Failed to send order status update email:', emailError);
@@ -896,6 +923,35 @@ const createOrderAfterPayment = async (req, res) => {
                 // Don't fail the order creation if email fails
             }
             
+            // Send order confirmation email to customer
+            try {
+                const customer = await User.findById(savedOrder.user);
+                if (customer) {
+                    await emailService.sendOrderConfirmationEmail(
+                        customer.email,
+                        customer.userName,
+                        {
+                            orderId: savedOrder._id,
+                            orderDate: savedOrder.orderDate,
+                            totalAmount: savedOrder.totalAmount,
+                            paymentMethod: savedOrder.paymentMethod,
+                            estimatedDelivery: '3-5 business days',
+                            items: savedOrder.cartItems.map(item => ({
+                                title: item.title,
+                                image: item.image,
+                                quantity: item.quantity,
+                                price: item.price
+                            })),
+                            shippingAddress: savedOrder.addressInfo
+                        }
+                    );
+                    console.log(`Order confirmation email sent to customer: ${customer.email}`);
+                }
+            } catch (emailError) {
+                console.error('Failed to send order confirmation email:', emailError);
+                // Don't fail the order creation if email fails
+            }
+
             // Send product sold notifications to admins/vendors
             if (savedOrder.cartItems && savedOrder.cartItems.length > 0) {
                 for (const item of savedOrder.cartItems) {

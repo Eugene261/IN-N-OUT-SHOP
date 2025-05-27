@@ -57,15 +57,19 @@ app.use(
         origin: [
             'http://localhost:3000',
             'http://localhost:5173',
-            process.env.CLIENT_URL
+            process.env.CLIENT_URL,
+            // Add your production domains here when you get them
+            // 'https://your-domain.com',
+            // 'https://www.your-domain.com'
         ].filter(Boolean), // Remove any undefined values
-        methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
+        methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH', 'OPTIONS'],
         allowedHeaders: [
             "Content-Type",
             "Authorization",
             "Cache-Control",
             "Expires",
-            "Pragma"
+            "Pragma",
+            "Cookie"
         ],
         credentials : true
     })
@@ -126,6 +130,10 @@ app.use('/api/superAdmin/vendor-payments', require('./routes/superAdmin/vendorPa
 
 // Test route
 app.use('/api/test', testRouter);
+
+// Health check routes
+const healthRouter = require('./routes/health');
+app.use('/api', healthRouter);
 
 // Admin routes
 app.use('/api/admin', adminRoutes);

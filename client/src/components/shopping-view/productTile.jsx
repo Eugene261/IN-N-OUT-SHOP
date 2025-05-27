@@ -88,8 +88,7 @@ function ShoppingProductTile({ product, handleAddToCart, onAddToCart }) {
         .then((result) => {
           console.log("Successfully removed from wishlist:", result);
           toast.success("Removed from wishlist");
-          // Refresh wishlist items
-          dispatch(fetchWishlistItems(userId));
+          // No need to fetch again - the slice already updates the state
         })
         .catch((error) => {
           console.error("Failed to remove from wishlist:", error);
@@ -102,8 +101,7 @@ function ShoppingProductTile({ product, handleAddToCart, onAddToCart }) {
         .then((result) => {
           console.log("Successfully added to wishlist:", result);
           toast.success("Added to wishlist");
-          // Refresh wishlist items
-          dispatch(fetchWishlistItems(userId));
+          // No need to fetch again - the slice already updates the state
         })
         .catch((error) => {
           console.error("Failed to add to wishlist:", error);

@@ -65,8 +65,15 @@ function ResetPassword() {
       return false;
     }
     
-    if (passwords.password.length < 6) {
-      toast.error('Password must be at least 6 characters long');
+    if (passwords.password.length < 8) {
+      toast.error('Password must be at least 8 characters long');
+      return false;
+    }
+    
+    // Check password pattern (uppercase, lowercase, number, special character)
+    const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordPattern.test(passwords.password)) {
+      toast.error('Password must include uppercase, lowercase, number and special character (@$!%*?&)');
       return false;
     }
     
@@ -254,7 +261,7 @@ function ResetPassword() {
                 </button>
               </div>
               <p className="text-xs text-gray-500">
-                Password must be at least 6 characters long
+                Password must be at least 8 characters and include uppercase, lowercase, number and special character (@$!%*?&)
               </p>
             </div>
 

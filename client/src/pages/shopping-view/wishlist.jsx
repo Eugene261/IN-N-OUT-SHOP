@@ -50,8 +50,7 @@ const WishlistPage = () => {
       .then((result) => {
         console.log("Removed from wishlist result:", result);
         toast.success('Removed from wishlist');
-        // Refresh the wishlist to ensure UI is updated
-        dispatch(fetchWishlistItems(userId));
+        // No need to fetch again - the slice already updates the state
       })
       .catch((error) => {
         console.error("Error removing from wishlist:", error);

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   fetchAllUsers, 
@@ -21,11 +22,13 @@ import {
   Loader2, 
   X, 
   Filter,
-  Search
+  Search,
+  Eye
 } from 'lucide-react';
 
 const UserManagement = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { users, isLoading, error, success, actionType } = useSelector(state => state.superAdminUsers);
   
   // Form states
@@ -130,6 +133,13 @@ const UserManagement = () => {
       role: user.role
     });
     setShowEditUserForm(true);
+  };
+
+  const handleViewProfile = (user) => {
+    // Only allow viewing admin and superAdmin profiles
+    if (['admin', 'superAdmin'].includes(user.role)) {
+      navigate(`/super-admin/users/profile/${user._id}`);
+    }
   };
   
   // Animation variants
@@ -345,8 +355,12 @@ const UserManagement = () => {
                       onChange={(e) => setNewUser({...newUser, password: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
-                      minLength={6}
+                      minLength={8}
+                      placeholder="Must include uppercase, lowercase, number & special character"
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Password must be at least 8 characters and include uppercase, lowercase, number and special character (@$!%*?&)
+                    </p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -526,8 +540,18 @@ const UserManagement = () => {
                           <User className="h-5 w-5 text-gray-500" />
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {user.userName}
+                          <div className="text-sm font-medium">
+                            {['admin', 'superAdmin'].includes(user.role) ? (
+                              <button
+                                onClick={() => handleViewProfile(user)}
+                                className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                                title="View admin profile"
+                              >
+                                {user.userName}
+                              </button>
+                            ) : (
+                              <span className="text-gray-900">{user.userName}</span>
+                            )}
                           </div>
                           <div className="text-sm text-gray-500">
                             ID: {user._id?.substring(user._id.length - 6)}
@@ -550,6 +574,15 @@ const UserManagement = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      {['admin', 'superAdmin'].includes(user.role) && (
+                        <button
+                          onClick={() => handleViewProfile(user)}
+                          className="text-green-600 hover:text-green-900 mr-3"
+                          title="View profile"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                      )}
                       <button
                         onClick={() => openEditUserForm(user)}
                         className="text-blue-600 hover:text-blue-900 mr-3"

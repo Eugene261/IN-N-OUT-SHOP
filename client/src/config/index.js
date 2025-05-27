@@ -48,7 +48,15 @@ export const registerFormControls = [
           message: "Password must include uppercase, lowercase, number and special character"
         }
       },
-      helpText: "Password must be at least 8 characters and include uppercase, lowercase, number and special character"
+      helpText: "Password must be at least 8 characters and include uppercase, lowercase, number and special character",
+      showPasswordRequirements: true,
+      passwordRequirements: [
+        { id: "length", text: "At least 8 characters", regex: /.{8,}/ },
+        { id: "uppercase", text: "One uppercase letter (A-Z)", regex: /[A-Z]/ },
+        { id: "lowercase", text: "One lowercase letter (a-z)", regex: /[a-z]/ },
+        { id: "number", text: "One number (0-9)", regex: /\d/ },
+        { id: "special", text: "One special character (@$!%*?&)", regex: /[@$!%*?&]/ }
+      ]
   },
 ];
 

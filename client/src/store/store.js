@@ -22,6 +22,7 @@ import superAdminUsersSlice from './super-admin/user-slice/index.js';
 import superAdminOrdersSlice from './super-admin/orders-slice/index.js';
 import superAdminProductsSlice from './super-admin/products-slice/index.js';
 import superAdminRevenueSlice from './super-admin/revenue-slice/index.js';
+import superAdminProfileSlice from './super-admin/admin-profile-slice/index.js';
 import featuredCollectionSlice from './superAdmin/featured-collection-slice/index.js';
 import taxonomySlice from './superAdmin/taxonomy-slice/index.js';
 import shopFeaturedCollectionSlice from './shop/featured-collection-slice/index.js';
@@ -58,6 +59,7 @@ const store = configureStore({
         superAdminOrders: superAdminOrdersSlice,
         superAdminProducts: superAdminProductsSlice,
         superAdminRevenue: superAdminRevenueSlice,
+        superAdminProfile: superAdminProfileSlice,
         featuredCollections: featuredCollectionSlice,
         taxonomy: taxonomySlice,
         

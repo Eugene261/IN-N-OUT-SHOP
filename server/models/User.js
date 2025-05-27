@@ -156,6 +156,10 @@ const UserSchema = new mongoose.Schema({
             type: Number,
             default: 0 // Default fallback rate when no specific region zones are configured
         },
+        defaultOutOfRegionRate: {
+            type: Number,
+            default: 0 // Default rate for deliveries outside the admin's base region
+        },
         enableRegionalRates: {
             type: Boolean,
             default: true

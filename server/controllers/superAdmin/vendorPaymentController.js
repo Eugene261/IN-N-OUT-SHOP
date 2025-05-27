@@ -214,6 +214,29 @@ const createVendorPayment = async (req, res) => {
         vendor.totalEarningsWithdrawn = (vendor.totalEarningsWithdrawn || 0) + parseFloat(amount);
         await vendor.save();
         
+        // Send payment notification email to vendor
+        try {
+            const emailService = require('../../services/emailService');
+            await emailService.sendVendorPaymentNotificationEmail(
+                vendor.email,
+                vendor.userName,
+                {
+                    amount: parseFloat(amount),
+                    paymentMethod: paymentMethod || 'manual',
+                    transactionId: transactionId || payment._id,
+                    paymentDate: new Date(),
+                    period: description || 'Manual payment',
+                    description: description,
+                    currentBalance: vendor.balance,
+                    totalEarnings: vendor.totalEarningsWithdrawn
+                }
+            );
+            console.log(`Payment notification email sent to vendor: ${vendor.email}`);
+        } catch (emailError) {
+            console.error('Failed to send payment notification email:', emailError);
+            // Don't fail the payment creation if email fails
+        }
+        
         // Populate the payment with vendor information before returning
         const populatedPayment = await Transaction.findById(payment._id)
             .populate('vendorId', 'userName email shopName balance');

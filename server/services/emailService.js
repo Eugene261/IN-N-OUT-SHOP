@@ -874,6 +874,230 @@ class EmailService {
       html: htmlContent
     });
   }
+  // Vendor payment notification email
+  async sendVendorPaymentNotificationEmail(vendorEmail, vendorName, paymentDetails) {
+    const htmlContent = this.getModernEmailTemplate({
+      title: 'Payment Received',
+      headerColor: '#28a745',
+      icon: '💰',
+      content: `
+        <div class="notification-header">
+          <h2>💰 Payment Received!</h2>
+          <p>Hello ${vendorName}, you have received a payment from IN-N-OUT Store.</p>
+        </div>
+        
+        <div class="payment-summary">
+          <h3>💳 Payment Details</h3>
+          <table class="order-table">
+            <tr><td>Payment Amount</td><td><strong>Gh₵${paymentDetails.amount.toFixed(2)}</strong></td></tr>
+            <tr><td>Payment Method</td><td>${paymentDetails.paymentMethod}</td></tr>
+            <tr><td>Transaction ID</td><td>${paymentDetails.transactionId || 'N/A'}</td></tr>
+            <tr><td>Payment Date</td><td>${new Date(paymentDetails.paymentDate).toLocaleDateString()}</td></tr>
+            <tr><td>Period</td><td>${paymentDetails.period || 'N/A'}</td></tr>
+            <tr><td>Status</td><td><span class="status-badge" style="background: #28a745;">COMPLETED</span></td></tr>
+          </table>
+        </div>
+        
+        ${paymentDetails.description ? `
+          <div class="payment-notes">
+            <h3>📝 Payment Notes</h3>
+            <div class="message-box">
+              <p>${paymentDetails.description}</p>
+            </div>
+          </div>
+        ` : ''}
+        
+        <div class="account-summary">
+          <h3>💼 Account Summary</h3>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-number">Gh₵${(paymentDetails.currentBalance || 0).toFixed(2)}</div>
+              <div class="stat-label">Current Balance</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">Gh₵${(paymentDetails.totalEarnings || 0).toFixed(2)}</div>
+              <div class="stat-label">Total Earnings</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="next-steps">
+          <h3>📋 Important Information</h3>
+          <ul>
+            <li>💳 Payment has been processed successfully</li>
+            <li>📧 Keep this email as a receipt for your records</li>
+            <li>📊 Check your admin dashboard for updated balance</li>
+            <li>💬 Contact support if you have any questions</li>
+          </ul>
+        </div>
+        
+        <div style="text-align: center;">
+          <a href="${process.env.CLIENT_URL}/admin/payments" class="button">View Payment History</a>
+          <a href="${process.env.CLIENT_URL}/admin/dashboard" class="button secondary">Go to Dashboard</a>
+        </div>
+      `
+    });
+
+    return await this.sendEmail({
+      to: vendorEmail,
+      subject: `💰 Payment Received - Gh₵${paymentDetails.amount.toFixed(2)} | IN-N-OUT Store`,
+      html: htmlContent
+    });
+  }
+
+  // Product review request email
+  async sendProductReviewRequestEmail(customerEmail, customerName, orderDetails, productDetails) {
+    const htmlContent = this.getModernEmailTemplate({
+      title: 'Share Your Experience',
+      headerColor: '#ffc107',
+      icon: '⭐',
+      content: `
+        <div class="notification-header">
+          <h2>⭐ How was your purchase?</h2>
+          <p>Hi ${customerName}, we hope you're enjoying your recent purchase from IN-N-OUT Store!</p>
+        </div>
+        
+        <div class="product-review">
+          <h3>📦 Your Recent Purchase</h3>
+          <div class="product-preview">
+            <img src="${productDetails.image}" alt="${productDetails.title}" class="product-image">
+            <div class="product-info">
+              <h4>${productDetails.title}</h4>
+              <p>Order #${orderDetails.orderId}</p>
+              <p>Delivered on ${new Date(orderDetails.deliveryDate).toLocaleDateString()}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="review-request">
+          <h3>💭 Share Your Thoughts</h3>
+          <p>Your feedback helps other customers make informed decisions and helps us improve our service.</p>
+          
+          <div class="review-benefits">
+            <h4>Why leave a review?</h4>
+            <ul>
+              <li>⭐ Help other customers choose the right products</li>
+              <li>🏆 Earn loyalty points for detailed reviews</li>
+              <li>📈 Help vendors improve their products</li>
+              <li>🎁 Get early access to new products and deals</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div style="text-align: center;">
+          <a href="${process.env.CLIENT_URL}/shop/products/${productDetails.id}/review?order=${orderDetails.orderId}" class="button">Write Review</a>
+          <a href="${process.env.CLIENT_URL}/shop/account/orders" class="button secondary">View Orders</a>
+        </div>
+        
+        <div class="message-box">
+          <p><strong>Quick Review:</strong> Rate your experience in just 30 seconds, or write a detailed review to help others!</p>
+        </div>
+      `
+    });
+
+    return await this.sendEmail({
+      to: customerEmail,
+      subject: `⭐ How was "${productDetails.title}"? Share your experience!`,
+      html: htmlContent
+    });
+  }
+
+  // Newsletter subscription confirmation
+  async sendNewsletterSubscriptionEmail(email, userName) {
+    const htmlContent = this.getModernEmailTemplate({
+      title: 'Newsletter Subscription',
+      headerColor: '#6f42c1',
+      icon: '📬',
+      content: `
+        <div class="notification-header">
+          <h2>📬 Welcome to our Newsletter!</h2>
+          <p>Hi ${userName}, thank you for subscribing to IN-N-OUT Store updates!</p>
+        </div>
+        
+        <div class="newsletter-benefits">
+          <h3>🎁 What you'll receive:</h3>
+          <ul>
+            <li>🛍️ Exclusive deals and early access to sales</li>
+            <li>📦 New product announcements</li>
+            <li>💡 Shopping tips and product recommendations</li>
+            <li>🎉 Special member-only promotions</li>
+            <li>📊 Weekly trending products</li>
+          </ul>
+        </div>
+        
+        <div class="message-box">
+          <h3>📧 Email Preferences</h3>
+          <p>You can update your email preferences or unsubscribe at any time using the links in our emails.</p>
+        </div>
+        
+        <div style="text-align: center;">
+          <a href="${process.env.CLIENT_URL}/shop" class="button">Start Shopping</a>
+          <a href="${process.env.CLIENT_URL}/newsletter/preferences" class="button secondary">Email Preferences</a>
+        </div>
+      `
+    });
+
+    return await this.sendEmail({
+      to: email,
+      subject: '📬 Welcome to IN-N-OUT Store Newsletter!',
+      html: htmlContent
+    });
+  }
+
+  // Order delivery confirmation
+  async sendOrderDeliveredEmail(customerEmail, customerName, orderDetails) {
+    const htmlContent = this.getModernEmailTemplate({
+      title: 'Order Delivered',
+      headerColor: '#28a745',
+      icon: '📦',
+      content: `
+        <div class="notification-header">
+          <h2>📦 Order Delivered Successfully!</h2>
+          <p>Great news ${customerName}! Your order has been delivered.</p>
+        </div>
+        
+        <div class="order-summary">
+          <h3>📋 Delivery Details</h3>
+          <table class="order-table">
+            <tr><td>Order ID</td><td>#${orderDetails.orderId}</td></tr>
+            <tr><td>Delivered On</td><td>${new Date(orderDetails.deliveryDate).toLocaleDateString()}</td></tr>
+            <tr><td>Delivery Time</td><td>${orderDetails.deliveryTime || 'N/A'}</td></tr>
+            <tr><td>Total Amount</td><td><strong>Gh₵${orderDetails.totalAmount.toFixed(2)}</strong></td></tr>
+          </table>
+        </div>
+        
+        <div class="feedback-request">
+          <h3>⭐ How was your experience?</h3>
+          <p>We'd love to hear about your shopping experience. Your feedback helps us improve!</p>
+          
+          <div class="review-benefits">
+            <h4>Leave a review and:</h4>
+            <ul>
+              <li>🏆 Help other customers make informed decisions</li>
+              <li>🎁 Earn loyalty points for detailed reviews</li>
+              <li>📈 Help us improve our service</li>
+              <li>⭐ Share your experience with the community</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div style="text-align: center;">
+          <a href="${process.env.CLIENT_URL}/shop/account/orders/${orderDetails.orderId}/review" class="button">Leave Review</a>
+          <a href="${process.env.CLIENT_URL}/shop" class="button secondary">Continue Shopping</a>
+        </div>
+        
+        <div class="message-box">
+          <p><strong>Need Help?</strong> If you have any issues with your order, please contact our support team.</p>
+        </div>
+      `
+    });
+
+    return await this.sendEmail({
+      to: customerEmail,
+      subject: `📦 Order #${orderDetails.orderId} Delivered - We'd love your feedback!`,
+      html: htmlContent
+    });
+  }
 }
 
 // Create and export a singleton instance
