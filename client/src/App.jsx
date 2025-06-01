@@ -1,6 +1,6 @@
 // App.jsx
 import { Routes, Route } from "react-router-dom";
-import AuthLayout from "./components/auth/layout";import AuthLogin from "./pages/auth/login";import AuthRegister from "./pages/auth/register";import ForgotPassword from "./pages/auth/forgot-password";import ResetPassword from "./pages/auth/reset-password";
+import AuthLayout from "./components/auth/Layout";import AuthLogin from "./pages/auth/login";import AuthRegister from "./pages/auth/register";import ForgotPassword from "./pages/auth/forgot-password";import ResetPassword from "./pages/auth/reset-password";
 import AdminLayout from "./components/admin-view/layout";
 import AdminProducts from "./pages/admin-view/products";
 import AdminDashboard from "./pages/admin-view/dashboard";
