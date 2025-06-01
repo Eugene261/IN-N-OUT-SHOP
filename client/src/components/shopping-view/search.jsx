@@ -3,11 +3,12 @@ import { Input } from '../ui/input'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { getSearchResults, resetSearchResults } from '../../store/shop/search-slice'
-import ShoppingProductTile from './productTile'
+import EnhancedShoppingProductTile from './enhanced-product-tile'
 import { motion, AnimatePresence } from 'framer-motion'
 import { SearchIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { addToCart, fetchCartItems } from '../../store/shop/cart-slice'
+import { addToWishlist, removeFromWishlist, fetchWishlistItems } from '../../store/shop/wishlist-slice'
 import ProductOptionsModal from './productOptionsModal'
 
 function SearchProducts() {
@@ -18,6 +19,7 @@ function SearchProducts() {
     const { searchResults } = useSelector(state => state.shopSearch);
     const { cartItems } = useSelector(state => state.shopCart);
     const { user } = useSelector(state => state.auth);
+    const { wishlistItems } = useSelector(state => state.wishlist);
     const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
     
@@ -36,6 +38,13 @@ function SearchProducts() {
         }
         return () => clearTimeout(searchTimer)
     }, [keyword]);
+
+    // Fetch wishlist items if user is logged in
+    useEffect(() => {
+        if (user && (user._id || user.id)) {
+            dispatch(fetchWishlistItems(user._id || user.id));
+        }
+    }, [dispatch, user]);
 
 
 
@@ -71,6 +80,45 @@ function SearchProducts() {
     };
 
 
+    function handleAddToWishlist(getCurrentProductId) {
+        // Check if user is authenticated
+        if (!user || !user.id) {
+            toast.error("Please login to add items to your wishlist", {
+                position: 'top-center',
+                duration: 2000
+            });
+            return;
+        }
+
+        const userId = user._id || user.id;
+        
+        // Check if product is already in wishlist
+        const isInWishlist = wishlistItems?.some(item => item.productId === getCurrentProductId);
+        
+        if (isInWishlist) {
+            // Remove from wishlist
+            dispatch(removeFromWishlist({ userId, productId: getCurrentProductId }))
+                .then((result) => {
+                    if (result?.payload?.success) {
+                        toast.success("Removed from wishlist", {
+                            position: 'top-center',
+                            duration: 2000
+                        });
+                    }
+                });
+        } else {
+            // Add to wishlist
+            dispatch(addToWishlist({ userId, productId: getCurrentProductId }))
+                .then((result) => {
+                    if (result?.payload?.success) {
+                        toast.success("Added to wishlist", {
+                            position: 'top-center',
+                            duration: 2000
+                        });
+                    }
+                });
+        }
+    }
 
 
     
@@ -90,45 +138,57 @@ function SearchProducts() {
                 </div>
             </div>
 
-            {/* Results Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
-                <AnimatePresence>
-                    {searchResults?.length > 0 ? (
-                        searchResults.map((item) => (
+            {/* Results Grid - Updated to match listing page layout */}
+            <div className="bg-background w-full rounded-lg shadow-sm">
+                {searchResults?.length > 0 && (
+                    <div className="p-4 border-b flex items-center justify-between">
+                        <h2 className="text-lg font-bold">Search Results</h2>
+                        <span className='text-muted-foreground text-sm'>{searchResults.length} products found</span>
+                    </div>
+                )}
+                
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 p-3">
+                    <AnimatePresence>
+                        {searchResults?.length > 0 ? (
+                            searchResults.map((item, index) => {
+                                const isInWishlist = wishlistItems?.some(wishlistItem => wishlistItem.productId === item._id);
+                                return (
+                                    <motion.div
+                                        key={item._id || `product-${index}`}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                                    >
+                                        <EnhancedShoppingProductTile
+                                            handleGetProductDetails={handleGetProductDetails}
+                                            product={item} 
+                                            handleAddToCart={handleAddToCart}
+                                            handleAddToWishlist={handleAddToWishlist}
+                                            isInWishlist={isInWishlist}
+                                        />
+                                    </motion.div>
+                                );
+                            })
+                        ) : (
                             <motion.div
-                                key={item.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.3 }}
-                                className="h-full"
+                                className="col-span-full min-h-[50vh] flex flex-col items-center justify-center text-center"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
                             >
-                                <ShoppingProductTile
-                                handleAddToCart={handleAddToCart} 
-                                    product={item}
-                                    handleGetProductDetails={handleGetProductDetails}
-                                    className="h-full"
-                                />
+                                <div className="text-4xl mb-4">🔍</div>
+                                <h2 className="text-2xl font-medium text-gray-800 mb-2">
+                                    {keyword ? "No results found" : "Start searching"}
+                                </h2>
+                                <p className="text-gray-500">
+                                    {keyword 
+                                        ? "We couldn't find any matching products"
+                                        : "Type your search query above"}
+                                </p>
                             </motion.div>
-                        ))
-                    ) : (
-                        <motion.div
-                            className="col-span-full min-h-[50vh] flex flex-col items-center justify-center text-center"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                        >
-                            <div className="text-4xl mb-4">🔍</div>
-                            <h2 className="text-2xl font-medium text-gray-800 mb-2">
-                                {keyword ? "No results found" : "Start searching"}
-                            </h2>
-                            <p className="text-gray-500">
-                                {keyword 
-                                    ? "We couldn't find any matching products"
-                                    : "Type your search query above"}
-                            </p>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                        )}
+                    </AnimatePresence>
+                </div>
             </div>
 
             {/* Product Options Modal */}

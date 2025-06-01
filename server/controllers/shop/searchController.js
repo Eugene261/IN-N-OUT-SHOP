@@ -27,7 +27,8 @@ const searchProducts = async(req, res) => {
             ]
         }
 
-        const searchResults = await Product.find(createSearchQuery);
+        const searchResults = await Product.find(createSearchQuery)
+            .populate('createdBy', 'userName email shopName shopLogo shopCategory shopRating shopReviewCount baseRegion baseCity');
 
         res.status(200).json({
             success : true,
@@ -35,7 +36,7 @@ const searchProducts = async(req, res) => {
         })
         
     } catch (error) {
-        console.log();
+        console.log(error);
         res.status(500).json({
             success : false,
             message : 'An error occured'

@@ -111,6 +111,7 @@ const AdminRevenueStats = () => {
     const startDate = new Date(dateRange.startDate);
     const endDate = new Date(dateRange.endDate);
     
+    
     // Set time to beginning/end of day for more accurate comparison
     startDate.setHours(0, 0, 0, 0);
     endDate.setHours(23, 59, 59, 999);
