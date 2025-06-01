@@ -2,8 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const {    getShopProfile,    updateShopProfile,    uploadShopLogo,    uploadShopBanner,    getAllShops,    getShopDetails,    getShopCategories} = require('../../controllers/admin/shopController');
-
-const { authMiddleware } = require('../../middleware/auth');
+const { authMiddleware } = require('../../Middleware/auth');
 
 // Configure multer for image uploads
 const storage = multer.memoryStorage();

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../../controllers/authController');
-const { verifyToken, isAdmin } = require('../../middleware/auth');
+const { verifyToken, isAdmin } = require('../../Middleware/auth');
 
 // Add a health check endpoint
 router.get('/health', (req, res) => {
