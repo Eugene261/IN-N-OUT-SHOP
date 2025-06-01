@@ -4,7 +4,7 @@ const {
     getAdminOrders,
     getAdminRevenueByTime,
     getAllAdminRevenueData
-} = require('../../Controllers/admin/revenueController.js');
+} = require('../../controllers/admin/revenueController.js');
 const { verifyToken, isAdmin } = require('../../Middleware/auth');
 
 const router = express.Router();

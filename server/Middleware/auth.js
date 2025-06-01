@@ -73,7 +73,7 @@ const verifyToken = (req, res, next) => {
 // Admin middleware - checks if the authenticated user is an admin
 const isAdmin = async (req, res, next) => {
     try {
-        if (req.user && (req.user.role === 'admin' || req.user.role === 'superadmin')) {
+        if (req.user && (req.user.role === 'admin' || req.user.role === 'superAdmin')) {
             next();
         } else {
             return res.status(403).json({
@@ -93,7 +93,7 @@ const isAdmin = async (req, res, next) => {
 // Super Admin middleware - checks if the authenticated user is a super admin
 const isSuperAdmin = async (req, res, next) => {
     try {
-        if (req.user && req.user.role === 'superadmin') {
+        if (req.user && req.user.role === 'superAdmin') {
             next();
         } else {
             return res.status(403).json({
