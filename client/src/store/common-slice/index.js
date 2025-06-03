@@ -1,6 +1,9 @@
 import {createAsyncThunk, createSlice} from "@reduxjs/toolkit"
 import axios from "axios";
 
+// Define the API base URL using Vite's environment variable syntax
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const initialState = {
     isLoading: false,
     uploadLoading: false,
@@ -14,7 +17,7 @@ export const getFeatureImages = createAsyncThunk(
     'common/getFeatureImages',  
     async (_, { rejectWithValue }) => {
         try {
-            const response = await axios.get(`http://localhost:5000/api/common/feature/get`);
+            const response = await axios.get(`${API_BASE_URL}/api/common/feature/get`);
             return response?.data;
         } catch (error) {
             return rejectWithValue(error.response?.data || { message: "Failed to fetch feature images" });
@@ -35,7 +38,7 @@ export const addFeatureImage = createAsyncThunk(
                 formData.append('my_file', imageData);
                 
                 response = await axios.post(
-                    `http://localhost:5000/api/common/feature/add`, 
+                    `${API_BASE_URL}/api/common/feature/add`, 
                     formData,
                     {
                         headers: {
@@ -46,7 +49,7 @@ export const addFeatureImage = createAsyncThunk(
             } else {
                 // It's a string (URL or base64), send as JSON
                 response = await axios.post(
-                    `http://localhost:5000/api/common/feature/add`, 
+                    `${API_BASE_URL}/api/common/feature/add`, 
                     { image: imageData }
                 );
             }
@@ -63,7 +66,7 @@ export const deleteFeatureImage = createAsyncThunk(
     'common/deleteFeatureImage',
     async (imageId, { rejectWithValue }) => {
         try {
-            const response = await axios.delete(`http://localhost:5000/api/common/feature/delete/${imageId}`);
+            const response = await axios.delete(`${API_BASE_URL}/api/common/feature/delete/${imageId}`);
             return { ...response.data, imageId };
         } catch (error) {
             console.error("Error deleting image:", error);
