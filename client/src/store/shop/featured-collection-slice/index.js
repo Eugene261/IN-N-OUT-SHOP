@@ -1,6 +1,9 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
+// Define the API base URL using Vite's environment variable syntax
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 // Initial state
 const initialState = {
   collections: [],
@@ -14,7 +17,7 @@ export const fetchPublicFeaturedCollections = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(
-        'http://localhost:5000/api/shop/featured-collections'
+        `${API_BASE_URL}/api/shop/featured-collections`
       );
       return response.data;
     } catch (error) {

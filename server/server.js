@@ -58,6 +58,7 @@ app.use(
             'http://localhost:3000',
             'http://localhost:5173',
             process.env.CLIENT_URL,
+            'https://in-n-out-shop-a81n.vercel.app',
             // Add your production domains here when you get them
             // 'https://your-domain.com',
             // 'https://www.your-domain.com'
