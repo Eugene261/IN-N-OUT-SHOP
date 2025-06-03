@@ -1,6 +1,9 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
+// Define the API base URL using Vite's environment variable syntax
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const initialState = {
     isLoading: false,
     productList: [],
@@ -38,7 +41,7 @@ export const fetchAllFilteredProducts = createAsyncThunk('/products/fetchAllFilt
         const query = new URLSearchParams(queryObj);
         
         console.log('Fetching products with query params:', queryObj);
-        const response = await axios.get(`http://localhost:5000/api/shop/products/get?${query}`);
+        const response = await axios.get(`${API_BASE_URL}/api/shop/products/get?${query}`);
         console.log('Fetched products response:', response?.data);
         return response?.data;
     }
@@ -47,7 +50,7 @@ export const fetchAllFilteredProducts = createAsyncThunk('/products/fetchAllFilt
 export const fetchProductDetails = createAsyncThunk('/products/fetchProductDetails',  
     async (id) => {
         console.log('Fetching product details with timestamp to prevent caching');
-        const response = await axios.get(`http://localhost:5000/api/shop/products/get/${id}?_t=${Date.now()}`);
+        const response = await axios.get(`${API_BASE_URL}/api/shop/products/get/${id}?_t=${Date.now()}`);
         console.log('Fetched product details response:', response?.data);
         return response?.data;
     }
@@ -58,7 +61,7 @@ export const fetchBestsellerProducts = createAsyncThunk(
     '/products/fetchBestsellerProducts',
     async () => {
         console.log('Fetching bestseller products with timestamp to prevent caching');
-        const response = await axios.get(`http://localhost:5000/api/shop/products/bestsellers?_t=${Date.now()}`);
+        const response = await axios.get(`${API_BASE_URL}/api/shop/products/bestsellers?_t=${Date.now()}`);
         console.log('Fetched bestseller products response:', response?.data);
         return response?.data;
     }
@@ -69,7 +72,7 @@ export const fetchNewArrivalProducts = createAsyncThunk(
     '/products/fetchNewArrivalProducts',
     async () => {
         console.log('Fetching new arrival products with timestamp to prevent caching');
-        const response = await axios.get(`http://localhost:5000/api/shop/products/new-arrivals?_t=${Date.now()}`);
+        const response = await axios.get(`${API_BASE_URL}/api/shop/products/new-arrivals?_t=${Date.now()}`);
         console.log('Fetched new arrival products response:', response?.data);
         return response?.data;
     }
@@ -80,7 +83,7 @@ export const fetchSimilarProducts = createAsyncThunk(
     '/products/fetchSimilarProducts',
     async (productId) => {
         console.log('Fetching similar products with timestamp to prevent caching');
-        const response = await axios.get(`http://localhost:5000/api/shop/products/similar/${productId}?limit=8&_t=${Date.now()}`);
+        const response = await axios.get(`${API_BASE_URL}/api/shop/products/similar/${productId}?limit=8&_t=${Date.now()}`);
         console.log('Fetched similar products response:', response?.data);
         return response?.data;
     }
@@ -91,7 +94,7 @@ export const fetchAvailableShops = createAsyncThunk(
     '/products/fetchAvailableShops',
     async () => {
         console.log('Fetching available shops for filtering');
-        const response = await axios.get(`http://localhost:5000/api/shop/products/available-shops?_t=${Date.now()}`);
+        const response = await axios.get(`${API_BASE_URL}/api/shop/products/available-shops?_t=${Date.now()}`);
         console.log('Fetched available shops response:', response?.data);
         return response?.data;
     }
@@ -106,7 +109,7 @@ export const fetchAllShops = createAsyncThunk(
             ...params,
             _t: Date.now()
         });
-        const response = await axios.get(`http://localhost:5000/api/admin/shop/all?${queryParams}`);
+        const response = await axios.get(`${API_BASE_URL}/api/admin/shop/all?${queryParams}`);
         console.log('Fetched all shops response:', response?.data);
         return response?.data;
     }
@@ -117,7 +120,7 @@ export const fetchShopCategories = createAsyncThunk(
     '/products/fetchShopCategories',
     async () => {
         console.log('Fetching shop categories');
-        const response = await axios.get(`http://localhost:5000/api/admin/shop/categories?_t=${Date.now()}`);
+        const response = await axios.get(`${API_BASE_URL}/api/admin/shop/categories?_t=${Date.now()}`);
         console.log('Fetched shop categories response:', response?.data);
         return response?.data;
     }
@@ -128,7 +131,7 @@ export const fetchShopDetails = createAsyncThunk(
     '/products/fetchShopDetails',
     async (shopId) => {
         console.log('Fetching shop details for ID:', shopId);
-        const response = await axios.get(`http://localhost:5000/api/admin/shop/${shopId}?_t=${Date.now()}`);
+        const response = await axios.get(`${API_BASE_URL}/api/admin/shop/${shopId}?_t=${Date.now()}`);
         console.log('Fetched shop details response:', response?.data);
         return response?.data;
     }
@@ -139,7 +142,7 @@ export const toggleProductBestseller = createAsyncThunk(
     '/products/toggleBestseller',
     async (id) => {
         const response = await axios.patch(
-            `http://localhost:5000/api/shop/products/toggle-bestseller/${id}`,
+            `${API_BASE_URL}/api/shop/products/toggle-bestseller/${id}`,
             {}, 
             { withCredentials: true } 
         );
@@ -152,7 +155,7 @@ export const toggleProductNewArrival = createAsyncThunk(
     '/products/toggleNewArrival',
     async (id) => {
         const response = await axios.patch(
-            `http://localhost:5000/api/shop/products/toggle-new-arrival/${id}`,
+            `${API_BASE_URL}/api/shop/products/toggle-new-arrival/${id}`,
             {}, 
             { withCredentials: true } 
         );
@@ -169,7 +172,7 @@ export const forceRefreshProductData = createAsyncThunk(
         // If we have a specific product ID, refresh that product's details
         if (productId) {
             const response = await axios.get(
-                `http://localhost:5000/api/shop/products/get/${productId}?t=${Date.now()}`,
+                `${API_BASE_URL}/api/shop/products/get/${productId}?t=${Date.now()}`,
                 { withCredentials: true }
             );
             return response?.data;
@@ -181,7 +184,7 @@ export const forceRefreshProductData = createAsyncThunk(
             
             // Then fetch fresh data with a timestamp to prevent caching
             const response = await axios.get(
-                `http://localhost:5000/api/shop/products/get?t=${Date.now()}`,
+                `${API_BASE_URL}/api/shop/products/get?t=${Date.now()}`,
                 { withCredentials: true }
             );
             return response?.data;
