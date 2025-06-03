@@ -481,12 +481,12 @@ function ShoppingListing() {
 
 
   return (
-    <div className='flex flex-col'>
+    <div className='flex flex-col bg-gray-50 min-h-screen'>
       {/* Mobile Filter Toggle */}
-      <div className="md:hidden p-4 pb-0">
+      <div className="md:hidden px-4 py-3 bg-white border-b border-gray-200">
         <button 
-          className="flex items-center gap-2 px-3 py-2 bg-gray-100 
-          dark:bg-gray-800 rounded-lg text-sm font-medium"
+          className="flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 
+          rounded-md text-sm font-medium transition-colors duration-200"
           onClick={() => setShowFilters(!showFilters)}
         >
           <Filter size={16} />
@@ -494,39 +494,44 @@ function ShoppingListing() {
         </button>
       </div>
 
-      <div className='grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6 p-4 md:p-6'>
-        {/* Mobile filters - only visible when toggled */}
-        <div className={`${showFilters ? 'block' : 'hidden'} md:block`}>
-          <EnhancedProductFilter 
-            filters={filters}  
-            handleFilter={handleFilter}
-            availableShops={availableShops}
-          />
+      <div className='flex flex-col lg:grid lg:grid-cols-[280px_1fr] min-h-screen'>
+        {/* Sidebar Filters */}
+        <div className={`${showFilters ? 'block' : 'hidden'} lg:block bg-white border-r border-gray-200 lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto`}>
+          <div className="p-6 border-b border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+          </div>
+          <div className="p-6">
+            <EnhancedProductFilter 
+              filters={filters}  
+              handleFilter={handleFilter}
+              availableShops={availableShops}
+            />
+          </div>
         </div>
 
-        <div className="bg-background w-full rounded-lg shadow-sm">
-          <div className="p-4 border-b flex items-center justify-between">
-            <h2 className="text-lg font-bold">All Products</h2>
-            <div className="flex items-center gap-3">
-              <span className='text-muted-foreground text-sm'>{productList?.length || 0} products</span>
+        {/* Main Content */}
+        <div className="flex-1 bg-white">
+          {/* Header Section */}
+          <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 lg:px-8 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-xl lg:text-2xl font-bold text-gray-900">All Products</h1>
+                <p className="text-sm text-gray-500 mt-1">
+                  {productList?.length || 0} product{productList?.length !== 1 ? 's' : ''} found
+                </p>
+              </div>
 
+              {/* Sort Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <motion.button
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 
-                    hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 
-                    dark:text-gray-200 border border-gray-200 dark:border-gray-700 transition-all 
-                    duration-200 ease-out shadow-sm hover:shadow-md relative overflow-hidden"
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-md bg-gray-50 hover:bg-gray-100 
+                    text-gray-800 border border-gray-200 transition-all duration-200 text-sm font-medium"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                   >
-                    <motion.div
-                      animate={{ rotate: sort ? 180 : 0 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <ArrowUpDown className="h-4 w-4" />
-                    </motion.div>
-                    <span className="text-sm font-medium">Sort</span>
+                    <ArrowUpDown className="h-4 w-4" />
+                    <span>Sort</span>
                   </motion.button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align='end' className='w-[200px]'>
@@ -544,29 +549,79 @@ function ShoppingListing() {
               </DropdownMenu>
             </div>
           </div>
+
+          {/* Loading State */}
           {isLoading ? (
-            <div className="flex items-center justify-center min-h-[400px] w-full">
+            <div className="flex items-center justify-center py-20">
               <ShoppingLoader />
             </div>
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 p-4">
-              {productList?.map((productItem, index) => {
-                const isInWishlist = wishlistItems?.some(item => item.productId === productItem._id);
-                return (
-                  <EnhancedShoppingProductTile 
-                    handleGetProductDetails={handleGetProductDetails}
-                    key={`product-${productItem.id || index}`}
-                    product={productItem} 
-                    handleAddToCart={handleAddToCart}
-                    handleAddToWishlist={handleAddToWishlist}
-                    isInWishlist={isInWishlist}
-                  />
-                );
-              })}
+            <div className="px-4 lg:px-8 py-6">
+              {/* Product Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
+                {productList?.map((productItem, index) => {
+                  const isInWishlist = wishlistItems?.some(item => item.productId === productItem._id);
+                  return (
+                    <motion.div
+                      key={`product-${productItem.id || index}`}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: index * 0.1 }}
+                      className="group"
+                    >
+                      <EnhancedShoppingProductTile 
+                        handleGetProductDetails={handleGetProductDetails}
+                        product={productItem} 
+                        handleAddToCart={handleAddToCart}
+                        handleAddToWishlist={handleAddToWishlist}
+                        isInWishlist={isInWishlist}
+                      />
+                      
+                      {/* Clean separator between rows */}
+                      {(index + 1) % 2 === 0 && index < productList.length - 2 && (
+                        <div className="col-span-2 sm:hidden">
+                          <div className="h-px bg-gray-100 my-4 mx-2"></div>
+                        </div>
+                      )}
+                      {(index + 1) % 3 === 0 && index < productList.length - 3 && (
+                        <div className="hidden sm:block lg:hidden col-span-3">
+                          <div className="h-px bg-gray-100 my-6 mx-4"></div>
+                        </div>
+                      )}
+                      {(index + 1) % 4 === 0 && index < productList.length - 4 && (
+                        <div className="hidden lg:block xl:hidden col-span-4">
+                          <div className="h-px bg-gray-100 my-6 mx-4"></div>
+                        </div>
+                      )}
+                      {(index + 1) % 5 === 0 && index < productList.length - 5 && (
+                        <div className="hidden xl:block col-span-5">
+                          <div className="h-px bg-gray-100 my-6 mx-4"></div>
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              {/* Empty State */}
+              {productList?.length === 0 && (
+                <div className="text-center py-20">
+                  <div className="text-4xl mb-4">🛍️</div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No products found</h3>
+                  <p className="text-gray-500 mb-6">Try adjusting your filters or search terms</p>
+                  <button 
+                    onClick={() => {
+                      setFilters({});
+                      sessionStorage.removeItem('filters');
+                    }}
+                    className="px-6 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
+                  >
+                    Clear Filters
+                  </button>
+                </div>
+              )}
             </div>
           )}
-
-
         </div>
       </div>
 

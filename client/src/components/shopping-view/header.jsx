@@ -463,57 +463,58 @@ function ShoppingHeader() {
         </div>
         
         {/* Mobile Layout */}
-        <div className="flex lg:hidden items-center justify-between h-14 px-4">
+        <div className="flex lg:hidden items-center justify-between h-12 px-3">
           {/* Left: Hamburger Menu */}
-          <div className="flex items-center">
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <motion.button 
-                  className="p-2 -ml-2 rounded-md hover:bg-gray-50 transition-all duration-200"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Menu className='h-6 w-6 text-gray-900' />
-                  <span className='sr-only'>Toggle Menu</span>
-                </motion.button>
-              </SheetTrigger>
-              <SheetContent side='left' className='w-full max-w-xs bg-white text-gray-800 border-r border-gray-100'>
-                <SheetHeader className="sr-only">
-                  <SheetTitle>Navigation Menu</SheetTitle>
-                </SheetHeader>
-                <div className="py-6">
-                  <MenuItems onNavigate={() => setMobileMenuOpen(false)} />
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
+          <motion.button 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 -ml-1 rounded-md hover:bg-gray-50 transition-all duration-200"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Menu className='h-6 w-6 text-gray-900' />
+            <span className='sr-only'>Toggle Menu</span>
+          </motion.button>
           
           {/* Center: Logo */}
           <div className="absolute left-1/2 transform -translate-x-1/2">
             <Link to='/shop/home' className='flex items-center no-underline'>
-              <span className="font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-black to-gray-700 whitespace-nowrap">
+              <span className="font-bold text-lg text-gray-900 whitespace-nowrap">
                 IN-N-OUT
               </span>
             </Link>
           </div>
           
-          {/* Right: Action buttons */}
-          <div className="flex items-center space-x-1">
+          {/* Right: Minimal Action buttons */}
+          <div className="flex items-center space-x-0">
+            {/* Search */}
             <Link to="/shop/search">
               <motion.button 
                 className="p-2 rounded-md hover:bg-gray-50 transition-all duration-200"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-900">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-900">
                   <circle cx="11" cy="11" r="8"/>
                   <path d="m21 21-4.3-4.3"/>
                 </svg>
                 <span className='sr-only'>Search</span>
               </motion.button>
             </Link>
+
             <HeaderRightContent isAuthenticated={isAuthenticated} />
           </div>
+
+          {/* Mobile Menu Sheet */}
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetContent side='left' className='w-full max-w-xs bg-white border-r'>
+              <SheetHeader className="sr-only">
+                <SheetTitle>Navigation Menu</SheetTitle>
+              </SheetHeader>
+              <div className="py-6">
+                <MenuItems onNavigate={() => setMobileMenuOpen(false)} />
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </motion.header>

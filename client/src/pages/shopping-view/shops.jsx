@@ -5,6 +5,7 @@ import { Input } from '../../components/ui/input';
 import { Star, MapPin, Store, Package, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { apiClient } from '../../config/api.js';
 
 function ShopsDirectory() {
   const [shops, setShops] = useState([]);
@@ -47,12 +48,11 @@ function ShopsDirectory() {
       if (selectedCategory !== 'all') params.append('category', selectedCategory);
       if (searchTerm) params.append('search', searchTerm);
       
-      const response = await fetch(`/api/admin/shop/all?${params.toString()}`);
-      const data = await response.json();
+      const response = await apiClient.get(`/api/admin/shop/all?${params.toString()}`);
       
-      if (data.success) {
-        setShops(data.shops);
-        setPagination(data.pagination);
+      if (response.data.success) {
+        setShops(response.data.shops);
+        setPagination(response.data.pagination);
       }
     } catch (error) {
       console.error('Failed to fetch shops:', error);
