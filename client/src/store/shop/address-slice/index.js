@@ -23,7 +23,7 @@ export const fetchAllAddresses = createAsyncThunk('/addresses/fetchAllAddresses'
     }
 );
 
-export const editaAddress = createAsyncThunk('/addresses/editaAddress', 
+export const editAddress = createAsyncThunk('/addresses/editAddress', 
     async({userId, addressId, formData}) => {
         const response = await axios.put(`${API_BASE_URL}/api/shop/address/update/${userId}/${addressId}`, formData);
         return response.data;
@@ -70,10 +70,10 @@ const addressSlice = createSlice({
         })
 
         /* Edit Address */
-        .addCase(editaAddress.pending, (state) => {
+        .addCase(editAddress.pending, (state) => {
             state.isLoading = true;
         })
-        .addCase(editaAddress.fulfilled, (state, action) => {
+        .addCase(editAddress.fulfilled, (state, action) => {
             state.isLoading = false;
             // Optional: Update the addressList immediately instead of waiting for fetchAllAddresses
             // if (action.payload.success && action.payload.data) {
@@ -85,7 +85,7 @@ const addressSlice = createSlice({
             //   }
             // }
         })
-        .addCase(editaAddress.rejected, (state) => {
+        .addCase(editAddress.rejected, (state) => {
             state.isLoading = false;
         })
 
