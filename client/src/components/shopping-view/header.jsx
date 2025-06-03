@@ -392,24 +392,44 @@ function HeaderRightContent() {
         </div>
       ) : (
         <div className="flex items-center space-x-2">
-          <Link to="/auth/login">
-            <motion.button
-              className="bg-black text-white text-sm font-medium py-2 px-3 rounded-md shadow-sm hover:bg-gray-800 transition-all duration-200"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              Login
-            </motion.button>
-          </Link>
-          <Link to="/auth/register">
-            <motion.button
-              className="bg-white border border-gray-300 text-gray-800 text-sm font-medium py-2 px-3 rounded-md shadow-sm hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              Register
-            </motion.button>
-          </Link>
+          {/* Desktop: Show both Login and Register buttons */}
+          <div className="hidden lg:flex items-center space-x-2">
+            <Link to="/auth/login">
+              <motion.button
+                className="bg-black text-white text-sm font-medium py-2 px-3 rounded-md shadow-sm hover:bg-gray-800 transition-all duration-200"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Login
+              </motion.button>
+            </Link>
+            <Link to="/auth/register">
+              <motion.button
+                className="bg-white border border-gray-300 text-gray-800 text-sm font-medium py-2 px-3 rounded-md shadow-sm hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Register
+              </motion.button>
+            </Link>
+          </div>
+          
+          {/* Mobile: Show Nike-style avatar that goes to login */}
+          <div className="lg:hidden">
+            <Link to="/auth/login">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="cursor-pointer relative p-1 rounded-md hover:bg-gray-50 transition-all duration-200"
+              >
+                <Avatar className="h-6 w-6 border border-gray-200 shadow-sm">
+                  <AvatarFallback className="bg-gray-400 text-white text-xs font-medium">
+                    <UserRound className="h-3 w-3" />
+                  </AvatarFallback>
+                </Avatar>
+              </motion.div>
+            </Link>
+          </div>
         </div>
       )}
     </div>

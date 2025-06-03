@@ -230,27 +230,27 @@ function ShoppingHome() {
   const slideVariants = {
     enter: (direction) => ({
       x: direction > 0 ? '100%' : '-100%',
-      opacity: 0,
-      scale: 1.05,
+      opacity: 1,
+      scale: 1,
     }),
     center: {
       x: 0,
       opacity: 1,
       scale: 1,
       transition: {
-        x: { type: 'spring', stiffness: 300, damping: 30 },
-        opacity: { duration: 0.5 },
-        scale: { duration: 0.5 }
+        x: { type: 'spring', stiffness: 400, damping: 40 },
+        opacity: { duration: 0.3 },
+        scale: { duration: 0.3 }
       }
     },
     exit: (direction) => ({
       x: direction > 0 ? '-100%' : '100%',
-      opacity: 0,
-      scale: 0.95,
+      opacity: 1,
+      scale: 1,
       transition: {
-        x: { type: 'spring', stiffness: 300, damping: 30 },
-        opacity: { duration: 0.5 },
-        scale: { duration: 0.5 }
+        x: { type: 'spring', stiffness: 400, damping: 40 },
+        opacity: { duration: 0.3 },
+        scale: { duration: 0.3 }
       }
     })
   };
@@ -307,7 +307,7 @@ function ShoppingHome() {
         <PageTitle title="Home" />
         {/* Enhanced Banner Slider */}
         <motion.div 
-          className="relative w-full h-[400px] sm:h-[500px] md:h-[600px] lg:h-[90vh] max-h-[1000px] overflow-hidden"
+          className="relative w-full h-[400px] sm:h-[500px] md:h-[600px] lg:h-[90vh] max-h-[1000px] overflow-hidden bg-gray-100"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
@@ -323,7 +323,7 @@ function ShoppingHome() {
               </div>
             </div>
           ) : FeatureImageList && FeatureImageList.length > 0 ? (
-            <AnimatePresence initial={false} custom={direction} mode="popLayout">
+            <AnimatePresence initial={false} custom={direction} mode="wait">
               <motion.div
                 key={`slide-${currentSlide}-${FeatureImageList[currentSlide]?._id}`}
                 custom={direction}
@@ -331,7 +331,7 @@ function ShoppingHome() {
                 initial="enter"
                 animate="center"
                 exit="exit"
-                className="absolute inset-0"
+                className="absolute inset-0 bg-gray-100"
               >
                 <LazyImage
                   src={FeatureImageList[currentSlide]?.image}
