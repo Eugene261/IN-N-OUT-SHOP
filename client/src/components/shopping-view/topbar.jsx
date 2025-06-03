@@ -3,10 +3,10 @@ import { useState, useEffect } from 'react';
 
 // Announcement messages to display in the sliding carousel
 const announcements = [
-  "Deliveries fees may vary based on the vendor and your location",
+  "Deliveries fees may vary based on the vender",
   "New arrivals every week - Check back often!",
-  "5-day returns on all purchases",
-  "Sign up for our newsletter and get 10% off your first order"
+  "20-day returns on all purchases",
+  "Sign up for our newsletter and get our lattest deals and offers"
 ];
 
 const Topbar = () => {
