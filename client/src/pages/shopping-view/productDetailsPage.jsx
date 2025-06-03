@@ -455,14 +455,14 @@ function ProductDetailsPage() {
                         setSizeError(false);
                       }}
                       className={`
-                        p-3 border text-center text-sm font-medium transition-all duration-200 rounded-md
+                        p-3 border text-center text-sm font-medium transition-all duration-200 rounded-md uppercase tracking-wide
                         ${selectedSize === size
                           ? 'border-black bg-gray-50 text-black'
                           : 'border-gray-300 bg-white text-gray-700 hover:border-gray-500'}
                         ${sizeError && !selectedSize ? 'border-red-500' : ''}
                       `}
                     >
-                      {size}
+                      {size.toUpperCase()}
                     </button>
                   ))}
                 </div>

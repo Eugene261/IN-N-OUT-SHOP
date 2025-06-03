@@ -204,22 +204,20 @@ const ProductOptionsModal = ({ isOpen, onClose, product, onAddToCart }) => {
             </Label>
             <div className="grid grid-cols-4 gap-2">
               {getDisplaySizes().map(size => {
-                // Ensure size is capitalized
-                const capitalizedSize = size.toUpperCase();
                 return (
                   <motion.button
                     key={size}
                     type="button"
                     onClick={() => setSelectedSize(size)}
                     className={`
-                      px-3 py-2.5 border text-sm font-medium transition-colors
+                      px-3 py-2.5 border text-sm font-medium transition-colors uppercase tracking-wide
                       ${selectedSize === size
                         ? 'border-black bg-white text-black'
                         : 'border-gray-300 bg-white text-black hover:border-gray-500'}
                     `}
                     whileTap={{ scale: 0.95 }}
                   >
-                    {capitalizedSize}
+                    {size.toUpperCase()}
                   </motion.button>
                 );
               })}
