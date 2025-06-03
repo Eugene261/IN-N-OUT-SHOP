@@ -38,7 +38,7 @@ import CustomerTestimonials from '../../components/shopping-view/CustomerTestimo
 import NewsletterSection from '../../components/shopping-view/NewsletterSection';
 import StatsSection from '../../components/shopping-view/StatsSection';
 
-const categoriesWithIcon = [
+/* const categoriesWithIcon = [
   { id: "men", label: "Men", icon: Shirt },
   { id: "women", label: "Women", icon: VenetianMask }, // More feminine icon
   { id: "kids", label: "Kids", icon: Baby },
@@ -53,7 +53,7 @@ const brandWithIcons = [
   { id: "levi", label: "Levi's", icon: ShoppingBag }, // Classic denim
   { id: "zara", label: "Zara", icon: Diamond }, // Fashion/glamour
   { id: "h&m", label: "H&M", icon: Leaf }, // Eco-friendly fast fashion
-];
+]; */
 
 function ShoppingHome() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -417,7 +417,7 @@ function ShoppingHome() {
         </motion.div>
   
         {/* Categories Section */}
-        <motion.section 
+       {/*  <motion.section 
           className="py-12 sm:py-16 bg-gradient-to-b from-white to-blue-50/20"
           initial="hidden"
           whileInView="visible"
@@ -462,10 +462,10 @@ function ShoppingHome() {
               ))}
             </motion.div>
           </div>
-        </motion.section>
+        </motion.section> */}
   
         {/* Brands Section */}
-        <motion.section 
+        {/* <motion.section 
           className="py-12 sm:py-16 bg-white"
           initial="hidden"
           whileInView="visible"
@@ -510,9 +510,9 @@ function ShoppingHome() {
               ))}
             </motion.div>
           </div>
-        </motion.section>
+        </motion.section> */}
   
-                <ValueProposition />
+                {/* <ValueProposition /> */}
 
         <BestSeller />
   
@@ -588,11 +588,11 @@ function ShoppingHome() {
           </div>
         </motion.section>
 
-        <StatsSection />
-
         <NewArrivals />
   
         <FeaturedCollection />
+
+        <StatsSection />
 
         <CustomerTestimonials />
 

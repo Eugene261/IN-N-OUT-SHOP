@@ -394,7 +394,7 @@ function HeaderRightContent() {
         <div className="flex items-center space-x-1 sm:space-x-2">
           <Link to="/auth/login">
             <motion.button
-              className="bg-gradient-to-r from-gray-900 to-black text-white text-sm font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200"
+              className="bg-gradient-to-r from-gray-900 to-black text-white text-xs sm:text-sm font-medium py-2 px-3 sm:px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200"
               whileHover={{ scale: 1.03, y: -1 }}
               whileTap={{ scale: 0.97 }}
             >
@@ -403,7 +403,7 @@ function HeaderRightContent() {
           </Link>
           <Link to="/auth/register">
             <motion.button
-              className="bg-white border border-gray-200 text-gray-800 text-sm font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200"
+              className="bg-white border border-gray-200 text-gray-800 text-xs sm:text-sm font-medium py-2 px-3 sm:px-4 rounded-full shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200"
               whileHover={{ scale: 1.03, y: -1 }}
               whileTap={{ scale: 0.97 }}
             >
@@ -468,7 +468,7 @@ function ShoppingHeader() {
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
                 <motion.button 
-                  className="p-2 rounded-full bg-gray-50 hover:bg-gray-100 transition-all duration-200"
+                  className="p-2 mr-2 rounded-full bg-gray-50 hover:bg-gray-100 transition-all duration-200"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -497,10 +497,10 @@ function ShoppingHeader() {
           </div>
           
           {/* Right side elements */}
-          <div className="flex items-center">
+          <div className="flex items-center space-x-1">
             <Link to="/shop/search">
               <motion.button 
-                className="p-2 mr-1 rounded-full bg-gray-50 hover:bg-gray-100 transition-all duration-200"
+                className="p-2 rounded-full bg-gray-50 hover:bg-gray-100 transition-all duration-200"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >

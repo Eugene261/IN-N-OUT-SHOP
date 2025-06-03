@@ -452,38 +452,6 @@ function ProductDetailsPage() {
               <span className="text-gray-600">(4.5)</span>
             </div>
 
-            <div className="mb-6">
-              <h3 className="text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
-                <Info className="w-5 h-5 text-gray-600" />
-                Description
-              </h3>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <div 
-                  className="text-gray-600 leading-relaxed prose prose-sm max-w-none" 
-                  dangerouslySetInnerHTML={{ __html: productDetails?.description || '' }}
-                />
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <h3 className="text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
-                <Truck className="w-5 h-5 text-gray-600" />
-                Shipping & Returns
-              </h3>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <ul className="text-gray-600 space-y-2">
-                  <li className="flex items-start gap-2">
-                    <Truck className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
-                    <span>Free shipping on orders over GHS 100</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <ShieldCheck className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
-                    <span>30-day return policy</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
             {getDisplaySizes().length > 0 && (
               <div className="mb-6">
                 <div className="flex justify-between items-center mb-2">
@@ -650,7 +618,7 @@ function ProductDetailsPage() {
 
             {productDetails?.totalStock === 0 ? (
               <button
-                className="w-full bg-gray-400 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 opacity-60 cursor-not-allowed shadow-md"
+                className="w-full bg-gray-400 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 opacity-60 cursor-not-allowed shadow-md mb-8"
               >
                 <ShoppingBag className="w-5 h-5" />
                 Out Of Stock
@@ -659,7 +627,7 @@ function ProductDetailsPage() {
               <button
                 onClick={handleAddToCart}
                 disabled={isAddingToCart}
-                className="w-full bg-black hover:bg-gray-800 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 shadow-md transition-colors"
+                className="w-full bg-black hover:bg-gray-800 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 shadow-md transition-colors mb-8"
               >
                 {isAddingToCart ? (
                   <span className="flex items-center gap-2">
@@ -674,6 +642,38 @@ function ProductDetailsPage() {
                 )}
               </button>
             )}
+
+            <div className="mb-6">
+              <h3 className="text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
+                <Info className="w-5 h-5 text-gray-600" />
+                Description
+              </h3>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <div 
+                  className="text-gray-600 leading-relaxed prose prose-sm max-w-none" 
+                  dangerouslySetInnerHTML={{ __html: productDetails?.description || '' }}
+                />
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h3 className="text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
+                <Truck className="w-5 h-5 text-gray-600" />
+                Shipping & Returns
+              </h3>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <ul className="text-gray-600 space-y-2">
+                  <li className="flex items-start gap-2">
+                    <Truck className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                    <span>Free shipping on orders over GHS 100</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <ShieldCheck className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                    <span>30-day return policy</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
 
