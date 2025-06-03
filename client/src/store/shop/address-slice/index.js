@@ -1,6 +1,9 @@
 import {createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
+// Define the API base URL using environment variables
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const initialState = {
     isLoading: false,
     addressList: []
@@ -8,31 +11,28 @@ const initialState = {
 
 export const addNewAddress = createAsyncThunk('/addresses/addNewAddress', 
     async(formData) => {
-        const response = await axios.post("http://localhost:5000/api/shop/address/add", formData);
+        const response = await axios.post(`${API_BASE_URL}/api/shop/address/add`, formData);
         return response.data;
     }
 );
 
-export const fetchAllAddresses = createAsyncThunk('/fetchAddresses/fetchAllAddresses', 
+export const fetchAllAddresses = createAsyncThunk('/addresses/fetchAllAddresses', 
     async(userId) => {
-        const response = await axios.get(`http://localhost:5000/api/shop/address/get/${userId}`);
+        const response = await axios.get(`${API_BASE_URL}/api/shop/address/get/${userId}`);
         return response.data;
     }
 );
 
-export const editAddress = createAsyncThunk('/editAddresses/editAddress', 
+export const editaAddress = createAsyncThunk('/addresses/editaAddress', 
     async({userId, addressId, formData}) => {
-        const response = await axios.put(
-            `http://localhost:5000/api/shop/address/update/${userId}/${addressId}`, 
-            formData
-        );
+        const response = await axios.put(`${API_BASE_URL}/api/shop/address/update/${userId}/${addressId}`, formData);
         return response.data;
     }
 );
 
 export const deleteAddress = createAsyncThunk('/addresses/deleteAddress', 
     async({userId, addressId}) => {
-        const response = await axios.delete(`http://localhost:5000/api/shop/address/delete/${userId}/${addressId}`);
+        const response = await axios.delete(`${API_BASE_URL}/api/shop/address/delete/${userId}/${addressId}`);
         return response.data;
     }
 );
@@ -70,10 +70,10 @@ const addressSlice = createSlice({
         })
 
         /* Edit Address */
-        .addCase(editAddress.pending, (state) => {
+        .addCase(editaAddress.pending, (state) => {
             state.isLoading = true;
         })
-        .addCase(editAddress.fulfilled, (state, action) => {
+        .addCase(editaAddress.fulfilled, (state, action) => {
             state.isLoading = false;
             // Optional: Update the addressList immediately instead of waiting for fetchAllAddresses
             // if (action.payload.success && action.payload.data) {
@@ -85,7 +85,7 @@ const addressSlice = createSlice({
             //   }
             // }
         })
-        .addCase(editAddress.rejected, (state) => {
+        .addCase(editaAddress.rejected, (state) => {
             state.isLoading = false;
         })
 

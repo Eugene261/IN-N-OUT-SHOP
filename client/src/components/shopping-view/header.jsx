@@ -279,11 +279,11 @@ function HeaderRightContent() {
           <motion.div
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="relative p-2 rounded-full hover:bg-gray-50 transition-all duration-200"
+            className="relative p-2 rounded-md hover:bg-gray-50 transition-all duration-200"
           >
-            <Heart className={`w-5 h-5 ${wishlistItems?.length > 0 ? 'fill-red-500 text-red-500' : 'text-gray-700'}`} />
+            <Heart className={`w-5 h-5 ${wishlistItems?.length > 0 ? 'fill-red-500 text-red-500' : 'text-gray-900'}`} />
             {wishlistItems?.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium shadow-sm">
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium shadow-sm text-xs">
                 {wishlistItems.length}
               </span>
             )}
@@ -299,11 +299,11 @@ function HeaderRightContent() {
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="cursor-pointer relative p-2 rounded-full hover:bg-gray-50 transition-all duration-200"
+                className="cursor-pointer relative p-2 rounded-md hover:bg-gray-50 transition-all duration-200"
               >
-                <ShoppingBag className='h-5 w-5 text-gray-700' />
+                <ShoppingBag className='h-5 w-5 text-gray-900' />
                 {cartItems?.items?.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-black text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium shadow-sm">
+                  <span className="absolute -top-1 -right-1 bg-black text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium shadow-sm">
                     {cartItems?.items?.length}
                   </span>
                 )}
@@ -326,9 +326,9 @@ function HeaderRightContent() {
               <motion.div
                 whileHover={window.innerWidth >= 1024 ? { scale: 1.05 } : {}}
                 whileTap={{ scale: 0.95 }}
-                className="cursor-pointer relative p-1 rounded-full hover:bg-gray-50 transition-all duration-200"
+                className="cursor-pointer relative p-1 rounded-md hover:bg-gray-50 transition-all duration-200"
               >
-                <Avatar className="h-8 w-8 border border-gray-200 shadow-sm">
+                <Avatar className="h-7 w-7 border border-gray-200 shadow-sm">
                   <AvatarImage 
                     src={user?.avatar} 
                     alt={user?.userName || 'User'} 
@@ -394,7 +394,7 @@ function HeaderRightContent() {
         <div className="flex items-center space-x-2">
           <Link to="/auth/login">
             <motion.button
-              className="bg-black text-white text-sm font-medium py-2 px-4 rounded-md shadow-sm hover:bg-gray-800 transition-all duration-200"
+              className="bg-black text-white text-sm font-medium py-2 px-3 rounded-md shadow-sm hover:bg-gray-800 transition-all duration-200"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -403,7 +403,7 @@ function HeaderRightContent() {
           </Link>
           <Link to="/auth/register">
             <motion.button
-              className="bg-white border border-gray-300 text-gray-800 text-sm font-medium py-2 px-4 rounded-md shadow-sm hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
+              className="bg-white border border-gray-300 text-gray-800 text-sm font-medium py-2 px-3 rounded-md shadow-sm hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -463,16 +463,17 @@ function ShoppingHeader() {
         </div>
         
         {/* Mobile Layout */}
-        <div className="flex lg:hidden items-center justify-between h-16 py-2 px-1">
+        <div className="flex lg:hidden items-center justify-between h-14 px-4">
+          {/* Left: Hamburger Menu */}
           <div className="flex items-center">
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
                 <motion.button 
-                  className="p-2.5 rounded-md hover:bg-gray-50 transition-all duration-200"
+                  className="p-2 -ml-2 rounded-md hover:bg-gray-50 transition-all duration-200"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <Menu className='h-5 w-5 text-gray-700' />
+                  <Menu className='h-6 w-6 text-gray-900' />
                   <span className='sr-only'>Toggle Menu</span>
                 </motion.button>
               </SheetTrigger>
@@ -487,24 +488,24 @@ function ShoppingHeader() {
             </Sheet>
           </div>
           
-          {/* Logo - centered on mobile */}
+          {/* Center: Logo */}
           <div className="absolute left-1/2 transform -translate-x-1/2">
             <Link to='/shop/home' className='flex items-center no-underline'>
-              <span className="font-bold text-lg bg-clip-text text-transparent bg-gradient-to-r from-black to-gray-700 whitespace-nowrap">
+              <span className="font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-black to-gray-700 whitespace-nowrap">
                 IN-N-OUT
               </span>
             </Link>
           </div>
           
-          {/* Right side elements */}
-          <div className="flex items-center space-x-2">
+          {/* Right: Action buttons */}
+          <div className="flex items-center space-x-1">
             <Link to="/shop/search">
               <motion.button 
-                className="p-2.5 rounded-md hover:bg-gray-50 transition-all duration-200"
+                className="p-2 rounded-md hover:bg-gray-50 transition-all duration-200"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-900">
                   <circle cx="11" cy="11" r="8"/>
                   <path d="m21 21-4.3-4.3"/>
                 </svg>

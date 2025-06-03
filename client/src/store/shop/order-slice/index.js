@@ -1,6 +1,9 @@
 import axios from "axios"
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 
+// Define the API base URL using environment variables
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const initialState = {
     approvalURL : null,
     isLoading : false,
@@ -11,7 +14,7 @@ const initialState = {
 
 export const createNewOrder = createAsyncThunk('/order/createNewOrder', async(orderData, { rejectWithValue }) => {
     try {
-        const response = await axios.post('http://localhost:5000/api/shop/order/create', orderData, {
+        const response = await axios.post(`${API_BASE_URL}/api/shop/order/create`, orderData, {
             withCredentials: true,
             headers: {
                 'Content-Type': 'application/json'
@@ -24,47 +27,53 @@ export const createNewOrder = createAsyncThunk('/order/createNewOrder', async(or
     }
 });
 
-// PayPal capturePayment function removed
-
-export const getAllOrdersByUserId = createAsyncThunk('/order/getAllOrdersByUser', async(userId, { rejectWithValue }) => {
-    if (!userId) {
-        console.error('getAllOrdersByUserId called with no userId');
-        return rejectWithValue({ message: 'User ID is required' });
-    }
-    
+export const capturePayment = createAsyncThunk('/order/capturePayment', async({paymentId, orderId}, { rejectWithValue }) => {
     try {
-        console.log('Fetching orders for user ID:', userId);
-        const response = await axios.get(`http://localhost:5000/api/shop/order/list/${userId}`, {
-            withCredentials: true
+        const response = await axios.post(`${API_BASE_URL}/api/shop/order/capture`, {
+            paymentId,
+            orderId
+        }, {
+            withCredentials: true,
+            headers: {
+                'Content-Type': 'application/json'
+            }
         });
-        console.log('Orders API response:', response.data);
-        
-        // If the API returns success but no orders, ensure we return an empty array
-        if (response.data.success && !response.data.orders) {
-            return { success: true, data: [] };
-        }
-        
         return response.data;
     } catch (error) {
-        console.error('Get orders error:', error);
-        console.error('Error response data:', error.response?.data);
-        return rejectWithValue(error.response?.data || { message: 'Server connection failed' });
+        console.error('Payment capture error:', error);
+        return rejectWithValue(error.response?.data || { message: 'Payment capture failed' });
     }
 });
 
-export const getOrdersDetails = createAsyncThunk('/order/getOrdersDetails', async(id, { rejectWithValue }) => {
+export const getAllOrdersByUserId = createAsyncThunk('/order/getAllOrdersByUserId', async(userId, { rejectWithValue }) => {
     try {
-        const response = await axios.get(`http://localhost:5000/api/shop/order/details/${id}`, {
-            withCredentials: true
+        const response = await axios.get(`${API_BASE_URL}/api/shop/order/list/${userId}`, {
+            withCredentials: true,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Get orders error:', error);
+        return rejectWithValue(error.response?.data || { message: 'Failed to fetch orders' });
+    }
+});
+
+export const getOrderDetails = createAsyncThunk('/order/getOrderDetails', async(id, { rejectWithValue }) => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/api/shop/order/details/${id}`, {
+            withCredentials: true,
+            headers: {
+                'Content-Type': 'application/json'
+            }
         });
         return response.data;
     } catch (error) {
         console.error('Get order details error:', error);
-        return rejectWithValue(error.response?.data || { message: 'Server connection failed' });
+        return rejectWithValue(error.response?.data || { message: 'Failed to fetch order details' });
     }
 });
-
-
 
 const ShoppingOrderSlice = createSlice({
     name : 'shoppingOrderSlice', 
@@ -117,14 +126,14 @@ const ShoppingOrderSlice = createSlice({
 
         /* Fetching  Order By Id */
 
-        .addCase(getOrdersDetails.pending, (state) => {
+        .addCase(getOrderDetails.pending, (state) => {
             state.isLoading = true
         })
-        .addCase(getOrdersDetails.fulfilled, (state, action) => {
+        .addCase(getOrderDetails.fulfilled, (state, action) => {
             state.isLoading = false
             state.orderDetails = action.payload.order;
         })
-        .addCase(getOrdersDetails.rejected, (state) => {
+        .addCase(getOrderDetails.rejected, (state) => {
             state.isLoading = false
             state.orderDetails = null; 
         })

@@ -28,8 +28,5 @@
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ],
-  "env": {
-    "VITE_API_URL": "https://in-n-out-shop.vercel.app"
-  }
+  ]
 }

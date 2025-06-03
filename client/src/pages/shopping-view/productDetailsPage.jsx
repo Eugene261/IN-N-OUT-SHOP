@@ -15,10 +15,12 @@ import ProductOptionsModal from '../../components/shopping-view/productOptionsMo
 import NewArrivals from './newArrivals';
 import { fetchAllTaxonomyData } from '@/store/superAdmin/taxonomy-slice';
 
-// Image Gallery Component for Product Details - Nike style clean layout
+// Image Gallery Component for Product Details - Nike style clean layout with swipe support
 function ImageGallery({ productDetails }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [allImages, setAllImages] = useState([]);
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
 
   // Combine main image with additional images
   useEffect(() => {
@@ -32,32 +34,102 @@ function ImageGallery({ productDetails }) {
     }
   }, [productDetails]);
 
+  // Touch handlers for swipe
+  const handleTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe && currentImageIndex < allImages.length - 1) {
+      setCurrentImageIndex(prev => prev + 1);
+    }
+    if (isRightSwipe && currentImageIndex > 0) {
+      setCurrentImageIndex(prev => prev - 1);
+    }
+  };
+
+  // Navigation functions
+  const goToPrevious = () => {
+    setCurrentImageIndex(prev => prev > 0 ? prev - 1 : allImages.length - 1);
+  };
+
+  const goToNext = () => {
+    setCurrentImageIndex(prev => prev < allImages.length - 1 ? prev + 1 : 0);
+  };
+
   if (!allImages.length) return null;
 
   return (
     <div className="w-full">
       {/* Main Image */}
-      <div className="w-full aspect-square mb-4 bg-gray-50 rounded-lg overflow-hidden">
+      <div 
+        className="relative w-full aspect-square mb-3 bg-gray-50 rounded-lg overflow-hidden group"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <img
           src={allImages[currentImageIndex]}
           alt={productDetails?.title || 'Product image'}
-          className="w-full h-full object-contain"
+          className="w-full h-full object-contain transition-opacity duration-300"
         />
+        
+        {/* Navigation arrows - only show if more than 1 image */}
+        {allImages.length > 1 && (
+          <>
+            <button
+              onClick={goToPrevious}
+              className="absolute left-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-white/80 hover:bg-white rounded-full shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            >
+              <ChevronLeft className="w-4 h-4 text-gray-700" />
+            </button>
+            <button
+              onClick={goToNext}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-white/80 hover:bg-white rounded-full shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            >
+              <ChevronRight className="w-4 h-4 text-gray-700" />
+            </button>
+          </>
+        )}
+
+        {/* Image counter */}
+        {allImages.length > 1 && (
+          <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+            {currentImageIndex + 1} / {allImages.length}
+          </div>
+        )}
       </div>
 
-      {/* Thumbnail Navigation - Nike style dots */}
+      {/* Thumbnail Navigation - smaller thumbnails */}
       {allImages.length > 1 && (
-        <div className="flex justify-center space-x-2">
-          {allImages.map((_, index) => (
+        <div className="flex space-x-2 overflow-x-auto pb-1">
+          {allImages.map((image, index) => (
             <button
               key={index}
               onClick={() => setCurrentImageIndex(index)}
-              className={`w-2 h-2 rounded-full transition-all duration-200 ${
+              className={`flex-shrink-0 w-12 h-12 rounded-md overflow-hidden border-2 transition-all duration-200 ${
                 currentImageIndex === index 
-                  ? 'bg-black' 
-                  : 'bg-gray-300 hover:bg-gray-400'
+                  ? 'border-black' 
+                  : 'border-gray-200 hover:border-gray-400'
               }`}
-            />
+            >
+              <img
+                src={image}
+                alt={`${productDetails?.title || 'Product'} ${index + 1}`}
+                className="w-full h-full object-cover"
+              />
+            </button>
           ))}
         </div>
       )}
@@ -317,25 +389,25 @@ function ProductDetailsPage() {
           </div>
 
           <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">
+            <h1 className="text-xl md:text-2xl font-bold mb-2">
               {productDetails.title}
             </h1>
 
-            <p className="text-gray-500 text-sm mb-4">
+            <p className="text-gray-500 text-xs mb-3">
               <span className="inline-flex items-center">
                 <Truck className="w-3 h-3 mr-1" />
                 Additional shipping costs may apply.
-                <a href="/shop/shipping" className="underline hover:text-gray-700 ml-1">View shipping rates</a>
+                <a href="/shop/shipping" className="underline hover:text-gray-700 ml-1 text-xs">View shipping rates</a>
               </span>
             </p>
 
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-end gap-2">
-                <p className="text-2xl font-bold text-black">
+                <p className="text-xl font-bold text-black">
                   GHS{productDetails?.price}
                 </p>
                 {productDetails?.salePrice > 0 && (
-                  <p className="text-xl font-bold text-gray-400 line-through">
+                  <p className="text-lg font-bold text-gray-400 line-through">
                     GHS{productDetails?.salePrice}
                   </p>
                 )}
@@ -345,35 +417,35 @@ function ProductDetailsPage() {
                 className="p-2 rounded-full bg-white shadow-md hover:bg-gray-50"
               >
                 <Heart
-                  className={`w-6 h-6 ${isInWishlist ? 'fill-red-500 text-red-500' : 'text-gray-700'}`}
+                  className={`w-5 h-5 ${isInWishlist ? 'fill-red-500 text-red-500' : 'text-gray-700'}`}
                 />
               </button>
             </div>
 
-            <div className="flex items-center gap-2 mb-8">
+            <div className="flex items-center gap-2 mb-6">
               <div className="flex items-center">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-black text-black" />
+                  <Star key={i} className="w-4 h-4 fill-black text-black" />
                 ))}
               </div>
-              <span className="text-gray-600">(4.5)</span>
+              <span className="text-gray-600 text-sm">(4.5)</span>
             </div>
 
             {getDisplaySizes().length > 0 && (
-              <div className="mb-8">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-medium text-gray-900">
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-sm font-medium text-gray-900">
                     Select Size
-                    {sizeError && <span className="text-red-500 text-sm ml-2">Required</span>}
+                    {sizeError && <span className="text-red-500 text-xs ml-2">Required</span>}
                   </h3>
                   <button
                     type="button"
-                    className="text-sm font-medium text-gray-600 hover:text-black underline"
+                    className="text-xs font-medium text-gray-600 hover:text-black underline"
                   >
                     Size Guide
                   </button>
                 </div>
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-4 gap-2">
                   {getDisplaySizes().map((size) => (
                     <button
                       key={size}
@@ -383,7 +455,7 @@ function ProductDetailsPage() {
                         setSizeError(false);
                       }}
                       className={`
-                        p-4 border text-center font-medium transition-all duration-200 rounded-lg
+                        p-3 border text-center text-sm font-medium transition-all duration-200 rounded-md
                         ${selectedSize === size
                           ? 'border-black bg-gray-50 text-black'
                           : 'border-gray-300 bg-white text-gray-700 hover:border-gray-500'}
@@ -398,12 +470,12 @@ function ProductDetailsPage() {
             )}
 
             {getDisplayColors().length > 0 && (
-              <div className="mb-8">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-900 mb-3">
                   Select Color
-                  {colorError && <span className="text-red-500 text-sm ml-2">Required</span>}
+                  {colorError && <span className="text-red-500 text-xs ml-2">Required</span>}
                 </h3>
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-4 gap-2">
                   {getDisplayColors().map((color) => {
                     const colorMap = {
                       white: '#FFFFFF',
@@ -431,7 +503,7 @@ function ProductDetailsPage() {
                             setColorError(false);
                           }}
                           className={`
-                            w-12 h-12 rounded-full border-2 transition-all duration-200 mb-2
+                            w-10 h-10 rounded-full border-2 transition-all duration-200 mb-1
                             ${selectedColor === color ? 'ring-2 ring-black scale-110' : `${borderColor} hover:scale-105`}
                           `}
                           style={{ backgroundColor: bgColor }}
@@ -444,22 +516,22 @@ function ProductDetailsPage() {
               </div>
             )}
 
-            <div className="mb-8">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Quantity</h3>
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-gray-900 mb-3">Quantity</h3>
               <div className="flex items-center border border-gray-300 rounded-lg w-fit">
                 <button
                   onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
-                  className="w-12 h-12 flex items-center justify-center text-lg hover:bg-gray-50 transition-colors"
+                  className="w-10 h-10 flex items-center justify-center text-lg hover:bg-gray-50 transition-colors"
                   disabled={quantity <= 1}
                 >
                   -
                 </button>
-                <div className="w-16 h-12 flex items-center justify-center font-medium border-x border-gray-300">
+                <div className="w-12 h-10 flex items-center justify-center font-medium border-x border-gray-300 text-sm">
                   {quantity}
                 </div>
                 <button
                   onClick={() => setQuantity(prev => Math.min(productDetails?.totalStock || 10, prev + 1))}
-                  className="w-12 h-12 flex items-center justify-center text-lg hover:bg-gray-50 transition-colors"
+                  className="w-10 h-10 flex items-center justify-center text-lg hover:bg-gray-50 transition-colors"
                   disabled={quantity >= (productDetails?.totalStock || 10)}
                 >
                   +
@@ -468,17 +540,17 @@ function ProductDetailsPage() {
             </div>
 
             {productDetails?.totalStock > 0 && productDetails?.totalStock < 5 && (
-              <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                <p className="text-orange-700 font-medium flex items-center gap-2">
-                  <Clock className="w-5 h-5" />
+              <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                <p className="text-orange-700 text-sm font-medium flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
                   Only <span className="font-bold">{productDetails.totalStock}</span> items left in stock - order soon!
                 </p>
               </div>
             )}
             {productDetails?.totalStock === 0 && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-700 font-medium flex items-center gap-2">
-                  <Info className="w-5 h-5" />
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-700 text-sm font-medium flex items-center gap-2">
+                  <Info className="w-4 h-4" />
                   This item is currently out of stock
                 </p>
               </div>
@@ -486,53 +558,53 @@ function ProductDetailsPage() {
 
             {productDetails?.totalStock === 0 ? (
               <button
-                className="w-full bg-gray-400 text-white py-4 px-6 rounded-full font-medium flex items-center justify-center gap-2 opacity-60 cursor-not-allowed shadow-md mb-8"
+                className="w-full bg-gray-400 text-white py-3 px-6 rounded-full text-sm font-medium flex items-center justify-center gap-2 opacity-60 cursor-not-allowed shadow-md mb-6"
               >
-                <ShoppingBag className="w-5 h-5" />
+                <ShoppingBag className="w-4 h-4" />
                 Out Of Stock
               </button>
             ) : (
               <button
                 onClick={handleAddToCart}
                 disabled={isAddingToCart}
-                className="w-full bg-black hover:bg-gray-800 text-white py-4 px-6 rounded-full font-medium flex items-center justify-center gap-2 shadow-md transition-colors mb-8"
+                className="w-full bg-black hover:bg-gray-800 text-white py-3 px-6 rounded-full text-sm font-medium flex items-center justify-center gap-2 shadow-md transition-colors mb-6"
               >
                 {isAddingToCart ? (
                   <span className="flex items-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     Adding...
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
-                    <ShoppingBag className="w-5 h-5" />
+                    <ShoppingBag className="w-4 h-4" />
                     Add to Cart - GHS {productDetails?.price?.toFixed(2)}
                   </span>
                 )}
               </button>
             )}
 
-            <div className="mb-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-3">
+            <div className="mb-4">
+              <h3 className="text-sm font-medium text-gray-900 mb-2">
                 Description
               </h3>
-              <div className="prose prose-sm max-w-none text-gray-600">
+              <div className="prose prose-sm max-w-none text-gray-600 text-sm">
                 <div 
                   dangerouslySetInnerHTML={{ __html: productDetails?.description || '' }}
                 />
               </div>
             </div>
 
-            <div className="mb-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-3">
+            <div className="mb-4">
+              <h3 className="text-sm font-medium text-gray-900 mb-2">
                 Shipping & Returns
               </h3>
-              <ul className="text-gray-600 space-y-2">
+              <ul className="text-gray-600 space-y-1 text-sm">
                 <li className="flex items-start gap-2">
-                  <Truck className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                  <Truck className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
                   <span>Free shipping on orders over GHS 100</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <ShieldCheck className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                  <ShieldCheck className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
                   <span>30-day return policy</span>
                 </li>
               </ul>

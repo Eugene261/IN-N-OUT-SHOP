@@ -1,6 +1,9 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
+// Define the API base URL using environment variables
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const initialState = {
     isAuthenticated : false,
     isLoading : true,
@@ -12,7 +15,7 @@ export const registerUser = createAsyncThunk(
   async (formData, { rejectWithValue }) => {
     try {
       const response = await axios.post(
-        'http://localhost:5000/api/auth/register',
+        `${API_BASE_URL}/api/auth/register`,
         formData,
         {
           withCredentials: true,
@@ -75,7 +78,7 @@ export const checkAuth = createAsyncThunk(
       
       console.log('CheckAuth: Making request to server...');
       const response = await axios.get(
-        'http://localhost:5000/api/auth/check-auth',
+        `${API_BASE_URL}/api/auth/check-auth`,
         config
       );
       
@@ -110,7 +113,7 @@ export const logoutUser = createAsyncThunk(
       document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       
       const response = await axios.post(
-        'http://localhost:5000/api/auth/logout', {},
+        `${API_BASE_URL}/api/auth/logout`, {},
         {
           withCredentials: true,
         }
@@ -130,7 +133,7 @@ export const loginUser = createAsyncThunk(
   async (formData, { rejectWithValue }) => {
     try {
       const response = await axios.post(
-        'http://localhost:5000/api/auth/login',
+        `${API_BASE_URL}/api/auth/login`,
         formData,
         {
           withCredentials: true,
@@ -142,7 +145,7 @@ export const loginUser = createAsyncThunk(
       return response.data;
     } catch (error) {
       // Use rejectWithValue to pass the error response data
-      return rejectWithValue(error.response?.data || { message: 'Registration failed' });
+      return rejectWithValue(error.response?.data || { message: 'Login failed' });
     }
   }
 );
@@ -182,7 +185,7 @@ export const updateUserProfile = createAsyncThunk(
         console.log('Trying with user ID in URL:', userId);
         try {
           response = await axios.put(
-            `http://localhost:5000/api/users/profile/${userId}`,
+            `${API_BASE_URL}/api/shop/user/profile/${userId}`,
             formData,
             config
           );
@@ -193,7 +196,7 @@ export const updateUserProfile = createAsyncThunk(
           }
           // Fall back to endpoint without user ID
           response = await axios.put(
-            'http://localhost:5000/api/users/profile',
+            `${API_BASE_URL}/api/shop/user/profile`,
             formData,
             config
           );
@@ -201,7 +204,7 @@ export const updateUserProfile = createAsyncThunk(
       } else {
         // No user ID available, use standard endpoint
         response = await axios.put(
-          'http://localhost:5000/api/users/profile',
+          `${API_BASE_URL}/api/shop/user/profile`,
           formData,
           config
         );
@@ -223,7 +226,7 @@ export const fetchUserProfile = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(
-        'http://localhost:5000/api/users/profile',
+        `${API_BASE_URL}/api/shop/user/profile`,
         {
           withCredentials: true,
           headers: {
@@ -249,8 +252,8 @@ export const updateUserSettings = createAsyncThunk(
         throw new Error('User ID not found');
       }
 
-      const response = await axios.patch(
-        `http://localhost:5000/api/users/${userId}/settings`,
+      const response = await axios.put(
+        `${API_BASE_URL}/api/shop/user/settings/${userId}`,
         settingsData,
         {
           withCredentials: true,

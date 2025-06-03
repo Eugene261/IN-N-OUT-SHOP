@@ -1,6 +1,9 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
+// Define the API base URL using environment variables
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const initialState = {
   isLoading: false,
   isSubmitting: false,
@@ -13,7 +16,7 @@ export const addReview = createAsyncThunk(
   'reviews/addReview',
   async (data, { rejectWithValue, dispatch }) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/shop/review/add', data);
+      const response = await axios.post(`${API_BASE_URL}/api/shop/review/add`, data);
       // After successfully adding a review, fetch updated reviews
       dispatch(getReviews(data.productId));
       return response.data;
@@ -30,7 +33,7 @@ export const getReviews = createAsyncThunk(
   'reviews/getReviews',
   async (productId, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/shop/review/${productId}`);
+      const response = await axios.get(`${API_BASE_URL}/api/shop/review/${productId}`);
       return response.data;
     } catch (error) {
       return rejectWithValue(

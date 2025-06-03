@@ -1,6 +1,25 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import axios from 'axios';
 
+// Define the API base URL using environment variables
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+// Configure axios with base URL
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+  timeout: 30000 // 30 second timeout for slow connections
+});
+
+// Add request interceptor to include auth token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 const initialState = {
   categories: [],
   subcategories: [],
@@ -18,7 +37,7 @@ export const fetchCategories = createAsyncThunk(
   'taxonomy/fetchCategories',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get('/api/superAdmin/taxonomy/categories');
+      const response = await api.get('/api/superAdmin/taxonomy/categories');
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch categories');
@@ -30,7 +49,7 @@ export const createCategory = createAsyncThunk(
   'taxonomy/createCategory',
   async (categoryData, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/api/superAdmin/taxonomy/categories', categoryData);
+      const response = await api.post('/api/superAdmin/taxonomy/categories', categoryData);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to create category');
@@ -42,7 +61,7 @@ export const updateCategory = createAsyncThunk(
   'taxonomy/updateCategory',
   async ({ id, data }, { rejectWithValue }) => {
     try {
-      const response = await axios.put(`/api/superAdmin/taxonomy/categories/${id}`, data);
+      const response = await api.put(`/api/superAdmin/taxonomy/categories/${id}`, data);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update category');
@@ -54,7 +73,7 @@ export const deleteCategory = createAsyncThunk(
   'taxonomy/deleteCategory',
   async (id, { rejectWithValue }) => {
     try {
-      const response = await axios.delete(`/api/superAdmin/taxonomy/categories/${id}`);
+      const response = await api.delete(`/api/superAdmin/taxonomy/categories/${id}`);
       return { ...response.data, id };
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to delete category');
@@ -71,7 +90,7 @@ export const fetchSubcategories = createAsyncThunk(
       const url = categoryId 
         ? `/api/superAdmin/taxonomy/subcategories?categoryId=${categoryId}`
         : `/api/superAdmin/taxonomy/subcategories`;
-      const response = await axios.get(url);
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch subcategories');
@@ -83,7 +102,7 @@ export const createSubcategory = createAsyncThunk(
   'taxonomy/createSubcategory',
   async (subcategoryData, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/api/superAdmin/taxonomy/subcategories', subcategoryData);
+      const response = await api.post('/api/superAdmin/taxonomy/subcategories', subcategoryData);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to create subcategory');
@@ -95,7 +114,7 @@ export const updateSubcategory = createAsyncThunk(
   'taxonomy/updateSubcategory',
   async ({ id, data }, { rejectWithValue }) => {
     try {
-      const response = await axios.put(`/api/superAdmin/taxonomy/subcategories/${id}`, data);
+      const response = await api.put(`/api/superAdmin/taxonomy/subcategories/${id}`, data);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update subcategory');
@@ -107,7 +126,7 @@ export const deleteSubcategory = createAsyncThunk(
   'taxonomy/deleteSubcategory',
   async (id, { rejectWithValue }) => {
     try {
-      const response = await axios.delete(`/api/superAdmin/taxonomy/subcategories/${id}`);
+      const response = await api.delete(`/api/superAdmin/taxonomy/subcategories/${id}`);
       return { ...response.data, id };
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to delete subcategory');
@@ -121,7 +140,7 @@ export const fetchBrands = createAsyncThunk(
   'taxonomy/fetchBrands',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get('/api/superAdmin/taxonomy/brands');
+      const response = await api.get('/api/superAdmin/taxonomy/brands');
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch brands');
@@ -133,7 +152,7 @@ export const createBrand = createAsyncThunk(
   'taxonomy/createBrand',
   async (brandData, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/api/superAdmin/taxonomy/brands', brandData);
+      const response = await api.post('/api/superAdmin/taxonomy/brands', brandData);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to create brand');
@@ -145,7 +164,7 @@ export const updateBrand = createAsyncThunk(
   'taxonomy/updateBrand',
   async ({ id, data }, { rejectWithValue }) => {
     try {
-      const response = await axios.put(`/api/superAdmin/taxonomy/brands/${id}`, data);
+      const response = await api.put(`/api/superAdmin/taxonomy/brands/${id}`, data);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update brand');
@@ -157,7 +176,7 @@ export const deleteBrand = createAsyncThunk(
   'taxonomy/deleteBrand',
   async (id, { rejectWithValue }) => {
     try {
-      const response = await axios.delete(`/api/superAdmin/taxonomy/brands/${id}`);
+      const response = await api.delete(`/api/superAdmin/taxonomy/brands/${id}`);
       return { ...response.data, id };
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to delete brand');
@@ -174,7 +193,7 @@ export const fetchSizes = createAsyncThunk(
       const url = category 
         ? `/api/superAdmin/taxonomy/sizes?category=${category}`
         : `/api/superAdmin/taxonomy/sizes`;
-      const response = await axios.get(url);
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch sizes');
@@ -186,7 +205,7 @@ export const createSize = createAsyncThunk(
   'taxonomy/createSize',
   async (sizeData, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/api/superAdmin/taxonomy/sizes', sizeData);
+      const response = await api.post('/api/superAdmin/taxonomy/sizes', sizeData);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to create size');
@@ -198,7 +217,7 @@ export const updateSize = createAsyncThunk(
   'taxonomy/updateSize',
   async ({ id, data }, { rejectWithValue }) => {
     try {
-      const response = await axios.put(`/api/superAdmin/taxonomy/sizes/${id}`, data);
+      const response = await api.put(`/api/superAdmin/taxonomy/sizes/${id}`, data);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update size');
@@ -210,7 +229,7 @@ export const deleteSize = createAsyncThunk(
   'taxonomy/deleteSize',
   async (id, { rejectWithValue }) => {
     try {
-      const response = await axios.delete(`/api/superAdmin/taxonomy/sizes/${id}`);
+      const response = await api.delete(`/api/superAdmin/taxonomy/sizes/${id}`);
       return { ...response.data, id };
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to delete size');
@@ -227,7 +246,7 @@ export const fetchColors = createAsyncThunk(
       const url = colorFamily 
         ? `/api/superAdmin/taxonomy/colors?colorFamily=${colorFamily}`
         : `/api/superAdmin/taxonomy/colors`;
-      const response = await axios.get(url);
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch colors');
@@ -239,7 +258,7 @@ export const createColor = createAsyncThunk(
   'taxonomy/createColor',
   async (colorData, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/api/superAdmin/taxonomy/colors', colorData);
+      const response = await api.post('/api/superAdmin/taxonomy/colors', colorData);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to create color');
@@ -251,7 +270,7 @@ export const updateColor = createAsyncThunk(
   'taxonomy/updateColor',
   async ({ id, data }, { rejectWithValue }) => {
     try {
-      const response = await axios.put(`/api/superAdmin/taxonomy/colors/${id}`, data);
+      const response = await api.put(`/api/superAdmin/taxonomy/colors/${id}`, data);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update color');
@@ -263,7 +282,7 @@ export const deleteColor = createAsyncThunk(
   'taxonomy/deleteColor',
   async (id, { rejectWithValue }) => {
     try {
-      const response = await axios.delete(`/api/superAdmin/taxonomy/colors/${id}`);
+      const response = await api.delete(`/api/superAdmin/taxonomy/colors/${id}`);
       return { ...response.data, id };
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to delete color');
@@ -277,7 +296,7 @@ export const fetchAllTaxonomyData = createAsyncThunk(
   'taxonomy/fetchAllTaxonomyData',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get('/api/superAdmin/taxonomy/all');
+      const response = await api.get('/api/superAdmin/taxonomy/all');
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch taxonomy data');
