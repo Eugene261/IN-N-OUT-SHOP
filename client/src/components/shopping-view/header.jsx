@@ -391,7 +391,7 @@ function HeaderRightContent() {
           </DropdownMenu>
         </div>
       ) : (
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1 sm:space-x-2">
           <Link to="/auth/login">
             <motion.button
               className="bg-gradient-to-r from-gray-900 to-black text-white text-sm font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200"
