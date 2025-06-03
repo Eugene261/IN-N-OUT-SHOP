@@ -42,116 +42,90 @@ function EnhancedShoppingProductTile({
   const displayCategory = convertIdToName(product?.category, categories);
 
   return (
-    <Card className="w-full max-w-sm mx-auto cursor-pointer relative group transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border border-gray-200 bg-white overflow-hidden">
-      {/* Sale Badge */}
-      {product?.salePrice > 0 && (
-        <Badge className="absolute top-2 left-2 z-20 bg-red-500 text-white text-xs px-2 py-1">
-          Sale
-        </Badge>
-      )}
-
-      {/* Wishlist Button */}
-      <button
-        className="absolute top-2 right-2 z-20 h-8 w-8 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white shadow-md border border-white/20 flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95"
-        onClick={(e) => {
-          e.stopPropagation();
-          console.log('Wishlist button clicked for product:', product?._id);
-          if (handleAddToWishlist) {
-            handleAddToWishlist(product?._id);
-          }
-        }}
-      >
-        <Heart
-          className={`h-4 w-4 transition-colors duration-200 ${
-            isInWishlist ? 'fill-red-500 text-red-500' : 'text-gray-600 hover:text-red-400'
-          }`}
+    <div className="w-full cursor-pointer group" onClick={() => handleGetProductDetails(product?._id)}>
+      {/* Product Image */}
+      <div className="relative w-full aspect-square mb-3 overflow-hidden bg-gray-50 rounded-lg">
+        <img
+          src={product?.image}
+          alt={product?.title}
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          loading="lazy"
         />
-      </button>
+        
+        {/* Sale Badge - Nike style */}
+        {product?.salePrice > 0 && (
+          <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+            Sale
+          </div>
+        )}
 
-      <div onClick={() => handleGetProductDetails(product?._id)}>
-        {/* Compact Product Image */}
-        <div className="relative w-full h-40 sm:h-48 overflow-hidden bg-gray-50">
-          <img
-            src={product?.image}
-            alt={product?.title}
-            className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
-            loading="lazy"
+        {/* Wishlist Button - Nike style */}
+        <button
+          className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 hover:bg-white shadow-sm flex items-center justify-center transition-all duration-200 hover:scale-110"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (handleAddToWishlist) {
+              handleAddToWishlist(product?._id);
+            }
+          }}
+        >
+          <Heart
+            className={`w-4 h-4 transition-colors duration-200 ${
+              isInWishlist ? 'fill-red-500 text-red-500' : 'text-gray-600'
+            }`}
           />
-          <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-        </div>
-
-        <CardContent className="p-3 space-y-2">
-          {/* Shop Information - Compact */}
-          {shop && shop.shopName && (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                {shop.shopLogo ? (
-                  <img
-                    src={shop.shopLogo}
-                    alt={shop.shopName}
-                    className="w-4 h-4 rounded-full object-cover flex-shrink-0"
-                  />
-                ) : (
-                  <div className="w-4 h-4 rounded-full bg-gray-400 flex items-center justify-center flex-shrink-0">
-                    <Store className="w-2.5 h-2.5 text-white" />
-                  </div>
-                )}
-                <span className="text-xs font-medium text-gray-600 truncate">
-                  {shop.shopName}
-                </span>
-              </div>
-              {shop.shopRating > 0 && (
-                <div className="flex items-center gap-0.5 bg-yellow-50 px-1.5 py-0.5 rounded">
-                  <Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />
-                  <span className="text-xs font-medium text-yellow-700">
-                    {shop.shopRating}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Product Title - Compact */}
-          <h3 className="text-sm font-semibold line-clamp-2 text-gray-900 group-hover:text-blue-600 transition-colors duration-200 leading-tight">
-            {product?.title}
-          </h3>
-
-          {/* Categories and Location Row */}
-          <div className="flex items-center justify-between text-xs">
-            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 px-1.5 py-0.5">
-              {displayCategory}
-            </Badge>
-            {shop && (shop.baseCity || shop.baseRegion) && (
-              <div className="flex items-center gap-1 text-gray-500">
-                <MapPin className="w-3 h-3" />
-                <span className="text-xs truncate">
-                  {shop.baseCity}{shop.baseCity && shop.baseRegion ? ', ' : ''}{shop.baseRegion}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Brand Badge */}
-          {displayBrand && (
-            <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200 px-1.5 py-0.5 w-fit">
-              {displayBrand}
-            </Badge>
-          )}
-
-          {/* Price - Compact */}
-          <div className="flex items-center gap-2 pt-1">
-            <span className="text-lg font-bold text-gray-900">
-              GHS {product?.salePrice || product?.price}
-            </span>
-            {product?.salePrice > 0 && (
-              <span className="text-sm text-gray-500 line-through">
-                GHS {product?.price}
-              </span>
-            )}
-          </div>
-        </CardContent>
+        </button>
       </div>
-    </Card>
+
+      {/* Product Information - Nike style minimal layout */}
+      <div className="space-y-1">
+        {/* Shop/Brand Name - small and subtle */}
+        {shop?.shopName && (
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-gray-500 font-medium">
+              {shop.shopName}
+            </span>
+            {shop.shopRating > 0 && (
+              <div className="flex items-center gap-0.5">
+                <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                <span className="text-xs text-gray-500">{shop.shopRating}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Product Title */}
+        <h3 className="text-sm font-medium text-gray-900 line-clamp-2 leading-tight">
+          {product?.title}
+        </h3>
+
+        {/* Category - subtle */}
+        {displayCategory && (
+          <p className="text-xs text-gray-500">
+            {displayCategory}
+          </p>
+        )}
+
+        {/* Colors available - Nike style */}
+        {product?.colors && product.colors.length > 0 && (
+          <p className="text-xs text-gray-500">
+            {product.colors.length} Color{product.colors.length > 1 ? 's' : ''}
+          </p>
+        )}
+
+        {/* Price */}
+        <div className="flex items-center gap-2 pt-1">
+          <span className="text-sm font-bold text-gray-900">
+            GHS {product?.price?.toFixed(2)}
+          </span>
+          {product?.salePrice > 0 && product?.salePrice > product?.price && (
+            <span className="text-sm text-gray-500 line-through">
+              GHS {product?.salePrice?.toFixed(2)}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

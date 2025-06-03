@@ -539,7 +539,7 @@ function ShoppingHome() {
             
             {/* Products Grid */}
             <motion.div 
-              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8"
+              className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
               variants={staggerVariants}
             >
               {productsToShow?.map((productItem) => {

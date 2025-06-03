@@ -549,7 +549,7 @@ function ShoppingListing() {
               <ShoppingLoader />
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 p-3">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 p-4">
               {productList?.map((productItem, index) => {
                 const isInWishlist = wishlistItems?.some(item => item.productId === productItem._id);
                 return (

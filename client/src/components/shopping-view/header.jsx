@@ -391,21 +391,21 @@ function HeaderRightContent() {
           </DropdownMenu>
         </div>
       ) : (
-        <div className="flex items-center space-x-1 sm:space-x-2">
+        <div className="flex items-center space-x-2">
           <Link to="/auth/login">
             <motion.button
-              className="bg-gradient-to-r from-gray-900 to-black text-white text-xs sm:text-sm font-medium py-2 px-3 sm:px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200"
-              whileHover={{ scale: 1.03, y: -1 }}
-              whileTap={{ scale: 0.97 }}
+              className="bg-black text-white text-sm font-medium py-2 px-4 rounded-md shadow-sm hover:bg-gray-800 transition-all duration-200"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
               Login
             </motion.button>
           </Link>
           <Link to="/auth/register">
             <motion.button
-              className="bg-white border border-gray-200 text-gray-800 text-xs sm:text-sm font-medium py-2 px-3 sm:px-4 rounded-full shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200"
-              whileHover={{ scale: 1.03, y: -1 }}
-              whileTap={{ scale: 0.97 }}
+              className="bg-white border border-gray-300 text-gray-800 text-sm font-medium py-2 px-4 rounded-md shadow-sm hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
               Register
             </motion.button>
@@ -463,12 +463,12 @@ function ShoppingHeader() {
         </div>
         
         {/* Mobile Layout */}
-        <div className="flex lg:hidden items-center justify-between h-16 py-2">
+        <div className="flex lg:hidden items-center justify-between h-16 py-2 px-1">
           <div className="flex items-center">
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
                 <motion.button 
-                  className="p-2 mr-2 rounded-full bg-gray-50 hover:bg-gray-100 transition-all duration-200"
+                  className="p-2.5 rounded-md hover:bg-gray-50 transition-all duration-200"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -497,14 +497,17 @@ function ShoppingHeader() {
           </div>
           
           {/* Right side elements */}
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-2">
             <Link to="/shop/search">
               <motion.button 
-                className="p-2 rounded-full bg-gray-50 hover:bg-gray-100 transition-all duration-200"
+                className="p-2.5 rounded-md hover:bg-gray-50 transition-all duration-200"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700">
+                  <circle cx="11" cy="11" r="8"/>
+                  <path d="m21 21-4.3-4.3"/>
+                </svg>
                 <span className='sr-only'>Search</span>
               </motion.button>
             </Link>

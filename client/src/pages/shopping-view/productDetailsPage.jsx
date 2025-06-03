@@ -15,12 +15,10 @@ import ProductOptionsModal from '../../components/shopping-view/productOptionsMo
 import NewArrivals from './newArrivals';
 import { fetchAllTaxonomyData } from '@/store/superAdmin/taxonomy-slice';
 
-// Image Gallery Component for Product Details - Valentino style layout
+// Image Gallery Component for Product Details - Nike style clean layout
 function ImageGallery({ productDetails }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [allImages, setAllImages] = useState([]);
-  const [isZoomed, setIsZoomed] = useState(false);
-  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
 
   // Combine main image with additional images
   useEffect(() => {
@@ -31,129 +29,38 @@ function ImageGallery({ productDetails }) {
       }
       setAllImages(imageArray);
       setCurrentImageIndex(0);
-      setIsZoomed(false);
     }
   }, [productDetails]);
-
-  // Handle zoom functionality
-  const handleMouseMove = (e) => {
-    if (!isZoomed) return;
-    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - left) / width) * 100;
-    const y = ((e.clientY - top) / height) * 100;
-    setZoomPosition({ x, y });
-  };
-
-  const toggleZoom = () => {
-    setIsZoomed(!isZoomed);
-  };
 
   if (!allImages.length) return null;
 
   return (
-    <div className="flex flex-col md:flex-row gap-4 relative">
-      {/* Vertical Thumbnails - Left Side */}
-      <div className="hidden md:flex flex-col gap-2 overflow-y-auto max-h-[500px] hide-scrollbar">
-        {allImages.map((image, индекс) => (
-          <button
-            key={индекс}
-            onClick={() => setCurrentImageIndex(индекс)}
-            className={`relative flex-shrink-0 cursor-pointer rounded-md overflow-hidden w-16 h-20 border ${currentImageIndex === индекс ? 'border-black' : 'border-gray-200 hover:border-gray-300'} transition-all duration-200`}
-          >
-            <div className="w-full h-full bg-gray-50 flex items-center justify-center">
-              <img
-                src={image}
-                alt={`Thumbnail ${индекс + 1}`}
-                className="max-h-full max-w-full object-contain"
-              />
-            </div>
-          </button>
-        ))}
+    <div className="w-full">
+      {/* Main Image */}
+      <div className="w-full aspect-square mb-4 bg-gray-50 rounded-lg overflow-hidden">
+        <img
+          src={allImages[currentImageIndex]}
+          alt={productDetails?.title || 'Product image'}
+          className="w-full h-full object-contain"
+        />
       </div>
 
-      {/* Main Image - Right Side */}
-      <div className="flex-1 relative">
-        <div
-          className={`relative overflow-hidden rounded-lg bg-gray-100 flex justify-center items-center h-[500px] cursor-${isZoomed ? 'zoom-out' : 'zoom-in'}`}
-          onClick={toggleZoom}
-          onMouseMove={handleMouseMove}
-        >
-          <img
-            src={allImages[currentImageIndex]}
-            alt={productDetails?.name || 'Product image'}
-            className={`${isZoomed ? 'absolute scale-150' : 'max-w-full max-h-full'} object-contain transition-transform duration-200`}
-            style={isZoomed ? {
-              transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
-            } : {}}
-          />
-          {!isZoomed && (
-            <div className="absolute bottom-3 right-3 bg-white/80 backdrop-blur-sm rounded-full p-1.5 shadow-md">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                <line x1="11" y1="8" x2="11" y2="14"></line>
-                <line x1="8" y1="11" x2="14" y2="11"></line>
-              </svg>
-            </div>
-          )}
+      {/* Thumbnail Navigation - Nike style dots */}
+      {allImages.length > 1 && (
+        <div className="flex justify-center space-x-2">
+          {allImages.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentImageIndex(index)}
+              className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                currentImageIndex === index 
+                  ? 'bg-black' 
+                  : 'bg-gray-300 hover:bg-gray-400'
+              }`}
+            />
+          ))}
         </div>
-
-        {/* Mobile Thumbnails - Below Main Image (visible only on mobile) */}
-        {allImages.length > 1 && (
-          <div className="flex md:hidden justify-center gap-3 overflow-x-auto pt-4 pb-2 hide-scrollbar">
-            {allImages.map((image, индекс) => (
-              <button
-                key={индекс}
-                onClick={() => setCurrentImageIndex(индекс)}
-                className={`relative flex-shrink-0 cursor-pointer rounded-md overflow-hidden w-16 h-16 border ${currentImageIndex === индекс ? 'border-black' : 'border-gray-200 hover:border-gray-300'} transition-all duration-200`}
-              >
-                <div className="w-full h-full bg-gray-50 flex items-center justify-center">
-                  <img
-                    src={image}
-                    alt={`Thumbnail ${индекс + 1}`}
-                    className="max-h-full max-w-full object-contain"
-                  />
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Navigation arrows */}
-        {allImages.length > 1 && (
-          <>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setCurrentImageIndex(prev => (prev === 0 ? allImages.length - 1 : prev - 1));
-              }}
-              className="absolute left-2 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/70 shadow-sm hover:bg-white focus:outline-none opacity-0 hover:opacity-100 transition-opacity duration-200 group-hover:opacity-100"
-            >
-              <ChevronLeft className="h-6 w-6 text-gray-800" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setCurrentImageIndex(prev => (prev === allImages.length - 1 ? 0 : prev + 1));
-              }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/70 shadow-sm hover:bg-white focus:outline-none opacity-0 hover:opacity-100 transition-opacity duration-200 group-hover:opacity-100"
-            >
-              <ChevronRight className="h-6 w-6 text-gray-800" />
-            </button>
-          </>
-        )}
-      </div>
-
-      <style jsx>{`
-        .hide-scrollbar::-webkit-scrollbar {
-          width: 0px;
-          background: transparent;
-        }
-        .hide-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
+      )}
     </div>
   );
 }
@@ -405,16 +312,16 @@ function ProductDetailsPage() {
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-white rounded-lg p-6 shadow-sm">
+          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
             <ImageGallery productDetails={productDetails} />
           </div>
 
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <h1 className="text-2xl md:text-3xl font-bold mb-1">
+          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">
               {productDetails.title}
             </h1>
 
-            <p className="text-gray-500 text-sm mb-3">
+            <p className="text-gray-500 text-sm mb-4">
               <span className="inline-flex items-center">
                 <Truck className="w-3 h-3 mr-1" />
                 Additional shipping costs may apply.
@@ -422,7 +329,7 @@ function ProductDetailsPage() {
               </span>
             </p>
 
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <div className="flex items-end gap-2">
                 <p className="text-2xl font-bold text-black">
                   GHS{productDetails?.price}
@@ -443,7 +350,7 @@ function ProductDetailsPage() {
               </button>
             </div>
 
-            <div className="flex items-center gap-2 mb-6">
+            <div className="flex items-center gap-2 mb-8">
               <div className="flex items-center">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-5 h-5 fill-black text-black" />
@@ -453,145 +360,106 @@ function ProductDetailsPage() {
             </div>
 
             {getDisplaySizes().length > 0 && (
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-base font-medium text-gray-800 flex items-center gap-2">
-                    <Tag className="w-5 h-5 text-gray-600" />
+              <div className="mb-8">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">
                     Select Size
-                    {sizeError && <span className="text-red-500 text-xs ml-2">Required</span>}
+                    {sizeError && <span className="text-red-500 text-sm ml-2">Required</span>}
                   </h3>
                   <button
                     type="button"
-                    className="text-xs font-medium text-gray-600 hover:text-black flex items-center uppercase tracking-wider"
+                    className="text-sm font-medium text-gray-600 hover:text-black underline"
                   >
-                    SIZE CHART
+                    Size Guide
                   </button>
                 </div>
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
-                  {getDisplaySizes().map((size) => {
-                    const isDisabled = false;
+                <div className="grid grid-cols-4 gap-3">
+                  {getDisplaySizes().map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => {
+                        setSelectedSize(size);
+                        setSizeError(false);
+                      }}
+                      className={`
+                        p-4 border text-center font-medium transition-all duration-200 rounded-lg
+                        ${selectedSize === size
+                          ? 'border-black bg-gray-50 text-black'
+                          : 'border-gray-300 bg-white text-gray-700 hover:border-gray-500'}
+                        ${sizeError && !selectedSize ? 'border-red-500' : ''}
+                      `}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {getDisplayColors().length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Select Color
+                  {colorError && <span className="text-red-500 text-sm ml-2">Required</span>}
+                </h3>
+                <div className="grid grid-cols-4 gap-3">
+                  {getDisplayColors().map((color) => {
+                    const colorMap = {
+                      white: '#FFFFFF',
+                      black: '#000000',
+                      red: '#FF0000',
+                      blue: '#0000FF',
+                      green: '#008000',
+                      yellow: '#FFFF00',
+                      purple: '#800080',
+                      orange: '#FFA500',
+                      pink: '#FFC0CB',
+                      gray: '#808080',
+                      brown: '#A52A2A',
+                    };
+
+                    const bgColor = colorMap[color.toLowerCase()] || '#CCCCCC';
+                    const borderColor = color.toLowerCase() === 'white' ? 'border-gray-300' : 'border-transparent';
+
                     return (
-                      <button
-                        key={size}
-                        type="button"
-                        disabled={isDisabled}
-                        onClick={() => {
-                          setSelectedSize(size);
-                          setSizeError(false);
-                        }}
-                        className={`
-                          px-3 py-3 border text-sm font-medium transition-colors uppercase tracking-wide
-                          ${isDisabled ? 'opacity-40 cursor-not-allowed bg-gray-50 text-gray-400 border-gray-200' : ''}
-                          ${selectedSize === size
-                            ? 'border-black bg-gray-100 text-black'
-                            : 'border-gray-300 bg-white text-black hover:border-gray-500'}
-                          ${sizeError && !selectedSize ? 'border-red-500' : ''}
-                        `}
-                      >
-                        {size}
-                      </button>
+                      <div key={color} className="flex flex-col items-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedColor(color);
+                            setColorError(false);
+                          }}
+                          className={`
+                            w-12 h-12 rounded-full border-2 transition-all duration-200 mb-2
+                            ${selectedColor === color ? 'ring-2 ring-black scale-110' : `${borderColor} hover:scale-105`}
+                          `}
+                          style={{ backgroundColor: bgColor }}
+                        />
+                        <span className="text-xs text-gray-600 capitalize">{color}</span>
+                      </div>
                     );
                   })}
                 </div>
               </div>
             )}
 
-            {getDisplayColors().length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-full border border-gray-300 overflow-hidden flex-shrink-0">
-                    {selectedColor && (
-                      <div
-                        className="w-full h-full"
-                        style={{
-                          background: selectedColor === 'multicolor'
-                            ? 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)'
-                            : selectedColor.toLowerCase()
-                        }}
-                      ></div>
-                    )}
-                  </div>
-                  Select Color
-                  {colorError && <span className="text-red-500 text-xs ml-2">Required</span>}
-                </h3>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="grid grid-cols-5 sm:grid-cols-6 gap-3">
-                    {getDisplayColors().map((color) => {
-                      const colorMap = {
-                        white: '#FFFFFF',
-                        black: '#000000',
-                        red: '#FF0000',
-                        blue: '#0000FF',
-                        green: '#008000',
-                        yellow: '#FFFF00',
-                        purple: '#800080',
-                        orange: '#FFA500',
-                        pink: '#FFC0CB',
-                        gray: '#808080',
-                        brown: '#A52A2A',
-                        navy: '#000080',
-                        beige: '#F5F5DC',
-                        teal: '#008080',
-                        gold: '#FFD700',
-                        silver: '#C0C0C0',
-                        maroon: '#800000',
-                        olive: '#808000',
-                        khaki: '#F0E68C',
-                        coral: '#FF7F50',
-                        turquoise: '#40E0D0',
-                        multicolor: 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)'
-                      };
-
-                      const bgColor = colorMap[color.toLowerCase()] || '#CCCCCC';
-                      const borderColor = color.toLowerCase() === 'white' ? 'border-gray-300' : 'border-transparent';
-
-                      return (
-                        <div className="flex flex-col items-center" key={color}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedColor(color);
-                              setColorError(false);
-                            }}
-                            className={`
-                              w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-transform mb-1
-                              ${selectedColor === color ? 'ring-2 ring-black scale-110' : `border ${borderColor}`}
-                            `}
-                            aria-label={`Select ${color} color`}
-                          >
-                            <div
-                              className="w-full h-full rounded-full"
-                              style={{ background: bgColor }}
-                            ></div>
-                          </button>
-                          <span className="text-xs text-center">{color.toLowerCase()}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            )}
-
             <div className="mb-8">
-              <h3 className="text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
-                <ShoppingBag className="w-5 h-5 text-gray-600" />
-                Quantity
-              </h3>
-              <div className="flex items-center">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Quantity</h3>
+              <div className="flex items-center border border-gray-300 rounded-lg w-fit">
                 <button
                   onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
-                  className="w-12 h-12 border border-gray-300 flex items-center justify-center text-lg rounded-l-md hover:bg-gray-100 transition-colors"
+                  className="w-12 h-12 flex items-center justify-center text-lg hover:bg-gray-50 transition-colors"
                   disabled={quantity <= 1}
                 >
                   -
                 </button>
-                <div className="w-16 h-12 border-t border-b border-gray-300 flex items-center justify-center font-medium">
+                <div className="w-16 h-12 flex items-center justify-center font-medium border-x border-gray-300">
                   {quantity}
                 </div>
                 <button
                   onClick={() => setQuantity(prev => Math.min(productDetails?.totalStock || 10, prev + 1))}
-                  className="w-12 h-12 border border-gray-300 flex items-center justify-center text-lg rounded-r-md hover:bg-gray-100 transition-colors"
+                  className="w-12 h-12 flex items-center justify-center text-lg hover:bg-gray-50 transition-colors"
                   disabled={quantity >= (productDetails?.totalStock || 10)}
                 >
                   +
@@ -600,7 +468,7 @@ function ProductDetailsPage() {
             </div>
 
             {productDetails?.totalStock > 0 && productDetails?.totalStock < 5 && (
-              <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-md">
+              <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
                 <p className="text-orange-700 font-medium flex items-center gap-2">
                   <Clock className="w-5 h-5" />
                   Only <span className="font-bold">{productDetails.totalStock}</span> items left in stock - order soon!
@@ -608,7 +476,7 @@ function ProductDetailsPage() {
               </div>
             )}
             {productDetails?.totalStock === 0 && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-red-700 font-medium flex items-center gap-2">
                   <Info className="w-5 h-5" />
                   This item is currently out of stock
@@ -618,7 +486,7 @@ function ProductDetailsPage() {
 
             {productDetails?.totalStock === 0 ? (
               <button
-                className="w-full bg-gray-400 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 opacity-60 cursor-not-allowed shadow-md mb-8"
+                className="w-full bg-gray-400 text-white py-4 px-6 rounded-full font-medium flex items-center justify-center gap-2 opacity-60 cursor-not-allowed shadow-md mb-8"
               >
                 <ShoppingBag className="w-5 h-5" />
                 Out Of Stock
@@ -627,7 +495,7 @@ function ProductDetailsPage() {
               <button
                 onClick={handleAddToCart}
                 disabled={isAddingToCart}
-                className="w-full bg-black hover:bg-gray-800 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 shadow-md transition-colors mb-8"
+                className="w-full bg-black hover:bg-gray-800 text-white py-4 px-6 rounded-full font-medium flex items-center justify-center gap-2 shadow-md transition-colors mb-8"
               >
                 {isAddingToCart ? (
                   <span className="flex items-center gap-2">
@@ -644,35 +512,30 @@ function ProductDetailsPage() {
             )}
 
             <div className="mb-6">
-              <h3 className="text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
-                <Info className="w-5 h-5 text-gray-600" />
+              <h3 className="text-lg font-medium text-gray-900 mb-3">
                 Description
               </h3>
-              <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="prose prose-sm max-w-none text-gray-600">
                 <div 
-                  className="text-gray-600 leading-relaxed prose prose-sm max-w-none" 
                   dangerouslySetInnerHTML={{ __html: productDetails?.description || '' }}
                 />
               </div>
             </div>
 
             <div className="mb-6">
-              <h3 className="text-base font-medium text-gray-800 mb-2 flex items-center gap-2">
-                <Truck className="w-5 h-5 text-gray-600" />
+              <h3 className="text-lg font-medium text-gray-900 mb-3">
                 Shipping & Returns
               </h3>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <ul className="text-gray-600 space-y-2">
-                  <li className="flex items-start gap-2">
-                    <Truck className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
-                    <span>Free shipping on orders over GHS 100</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <ShieldCheck className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
-                    <span>30-day return policy</span>
-                  </li>
-                </ul>
-              </div>
+              <ul className="text-gray-600 space-y-2">
+                <li className="flex items-start gap-2">
+                  <Truck className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                  <span>Free shipping on orders over GHS 100</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <ShieldCheck className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                  <span>30-day return policy</span>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
