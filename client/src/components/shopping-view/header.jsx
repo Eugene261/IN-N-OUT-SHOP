@@ -420,13 +420,11 @@ function HeaderRightContent() {
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="cursor-pointer relative p-1 rounded-md hover:bg-gray-50 transition-all duration-200"
+                className="cursor-pointer relative p-1.5 rounded-full hover:bg-gray-50 transition-all duration-200"
               >
-                <Avatar className="h-6 w-6 border border-gray-200 shadow-sm">
-                  <AvatarFallback className="bg-gray-400 text-white text-xs font-medium">
-                    <UserRound className="h-3 w-3" />
-                  </AvatarFallback>
-                </Avatar>
+                <div className="h-7 w-7 rounded-full bg-gray-900 hover:bg-black transition-colors duration-200 flex items-center justify-center shadow-sm">
+                  <UserRound className="h-4 w-4 text-white" />
+                </div>
               </motion.div>
             </Link>
           </div>

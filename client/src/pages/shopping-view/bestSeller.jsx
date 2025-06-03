@@ -118,45 +118,45 @@ const BestSeller = () => {
           >
             {/* Mobile Card Layout - Visible only on very small screens */}
             <div className="block sm:hidden">
-              <motion.div className="space-y-6 relative z-10">
+              <motion.div className="space-y-4 relative z-10 px-2">
                 {bestsellerProducts.slice(0, 3).map((product, index) => (
                   <motion.div
                     key={product._id || index}
                     variants={itemVariants}
-                    className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden cursor-pointer relative z-10"
+                    className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden cursor-pointer relative z-10"
                     onClick={() => handleOpenDialog(product._id)}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <div className="relative h-48 bg-gradient-to-br from-gray-50 to-white">
+                    <div className="relative h-44 bg-gradient-to-br from-gray-50 to-white">
                       <RenderImage 
                         src={product.image} 
                         alt={product.title} 
-                        className="w-full h-full object-contain p-4"
+                        className="w-full h-full object-contain p-3"
                       />
-                      <div className="absolute top-3 left-3 z-20">
-                        <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                      <div className="absolute top-2 left-2 z-20">
+                        <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-sm">
                           Featured
                         </span>
                       </div>
                     </div>
-                    <div className="p-4 relative z-10">
-                      <div className="mb-2">
-                        <span className="text-xs text-gray-500 uppercase tracking-wide">{product.category}</span>
+                    <div className="p-3 relative z-10">
+                      <div className="mb-1">
+                        <span className="text-xs text-gray-500 uppercase tracking-wide font-medium">{product.category}</span>
                       </div>
-                      <h3 className="text-lg font-bold mb-2 text-gray-900 line-clamp-1">{product.title}</h3>
+                      <h3 className="text-base font-bold mb-2 text-gray-900 line-clamp-1">{product.title}</h3>
                       <div 
-                        className="text-gray-600 text-sm line-clamp-2 mb-4"
+                        className="text-gray-600 text-xs line-clamp-2 mb-3 leading-relaxed"
                         dangerouslySetInnerHTML={{ __html: product.description }}
                       />
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="text-2xl font-bold text-gray-900">GHS {product.price.toFixed(2)}</span>
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-lg font-bold text-gray-900">GHS {product.price.toFixed(2)}</span>
                         {product.salePrice && product.salePrice > product.price && (
-                          <span className="text-lg text-gray-400 line-through">GHS {product.salePrice.toFixed(2)}</span>
+                          <span className="text-sm text-gray-400 line-through">GHS {product.salePrice.toFixed(2)}</span>
                         )}
                       </div>
                       <div className="flex gap-2 relative z-20">
                         <motion.button
-                          className="flex-1 bg-gray-100 text-gray-900 py-3 rounded-lg font-medium hover:bg-gray-200 transition-all relative z-30"
+                          className="flex-1 bg-gray-100 text-gray-900 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-all relative z-30 text-sm"
                           whileTap={{ scale: 0.98 }}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -166,14 +166,14 @@ const BestSeller = () => {
                           View Details
                         </motion.button>
                         <motion.button
-                          className="flex-1 bg-black text-white py-3 rounded-lg font-medium hover:bg-gray-800 transition-all flex items-center justify-center gap-2 relative z-30"
+                          className="flex-1 bg-black text-white py-2.5 rounded-lg font-medium hover:bg-gray-800 transition-all flex items-center justify-center gap-2 relative z-30 text-sm"
                           whileTap={{ scale: 0.98 }}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleAddToCart(product._id);
                           }}
                         >
-                          <ShoppingBag className="w-4 h-4" />
+                          <ShoppingBag className="w-3 h-3" />
                           Add to Cart
                         </motion.button>
                       </div>
@@ -186,47 +186,47 @@ const BestSeller = () => {
             {/* Desktop and Tablet Layout - Hidden on very small screens */}
             <div className="hidden sm:block relative z-10">
               {/* Main showcase */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl border border-gray-100 bg-white overflow-visible">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 rounded-xl lg:rounded-2xl shadow-lg lg:shadow-xl border border-gray-100 bg-white overflow-visible">
                 {/* Left column: Main product image */}
                 <motion.div 
-                  className="lg:col-span-2 relative overflow-hidden rounded-l-2xl sm:rounded-l-3xl"
+                  className="lg:col-span-2 relative overflow-hidden rounded-l-xl lg:rounded-l-2xl"
                   variants={itemVariants}
                 >
-                  <div className="relative h-[500px] sm:h-[600px] lg:h-[700px] overflow-hidden bg-gradient-to-br from-gray-50 to-white">
+                  <div className="relative h-[400px] md:h-[500px] lg:h-[600px] overflow-hidden bg-gradient-to-br from-gray-50 to-white">
                     {mainImage && (
                       <RenderImage 
                         src={mainImage} 
                         alt="Bestseller product" 
-                        className="object-contain w-full h-full transition-transform duration-700 hover:scale-105 filter drop-shadow-2xl p-4 sm:p-8"
+                        className="object-contain w-full h-full transition-transform duration-700 hover:scale-105 filter drop-shadow-xl p-4 md:p-6 lg:p-8"
                       />
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
                     
                     {/* Product info overlay */}
                     {bestsellerProducts.slice(0, 1).map((product, index) => (
-                      <div key={product._id || index} className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-10 text-white z-20">
-                        <div className="mb-4 sm:mb-6">
-                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                            <span className="inline-block bg-red-500 text-white text-xs font-bold uppercase tracking-wide px-2 sm:px-3 py-1 rounded-full">Featured</span>
-                            <span className="inline-block bg-black/40 backdrop-blur-sm text-white text-xs font-medium px-2 sm:px-3 py-1 rounded-full border border-white/20">
+                      <div key={product._id || index} className="absolute bottom-0 left-0 right-0 p-4 md:p-6 lg:p-8 text-white z-20">
+                        <div className="mb-4 md:mb-6">
+                          <div className="flex flex-wrap items-center gap-2 mb-3">
+                            <span className="inline-block bg-red-500 text-white text-xs font-bold uppercase tracking-wide px-2 py-1 rounded-full">Featured</span>
+                            <span className="inline-block bg-black/40 backdrop-blur-sm text-white text-xs font-medium px-2 py-1 rounded-full border border-white/20">
                               {product.category}
                             </span>
                           </div>
-                          <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 sm:mb-3 leading-tight">{product.title}</h3>
+                          <h3 className="text-xl md:text-2xl lg:text-3xl font-bold mb-2 leading-tight">{product.title}</h3>
                           <div 
-                            className="text-gray-200 text-sm sm:text-base lg:text-lg line-clamp-2 mb-4 sm:mb-6 max-w-full lg:max-w-2xl"
+                            className="text-gray-200 text-sm md:text-base line-clamp-2 mb-4 max-w-full lg:max-w-2xl"
                             dangerouslySetInnerHTML={{ __html: product.description }}
                           />
                         </div>
                         
-                        <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-4 sm:gap-6 relative z-30">
+                        <div className="flex flex-col md:flex-row flex-wrap items-start md:items-center gap-3 md:gap-4 relative z-30">
                           <div className="flex flex-col">
-                            <span className="text-xs sm:text-sm text-gray-300 uppercase tracking-wide">Price</span>
-                            <span className="text-2xl sm:text-3xl font-bold">GHS {product.price.toFixed(2)}</span>
+                            <span className="text-xs text-gray-300 uppercase tracking-wide">Price</span>
+                            <span className="text-xl md:text-2xl font-bold">GHS {product.price.toFixed(2)}</span>
                           </div>
-                          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                          <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                             <motion.button
-                              className="bg-white text-black px-4 sm:px-6 lg:px-8 py-3 sm:py-4 rounded-full font-medium hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl text-sm sm:text-base relative z-40"
+                              className="bg-white text-black px-4 md:px-6 py-2.5 md:py-3 rounded-full font-medium hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl text-sm md:text-base relative z-40"
                               variants={buttonVariants}
                               initial="initial"
                               whileHover={{ scale: 1.02, y: -2 }}
@@ -236,7 +236,7 @@ const BestSeller = () => {
                               View Details
                             </motion.button>
                             <motion.button
-                              className="bg-black text-white px-4 sm:px-6 lg:px-8 py-3 sm:py-4 rounded-full font-medium hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 text-sm sm:text-base relative z-40"
+                              className="bg-black text-white px-4 md:px-6 py-2.5 md:py-3 rounded-full font-medium hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 text-sm md:text-base relative z-40"
                               variants={buttonVariants}
                               initial="initial"
                               whileHover={{ scale: 1.02, y: -2 }}
@@ -246,7 +246,7 @@ const BestSeller = () => {
                                 handleAddToCart(product._id);
                               }}
                             >
-                              <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
+                              <ShoppingBag className="w-4 h-4" />
                               Add to Cart
                             </motion.button>
                           </div>
@@ -259,37 +259,37 @@ const BestSeller = () => {
                 {/* Right column: Thumbnails and info */}
                 <motion.div 
                   variants={itemVariants} 
-                  className="bg-white p-4 sm:p-6 lg:p-8 flex flex-col justify-between rounded-r-2xl sm:rounded-r-3xl relative z-10"
+                  className="bg-white p-4 md:p-6 flex flex-col justify-between rounded-r-xl lg:rounded-r-2xl relative z-10"
                 >
                   <div>
-                    <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center">
-                      <span className="w-1.5 h-4 sm:h-6 bg-black rounded-full mr-2 sm:mr-3"></span>
+                    <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-6 flex items-center">
+                      <span className="w-1 h-4 md:h-5 bg-black rounded-full mr-2"></span>
                       Browse Collection
                     </h3>
                     
-                    <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
+                    <div className="grid grid-cols-2 gap-2 md:gap-3 mb-6">
                       {bestsellerProducts.slice(0, 4).map((product, index) => (
                         <motion.div 
                           key={product._id || index}
-                          className={`cursor-pointer rounded-lg sm:rounded-xl overflow-hidden transition-all duration-300 bg-white shadow-sm border relative z-20 ${product.image === mainImage ? 'ring-2 ring-black scale-105 shadow-lg' : 'hover:shadow-lg hover:scale-102'}`}
+                          className={`cursor-pointer rounded-lg overflow-hidden transition-all duration-300 bg-white shadow-sm border relative z-20 ${product.image === mainImage ? 'ring-2 ring-black scale-105 shadow-md' : 'hover:shadow-md hover:scale-102'}`}
                           onClick={() => setMainImage(product.image)}
                           whileHover={{ y: -2 }}
                           whileTap={{ scale: 0.98 }}
                         >
                           <div className="relative">
-                            <div className="h-24 sm:h-32 lg:h-36 overflow-hidden bg-gradient-to-br from-gray-50 to-white">
+                            <div className="h-20 md:h-28 overflow-hidden bg-gradient-to-br from-gray-50 to-white">
                               <RenderImage 
                                 src={product.image} 
                                 alt={product.title} 
-                                className="w-full h-full object-contain p-1 sm:p-2 transition-transform duration-300 hover:scale-105"
+                                className="w-full h-full object-contain p-1 transition-transform duration-300 hover:scale-105"
                               />
                             </div>
                             {product.image === mainImage && (
-                              <div className="absolute top-1 sm:top-2 right-1 sm:right-2 w-4 sm:w-6 h-4 sm:h-6 bg-black rounded-full flex items-center justify-center shadow-lg z-30">
-                                <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-white rounded-full"></div>
+                              <div className="absolute top-1 right-1 w-3 h-3 md:w-4 md:h-4 bg-black rounded-full flex items-center justify-center shadow-lg z-30">
+                                <div className="w-1 h-1 md:w-1.5 md:h-1.5 bg-white rounded-full"></div>
                               </div>
                             )}
-                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-1 sm:p-2">
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-1">
                               <p className="text-white text-xs font-medium truncate">{product.title}</p>
                             </div>
                           </div>
@@ -299,19 +299,19 @@ const BestSeller = () => {
                   </div>
                   
                   <div className="mt-auto">
-                    <div className="border-t border-gray-200 pt-4 sm:pt-6 mb-4 sm:mb-6">
-                      <h4 className="font-medium text-gray-700 mb-2 text-sm sm:text-base">Why shop our bestsellers?</h4>
-                      <ul className="text-xs sm:text-sm text-gray-600 space-y-1.5 sm:space-y-2">
+                    <div className="border-t border-gray-200 pt-4 mb-4">
+                      <h4 className="font-medium text-gray-700 mb-2 text-sm md:text-base">Why shop our bestsellers?</h4>
+                      <ul className="text-xs md:text-sm text-gray-600 space-y-1.5">
                         <li className="flex items-center gap-2">
-                          <span className="w-1 sm:w-1.5 h-1 sm:h-1.5 bg-black rounded-full flex-shrink-0"></span>
+                          <span className="w-1 h-1 bg-black rounded-full flex-shrink-0"></span>
                           <span>Customer favorites with proven quality</span>
                         </li>
                         <li className="flex items-center gap-2">
-                          <span className="w-1 sm:w-1.5 h-1 sm:h-1.5 bg-black rounded-full flex-shrink-0"></span>
+                          <span className="w-1 h-1 bg-black rounded-full flex-shrink-0"></span>
                           <span>Fast shipping on all bestselling items</span>
                         </li>
                         <li className="flex items-center gap-2">
-                          <span className="w-1 sm:w-1.5 h-1 sm:h-1.5 bg-black rounded-full flex-shrink-0"></span>
+                          <span className="w-1 h-1 bg-black rounded-full flex-shrink-0"></span>
                           <span>Trending styles updated weekly</span>
                         </li>
                       </ul>
