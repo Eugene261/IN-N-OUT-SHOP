@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Dialog, DialogContent, DialogTitle } from '../ui/dialog'
 import ShoppingOrderDetailsView from './orderDetails'
 import { useDispatch, useSelector } from 'react-redux'
-import { getAllOrdersByUserId, getOrdersDetails } from '@/store/shop/order-slice'
+import { getAllOrdersByUserId, getOrderDetails } from '@/store/shop/order-slice'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowUpRight, Package, Calendar, CircleDollarSign } from 'lucide-react'
 
@@ -58,7 +58,7 @@ function ShoppingOrders() {
 
   function handleFetchOrderDetails(getId) {
     setSelectedOrderId(getId)
-    dispatch(getOrdersDetails(getId))
+    dispatch(getOrderDetails(getId))
   }
 
   useEffect(() => {
