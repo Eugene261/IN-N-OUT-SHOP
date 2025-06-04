@@ -1,8 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
-
-// Define the API base URL using environment variables
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { API_BASE_URL } from "@/config/api";
 
 const initialState = {
     isAuthenticated : false,
@@ -70,8 +68,6 @@ export const checkAuth = createAsyncThunk(
         withCredentials: true,
         headers: {
           'Content-Type': 'application/json',
-          'Cache-Control' : 'no-store, no-cache, must-revalidate, proxy-revalidate',
-          'Expires' : '0',
           'Authorization': `Bearer ${token}`
         },
       };

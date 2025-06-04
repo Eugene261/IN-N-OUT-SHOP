@@ -157,47 +157,47 @@ const TaxonomyManagement = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">
                 Taxonomy Management
               </h1>
-              <p className="mt-1 text-gray-600">
+              <p className="mt-1 text-sm sm:text-base text-gray-600">
                 Manage categories, brands, sizes, colors and other product attributes
               </p>
             </div>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
               {/* Populate Button */}
               <button
                 onClick={handlePopulateTaxonomy}
                 disabled={isPopulating}
-                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
               >
                 {isPopulating ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <Database className="w-4 h-4" />
+                  <Database className="w-4 h-4 flex-shrink-0" />
                 )}
-                <span>{isPopulating ? 'Populating...' : 'Populate Sample Data'}</span>
+                <span className="text-sm">{isPopulating ? 'Populating...' : 'Populate Sample Data'}</span>
               </button>
 
               {/* Search */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
                   placeholder={`Search ${activeTab}...`}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none w-64"
+                  className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none w-full sm:w-64 text-sm"
                 />
               </div>
 
               {/* Quick stats */}
-              <div className="hidden md:flex items-center space-x-4 text-sm text-gray-600">
-                <span>Total Items: {
+              <div className="hidden lg:flex items-center space-x-4 text-xs text-gray-600">
+                <span>Total: {
                   categories.length + subcategories.length + brands.length + sizes.length + colors.length
                 }</span>
               </div>
@@ -207,23 +207,24 @@ const TaxonomyManagement = () => {
       </div>
 
       {/* Tab Navigation */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white border-b border-gray-200 overflow-x-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-8" aria-label="Tabs">
+          <nav className="flex space-x-4 sm:space-x-8 min-w-max" aria-label="Tabs">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id)}
-                className={`relative py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                className={`relative py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200 whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                <div className="flex items-center space-x-2">
-                  <tab.icon className="w-5 h-5" />
-                  <span>{tab.label}</span>
-                  <span className={`px-2 py-1 text-xs rounded-full ${
+                <div className="flex items-center space-x-1 sm:space-x-2">
+                  <tab.icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.label.substring(0, 3)}</span>
+                  <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs rounded-full ${
                     activeTab === tab.id
                       ? 'bg-blue-100 text-blue-600'
                       : 'bg-gray-100 text-gray-600'
@@ -248,7 +249,7 @@ const TaxonomyManagement = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}

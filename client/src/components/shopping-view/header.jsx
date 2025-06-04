@@ -494,7 +494,7 @@ function ShoppingHeader() {
           </motion.button>
           
           {/* Center: Logo */}
-          <div className="flex-1 flex justify-center">
+          <div className="flex-1 flex justify-center mx-4">
             <Link to='/shop/home' className='flex items-center no-underline'>
               <span className="font-bold text-lg text-gray-900 whitespace-nowrap">
                 IN-N-OUT
@@ -502,8 +502,23 @@ function ShoppingHeader() {
             </Link>
           </div>
           
-          {/* Right: User actions */}
-          <div className="flex-shrink-0">
+          {/* Right: Search + User actions */}
+          <div className="flex items-center space-x-1 flex-shrink-0">
+            {/* Search Button for Mobile */}
+            <Link to="/shop/search">
+              <motion.button 
+                className="p-2 rounded-md hover:bg-gray-50 transition-all duration-200"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                title="Search Products"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-900">
+                  <circle cx="11" cy="11" r="8"/>
+                  <path d="m21 21-4.3-4.3"/>
+                </svg>
+                <span className='sr-only'>Search</span>
+              </motion.button>
+            </Link>
             <HeaderRightContent isAuthenticated={isAuthenticated} />
           </div>
         </div>
@@ -522,20 +537,6 @@ function ShoppingHeader() {
               {/* Navigation */}
               <div className="flex-1 overflow-auto">
                 <MenuItems onNavigate={() => setMobileMenuOpen(false)} />
-              </div>
-              
-              {/* Search Button */}
-              <div className="p-4 border-t">
-                <Link to="/shop/search" onClick={() => setMobileMenuOpen(false)}>
-                  <motion.button 
-                    className="w-full flex items-center justify-center text-gray-700 px-4 py-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-all duration-200"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                    <span className="font-medium">Search Products</span>
-                  </motion.button>
-                </Link>
               </div>
             </div>
           </SheetContent>

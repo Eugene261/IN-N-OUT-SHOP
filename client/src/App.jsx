@@ -47,9 +47,6 @@ import SuperAdminProfile from "./pages/super-admin-view/profile";import Taxonomy
 // Admin vendor payments
 import AdminVendorPaymentsPage from "./pages/admin-view/vendorPayments";
 
-// Import ConnectionStatus component
-import ConnectionStatus from "./components/shared/ConnectionStatus";
-
 // Import TokenManager component
 import TokenManager from './components/common/TokenManager';
 
@@ -99,7 +96,6 @@ function App() {
     <>
       <TokenManager />
       <div className="flex flex-col overflow-hidden bg-white">
-        <ConnectionStatus />
         <Routes>
           {/* AUTH */}
           <Route 

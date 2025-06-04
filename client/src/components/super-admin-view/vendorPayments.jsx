@@ -492,11 +492,11 @@ const VendorPayments = () => {
       animate="visible"
     >
       <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
+        <div className="flex flex-col space-y-3 sm:flex-row sm:justify-between sm:items-center sm:space-y-0">
           <h3 className="text-xl font-bold text-gray-900">Recent Payments</h3>
-          <div className="flex space-x-3">
+          <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-3">
             <motion.button 
-              className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className="inline-flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               onClick={() => dispatch(fetchVendorPayments({ page: 1 }))}
               variants={buttonVariants}
               initial="initial"
@@ -507,7 +507,7 @@ const VendorPayments = () => {
               Refresh
             </motion.button>
             <motion.button 
-              className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+              className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
               onClick={() => setActiveView('create')}
               variants={buttonVariants}
               initial="initial"
@@ -524,51 +524,66 @@ const VendorPayments = () => {
       <div className="p-6">
         {/* Enhanced Filters */}
         <div className="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Vendor</label>
-              <select
-                name="vendorId"
-                value={filters.vendorId}
-                onChange={(e) => setFilters(prev => ({ ...prev, vendorId: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-              >
-                <option value="">All Vendors</option>
-                {vendors.map(vendor => (
-                  <option key={vendor._id} value={vendor._id}>
-                    {vendor.userName} ({vendor.role})
-                  </option>
-                ))}
-              </select>
+          <div className="grid grid-cols-1 gap-4">
+            {/* Mobile: Stack all filter fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Vendor</label>
+                <select
+                  name="vendorId"
+                  value={filters.vendorId}
+                  onChange={(e) => setFilters(prev => ({ ...prev, vendorId: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                >
+                  <option value="">All Vendors</option>
+                  {vendors.map(vendor => (
+                    <option key={vendor._id} value={vendor._id}>
+                      {vendor.userName} ({vendor.role})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select 
+                  name="status" 
+                  value={filters.status}
+                  onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                >
+                  <option value="">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="completed">Completed</option>
+                  <option value="failed">Failed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                <input 
+                  type="date" 
+                  name="startDate" 
+                  value={filters.startDate}
+                  onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                <input 
+                  type="date" 
+                  name="endDate" 
+                  value={filters.endDate}
+                  onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-              <select 
-                name="status" 
-                value={filters.status}
-                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-              >
-                <option value="">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
-                <option value="failed">Failed</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-              <input 
-                type="date" 
-                name="startDate" 
-                value={filters.startDate}
-                onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-              />
-            </div>
-            <div className="flex items-end space-x-2">
+            
+            {/* Filter Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <motion.button 
-                className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                className="flex-1 sm:flex-none bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
                 onClick={handleFilterApply}
                 variants={buttonVariants}
                 initial="initial"
@@ -576,10 +591,10 @@ const VendorPayments = () => {
                 whileTap="tap"
               >
                 <Filter className="h-4 w-4 inline mr-2" />
-                Apply
+                Apply Filters
               </motion.button>
               <motion.button 
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="flex-1 sm:flex-none px-6 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                 onClick={handleResetFilters}
                 variants={buttonVariants}
                 initial="initial"
@@ -623,7 +638,65 @@ const VendorPayments = () => {
                 transition={{ delay: index * 0.1 }}
                 whileHover={{ y: -2 }}
               >
-                <div className="flex items-center justify-between">
+                {/* Mobile Layout */}
+                <div className="block sm:hidden space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-indigo-100 rounded-full p-2">
+                        {getPaymentMethodIcon(payment.paymentMethod)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-semibold text-gray-900 text-sm truncate">
+                          {payment.vendorId?.name || 'Unknown Vendor'}
+                        </h4>
+                        <p className="text-xs text-gray-500 truncate">{payment.vendorId?.shopName || 'N/A'}</p>
+                      </div>
+                    </div>
+                    <span className={getStatusBadgeClass(payment.status)}>
+                      {payment.status}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-lg text-gray-900">{formatCurrency(payment.amount)}</p>
+                      <p className="text-xs text-gray-500">{formatDate(payment.createdAt)}</p>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      {payment.receiptUrl && (
+                        <div className="bg-emerald-100 rounded-full p-1">
+                          <Receipt className="h-3 w-3 text-emerald-600" />
+                        </div>
+                      )}
+                      <motion.button 
+                        className="bg-indigo-50 text-indigo-600 p-2 rounded-lg hover:bg-indigo-100 transition-colors"
+                        onClick={() => handleViewDetails(payment._id)}
+                        variants={buttonVariants}
+                        initial="initial"
+                        whileHover="hover"
+                        whileTap="tap"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </motion.button>
+                      {payment.status === 'pending' && (
+                        <motion.button 
+                          className="bg-emerald-50 text-emerald-600 p-2 rounded-lg hover:bg-emerald-100 transition-colors"
+                          onClick={() => handleUpdateStatus(payment._id, 'completed')}
+                          variants={buttonVariants}
+                          initial="initial"
+                          whileHover="hover"
+                          whileTap="tap"
+                        >
+                          <Check className="h-4 w-4" />
+                        </motion.button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Desktop Layout */}
+                <div className="hidden sm:flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div className="bg-indigo-100 rounded-full p-2">
                       {getPaymentMethodIcon(payment.paymentMethod)}

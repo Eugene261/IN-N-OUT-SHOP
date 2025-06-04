@@ -520,211 +520,211 @@ function RevenueDashboard() {
       ) : (
         <div className="space-y-8">
         {/* Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Gross Revenue */}
           <motion.div
             variants={cardVariants}
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer hover:border-green-200 hover:bg-green-50/10"
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer hover:border-green-200 hover:bg-green-50/10"
             onClick={() => openCardDialog('revenue')}
             whileHover={{ y: -5, transition: { duration: 0.2 } }}
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-gray-500 font-medium">Gross Revenue</h3>
+              <h3 className="text-gray-500 font-medium text-sm sm:text-base">Gross Revenue</h3>
               <span className="p-2 bg-green-100 rounded-full">
-                <DollarSign className="h-5 w-5 text-green-600" />
+                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
               </span>
             </div>
-            <p className="text-3xl font-bold text-gray-900 mt-2">
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">
               {formatCurrency(revenueStats?.totalRevenue)}
             </p>
-            <p className="text-sm text-gray-500 mt-1">Total earnings before fees</p>
-            <div className="mt-4 text-green-600 text-sm font-medium flex items-center">
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">Total earnings before fees</p>
+            <div className="mt-3 sm:mt-4 text-green-600 text-xs sm:text-sm font-medium flex items-center">
               <span>View details</span>
-              <ArrowRight className="h-4 w-4 ml-1" />
+              <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
             </div>
           </motion.div>
 
           {/* Shipping Fees */}
           <motion.div
             variants={cardVariants}
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer hover:border-blue-200 hover:bg-blue-50/10"
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer hover:border-blue-200 hover:bg-blue-50/10"
             onClick={() => openCardDialog('shipping')}
             whileHover={{ y: -5, transition: { duration: 0.2 } }}
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-gray-500 font-medium">Shipping Fees</h3>
+              <h3 className="text-gray-500 font-medium text-sm sm:text-base">Shipping Fees</h3>
               <span className="p-2 bg-blue-100 rounded-full">
-                <TruckIcon className="h-5 w-5 text-blue-600" />
+                <TruckIcon className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
               </span>
             </div>
-            <p className="text-3xl font-bold text-gray-900 mt-2">
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">
               {formatCurrency(revenueStats?.totalShippingFees || 0)}
             </p>
-            <p className="text-sm text-gray-500 mt-1">Total shipping charges collected</p>
-            <div className="mt-4 text-blue-600 text-sm font-medium flex items-center">
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">Total shipping charges collected</p>
+            <div className="mt-3 sm:mt-4 text-blue-600 text-xs sm:text-sm font-medium flex items-center">
               <span>View details</span>
-              <ArrowRight className="h-4 w-4 ml-1" />
+              <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
             </div>
           </motion.div>
 
           {/* Platform Fees */}
           <motion.div
             variants={cardVariants}
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer hover:border-red-200 hover:bg-red-50/10"
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer hover:border-red-200 hover:bg-red-50/10"
             onClick={() => openCardDialog('fees')}
             whileHover={{ y: -5, transition: { duration: 0.2 } }}
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-gray-500 font-medium">Platform Fees</h3>
+              <h3 className="text-gray-500 font-medium text-sm sm:text-base">Platform Fees</h3>
               <span className="p-2 bg-red-100 rounded-full">
-                <Percent className="h-5 w-5 text-red-600" />
+                <Percent className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
               </span>
             </div>
-            <p className="text-3xl font-bold text-gray-900 mt-2">
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">
               {formatCurrency(revenueStats?.totalPlatformFees || 0)}
             </p>
-            <p className="text-sm text-gray-500 mt-1">5% of gross revenue</p>
-            <div className="mt-4 text-red-600 text-sm font-medium flex items-center">
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">5% of gross revenue</p>
+            <div className="mt-3 sm:mt-4 text-red-600 text-xs sm:text-sm font-medium flex items-center">
               <span>View details</span>
-              <ArrowRight className="h-4 w-4 ml-1" />
+              <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
             </div>
           </motion.div>
 
           {/* Net Revenue */}
           <motion.div
             variants={cardVariants}
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer hover:border-blue-200 hover:bg-blue-50/10"
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer hover:border-blue-200 hover:bg-blue-50/10"
             onClick={() => openCardDialog('net')}
             whileHover={{ y: -5, transition: { duration: 0.2 } }}
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-gray-500 font-medium">Net Revenue</h3>
+              <h3 className="text-gray-500 font-medium text-sm sm:text-base">Net Revenue</h3>
               <span className="p-2 bg-blue-100 rounded-full">
-                <DollarSign className="h-5 w-5 text-blue-600" />
+                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
               </span>
             </div>
-            <p className="text-3xl font-bold text-gray-900 mt-2">
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">
               {formatCurrency(revenueStats?.netRevenue || 0)}
             </p>
-            <p className="text-sm text-gray-500 mt-1">Earnings after platform fees</p>
-            <div className="mt-4 text-blue-600 text-sm font-medium flex items-center">
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">Earnings after platform fees</p>
+            <div className="mt-3 sm:mt-4 text-blue-600 text-xs sm:text-sm font-medium flex items-center">
               <span>View details</span>
-              <ArrowRight className="h-4 w-4 ml-1" />
+              <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
             </div>
           </motion.div>
 
           {/* Total Items Sold */}
           <motion.div
             variants={cardVariants}
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer hover:border-blue-200 hover:bg-blue-50/10"
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer hover:border-blue-200 hover:bg-blue-50/10"
             onClick={() => openCardDialog('items')}
             whileHover={{ y: -5, transition: { duration: 0.2 } }}
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-gray-500 font-medium">Items Sold</h3>
+              <h3 className="text-gray-500 font-medium text-sm sm:text-base">Items Sold</h3>
               <span className="p-2 bg-blue-100 rounded-full">
-                <ShoppingBag className="h-5 w-5 text-blue-600" />
+                <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
               </span>
             </div>
-            <p className="text-3xl font-bold text-gray-900 mt-2">
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">
               {revenueStats?.totalItemsSold || 0}
             </p>
-            <p className="text-sm text-gray-500 mt-1">Total units sold</p>
-            <div className="mt-4 text-blue-600 text-sm font-medium flex items-center">
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">Total units sold</p>
+            <div className="mt-3 sm:mt-4 text-blue-600 text-xs sm:text-sm font-medium flex items-center">
               <span>View details</span>
-              <ArrowRight className="h-4 w-4 ml-1" />
+              <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
             </div>
           </motion.div>
 
           {/* Total Orders */}
           <motion.div
             variants={cardVariants}
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer hover:border-purple-200 hover:bg-purple-50/10"
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer hover:border-purple-200 hover:bg-purple-50/10"
             onClick={() => openCardDialog('orders')}
             whileHover={{ y: -5, transition: { duration: 0.2 } }}
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-gray-500 font-medium">Total Orders</h3>
+              <h3 className="text-gray-500 font-medium text-sm sm:text-base">Total Orders</h3>
               <span className="p-2 bg-purple-100 rounded-full">
-                <Package className="h-5 w-5 text-purple-600" />
+                <Package className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
               </span>
             </div>
-            <p className="text-3xl font-bold text-gray-900 mt-2">
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">
               {revenueStats?.totalOrders || 0}
             </p>
-            <p className="text-sm text-gray-500 mt-1">Completed orders</p>
-            <div className="mt-4 text-purple-600 text-sm font-medium flex items-center">
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">Completed orders</p>
+            <div className="mt-3 sm:mt-4 text-purple-600 text-xs sm:text-sm font-medium flex items-center">
               <span>View details</span>
-              <ArrowRight className="h-4 w-4 ml-1" />
+              <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
             </div>
           </motion.div>
 
           {/* Pending Deliveries */}
           <motion.div
             variants={cardVariants}
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer hover:border-yellow-200 hover:bg-yellow-50/10"
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer hover:border-yellow-200 hover:bg-yellow-50/10"
             onClick={() => openCardDialog('pending')}
             whileHover={{ y: -5, transition: { duration: 0.2 } }}
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-gray-500 font-medium">Pending Deliveries</h3>
+              <h3 className="text-gray-500 font-medium text-sm sm:text-base">Pending Deliveries</h3>
               <span className="p-2 bg-yellow-100 rounded-full">
-                <TruckIcon className="h-5 w-5 text-yellow-600" />
+                <TruckIcon className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
               </span>
             </div>
-            <p className="text-3xl font-bold text-gray-900 mt-2">
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">
               {revenueStats?.pendingDeliveries || 0}
             </p>
-            <p className="text-sm text-gray-500 mt-1">Orders to be delivered</p>
-            <div className="mt-4 text-yellow-600 text-sm font-medium flex items-center">
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">Orders to be delivered</p>
+            <div className="mt-3 sm:mt-4 text-yellow-600 text-xs sm:text-sm font-medium flex items-center">
               <span>View details</span>
-              <ArrowRight className="h-4 w-4 ml-1" />
+              <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
             </div>
           </motion.div>
 
           {/* Confirmed Payments */}
           <motion.div
             variants={cardVariants}
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer hover:border-indigo-200 hover:bg-indigo-50/10"
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer hover:border-indigo-200 hover:bg-indigo-50/10"
             onClick={() => openCardDialog('payments')}
             whileHover={{ y: -5, transition: { duration: 0.2 } }}
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-gray-500 font-medium">Confirmed Payments</h3>
+              <h3 className="text-gray-500 font-medium text-sm sm:text-base">Confirmed Payments</h3>
               <span className="p-2 bg-indigo-100 rounded-full">
-                <CreditCard className="h-5 w-5 text-indigo-600" />
+                <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600" />
               </span>
             </div>
-            <p className="text-3xl font-bold text-gray-900 mt-2">
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">
               {revenueStats?.confirmedPayments || 0}
             </p>
-            <p className="text-sm text-gray-500 mt-1">Paid orders</p>
-            <div className="mt-4 text-indigo-600 text-sm font-medium flex items-center">
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">Paid orders</p>
+            <div className="mt-3 sm:mt-4 text-indigo-600 text-xs sm:text-sm font-medium flex items-center">
               <span>View details</span>
-              <ArrowRight className="h-4 w-4 ml-1" />
+              <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
             </div>
           </motion.div>
 
           {/* Total Products */}
           <motion.div
             variants={cardVariants}
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer hover:border-pink-200 hover:bg-pink-50/10"
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer hover:border-pink-200 hover:bg-pink-50/10"
             onClick={() => openCardDialog('products')}
             whileHover={{ y: -5, transition: { duration: 0.2 } }}
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-gray-500 font-medium">Your Products</h3>
+              <h3 className="text-gray-500 font-medium text-sm sm:text-base">Your Products</h3>
               <span className="p-2 bg-pink-100 rounded-full">
-                <BarChart3 className="h-5 w-5 text-pink-600" />
+                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-pink-600" />
               </span>
             </div>
-            <p className="text-3xl font-bold text-gray-900 mt-2">
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">
               {revenueStats?.adminProducts || 0}
             </p>
-            <p className="text-sm text-gray-500 mt-1">Products in inventory</p>
-            <div className="mt-4 text-pink-600 text-sm font-medium flex items-center">
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">Products in inventory</p>
+            <div className="mt-3 sm:mt-4 text-pink-600 text-xs sm:text-sm font-medium flex items-center">
               <span>View details</span>
-              <ArrowRight className="h-4 w-4 ml-1" />
+              <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
             </div>
           </motion.div>
         </div>
