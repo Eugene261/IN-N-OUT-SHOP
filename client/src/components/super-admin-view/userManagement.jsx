@@ -217,25 +217,40 @@ const UserManagement = () => {
         )}
       </AnimatePresence>
       
-      {/* Action buttons and filters */}
+      {/* Add New User Button */}
       <motion.div 
+        className="mb-6 p-6 bg-white rounded-xl shadow-lg border border-gray-100"
         variants={itemVariants}
-        className="flex flex-wrap items-center justify-between mb-6 gap-4"
       >
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setShowAddUserForm(true)}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <UserPlus className="h-4 w-4 mr-2" />
-            Add New User
-          </button>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search by name or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => setShowAddUserForm(true)}
+              className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Add New User
+            </button>
+          </div>
         </div>
         
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 mt-4">
           <button
             onClick={() => handleFilterChange('all')}
-            className={`px-3 py-2 text-sm rounded-md flex items-center ${
+            className={`px-3 py-2 text-sm rounded-md flex items-center whitespace-nowrap ${
               activeFilter === 'all' 
                 ? 'bg-blue-100 text-blue-700 border border-blue-300' 
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
@@ -246,7 +261,7 @@ const UserManagement = () => {
           </button>
           <button
             onClick={() => handleFilterChange('superAdmin')}
-            className={`px-3 py-2 text-sm rounded-md flex items-center ${
+            className={`px-3 py-2 text-sm rounded-md flex items-center whitespace-nowrap ${
               activeFilter === 'superAdmin' 
                 ? 'bg-purple-100 text-purple-700 border border-purple-300' 
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
@@ -256,7 +271,7 @@ const UserManagement = () => {
           </button>
           <button
             onClick={() => handleFilterChange('admin')}
-            className={`px-3 py-2 text-sm rounded-md flex items-center ${
+            className={`px-3 py-2 text-sm rounded-md flex items-center whitespace-nowrap ${
               activeFilter === 'admin' 
                 ? 'bg-blue-100 text-blue-700 border border-blue-300' 
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
@@ -266,7 +281,7 @@ const UserManagement = () => {
           </button>
           <button
             onClick={() => handleFilterChange('user')}
-            className={`px-3 py-2 text-sm rounded-md flex items-center ${
+            className={`px-3 py-2 text-sm rounded-md flex items-center whitespace-nowrap ${
               activeFilter === 'user' 
                 ? 'bg-green-100 text-green-700 border border-green-300' 
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
@@ -274,28 +289,6 @@ const UserManagement = () => {
           >
             Regular Users
           </button>
-        </div>
-        
-        {/* Search input */}
-        <div className="relative w-full md:w-64">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-gray-400" />
-          </div>
-          <input
-            type="text"
-            placeholder="Search by name or email"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-          {searchTerm && (
-            <button 
-              onClick={() => setSearchTerm('')}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center"
-            >
-              <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-            </button>
-          )}
         </div>
       </motion.div>
       
@@ -503,16 +496,16 @@ const UserManagement = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   User
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Email
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Role
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -520,49 +513,33 @@ const UserManagement = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center">
+                  <td colSpan={4} className="px-4 sm:px-6 py-12 text-center">
                     <Loader2 className="h-8 w-8 mx-auto text-blue-500 animate-spin" />
-                    <p className="mt-2 text-sm text-gray-500">Loading users...</p>
+                    <p className="mt-2 text-gray-500">Loading users...</p>
                   </td>
                 </tr>
               ) : filteredUsers && filteredUsers.length > 0 ? (
-                filteredUsers.map(user => (
+                filteredUsers.map((user) => (
                   <motion.tr 
                     key={user._id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="hover:bg-gray-50"
+                    className="hover:bg-gray-50 transition-colors"
                   >
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="h-10 w-10 flex-shrink-0 rounded-full bg-gray-200 flex items-center justify-center">
-                          <User className="h-5 w-5 text-gray-500" />
+                        <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                          <User className="h-4 w-4 text-gray-500" />
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium">
-                            {['admin', 'superAdmin'].includes(user.role) ? (
-                              <button
-                                onClick={() => handleViewProfile(user)}
-                                className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-                                title="View admin profile"
-                              >
-                                {user.userName}
-                              </button>
-                            ) : (
-                              <span className="text-gray-900">{user.userName}</span>
-                            )}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            ID: {user._id?.substring(user._id.length - 6)}
-                          </div>
+                        <div className="ml-3 min-w-0 flex-1">
+                          <p className="text-sm font-medium text-gray-900 truncate">{user.userName}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{user.email}</div>
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm text-gray-900 truncate block max-w-[200px]">{user.email}</span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         user.role === 'superAdmin' 
                           ? 'bg-purple-100 text-purple-800' 
@@ -573,39 +550,43 @@ const UserManagement = () => {
                         {user.role}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      {['admin', 'superAdmin'].includes(user.role) && (
-                        <button
-                          onClick={() => handleViewProfile(user)}
-                          className="text-green-600 hover:text-green-900 mr-3"
-                          title="View profile"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => openEditUserForm(user)}
-                        className="text-blue-600 hover:text-blue-900 mr-3"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteUser(user._id)}
-                        className="text-red-600 hover:text-red-900"
-                        disabled={isLoading && actionType === 'delete'}
-                      >
-                        {isLoading && actionType === 'delete' ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end space-x-2">
+                        {['admin', 'superAdmin'].includes(user.role) && (
+                          <button
+                            onClick={() => handleViewProfile(user)}
+                            className="text-green-600 hover:text-green-900 p-1"
+                            title="View profile"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
                         )}
-                      </button>
+                        <button
+                          onClick={() => openEditUserForm(user)}
+                          className="text-blue-600 hover:text-blue-900 p-1"
+                          title="Edit user"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(user._id)}
+                          className="text-red-600 hover:text-red-900 p-1"
+                          disabled={isLoading && actionType === 'delete'}
+                          title="Delete user"
+                        >
+                          {isLoading && actionType === 'delete' ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </motion.tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center">
+                  <td colSpan={4} className="px-4 sm:px-6 py-12 text-center">
                     <User className="h-12 w-12 mx-auto text-gray-300 mb-2" />
                     <p className="text-lg font-medium text-gray-500">No users found</p>
                     <p className="text-sm text-gray-400">

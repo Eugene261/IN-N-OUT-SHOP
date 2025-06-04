@@ -30,12 +30,20 @@ const SuperAdminLayout = () => {
   };
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen bg-white overflow-hidden">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+          onClick={closeSidebar}
+        />
+      )}
+      
       {/* Mobile sidebar */}
       <div 
         ref={sidebarRef}
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:hidden ${
-          sidebarOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full'
+        className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:hidden ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <SuperAdminSidebar 
@@ -45,31 +53,40 @@ const SuperAdminLayout = () => {
       </div>
       
       {/* Desktop sidebar */}
-      <div className="hidden lg:flex w-64 bg-white border-r border-gray-200">
-        <SuperAdminSidebar />
+      <div className="hidden lg:flex lg:flex-shrink-0">
+        <div className="w-64 bg-white border-r border-gray-200">
+          <SuperAdminSidebar />
+        </div>
       </div>
       
       {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header with mobile menu button */}
-        <header className="bg-white border-b border-gray-200 lg:hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Mobile header */}
+        <header className="bg-white border-b border-gray-200 lg:hidden flex-shrink-0">
           <div className="px-4 py-3 flex items-center justify-between">
             <button
               onClick={toggleSidebar}
-              className="p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+              className="p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 transition-colors"
             >
               <Menu className="h-6 w-6" />
+              <span className="sr-only">Open sidebar</span>
             </button>
             <div className="text-lg font-semibold text-blue-600">SuperAdmin</div>
-            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">
+            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium flex-shrink-0">
               {user?.userName?.charAt(0).toUpperCase() || 'S'}
             </div>
           </div>
         </header>
         
-        <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
-          <div className="max-w-7xl mx-auto">
-            <Outlet />
+        {/* Main content area */}
+        <main className="flex-1 overflow-auto bg-gray-50 min-h-0">
+          <div className="h-full">
+            {/* Content wrapper with proper padding */}
+            <div className="p-4 sm:p-6 lg:p-8 max-w-full">
+              <div className="max-w-7xl mx-auto">
+                <Outlet />
+              </div>
+            </div>
           </div>
         </main>
       </div>

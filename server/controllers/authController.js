@@ -126,7 +126,7 @@ const loginUser = async(req, res) => {
         // Sign a JWT token with 1 hour expiration for better security
         const token = jwt.sign({
             id : checkUser._id, role : checkUser.role, email : checkUser.email, userName : checkUser.userName
-        }, 'CLIENT_SECRET_KEY', {expiresIn : '1h'}); // 1 hour expiration
+        }, process.env.JWT_SECRET || 'CLIENT_SECRET_KEY', {expiresIn : '1h'}); // 1 hour expiration
 
         // Send token both in cookie (for server API calls) and in response (for localStorage)
         res.cookie('token', token, {
@@ -204,7 +204,7 @@ const authMiddleware = async(req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, 'CLIENT_SECRET_KEY');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'CLIENT_SECRET_KEY');
     console.log('AuthMiddleware: Token verified successfully for user:', decoded.id);
     req.user = decoded;
     next()

@@ -1,27 +1,37 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { API_BASE_URL } from '@/config/api';
 
-// Async thunks
+// Fetch Vendor Payments
 export const fetchVendorPayments = createAsyncThunk(
   'adminVendorPayments/fetchVendorPayments',
-  async ({ page = 1, status, startDate, endDate }, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      const params = new URLSearchParams();
-      params.append('page', page);
+      const { page = 1, limit = 10, vendorId, status, startDate, endDate } = params;
       
-      if (status && status !== 'all') {
-        params.append('status', status);
-      }
+      let url = `${API_BASE_URL}/api/admin/vendor-payments?page=${page}&limit=${limit}`;
       
-      if (startDate) {
-        params.append('startDate', startDate);
-      }
+      if (vendorId) url += `&vendorId=${vendorId}`;
+      if (status) url += `&status=${status}`;
+      if (startDate && endDate) url += `&startDate=${startDate}&endDate=${endDate}`;
       
-      if (endDate) {
-        params.append('endDate', endDate);
-      }
+      const response = await axios.get(url, {
+        withCredentials: true
+      });
       
-      const response = await axios.get(`/api/admin/vendor-payments/history?${params.toString()}`, {
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { message: error.message });
+    }
+  }
+);
+
+// Fetch Payment Details
+export const fetchPaymentDetails = createAsyncThunk(
+  'adminVendorPayments/fetchPaymentDetails',
+  async (paymentId, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/admin/vendor-payments/${paymentId}`, {
         withCredentials: true
       });
       
@@ -36,22 +46,7 @@ export const fetchPaymentSummary = createAsyncThunk(
   'adminVendorPayments/fetchPaymentSummary',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get('/api/admin/vendor-payments/summary', {
-        withCredentials: true
-      });
-      
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || { message: error.message });
-    }
-  }
-);
-
-export const fetchPaymentDetails = createAsyncThunk(
-  'adminVendorPayments/fetchPaymentDetails',
-  async (paymentId, { rejectWithValue }) => {
-    try {
-      const response = await axios.get(`/api/admin/vendor-payments/${paymentId}`, {
+      const response = await axios.get(`${API_BASE_URL}/api/admin/vendor-payments/summary`, {
         withCredentials: true
       });
       

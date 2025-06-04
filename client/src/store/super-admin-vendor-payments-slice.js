@@ -1,31 +1,21 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { API_BASE_URL } from '@/config/api';
 
 // Async thunks
 export const fetchVendorPayments = createAsyncThunk(
   'superAdminVendorPayments/fetchVendorPayments',
-  async ({ page = 1, status, vendorId, startDate, endDate }, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      const params = new URLSearchParams();
-      params.append('page', page);
+      const { page = 1, limit = 10, vendorId, status, startDate, endDate } = params;
       
-      if (status && status !== 'all') {
-        params.append('status', status);
-      }
+      let url = `${API_BASE_URL}/api/superAdmin/vendor-payments?page=${page}&limit=${limit}`;
       
-      if (vendorId) {
-        params.append('vendor', vendorId);
-      }
+      if (vendorId) url += `&vendorId=${vendorId}`;
+      if (status) url += `&status=${status}`;
+      if (startDate && endDate) url += `&startDate=${startDate}&endDate=${endDate}`;
       
-      if (startDate) {
-        params.append('startDate', startDate);
-      }
-      
-      if (endDate) {
-        params.append('endDate', endDate);
-      }
-      
-      const response = await axios.get(`/api/superAdmin/vendor-payments?${params.toString()}`, {
+      const response = await axios.get(url, {
         withCredentials: true
       });
       
@@ -40,7 +30,7 @@ export const fetchPaymentSummary = createAsyncThunk(
   'superAdminVendorPayments/fetchPaymentSummary',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get('/api/superAdmin/vendor-payments/summary', {
+      const response = await axios.get(`${API_BASE_URL}/api/superAdmin/vendor-payments/summary`, {
         withCredentials: true
       });
       
@@ -55,7 +45,7 @@ export const fetchPaymentDetails = createAsyncThunk(
   'superAdminVendorPayments/fetchPaymentDetails',
   async (paymentId, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`/api/superAdmin/vendor-payments/${paymentId}`, {
+      const response = await axios.get(`${API_BASE_URL}/api/superAdmin/vendor-payments/${paymentId}`, {
         withCredentials: true
       });
       
@@ -73,7 +63,7 @@ export const createPayment = createAsyncThunk(
       // Handle both FormData (with file) and regular object
       const isFormData = paymentData instanceof FormData;
       
-      const response = await axios.post('/api/superAdmin/vendor-payments', paymentData, {
+      const response = await axios.post(`${API_BASE_URL}/api/superAdmin/vendor-payments`, paymentData, {
         withCredentials: true,
         headers: {
           'Content-Type': isFormData ? 'multipart/form-data' : 'application/json'
@@ -94,7 +84,7 @@ export const uploadReceipt = createAsyncThunk(
       const formData = new FormData();
       formData.append('receipt', receiptFile);
       
-      const response = await axios.post(`/api/superAdmin/vendor-payments/${paymentId}/receipt`, formData, {
+      const response = await axios.post(`${API_BASE_URL}/api/superAdmin/vendor-payments/${paymentId}/receipt`, formData, {
         withCredentials: true,
         headers: {
           'Content-Type': 'multipart/form-data'
@@ -112,7 +102,7 @@ export const updatePaymentStatus = createAsyncThunk(
   'superAdminVendorPayments/updatePaymentStatus',
   async ({ paymentId, status, notes }, { rejectWithValue }) => {
     try {
-      const response = await axios.patch(`/api/superAdmin/vendor-payments/${paymentId}/status`, {
+      const response = await axios.patch(`${API_BASE_URL}/api/superAdmin/vendor-payments/${paymentId}/status`, {
         status,
         notes
       }, {
