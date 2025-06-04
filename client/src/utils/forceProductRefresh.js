@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { refreshProductData } from '../store/shop/product-slice';
 import { fetchAllProducts } from '../store/admin/product-slice';
+import { API_BASE_URL } from '@/config/api';
 
 /**
  * Utility function to force a complete refresh of product data
@@ -18,7 +19,7 @@ export const forceProductRefresh = async (dispatch) => {
     dispatch(fetchAllProducts());
     
     // 3. Make a direct API call to invalidate any server-side cache
-    await axios.get('http://localhost:5000/api/shop/products/refresh-cache', { 
+    await axios.get(`${API_BASE_URL}/api/shop/products/refresh-cache`, { 
       withCredentials: true 
     });
     

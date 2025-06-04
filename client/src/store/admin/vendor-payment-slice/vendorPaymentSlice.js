@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { API_BASE_URL } from '@/config/api';
 
-const BASE_URL = 'http://localhost:5000/api/admin/vendor-payments';
+const BASE_URL = `${API_BASE_URL}/api/admin/vendor-payments`;
 
 // Get payment history for the logged-in admin
 export const fetchPaymentHistory = createAsyncThunk(

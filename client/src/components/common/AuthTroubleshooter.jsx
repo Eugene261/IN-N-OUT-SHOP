@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '@/config/api';
 
 const AuthTroubleshooter = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -46,7 +47,7 @@ const AuthTroubleshooter = () => {
 
     // Check server connection
     try {
-      await axios.get('http://localhost:5000/api/health');
+      await axios.get(`${API_BASE_URL}/api/health`);
       status.serverConnection = true;
 
       // Check auth with server
@@ -56,7 +57,7 @@ const AuthTroubleshooter = () => {
             ? tokenCookie.split('=')[1] 
             : localStorageToken;
           
-          const response = await axios.get('http://localhost:5000/api/auth/check-auth', {
+          const response = await axios.get(`${API_BASE_URL}/api/auth/check-auth`, {
             headers: {
               Authorization: `Bearer ${token}`
             },
@@ -94,7 +95,7 @@ const AuthTroubleshooter = () => {
   const handleCreateTestData = async () => {
     try {
       setIsChecking(true);
-      const response = await axios.get('http://localhost:5000/api/admin/create-test-data', {
+      const response = await axios.get(`${API_BASE_URL}/api/admin/create-test-data`, {
         withCredentials: true,
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`

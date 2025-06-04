@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { API_BASE_URL } from '@/config/api';
 
-const BASE_URL = 'http://localhost:5000/api/superAdmin/vendor-payments';
+const BASE_URL = `${API_BASE_URL}/api/superAdmin/vendor-payments`;
 
 // Get all vendor payments
 export const fetchVendorPayments = createAsyncThunk(

@@ -1,5 +1,6 @@
 import axios from "axios";
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { API_BASE_URL } from "@/config/api";
 
 // Helper function to retrieve cart from localStorage with user validation
 const getLocalCart = () => {
@@ -51,7 +52,7 @@ export const addToCart = createAsyncThunk(
     try {
       console.log("Adding to cart:", { userId, productId, quantity, size, color, price, title, image });
       const response = await axios.post(
-        "http://localhost:5000/api/shop/cart/add",
+        `${API_BASE_URL}/api/shop/cart/add`,
         {
           userId,
           productId,
@@ -128,7 +129,7 @@ export const fetchCartItems = createAsyncThunk(
       
       console.log("Fetching cart from server for user:", userId);
       const response = await axios.get(
-        `http://localhost:5000/api/shop/cart/get/${userId}`
+        `${API_BASE_URL}/api/shop/cart/get/${userId}`
       );
       
       console.log("Cart fetch response:", response.data);
@@ -196,7 +197,7 @@ export const deleteCartItem = createAsyncThunk(
       
       // Then proceed with server-side removal
       const response = await axios.delete(
-        `http://localhost:5000/api/shop/cart/${userId}/${productId}?size=${size || ''}&color=${color || ''}`
+        `${API_BASE_URL}/api/shop/cart/${userId}/${productId}?size=${size || ''}&color=${color || ''}`
       );
       
       console.log("Cart delete response:", response.data);
@@ -229,7 +230,7 @@ export const updateCartQuantity = createAsyncThunk(
     try {
       console.log("Updating cart quantity:", { userId, productId, quantity, size, color });
       const response = await axios.put(
-        "http://localhost:5000/api/shop/cart/update-cart",
+        `${API_BASE_URL}/api/shop/cart/update-cart`,
         {
           userId,
           productId,
@@ -269,7 +270,7 @@ export const clearCart = createAsyncThunk(
       
       // Use the POST endpoint instead of DELETE to avoid URL parameter issues
       const response = await axios.post(
-        `http://localhost:5000/api/shop/cart/clear`,
+        `${API_BASE_URL}/api/shop/cart/clear`,
         { userId }
       );
       console.log("Cart clear response:", response.data);

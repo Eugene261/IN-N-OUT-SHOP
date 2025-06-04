@@ -1,23 +1,20 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { API_BASE_URL } from '@/config/api';
 
-// Helper function to get auth configuration with token
+// Helper function to get auth configuration with better error handling
 const getAuthConfig = () => {
-    // Get the token from localStorage
-    const token = localStorage.getItem('token');
-    
     return {
         withCredentials: true,
         headers: {
-            'Content-Type': 'application/json',
-            'Authorization': token ? `Bearer ${token}` : ''
+            'Content-Type': 'application/json'
         }
     };
 };
 
-// Configure axios with base URL and auth
+// Create axios instance with base URL
 const api = axios.create({
-    baseURL: 'http://localhost:5000'
+    baseURL: API_BASE_URL
 });
 
 // Add request interceptor to include auth token in every request

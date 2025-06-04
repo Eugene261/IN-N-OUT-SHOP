@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { handleApiError } from '../utils/apiErrorHandler';
+import { API_BASE_URL } from '@/config/api';
 
-const API_URL = 'http://localhost:5000/api/payment';
+const API_URL = `${API_BASE_URL}/api/payment`;
 
 // Initialize transaction and get authorization URL
 export const initializePayment = async (data) => {

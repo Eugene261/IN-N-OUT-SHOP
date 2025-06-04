@@ -1,7 +1,7 @@
 import axios from 'axios';
+import { API_BASE_URL } from '@/config/api';
 
-// Define API URL directly in this file
-const API_URL = 'http://localhost:5000';
+const API_URL = API_BASE_URL;
 
 /**
  * Calculate shipping fees for the given cart items and address

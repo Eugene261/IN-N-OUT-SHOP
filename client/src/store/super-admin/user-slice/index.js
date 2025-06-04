@@ -1,9 +1,10 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { API_BASE_URL } from '@/config/api';
 
 // Configure axios with base URL
-const api = axios.create({
-  baseURL: 'http://localhost:5000',
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
   withCredentials: true
 });
 
@@ -12,7 +13,7 @@ export const fetchAllUsers = createAsyncThunk(
   'superAdminUsers/fetchAllUsers',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/api/superAdmin/users/all', {
+      const response = await apiClient.get('/api/superAdmin/users/all', {
         withCredentials: true
       });
       return response.data;
@@ -27,7 +28,7 @@ export const fetchUsersByRole = createAsyncThunk(
   'superAdminUsers/fetchUsersByRole',
   async (role, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/api/superAdmin/users/role/${role}`, {
+      const response = await apiClient.get(`/api/superAdmin/users/role/${role}`, {
         withCredentials: true
       });
       return response.data;
@@ -42,7 +43,7 @@ export const addUser = createAsyncThunk(
   'superAdminUsers/addUser',
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await api.post('/api/superAdmin/users/add', userData, {
+      const response = await apiClient.post('/api/superAdmin/users/add', userData, {
         withCredentials: true
       });
       return response.data;
@@ -57,7 +58,7 @@ export const updateUserRole = createAsyncThunk(
   'superAdminUsers/updateUserRole',
   async ({ userId, role }, { rejectWithValue }) => {
     try {
-      const response = await api.put(`/api/superAdmin/users/update-role/${userId}`, { role }, {
+      const response = await apiClient.put(`/api/superAdmin/users/update-role/${userId}`, { role }, {
         withCredentials: true
       });
       return response.data;
@@ -72,7 +73,7 @@ export const deleteUser = createAsyncThunk(
   'superAdminUsers/deleteUser',
   async (userId, { rejectWithValue }) => {
     try {
-      const response = await api.delete(`/api/superAdmin/users/delete/${userId}`, {
+      const response = await apiClient.delete(`/api/superAdmin/users/delete/${userId}`, {
         withCredentials: true
       });
       return { ...response.data, userId };

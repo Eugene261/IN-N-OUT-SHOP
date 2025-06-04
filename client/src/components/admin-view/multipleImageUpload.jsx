@@ -5,6 +5,7 @@ import { FileIcon, UploadCloudIcon, XIcon, ImageIcon, PlusCircleIcon } from 'luc
 import axios from 'axios';
 import ShoppingLoader from '../common/ShoppingLoader';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_BASE_URL } from '@/config/api';
 
 function MultipleImageUpload({
   mainImageFile,
@@ -91,7 +92,7 @@ function MultipleImageUpload({
     const data = new FormData();
     data.append('my_file', file);
     try {
-      const response = await axios.post('http://localhost:5000/api/admin/products/upload-image', data);
+      const response = await axios.post(`${API_BASE_URL}/api/admin/products/upload-image`, data);
       
       if (response.data?.success) {
         return response.data.result.url;

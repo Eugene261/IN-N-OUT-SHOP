@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { API_BASE_URL } from '@/config/api';
 
 // Helper function to get auth configuration
 const getAuthConfig = (isFormData = false) => {
@@ -26,14 +27,14 @@ export const fetchFeaturedCollections = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(
-        'http://localhost:5000/api/superAdmin/featured-collections',
-        getAuthConfig()
+        `${API_BASE_URL}/api/superAdmin/featured-collections`,
+        {
+          withCredentials: true,
+        }
       );
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || 'Failed to fetch featured collections'
-      );
+      return rejectWithValue(error.response?.data || 'Failed to fetch collections');
     }
   }
 );
@@ -43,19 +44,19 @@ export const createFeaturedCollection = createAsyncThunk(
   'featuredCollections/create',
   async (collectionData, { rejectWithValue }) => {
     try {
-      // Check if collectionData is FormData
-      const isFormData = collectionData instanceof FormData;
-      
       const response = await axios.post(
-        'http://localhost:5000/api/superAdmin/featured-collections',
+        `${API_BASE_URL}/api/superAdmin/featured-collections`,
         collectionData,
-        getAuthConfig(isFormData)
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
       );
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || 'Failed to create featured collection'
-      );
+      return rejectWithValue(error.response?.data || 'Failed to create collection');
     }
   }
 );
@@ -63,21 +64,21 @@ export const createFeaturedCollection = createAsyncThunk(
 // Update a featured collection
 export const updateFeaturedCollection = createAsyncThunk(
   'featuredCollections/update',
-  async ({ id, data }, { rejectWithValue }) => {
+  async ({ id, collectionData }, { rejectWithValue }) => {
     try {
-      // Check if data is FormData
-      const isFormData = data instanceof FormData;
-      
       const response = await axios.put(
-        `http://localhost:5000/api/superAdmin/featured-collections/${id}`,
-        data,
-        getAuthConfig(isFormData)
+        `${API_BASE_URL}/api/superAdmin/featured-collections/${id}`,
+        collectionData,
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
       );
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || 'Failed to update featured collection'
-      );
+      return rejectWithValue(error.response?.data || 'Failed to update collection');
     }
   }
 );
@@ -88,33 +89,36 @@ export const deleteFeaturedCollection = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const response = await axios.delete(
-        `http://localhost:5000/api/superAdmin/featured-collections/${id}`,
-        getAuthConfig()
+        `${API_BASE_URL}/api/superAdmin/featured-collections/${id}`,
+        {
+          withCredentials: true,
+        }
       );
       return { id, ...response.data };
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || 'Failed to delete featured collection'
-      );
+      return rejectWithValue(error.response?.data || 'Failed to delete collection');
     }
   }
 );
 
-// Update positions of featured collections
+// Update collection positions
 export const updateCollectionPositions = createAsyncThunk(
   'featuredCollections/updatePositions',
-  async (positions, { rejectWithValue }) => {
+  async (collections, { rejectWithValue }) => {
     try {
       const response = await axios.put(
-        'http://localhost:5000/api/superAdmin/featured-collections/positions/update',
-        { positions },
-        getAuthConfig()
+        `${API_BASE_URL}/api/superAdmin/featured-collections/positions/update`,
+        { collections },
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
       );
-      return { positions, ...response.data };
+      return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || 'Failed to update collection positions'
-      );
+      return rejectWithValue(error.response?.data || 'Failed to update positions');
     }
   }
 );

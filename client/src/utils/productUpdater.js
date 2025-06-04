@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { API_BASE_URL } from '@/config/api';
 
 /**
  * Utility function to update a product and ensure the UI reflects the changes
@@ -26,7 +27,7 @@ export const updateProduct = async (
   try {
     // Step 1: Update the product on the server
     const updateResponse = await axios.put(
-      `http://localhost:5000/api/admin/products/edit/${productId}`,
+      `${API_BASE_URL}/api/admin/products/edit/${productId}`,
       formData,
       {
         headers: {
@@ -46,7 +47,7 @@ export const updateProduct = async (
 
     // Step 2: Fetch fresh data from the server to ensure consistency
     const freshDataResponse = await axios.get(
-      'http://localhost:5000/api/admin/products/get',
+      `${API_BASE_URL}/api/admin/products/get`,
       {
         headers: {
           'Content-Type': 'application/json'

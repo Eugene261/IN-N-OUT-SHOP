@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit"
 import axios from "axios"
+import { API_BASE_URL } from "@/config/api"
 
 const initialState = {
     isLoading: false,
@@ -21,7 +22,7 @@ const getAuthConfig = () => {
 export const addNewProduct = createAsyncThunk('/products/addNewProduct', async (formData, { rejectWithValue }) => {
     try {
         const response = await axios.post(
-            'http://localhost:5000/api/admin/products/add', 
+            `${API_BASE_URL}/api/admin/products/add`, 
             formData, 
             getAuthConfig()
         );
@@ -35,7 +36,7 @@ export const fetchAllProducts = createAsyncThunk('/products/fetchAllProducts', a
     try {
         console.log('Fetching admin products with auth config:', getAuthConfig());
         const response = await axios.get(
-            'http://localhost:5000/api/admin/products/get',
+            `${API_BASE_URL}/api/admin/products/get`,
             getAuthConfig()
         );
         console.log('Admin products API response:', response?.data);
@@ -52,7 +53,7 @@ export const EditProduct = createAsyncThunk('/products/editProduct', async ({id,
         console.log('Form data being sent to server:', formData);
         
         const response = await axios.put(
-            `http://localhost:5000/api/admin/products/edit/${id}`, 
+            `${API_BASE_URL}/api/admin/products/edit/${id}`, 
             formData, 
             getAuthConfig()
         );
@@ -68,7 +69,7 @@ export const EditProduct = createAsyncThunk('/products/editProduct', async ({id,
 export const DeleteProduct = createAsyncThunk('/products/deleteProduct', async ({id}, { rejectWithValue }) => {
     try {
         const response = await axios.delete(
-            `http://localhost:5000/api/admin/products/delete/${id}`,
+            `${API_BASE_URL}/api/admin/products/delete/${id}`,
             getAuthConfig()
         );
         return response?.data;

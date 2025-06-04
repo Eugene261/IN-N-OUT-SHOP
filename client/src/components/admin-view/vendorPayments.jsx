@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 import { toast } from 'sonner';
+import { API_BASE_URL } from '@/config/api';
 
 // Animation variants
 const containerVariants = {
@@ -565,7 +566,7 @@ const VendorPayments = () => {
                     <p className="text-purple-700">{paymentDetails.receiptName || 'Receipt file'}</p>
                   </div>
                   <motion.a
-                    href={`http://localhost:5000${paymentDetails.receiptUrl}`}
+                    href={`${API_BASE_URL}${paymentDetails.receiptUrl}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"

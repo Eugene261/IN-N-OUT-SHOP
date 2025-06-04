@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { Eye, EyeOff, Lock, Shield, Check, X } from 'lucide-react';
+import { API_BASE_URL } from '@/config/api';
 
 function PasswordChange() {
   const { toast } = useToast();
@@ -80,7 +81,7 @@ function PasswordChange() {
     try {
       console.log('Attempting to change password...');
       
-      const response = await fetch('http://localhost:5000/api/users/change-password', {
+      const response = await fetch(`${API_BASE_URL}/api/users/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

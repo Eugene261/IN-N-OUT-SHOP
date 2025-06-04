@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import { useDispatch, useSelector } from 'react-redux'
 import { clearCart, clearCartState, fetchCartItems } from '@/store/shop/cart-slice/index.js'
 import axios from 'axios'
+import { API_BASE_URL } from '@/config/api'
 
 function OrderConfirmationPage() {
   const navigate = useNavigate()
@@ -149,7 +150,7 @@ function OrderConfirmationPage() {
                   reference: reference
                 });
                 
-                axios.post('http://localhost:5000/api/shop/order/create-after-payment', {
+                axios.post(`${API_BASE_URL}/api/shop/order/create-after-payment`, {
                   orderData: formattedOrderData,
                   reference: reference,
                   tempOrderId: tempOrderId || paystackResponse.data?.metadata?.tempOrderId
@@ -181,13 +182,13 @@ function OrderConfirmationPage() {
                   
                   // After a delay, verify the cart is truly empty
                   setTimeout(() => {
-                    axios.get(`http://localhost:5000/api/shop/cart/get/${user.id}`)
+                    axios.get(`${API_BASE_URL}/api/shop/cart/get/${user.id}`)
                       .then(cartResponse => {
                         console.log('Final cart verification:', cartResponse.data);
                         if (cartResponse.data?.data?.items?.length > 0) {
                           // If somehow items still exist, delete the cart directly
                           console.log('Items still found in cart, making final clear attempt');
-                          axios.delete(`http://localhost:5000/api/shop/cart/clear/${user.id}`);
+                          axios.delete(`${API_BASE_URL}/api/shop/cart/clear/${user.id}`);
                         }
                       })
                       .catch(err => console.error('Error in final cart verification:', err));
@@ -203,7 +204,7 @@ function OrderConfirmationPage() {
                     toast.info('Retrying order creation...');
                     
                     // Use the formatted data for retry as well
-                    axios.post('http://localhost:5000/api/shop/order/create-after-payment', {
+                    axios.post(`${API_BASE_URL}/api/shop/order/create-after-payment`, {
                       orderData: formattedOrderData, // Use the formatted data instead of raw data
                       reference: reference,
                       tempOrderId: tempOrderId || paystackResponse.data?.metadata?.tempOrderId
@@ -241,7 +242,7 @@ function OrderConfirmationPage() {
                   dispatch(clearCartState());
                   
                   // As a fallback, try to clear the cart directly
-                  axios.delete(`http://localhost:5000/api/shop/cart/clear/${user.id}`)
+                  axios.delete(`${API_BASE_URL}/api/shop/cart/clear/${user.id}`)
                     .catch(err => console.error('Error in fallback cart clearing:', err));
                 });
               } catch (error) {

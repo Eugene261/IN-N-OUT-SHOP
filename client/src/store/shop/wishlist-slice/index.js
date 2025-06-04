@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import { API_BASE_URL } from "@/config/api";
 
 const initialState = {
   wishlistItems: [],
@@ -19,35 +20,38 @@ export const addToWishlist = createAsyncThunk(
     
     try {
       console.log("Adding to wishlist:", { userId, productId });
-      // Make sure we're using the correct API endpoint format
-      const response = await axios.post(
-        "http://localhost:5000/api/shop/wishlist/add",
-        {
-          userId,
-          productId
-        }
-      );
-      console.log("Wishlist add response:", response.data);
+      // Optimistic update - add to local wishlist first
+      const wishlistItem = {
+        userId,
+        productId,
+        product: { _id: productId }  // Add minimal product structure
+      };
       
-      // Fetch the updated wishlist after adding an item
+      // Update local wishlist state first
+      dispatch(addToLocalWishlist(wishlistItem));
+      
       try {
-        const updatedWishlist = await axios.get(
-          `http://localhost:5000/api/shop/wishlist/${userId}`
+        // Then sync with server
+        const response = await axios.post(
+          `${API_BASE_URL}/api/shop/wishlist/add`,
+          { userId, productId }
         );
-        console.log("Updated wishlist after add:", updatedWishlist.data);
-        
-        // Return the updated wishlist data
-        if (updatedWishlist.data && updatedWishlist.data.data) {
-          return updatedWishlist.data;
-        } else if (Array.isArray(updatedWishlist.data)) {
-          return { data: updatedWishlist.data };
+
+        if (response.data.success) {
+          // Server add successful, optionally refetch to ensure data consistency
+          const wishlistResponse = await axios.get(
+            `${API_BASE_URL}/api/shop/wishlist/${userId}`
+          );
+          return wishlistResponse.data;
         } else {
-          return response.data; // Fallback to original response
+          // If server fails, revert optimistic update
+          dispatch(removeFromLocalWishlist({ userId, productId }));
+          return rejectWithValue(response.data.message || 'Failed to add to wishlist');
         }
-      } catch (fetchError) {
-        console.error("Error fetching updated wishlist after add:", fetchError);
-        // If we can't fetch the updated list, return the original response
-        return response.data;
+      } catch (error) {
+        // If server fails, revert optimistic update
+        dispatch(removeFromLocalWishlist({ userId, productId }));
+        return rejectWithValue(error.response?.data?.message || 'Network error');
       }
     } catch (error) {
       console.error("Error adding to wishlist:", error);
@@ -75,35 +79,27 @@ export const removeFromWishlist = createAsyncThunk(
     
     try {
       console.log("Removing from wishlist:", { userId, productId });
-      // Make sure we're using the correct API endpoint format
+      // Optimistic update - remove from local wishlist first
+      dispatch(removeFromLocalWishlist({ userId, productId }));
+      
+      // Then sync with server
       const response = await axios.delete(
-        `http://localhost:5000/api/shop/wishlist/remove/${userId}/${productId}`
+        `${API_BASE_URL}/api/shop/wishlist/remove/${userId}/${productId}`
       );
       console.log("Wishlist remove response:", response.data);
       
       // Fetch the updated wishlist after removing an item
-      try {
-        const updatedWishlist = await axios.get(
-          `http://localhost:5000/api/shop/wishlist/${userId}`
-        );
-        console.log("Updated wishlist after remove:", updatedWishlist.data);
-        
-        // Return the updated wishlist data
-        if (updatedWishlist.data && updatedWishlist.data.data) {
-          return updatedWishlist.data;
-        } else if (Array.isArray(updatedWishlist.data)) {
-          return { data: updatedWishlist.data };
-        } else {
-          return { data: [] }; // Return empty array as fallback
-        }
-      } catch (fetchError) {
-        console.error("Error fetching updated wishlist after remove:", fetchError);
-        // If we can't fetch the updated list, return empty array to be safe
-        return { data: [] };
-      }
+      const wishlistResponse = await axios.get(
+        `${API_BASE_URL}/api/shop/wishlist/${userId}`
+      );
+      console.log("Updated wishlist after remove:", wishlistResponse.data);
+      
+      return wishlistResponse.data;
     } catch (error) {
       console.error("Error removing from wishlist:", error);
       console.error("Error response data:", error.response?.data);
+      // If server fails, revert optimistic update
+      dispatch(addToLocalWishlist({ userId, productId }));
       // Return empty array on error to prevent UI crashes
       return { data: [] };
     }
@@ -120,9 +116,8 @@ export const fetchWishlistItems = createAsyncThunk(
     }
     try {
       console.log("Fetching wishlist for user:", userId);
-      // Use the correct API endpoint format that the backend expects
       const response = await axios.get(
-        `http://localhost:5000/api/shop/wishlist/${userId}`
+        `${API_BASE_URL}/api/shop/wishlist/${userId}`
       );
       console.log("Wishlist fetch response:", response.data);
       
