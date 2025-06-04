@@ -1,8 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
-import { API_BASE_URL } from '@/config/api';
+import { apiClient } from '@/config/api';
 
-const BASE_URL = `${API_BASE_URL}/api/superAdmin/vendor-payments`;
+const BASE_URL = '/api/superAdmin/vendor-payments';
 
 // Get all vendor payments
 export const fetchVendorPayments = createAsyncThunk(
@@ -18,9 +17,7 @@ export const fetchVendorPayments = createAsyncThunk(
       if (startDate) url += `&startDate=${startDate}`;
       if (endDate) url += `&endDate=${endDate}`;
       
-      const { data } = await axios.get(url, {
-        withCredentials: true
-      });
+      const { data } = await apiClient.get(url);
       
       return data;
     } catch (error) {
@@ -42,9 +39,7 @@ export const fetchVendorPaymentSummary = createAsyncThunk(
         url += `?startDate=${startDate}&endDate=${endDate}`;
       }
       
-      const { data } = await axios.get(url, {
-        withCredentials: true
-      });
+      const { data } = await apiClient.get(url);
       
       return data;
     } catch (error) {
@@ -58,9 +53,7 @@ export const fetchVendorPaymentDetails = createAsyncThunk(
   'superAdminVendorPayments/fetchVendorPaymentDetails',
   async (paymentId, { rejectWithValue }) => {
     try {
-      const { data } = await axios.get(`${BASE_URL}/${paymentId}`, {
-        withCredentials: true
-      });
+      const { data } = await apiClient.get(`${BASE_URL}/${paymentId}`);
       
       return data;
     } catch (error) {
@@ -74,9 +67,7 @@ export const createVendorPayment = createAsyncThunk(
   'superAdminVendorPayments/createVendorPayment',
   async (paymentData, { rejectWithValue }) => {
     try {
-      const { data } = await axios.post(BASE_URL, paymentData, {
-        withCredentials: true
-      });
+      const { data } = await apiClient.post(BASE_URL, paymentData);
       
       return data;
     } catch (error) {
@@ -90,9 +81,7 @@ export const updatePaymentStatus = createAsyncThunk(
   'superAdminVendorPayments/updatePaymentStatus',
   async ({ paymentId, status }, { rejectWithValue }) => {
     try {
-      const { data } = await axios.patch(`${BASE_URL}/${paymentId}/status`, { status }, {
-        withCredentials: true
-      });
+      const { data } = await apiClient.patch(`${BASE_URL}/${paymentId}/status`, { status });
       
       return data;
     } catch (error) {

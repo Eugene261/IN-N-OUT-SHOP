@@ -1,21 +1,12 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
-import { API_BASE_URL } from '@/config/api';
-
-// Configure axios with base URL
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true
-});
+import { apiClient } from '@/config/api';
 
 // Get all products
 export const fetchAllProducts = createAsyncThunk(
   'superAdminProducts/fetchAllProducts',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/api/superAdmin/products/all', {
-        withCredentials: true
-      });
+      const response = await apiClient.get('/api/superAdmin/products/all');
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch products');
@@ -28,9 +19,7 @@ export const fetchProductsByAdmin = createAsyncThunk(
   'superAdminProducts/fetchProductsByAdmin',
   async (adminId, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/api/superAdmin/products/admin/${adminId}`, {
-        withCredentials: true
-      });
+      const response = await apiClient.get(`/api/superAdmin/products/admin/${adminId}`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch products by admin');
@@ -43,9 +32,7 @@ export const fetchProductStats = createAsyncThunk(
   'superAdminProducts/fetchProductStats',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/api/superAdmin/products/stats', {
-        withCredentials: true
-      });
+      const response = await apiClient.get('/api/superAdmin/products/stats');
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch product statistics');
@@ -58,9 +45,7 @@ export const fetchFeaturedProducts = createAsyncThunk(
   'superAdminProducts/fetchFeaturedProducts',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/api/superAdmin/products/featured', {
-        withCredentials: true
-      });
+      const response = await apiClient.get('/api/superAdmin/products/featured');
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch featured products');

@@ -1,21 +1,12 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
-import { API_BASE_URL } from '@/config/api';
-
-// Configure axios with base URL
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true
-});
+import { apiClient } from '@/config/api';
 
 // Fetch admin profile
 export const fetchAdminProfile = createAsyncThunk(
   'superAdminProfile/fetchAdminProfile',
   async (adminId, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/api/superAdmin/users/profile/${adminId}`, {
-        withCredentials: true
-      });
+      const response = await apiClient.get(`/api/superAdmin/users/profile/${adminId}`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch admin profile');

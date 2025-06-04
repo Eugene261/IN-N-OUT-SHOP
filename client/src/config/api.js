@@ -24,26 +24,40 @@ apiClient.interceptors.request.use(
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('🔐 API Request: Adding Bearer token to', config.url);
+    } else {
+      console.warn('⚠️ API Request: No token found for', config.url);
     }
     return config;
   },
   (error) => {
+    console.error('❌ API Request Error:', error);
     return Promise.reject(error);
   }
 );
 
 // Add response interceptor for better error handling and token refresh
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('✅ API Response Success:', response.config.url, response.status);
+    return response;
+  },
   (error) => {
+    const url = error.config?.url;
+    const status = error.response?.status;
+    
+    console.error('❌ API Response Error:', url, status, error.response?.data);
+    
     if (error.code === 'ECONNABORTED') {
-      console.error('Request timeout - server may be slow');
-    } else if (error.response?.status === 404) {
-      console.error('API endpoint not found:', error.config?.url);
-    } else if (error.response?.status === 401) {
+      console.error('⏱️ Request timeout - server may be slow');
+    } else if (status === 404) {
+      console.error('🔍 API endpoint not found:', url);
+    } else if (status === 401) {
+      console.error('🚫 Unauthorized - clearing auth data');
       // Handle token expiration
       const isTokenExpired = error.response?.data?.tokenExpired;
       if (isTokenExpired) {
+        console.log('🕒 Token expired - redirecting to login');
         // Clear auth data and redirect to login
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -53,9 +67,19 @@ apiClient.interceptors.response.use(
         if (window.location.pathname !== '/auth/login') {
           window.location.href = '/auth/login';
         }
+      } else {
+        console.log('🔑 Invalid token - redirecting to login');
+        // Also clear for other 401 errors
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        
+        if (window.location.pathname !== '/auth/login') {
+          window.location.href = '/auth/login';
+        }
       }
-    } else if (error.response?.status >= 500) {
-      console.error('Server error:', error.response?.status);
+    } else if (status >= 500) {
+      console.error('🔥 Server error:', status);
     }
     return Promise.reject(error);
   }

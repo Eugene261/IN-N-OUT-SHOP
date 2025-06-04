@@ -6,7 +6,7 @@ const announcements = [
   "Deliveries fees may vary based on the vender",
   "New arrivals every week - Check back often!",
   "20-day returns on all purchases",
-  "Sign up for our newsletter and get our lattest deals and offers"
+  "Sign up for our newsletter and stay updated"
 ];
 
 const Topbar = () => {

@@ -1,13 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
-import { API_BASE_URL } from '@/config/api';
-
-// Configure axios with base URL and timeout
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true,
-  timeout: 15000 // 15 seconds timeout
-});
+import { apiClient } from '@/config/api';
 
 // Get admin revenue by time period
 export const fetchAdminRevenueByTime = createAsyncThunk(
@@ -16,24 +8,7 @@ export const fetchAdminRevenueByTime = createAsyncThunk(
     try {
       console.log(`fetchAdminRevenueByTime: Starting request for period: ${period}`);
       
-      // Get token from localStorage
-      const token = localStorage.getItem('token');
-      console.log(`fetchAdminRevenueByTime: Token exists: ${!!token}`);
-      
-      const config = {
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      };
-      
-      // Add authorization header if token exists
-      if (token) {
-        config.headers['Authorization'] = `Bearer ${token}`;
-        console.log(`fetchAdminRevenueByTime: Added Authorization header for period: ${period}`);
-      }
-      
-      const response = await api.get(`/api/superAdmin/revenue/by-time?period=${period}`, config);
+      const response = await apiClient.get(`/api/superAdmin/revenue/by-time?period=${period}`);
       console.log(`fetchAdminRevenueByTime: Received response for period: ${period}`, response.data);
       return { ...response.data, requestedPeriod: period };
     } catch (error) {

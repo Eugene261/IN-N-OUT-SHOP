@@ -3,6 +3,26 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const path = require('path');
+
+// Environment variable validation
+console.log('=== ENVIRONMENT VALIDATION ===');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('JWT_SECRET configured:', !!process.env.JWT_SECRET);
+console.log('MONGODB_URI configured:', !!process.env.MONGODB_URI);
+console.log('CLIENT_URL:', process.env.CLIENT_URL);
+
+if (!process.env.JWT_SECRET) {
+  console.error('🚨 CRITICAL: JWT_SECRET environment variable is not set!');
+  console.error('This will cause authentication failures. Please set JWT_SECRET in your environment variables.');
+}
+
+if (!process.env.MONGODB_URI) {
+  console.error('🚨 CRITICAL: MONGODB_URI environment variable is not set!');
+  console.error('Database connection will fail. Please set MONGODB_URI in your environment variables.');
+}
+
+console.log('=== END ENVIRONMENT VALIDATION ===');
+
 const connectDB = require('./config/db.js');
 const authRoutes = require('./routes/auth/authRoutes.js');
 const adminProductsRouter = require('./routes/admin/productsRoutes.js');

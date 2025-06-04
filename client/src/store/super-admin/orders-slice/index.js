@@ -1,12 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
-import { API_BASE_URL } from '@/config/api';
-
-// Configure axios with base URL
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true
-});
+import { apiClient } from '@/config/api';
 
 // Cache configuration
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
@@ -24,9 +17,7 @@ export const fetchAllOrders = createAsyncThunk(
         return { orders: state.orders };
       }
 
-      const response = await api.get('/api/superAdmin/orders/all', {
-        withCredentials: true
-      });
+      const response = await apiClient.get('/api/superAdmin/orders/all');
       return { ...response.data, timestamp: now };
     } catch (error) {
       console.error('Error fetching all orders:', error);
@@ -55,9 +46,7 @@ export const fetchOrdersByAdmin = createAsyncThunk(
         return { orders: state.adminOrdersCache[cacheKey].orders };
       }
 
-      const response = await api.get(`/api/superAdmin/orders/admin/${adminId}`, {
-        withCredentials: true
-      });
+      const response = await apiClient.get(`/api/superAdmin/orders/admin/${adminId}`);
       return { ...response.data, adminId, timestamp: now };
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch orders by admin');
@@ -79,9 +68,7 @@ export const fetchOrderStats = createAsyncThunk(
         return { stats: state.orderStats };
       }
 
-      const response = await api.get('/api/superAdmin/orders/stats', {
-        withCredentials: true
-      });
+      const response = await apiClient.get('/api/superAdmin/orders/stats');
       return { ...response.data, timestamp: now };
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch order statistics');
