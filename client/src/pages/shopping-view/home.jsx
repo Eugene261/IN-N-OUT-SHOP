@@ -230,7 +230,7 @@ function ShoppingHome() {
   const slideVariants = {
     enter: (direction) => ({
       x: direction > 0 ? '100%' : '-100%',
-      opacity: 1,
+      opacity: 0,
       scale: 1,
     }),
     center: {
@@ -238,19 +238,19 @@ function ShoppingHome() {
       opacity: 1,
       scale: 1,
       transition: {
-        x: { type: 'spring', stiffness: 400, damping: 40 },
-        opacity: { duration: 0.3 },
-        scale: { duration: 0.3 }
+        x: { type: 'spring', stiffness: 300, damping: 30 },
+        opacity: { duration: 0.4 },
+        scale: { duration: 0.4 }
       }
     },
     exit: (direction) => ({
       x: direction > 0 ? '-100%' : '100%',
-      opacity: 1,
+      opacity: 0,
       scale: 1,
       transition: {
-        x: { type: 'spring', stiffness: 400, damping: 40 },
-        opacity: { duration: 0.3 },
-        scale: { duration: 0.3 }
+        x: { type: 'spring', stiffness: 300, damping: 30 },
+        opacity: { duration: 0.4 },
+        scale: { duration: 0.4 }
       }
     })
   };
@@ -323,7 +323,7 @@ function ShoppingHome() {
               </div>
             </div>
           ) : FeatureImageList && FeatureImageList.length > 0 ? (
-            <AnimatePresence initial={false} custom={direction} mode="wait">
+            <AnimatePresence initial={false} custom={direction} mode="sync">
               <motion.div
                 key={`slide-${currentSlide}-${FeatureImageList[currentSlide]?._id}`}
                 custom={direction}
@@ -331,12 +331,19 @@ function ShoppingHome() {
                 initial="enter"
                 animate="center"
                 exit="exit"
-                className="absolute inset-0 bg-gray-100"
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: `url(${FeatureImageList[currentSlide]?.image})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  filter: 'blur(20px)',
+                  transform: 'scale(1.1)'
+                }}
               >
                 <LazyImage
                   src={FeatureImageList[currentSlide]?.image}
                   alt={`Banner ${currentSlide + 1}`}
-                  className="w-full h-full object-cover object-center"
+                  className="w-full h-full object-cover object-center relative z-10"
                   eager={true}
                   placeholderSrc="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f3f4f6'/%3E%3C/svg%3E"
                 />

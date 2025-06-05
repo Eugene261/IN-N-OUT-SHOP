@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Link, useNavigate } from 'react-router-dom';
 import ShoppingLoader from '@/components/common/ShoppingLoader';
 import ProductOptionsModal from '@/components/shopping-view/productOptionsModal';
+import EnhancedShoppingProductTile from '@/components/shopping-view/enhanced-product-tile';
 
 const WishlistPage = () => {
   const dispatch = useDispatch();
@@ -141,90 +142,51 @@ const WishlistPage = () => {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6"
         >
           {wishlistItems.map((item, index) => {
             // Extract product information based on different possible data structures
             const productId = item.productId || item._id;
-            const image = item.image || item.product?.image;
-            const title = item.title || item.product?.title || `Product ${index + 1}`;
-            const description = item.description || item.product?.description || 'No description available';
+            const product = {
+              _id: productId,
+              title: item.title || item.product?.title || `Product ${index + 1}`,
+              image: item.image || item.product?.image,
+              price: item.price || item.product?.price || 0,
+              salePrice: item.salePrice || item.product?.salePrice || 0,
+              brand: item.brand || item.product?.brand || 'Brand',
+              category: item.category || item.product?.category || 'Category',
+              totalStock: item.totalStock || item.product?.totalStock || 0,
+              description: item.description || item.product?.description || 'No description available'
+            };
             
-            console.log(`Rendering wishlist item ${index}:`, { productId, image, title });
+            console.log(`Rendering wishlist item ${index}:`, { productId, product });
             
             return (
               <motion.div
                 key={productId || index}
                 variants={itemVariants}
-                className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
               >
-                <div className="relative">
-                  {image ? (
-                    <img 
-                      src={image} 
-                      alt={title} 
-                      className="w-full h-64 object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-64 bg-gray-200 flex items-center justify-center">
-                      <p className="text-gray-500">No image available</p>
-                    </div>
-                  )}
-                  <button
-                    onClick={() => handleRemoveFromWishlist(productId)}
-                    className="absolute top-2 right-2 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-colors"
-                    aria-label="Remove from wishlist"
-                  >
-                    <Trash2 className="w-5 h-5 text-red-500" />
-                  </button>
-                </div>
-              
-                <div className="p-4">
-                  <h3 className="font-medium text-gray-900 mb-1 line-clamp-1">
-                    {title}
-                  </h3>
-                  <p className="text-sm text-gray-500 mb-2">
-                    {item.brand || item.product?.brand || 'Brand'}
-                  </p>
-                  
-                  <div className="flex justify-between items-center mb-4">
-                    <p className="font-medium text-gray-900">
-                      GHS {(item.price || item.product?.price || 0).toFixed(2)}
-                    </p>
-                    {(item.salePrice || item.product?.salePrice) > 0 && (
-                      <p className="text-sm text-red-500">
-                        Sale: GHS {(item.salePrice || item.product?.salePrice).toFixed(2)}
-                      </p>
-                    )}
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <motion.button
-                      onClick={() => {
-                        // Format the product data properly for the modal
-                        const formattedProduct = {
-                          _id: item.productId || item._id,
-                          name: item.title || item.product?.title || `Product`,
-                          image: item.image || item.product?.image,
-                          price: item.price || item.product?.price || 0,
-                          brand: item.brand || item.product?.brand || 'Brand',
-                          description: item.description || item.product?.description || 'No description available'
-                        };
-                        
-                        // Open the product options modal with formatted product data
-                        setSelectedProduct(formattedProduct);
-                        setIsOptionsModalOpen(true);
-                      }}
-                      className="flex-1 py-2.5 px-4 bg-black text-white rounded-lg text-sm font-medium 
-                      hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <ShoppingBag className="w-4 h-4" />
-                      Add to Cart
-                    </motion.button>
-                  </div>
-                </div>
+                <EnhancedShoppingProductTile 
+                  product={product}
+                  handleGetProductDetails={handleViewProductDetails}
+                  handleAddToCart={() => {
+                    // Format the product data properly for the modal
+                    const formattedProduct = {
+                      _id: productId,
+                      name: product.title,
+                      image: product.image,
+                      price: product.price,
+                      brand: product.brand,
+                      description: product.description
+                    };
+                    
+                    // Open the product options modal with formatted product data
+                    setSelectedProduct(formattedProduct);
+                    setIsOptionsModalOpen(true);
+                  }}
+                  handleAddToWishlist={() => handleRemoveFromWishlist(productId)}
+                  isInWishlist={true}
+                />
               </motion.div>
             );
           })}

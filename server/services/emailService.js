@@ -95,10 +95,29 @@ class EmailService {
     }
 
     const defaultOptions = {
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      from: `"IN-N-OUT Store" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+      replyTo: process.env.REPLY_TO_EMAIL || process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      headers: {
+        'X-Mailer': 'IN-N-OUT Store v1.0',
+        'X-Priority': '3',
+        'X-MSMail-Priority': 'Normal',
+        'Importance': 'Normal',
+        'List-Unsubscribe': `<${process.env.CLIENT_URL}/unsubscribe>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        'Return-Path': process.env.EMAIL_FROM || process.env.EMAIL_USER,
+        'Message-ID': `<${Date.now()}.${Math.random().toString(36).substr(2, 9)}@${process.env.EMAIL_DOMAIN || 'innoutstore.com'}>`,
+        'MIME-Version': '1.0',
+        'Content-Type': 'text/html; charset=UTF-8',
+        'Content-Transfer-Encoding': '8bit'
+      }
     };
 
     const mailOptions = { ...defaultOptions, ...options };
+
+    // Add text version for better deliverability
+    if (mailOptions.html && !mailOptions.text) {
+      mailOptions.text = this.htmlToText(mailOptions.html);
+    }
 
     try {
       const info = await this.transporter.sendMail(mailOptions);
@@ -110,80 +129,414 @@ class EmailService {
     }
   }
 
-  // Modern email template generator
+  // Convert HTML to plain text for better deliverability
+  htmlToText(html) {
+    return html
+      .replace(/<style[^>]*>.*?<\/style>/gis, '')
+      .replace(/<script[^>]*>.*?<\/script>/gis, '')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  // Modern email template generator with improved design and spam prevention
   getModernEmailTemplate({ title, headerColor, icon, content }) {
+    const logoUrl = process.env.LOGO_URL || `${process.env.CLIENT_URL}/favicon.svg`;
+    
     return `
       <!DOCTYPE html>
-      <html>
+      <html lang="en">
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="format-detection" content="telephone=no">
+        <meta name="format-detection" content="date=no">
+        <meta name="format-detection" content="address=no">
+        <meta name="format-detection" content="email=no">
         <title>${title}</title>
+        <!--[if mso]>
+        <noscript>
+          <xml>
+            <o:OfficeDocumentSettings>
+              <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+          </xml>
+        </noscript>
+        <![endif]-->
         <style>
+          /* Reset and base styles */
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: #f8f9fa; }
-          .email-container { max-width: 600px; margin: 0 auto; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-          .header { background: linear-gradient(135deg, ${headerColor}, ${headerColor}dd); color: white; padding: 40px 20px; text-align: center; }
-          .header h1 { font-size: 28px; margin-bottom: 10px; font-weight: 300; }
-          .header .icon { font-size: 48px; margin-bottom: 15px; display: block; }
-          .content { padding: 40px 30px; }
-          .footer { background: #f8f9fa; padding: 30px 20px; text-align: center; color: #666; font-size: 14px; border-top: 1px solid #dee2e6; }
+          body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; 
+            line-height: 1.6; 
+            color: #333333; 
+            background: #f8f9fa; 
+            margin: 0; 
+            padding: 0;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+          }
           
-          .button { display: inline-block; background: ${headerColor}; color: white !important; padding: 15px 30px; text-decoration: none; border-radius: 30px; margin: 15px 10px; font-weight: 600; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-          .button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-          .button.secondary { background: #6c757d; }
+          /* Container styles */
+          .email-container { 
+            max-width: 600px; 
+            margin: 20px auto; 
+            background: #ffffff; 
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid #e9ecef;
+          }
           
-          .order-table { width: 100%; border-collapse: collapse; margin: 25px 0; background: #f8f9fa; border-radius: 8px; overflow: hidden; }
-          .order-table td { padding: 15px; border-bottom: 1px solid #dee2e6; }
-          .order-table td:first-child { font-weight: 600; width: 35%; background: #e9ecef; }
-          .order-table tr:last-child td { border-bottom: none; }
+          /* Header styles */
+          .header { 
+            background: linear-gradient(135deg, ${headerColor} 0%, ${headerColor}dd 100%); 
+            color: #ffffff; 
+            padding: 40px 30px; 
+            text-align: center; 
+            position: relative;
+            overflow: hidden;
+          }
+          .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: shimmer 3s ease-in-out infinite;
+          }
+          @keyframes shimmer {
+            0%, 100% { transform: translateX(-100%) translateY(-100%) rotate(0deg); }
+            50% { transform: translateX(0%) translateY(0%) rotate(180deg); }
+          }
           
-          .status-badge { color: white; padding: 6px 15px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+          .logo-container {
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 2;
+          }
+          .logo {
+            width: 60px;
+            height: 60px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.3);
+          }
+          .logo img {
+            width: 36px;
+            height: 36px;
+            filter: brightness(0) invert(1);
+          }
+          .logo .icon {
+            font-size: 28px;
+            line-height: 1;
+          }
           
-          .item-row { display: flex; align-items: center; margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 12px; border-left: 4px solid ${headerColor}; }
-          .item-image { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; margin-right: 20px; }
-          .item-details h4 { margin-bottom: 8px; color: #495057; font-size: 16px; }
-          .item-total { font-weight: 600; color: ${headerColor}; font-size: 18px; }
+          .header h1 { 
+            font-size: 28px; 
+            margin-bottom: 8px; 
+            font-weight: 600; 
+            position: relative;
+            z-index: 2;
+          }
+          .header .subtitle { 
+            font-size: 16px; 
+            opacity: 0.9; 
+            font-weight: 400;
+            position: relative;
+            z-index: 2;
+          }
           
-          .product-image { width: 120px; height: 120px; object-fit: cover; border-radius: 12px; margin-right: 25px; }
-          .product-preview { display: flex; align-items: center; margin: 25px 0; padding: 20px; background: #f8f9fa; border-radius: 12px; }
-          .product-info h4 { color: ${headerColor}; margin-bottom: 12px; font-size: 18px; }
-          .product-price { font-size: 20px; font-weight: 600; color: #28a745; }
+          /* Content styles */
+          .content { 
+            padding: 40px 30px; 
+            background: #ffffff;
+          }
           
-          .message-box { background: linear-gradient(135deg, #f8f9fa, #e9ecef); padding: 25px; border-radius: 12px; border-left: 4px solid ${headerColor}; margin: 20px 0; }
+          /* Component styles */
+          .notification-header h2 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+          }
+          .notification-header p {
+            color: #5a6c7d;
+            font-size: 16px;
+            margin-bottom: 12px;
+            line-height: 1.5;
+          }
           
-          .earnings { font-size: 20px; font-weight: 700; color: #28a745; }
+          .button { 
+            display: inline-block; 
+            background: ${headerColor}; 
+            color: #ffffff; 
+            padding: 14px 28px; 
+            text-decoration: none; 
+            border-radius: 8px; 
+            font-weight: 600; 
+            font-size: 16px;
+            margin: 8px 4px;
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          }
+          .button:hover {
+            background: ${headerColor}dd;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+          }
+          .button.secondary {
+            background: #6c757d;
+            color: #ffffff;
+          }
+          .button.secondary:hover {
+            background: #5a6268;
+          }
           
-          .notification-header, .contact-header, .order-header { text-align: center; margin-bottom: 35px; }
-          .notification-header h2, .contact-header h2, .order-header h2 { color: ${headerColor}; margin-bottom: 15px; font-size: 24px; font-weight: 300; }
+          .action-buttons {
+            text-align: center;
+            margin: 30px 0;
+          }
           
-          .next-steps ul, .response-info ul { background: linear-gradient(135deg, #f8f9fa, #e9ecef); padding: 25px; border-radius: 12px; margin: 25px 0; }
-          .next-steps li, .response-info li { margin: 12px 0; font-size: 16px; }
+          .message-box {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid ${headerColor};
+          }
           
-          .action-required { background: linear-gradient(135deg, #fff3cd, #ffeaa7); padding: 25px; border-radius: 12px; border-left: 4px solid #ffc107; margin: 25px 0; }
+          .action-required {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #ffc107;
+          }
+          .action-required h3 {
+            color: #856404;
+            margin-bottom: 10px;
+          }
+          .action-required p {
+            color: #856404;
+            margin: 0;
+          }
           
-          .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin: 25px 0; }
-          .stat-card { background: ${headerColor}; color: white; padding: 20px; border-radius: 12px; text-align: center; }
-          .stat-number { font-size: 24px; font-weight: 700; margin-bottom: 5px; }
-          .stat-label { font-size: 14px; opacity: 0.9; }
+          .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin: 24px 0;
+          }
+          .stat-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+          }
+          .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: ${headerColor};
+            margin-bottom: 4px;
+          }
+          .stat-label {
+            font-size: 14px;
+            color: #6c757d;
+            font-weight: 500;
+          }
           
-          @media (max-width: 600px) {
-            .email-container { margin: 0; box-shadow: none; }
-            .content { padding: 25px 20px; }
-            .header { padding: 30px 20px; }
-            .item-row, .product-preview { flex-direction: column; text-align: center; }
-            .item-image, .product-image { margin: 0 0 15px 0; }
-            .button { display: block; margin: 15px 0; text-align: center; }
-            .stats-grid { grid-template-columns: 1fr; }
+          .order-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+          }
+          .order-table td {
+            padding: 12px 8px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: top;
+          }
+          .order-table td:first-child {
+            font-weight: 600;
+            color: #495057;
+            width: 40%;
+          }
+          .order-table td:last-child {
+            color: #212529;
+          }
+          
+          .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          
+          .next-steps ul {
+            list-style: none;
+            padding: 0;
+          }
+          .next-steps li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f3f4;
+            color: #5f6368;
+          }
+          .next-steps li:last-child {
+            border-bottom: none;
+          }
+          
+          .product-preview {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 16px 0;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+          }
+          .product-image {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+          }
+          .product-info h4 {
+            margin: 0 0 8px 0;
+            color: #212529;
+            font-size: 16px;
+            font-weight: 600;
+          }
+          .product-info p {
+            margin: 4px 0;
+            color: #6c757d;
+            font-size: 14px;
+          }
+          .product-price {
+            font-weight: 600;
+            color: ${headerColor} !important;
+            font-size: 16px !important;
+          }
+          
+          /* Footer styles */
+          .footer { 
+            background: #f8f9fa; 
+            padding: 30px 20px; 
+            text-align: center; 
+            color: #6c757d; 
+            font-size: 14px; 
+            border-top: 1px solid #dee2e6; 
+          }
+          .footer strong {
+            color: #495057;
+          }
+          .footer p {
+            margin: 8px 0;
+            line-height: 1.5;
+          }
+          .footer a {
+            color: #6c757d;
+            text-decoration: none;
+            margin: 0 8px;
+          }
+          .footer a:hover {
+            color: ${headerColor};
+            text-decoration: underline;
+          }
+          
+          /* Responsive design */
+          @media only screen and (max-width: 600px) {
+            .email-container {
+              margin: 10px;
+              border-radius: 8px;
+            }
+            .header, .content {
+              padding: 30px 20px;
+            }
+            .header h1 {
+              font-size: 24px;
+            }
+            .button {
+              display: block;
+              margin: 12px 0;
+              text-align: center;
+            }
+            .stats-grid {
+              grid-template-columns: 1fr;
+            }
+            .product-preview {
+              flex-direction: column;
+              text-align: center;
+            }
+          }
+          
+          /* Dark mode support */
+          @media (prefers-color-scheme: dark) {
+            .email-container {
+              background: #1a1a1a;
+              border-color: #333;
+            }
+            .content {
+              background: #1a1a1a;
+              color: #e0e0e0;
+            }
+            .notification-header h2 {
+              color: #ffffff;
+            }
+            .notification-header p {
+              color: #b0b0b0;
+            }
+            .message-box {
+              background: #2a2a2a;
+              border-color: #444;
+              color: #e0e0e0;
+            }
+            .order-table td {
+              border-color: #444;
+              color: #e0e0e0;
+            }
+            .order-table td:first-child {
+              color: #b0b0b0;
+            }
           }
         </style>
       </head>
       <body>
         <div class="email-container">
           <div class="header">
-            <span class="icon">${icon}</span>
+            <div class="logo-container">
+              <div class="logo">
+                ${logoUrl.includes('.svg') || logoUrl.includes('.png') || logoUrl.includes('.jpg') ? 
+                  `<img src="${logoUrl}" alt="IN-N-OUT Store Logo" />` : 
+                  `<span class="icon">${icon}</span>`
+                }
+              </div>
+            </div>
             <h1>${title}</h1>
-            <p>IN-N-OUT Store</p>
+            <p class="subtitle">IN-N-OUT Store - Premium Shopping Experience</p>
           </div>
           <div class="content">
             ${content}
@@ -191,11 +544,15 @@ class EmailService {
           <div class="footer">
             <p><strong>IN-N-OUT Store</strong></p>
             <p>Your gateway to premium products with a seamless shopping experience</p>
-            <p>© 2025 IN-N-OUT Store. All rights reserved.</p>
+            <p>© ${new Date().getFullYear()} IN-N-OUT Store. All rights reserved.</p>
             <p style="margin-top: 20px;">
-              <a href="${process.env.CLIENT_URL}" style="color: #666; text-decoration: none;">Visit Store</a> |
-              <a href="${process.env.CLIENT_URL}/support" style="color: #666; text-decoration: none;">Support</a> |
-              <a href="${process.env.CLIENT_URL}/unsubscribe" style="color: #666; text-decoration: none;">Unsubscribe</a>
+              <a href="${process.env.CLIENT_URL}" style="color: #6c757d; text-decoration: none;">Visit Store</a> |
+              <a href="${process.env.CLIENT_URL}/support" style="color: #6c757d; text-decoration: none;">Support</a> |
+              <a href="${process.env.CLIENT_URL}/unsubscribe" style="color: #6c757d; text-decoration: none;">Unsubscribe</a>
+            </p>
+            <p style="margin-top: 16px; font-size: 12px; color: #868e96;">
+              This email was sent to you because you have an account with IN-N-OUT Store.<br>
+              If you no longer wish to receive these emails, you can <a href="${process.env.CLIENT_URL}/unsubscribe" style="color: #868e96;">unsubscribe here</a>.
             </p>
           </div>
         </div>
