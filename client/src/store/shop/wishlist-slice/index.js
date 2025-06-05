@@ -11,7 +11,7 @@ const initialState = {
 // Add to wishlist
 export const addToWishlist = createAsyncThunk(
   "wishlist/addToWishlist",
-  async ({ userId, productId }, { rejectWithValue }) => {
+  async ({ userId, productId }, { rejectWithValue, getState }) => {
     // Validate inputs before making the API call
     if (!userId || !productId) {
       console.error("Missing required parameters:", { userId, productId });
@@ -20,38 +20,24 @@ export const addToWishlist = createAsyncThunk(
     
     try {
       console.log("Adding to wishlist:", { userId, productId });
-      // Optimistic update - add to local wishlist first
-      const wishlistItem = {
-        userId,
-        productId,
-        product: { _id: productId }  // Add minimal product structure
-      };
       
-      // Update local wishlist state first
-      dispatch(addToLocalWishlist(wishlistItem));
-      
-      try {
-        // Then sync with server
-        const response = await axios.post(
-          `${API_BASE_URL}/api/shop/wishlist/add`,
-          { userId, productId }
-        );
+      // Make the API call to add to wishlist
+      const response = await axios.post(
+        `${API_BASE_URL}/api/shop/wishlist/add`,
+        { userId, productId }
+      );
 
-        if (response.data.success) {
-          // Server add successful, optionally refetch to ensure data consistency
-          const wishlistResponse = await axios.get(
-            `${API_BASE_URL}/api/shop/wishlist/${userId}`
-          );
-          return wishlistResponse.data;
-        } else {
-          // If server fails, revert optimistic update
-          dispatch(removeFromLocalWishlist({ userId, productId }));
-          return rejectWithValue(response.data.message || 'Failed to add to wishlist');
-        }
-      } catch (error) {
-        // If server fails, revert optimistic update
-        dispatch(removeFromLocalWishlist({ userId, productId }));
-        return rejectWithValue(error.response?.data?.message || 'Network error');
+      if (response.data.success) {
+        console.log("Wishlist add response:", response.data);
+        
+        // After successful add, fetch the complete updated wishlist
+        const wishlistResponse = await axios.get(
+          `${API_BASE_URL}/api/shop/wishlist/${userId}`
+        );
+        
+        return wishlistResponse.data;
+      } else {
+        return rejectWithValue(response.data.message || 'Failed to add to wishlist');
       }
     } catch (error) {
       console.error("Error adding to wishlist:", error);
@@ -79,27 +65,17 @@ export const removeFromWishlist = createAsyncThunk(
     
     try {
       console.log("Removing from wishlist:", { userId, productId });
-      // Optimistic update - remove from local wishlist first
-      dispatch(removeFromLocalWishlist({ userId, productId }));
       
-      // Then sync with server
+      // Make the API call to remove from wishlist
       const response = await axios.delete(
         `${API_BASE_URL}/api/shop/wishlist/remove/${userId}/${productId}`
       );
       console.log("Wishlist remove response:", response.data);
       
-      // Fetch the updated wishlist after removing an item
-      const wishlistResponse = await axios.get(
-        `${API_BASE_URL}/api/shop/wishlist/${userId}`
-      );
-      console.log("Updated wishlist after remove:", wishlistResponse.data);
-      
-      return wishlistResponse.data;
+      return response.data;
     } catch (error) {
       console.error("Error removing from wishlist:", error);
       console.error("Error response data:", error.response?.data);
-      // If server fails, revert optimistic update
-      dispatch(addToLocalWishlist({ userId, productId }));
       // Return empty array on error to prevent UI crashes
       return { data: [] };
     }
@@ -144,6 +120,23 @@ const wishlistSlice = createSlice({
   reducers: {
     clearWishlist: (state) => {
       state.wishlistItems = [];
+    },
+    // Add optimistic update reducers for immediate UI feedback
+    addToWishlistOptimistic: (state, action) => {
+      const { productId } = action.payload;
+      // Check if already exists to prevent duplicates
+      const exists = state.wishlistItems.some(item => 
+        item.productId === productId || item.productId?._id === productId
+      );
+      if (!exists) {
+        state.wishlistItems.push({ productId, _id: productId });
+      }
+    },
+    removeFromWishlistOptimistic: (state, action) => {
+      const { productId } = action.payload;
+      state.wishlistItems = state.wishlistItems.filter(item => 
+        item.productId !== productId && item.productId?._id !== productId
+      );
     },
   },
   extraReducers: (builder) => {
@@ -202,5 +195,5 @@ const wishlistSlice = createSlice({
   },
 });
 
-export const { clearWishlist } = wishlistSlice.actions;
+export const { clearWishlist, addToWishlistOptimistic, removeFromWishlistOptimistic } = wishlistSlice.actions;
 export default wishlistSlice.reducer;

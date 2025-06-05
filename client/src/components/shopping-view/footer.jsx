@@ -1,11 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { Facebook, Twitter, Instagram, Phone, Mail, MapPin, ArrowRight, ChevronRight, Heart } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Facebook, Twitter, Instagram, Phone, Mail, MapPin, ArrowRight, ChevronDown, ChevronUp, Heart } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Footer = () => {
   const { scrollYProgress } = useScroll();
   const y = useTransform(scrollYProgress, [0, 1], [0, 50]);
+  const navigate = useNavigate();
+  
+  // State for accordion sections on mobile
+  const [activeAccordion, setActiveAccordion] = useState(null);
+
+  const toggleAccordion = (section) => {
+    setActiveAccordion(activeAccordion === section ? null : section);
+  };
 
   const staggerVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -15,6 +23,40 @@ const Footer = () => {
       transition: { delay: i * 0.1, duration: 0.6 }
     })
   };
+
+  const FooterSection = ({ title, children, sectionKey }) => (
+    <div className="border-b border-gray-200 lg:border-b-0">
+      {/* Mobile Accordion Header */}
+      <button
+        className="flex justify-between items-center w-full py-4 text-left lg:hidden"
+        onClick={() => toggleAccordion(sectionKey)}
+      >
+        <h3 className="text-xl font-bold text-gray-900">
+          {title}
+        </h3>
+        {activeAccordion === sectionKey ? (
+          <ChevronUp className="h-6 w-6 text-gray-600" />
+        ) : (
+          <ChevronDown className="h-6 w-6 text-gray-600" />
+        )}
+      </button>
+      
+      {/* Desktop Header */}
+      <div className="hidden lg:block">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="h-8 w-1 bg-gradient-to-b from-indigo-500 to-purple-500 rounded-full"></div>
+          <h3 className="text-xl font-bold text-gray-900">
+            {title}
+          </h3>
+        </div>
+      </div>
+      
+      {/* Content */}
+      <div className={`lg:block ${activeAccordion === sectionKey ? 'block' : 'hidden'} pb-6 lg:pb-0`}>
+        {children}
+      </div>
+    </div>
+  );
 
   return (
     <motion.footer 
@@ -39,13 +81,7 @@ const Footer = () => {
           }}
         >
           {/* Newsletter section */}
-          <motion.div variants={staggerVariants} custom={1} className="md:pr-6">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="h-8 w-1 bg-gradient-to-b from-indigo-500 to-purple-500 rounded-full"></div>
-              <h3 className="text-xl font-bold text-gray-900">
-                Stay Connected
-              </h3>
-            </div>
+          <FooterSection title="Stay Connected" sectionKey="newsletter">
             <p className="text-gray-600 mb-4 text-sm leading-relaxed">
               Be the first to hear about new products, exclusive events, and online offers.
             </p>
@@ -76,44 +112,48 @@ const Footer = () => {
               </div>
               <p className="text-xs text-gray-500">We respect your privacy. Unsubscribe at any time.</p>
             </form>
-          </motion.div>
+          </FooterSection>
 
           {/* Shop links */}
-          <motion.div variants={staggerVariants} custom={2}>
-            <div className="flex items-center gap-2 mb-6">
-              <div className="h-8 w-1 bg-gradient-to-b from-blue-500 to-cyan-500 rounded-full"></div>
-              <h3 className="text-xl font-bold text-gray-900">
-                Shop
-              </h3>
-            </div>
+          <FooterSection title="Shop" sectionKey="shop">
             <div className="space-y-2.5">
-              {['Men\'s Top Wear', 'Women\'s Top Wear', 'Men\'s Bottom Wear', 'Women\'s Bottom Wear'].map((item, i) => (
+              {[
+                { name: 'All Products', path: '/shop/listing' },
+                { name: 'Men', path: '/shop/listing', category: 'men' },
+                { name: 'Women', path: '/shop/listing', category: 'women' },
+                { name: 'Kids', path: '/shop/listing', category: 'kids' },
+                { name: 'Accessories', path: '/shop/listing', category: 'accessories' },
+                { name: 'Footwear', path: '/shop/listing', category: 'footwear' },
+                { name: 'Devices', path: '/shop/listing', category: 'devices' }
+              ].map((item, i) => (
                 <motion.div
                   key={i}
                   whileHover={{ x: 5 }}
                   transition={{ type: 'spring', stiffness: 300 }}
                 >
-                  <Link 
-                    to="#" 
+                  <button 
+                    onClick={() => {
+                      if (item.category) {
+                        sessionStorage.removeItem('filters');
+                        sessionStorage.setItem('filters', JSON.stringify({
+                          category: [item.category]
+                        }));
+                      }
+                      navigate(item.path);
+                    }}
                     className="text-gray-600 hover:text-indigo-600 transition-colors flex items-center gap-2 text-sm
-                    p-2 hover:bg-indigo-50/50 rounded-lg group"
+                    p-2 hover:bg-indigo-50/50 rounded-lg group w-full text-left"
                   >
-                    <ChevronRight className="h-4 w-4 text-indigo-400 group-hover:text-indigo-500 transition-colors" />
-                    {item}
-                  </Link>
+                    <div className="h-4 w-4 text-indigo-400 group-hover:text-indigo-500 transition-colors">→</div>
+                    {item.name}
+                  </button>
                 </motion.div>
               ))}
             </div>
-          </motion.div>
+          </FooterSection>
 
           {/* Support Links */}
-          <motion.div variants={staggerVariants} custom={3}>
-            <div className="flex items-center gap-2 mb-6">
-              <div className="h-8 w-1 bg-gradient-to-b from-amber-500 to-orange-500 rounded-full"></div>
-              <h3 className="text-xl font-bold text-gray-900">
-                Support
-              </h3>
-            </div>
+          <FooterSection title="Support" sectionKey="support">
             <div className="space-y-2.5">
               {[
                 { name: 'Contact Us', path: '/shop/contact-us' },
@@ -131,22 +171,16 @@ const Footer = () => {
                     className="text-gray-600 hover:text-amber-600 transition-colors flex items-center gap-2 text-sm
                     p-2 hover:bg-amber-50/50 rounded-lg group"
                   >
-                    <ChevronRight className="h-4 w-4 text-amber-400 group-hover:text-amber-500 transition-colors" />
+                    <div className="h-4 w-4 text-amber-400 group-hover:text-amber-500 transition-colors">→</div>
                     {item.name}
                   </Link>
                 </motion.div>
               ))}
             </div>
-          </motion.div>
+          </FooterSection>
 
           {/* Social & Contact */}
-          <motion.div variants={staggerVariants} custom={4}>
-            <div className="flex items-center gap-2 mb-6">
-              <div className="h-8 w-1 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
-              <h3 className="text-xl font-bold text-gray-900">
-                Connect
-              </h3>
-            </div>
+          <FooterSection title="Connect" sectionKey="connect">
             <div className="flex space-x-3 mb-6">
               {[
                 { icon: Facebook, color: "bg-gradient-to-br from-blue-500 to-blue-600" },
@@ -156,19 +190,20 @@ const Footer = () => {
                 <motion.a
                   key={i}
                   href="#"
-                  className={`p-2.5 rounded-full bg-gray-100 hover:text-white transition-all hover:${item.color} shadow-sm`}
+                  className={`p-2.5 rounded-full bg-gray-100 hover:text-white transition-all shadow-sm`}
+                  style={{ backgroundColor: i === 0 ? '#3b82f6' : i === 1 ? '#0ea5e9' : '#ec4899' }}
                   whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <item.icon className="h-5 w-5" />
+                  <item.icon className="h-5 w-5 text-white" />
                 </motion.a>
               ))}
             </div>
             <div className="space-y-3">
               {[
                 { icon: Phone, text: '05-9786-***', color: 'bg-blue-50 border-blue-100 text-blue-600' },
-                { icon: Mail, text: 'support@704labs.com', color: 'bg-purple-50 border-purple-100 text-purple-600' },
-                { icon: MapPin, text: '704 Fashion Street, NY', color: 'bg-amber-50 border-amber-100 text-amber-600' }
+                { icon: Mail, text: 'support@innout.com', color: 'bg-purple-50 border-purple-100 text-purple-600' },
+                { icon: MapPin, text: 'Ghana, Accra', color: 'bg-amber-50 border-amber-100 text-amber-600' }
               ].map((item, i) => (
                 <motion.div 
                   key={i}
@@ -184,7 +219,7 @@ const Footer = () => {
                 </motion.div>
               ))}
             </div>
-          </motion.div>
+          </FooterSection>
         </motion.div>
 
         {/* Divider */}
@@ -204,9 +239,9 @@ const Footer = () => {
             className="mb-4 md:mb-0 text-center md:text-left flex items-center gap-2"
           >
             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-md">
-              704
+              I-O
             </div>
-            <span>© {new Date().getFullYear()} 704-Labs. All rights reserved</span>
+            <span>© {new Date().getFullYear()} IN-N-OUT. All rights reserved</span>
           </motion.div>
           
           <motion.div 

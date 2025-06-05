@@ -16,6 +16,7 @@ import UserCartWraper from './cartWrapper';
 import { fetchCartItems, openCart, closeCart, toggleCart, clearCartState, clearCart } from '@/store/shop/cart-slice';
 import { fetchWishlistItems } from '@/store/shop/wishlist-slice';
 import { Label } from '../ui/label';
+import MobileMenuAccordion from './MobileMenuAccordion';
 
 function MenuItems({ onNavigate }) {
   const navigate = useNavigate();
@@ -435,8 +436,10 @@ function HeaderRightContent() {
 }
 
 function ShoppingHeader() {
-  const { isAuthenticated } = useSelector(state => state.auth);
+  const { isAuthenticated, user } = useSelector(state => state.auth);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   return (
     <motion.header 
@@ -525,18 +528,79 @@ function ShoppingHeader() {
 
         {/* Mobile Navigation Sheet */}
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-          <SheetContent side="left" className="w-80 p-0">
+          <SheetContent side="left" className="w-80 p-0 bg-white">
             <div className="flex flex-col h-full">
               {/* Header */}
-              <div className="p-6 border-b">
+              <div className="p-6 border-b border-gray-200">
                 <Link to='/shop/home' onClick={() => setMobileMenuOpen(false)}>
                   <span className="font-bold text-xl text-gray-900">IN-N-OUT</span>
                 </Link>
               </div>
               
-              {/* Navigation */}
+              {/* User Section - Only show if logged in */}
+              {user && (
+                <div className="p-6 border-b border-gray-200">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center">
+                      <span className="text-white text-sm font-medium">
+                        {user?.firstName && user?.lastName 
+                          ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
+                          : user?.userName?.substring(0, 2).toUpperCase() || 'U'
+                        }
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {user?.firstName || user?.lastName 
+                          ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
+                          : user?.userName || 'User'
+                        }
+                      </p>
+                      <p className="text-sm text-gray-500">{user?.email}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Navigation - Accordion Style */}
               <div className="flex-1 overflow-auto">
-                <MenuItems onNavigate={() => setMobileMenuOpen(false)} />
+                <MobileMenuAccordion 
+                  menuItems={shoppingViewHeaderMenuItems} 
+                  onNavigate={() => setMobileMenuOpen(false)}
+                  navigate={navigate}
+                />
+              </div>
+
+              {/* Bottom Section */}
+              <div className="p-6 border-t border-gray-200">
+                {user ? (
+                  <button
+                    onClick={() => {
+                      dispatch(logoutUser());
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full bg-black text-white py-3 px-4 rounded-md text-sm font-medium hover:bg-gray-800 transition-colors"
+                  >
+                    Sign Out
+                  </button>
+                ) : (
+                  <div className="space-y-3">
+                    <Link
+                      to="/auth/login"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block w-full bg-black text-white py-3 px-4 rounded-md text-sm font-medium text-center hover:bg-gray-800 transition-colors"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      to="/auth/register"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block w-full border border-gray-300 text-gray-900 py-3 px-4 rounded-md text-sm font-medium text-center hover:bg-gray-50 transition-colors"
+                    >
+                      Join Us
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           </SheetContent>
