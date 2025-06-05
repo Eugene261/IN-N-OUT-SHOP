@@ -130,3 +130,14 @@
   background-size: 300% 300%;
   animation: gradient-shift 6s ease infinite;
 }
+
+/* Custom scrollbar hiding utility */
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Safari and Chrome */
+  }
+}

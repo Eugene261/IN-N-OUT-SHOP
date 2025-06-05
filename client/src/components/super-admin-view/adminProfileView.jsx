@@ -167,10 +167,10 @@ const AdminProfileView = () => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="p-6 max-w-7xl mx-auto"
+      className="p-3 sm:p-6 max-w-7xl mx-auto"
     >
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <button
           onClick={() => navigate('/super-admin/users')}
           className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
@@ -179,10 +179,11 @@ const AdminProfileView = () => {
           Back to User Management
         </button>
         
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xl font-bold mr-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between space-y-4 md:space-y-0">
+            {/* Profile Section */}
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xl font-bold sm:mr-4 mx-auto sm:mx-0">
                 {personalInfo.avatar ? (
                   <img 
                     src={personalInfo.avatar} 
@@ -193,15 +194,15 @@ const AdminProfileView = () => {
                   personalInfo.userName?.charAt(0)?.toUpperCase() || 'A'
                 )}
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800">
+              <div className="text-center sm:text-left">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
                   {personalInfo.firstName && personalInfo.lastName 
                     ? `${personalInfo.firstName} ${personalInfo.lastName}`
                     : personalInfo.userName
                   }
                 </h1>
-                <p className="text-gray-600">{personalInfo.email}</p>
-                <div className="flex items-center mt-2 space-x-3">
+                <p className="text-gray-600 text-sm sm:text-base">{personalInfo.email}</p>
+                <div className="flex flex-wrap items-center justify-center sm:justify-start mt-2 gap-2">
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${getRoleColor(personalInfo.role)}`}>
                     {personalInfo.role === 'superAdmin' ? 'Super Admin' : 'Admin'}
                   </span>
@@ -217,90 +218,93 @@ const AdminProfileView = () => {
               </div>
             </div>
             
-            <div className="text-right">
+            {/* Member Info - Stack on mobile */}
+            <div className="text-center md:text-right">
               <p className="text-sm text-gray-500">Member since</p>
-              <p className="font-medium">{formatDate(personalInfo.createdAt)}</p>
+              <p className="font-medium text-sm sm:text-base">{formatDate(personalInfo.createdAt)}</p>
               <p className="text-sm text-gray-500 mt-2">Last login</p>
-              <p className="font-medium">{formatDateTime(personalInfo.lastLogin)}</p>
+              <p className="font-medium text-sm sm:text-base">{formatDateTime(personalInfo.lastLogin)}</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Revenue</p>
-              <p className="text-2xl font-bold text-green-600">
-                {formatCurrency(revenueAnalytics?.allTime?.totalRevenue || 0)}
-              </p>
+      {/* Quick Stats - Responsive Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-4 sm:mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
+          <div className="flex flex-col space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs sm:text-sm text-gray-500">Total Revenue</p>
+              <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-green-500" />
             </div>
-            <DollarSign className="h-8 w-8 text-green-500" />
+            <p className="text-lg sm:text-2xl font-bold text-green-600">
+              {formatCurrency(revenueAnalytics?.allTime?.totalRevenue || 0)}
+            </p>
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Products</p>
-              <p className="text-2xl font-bold text-blue-600">{statistics?.totalProducts || 0}</p>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
+          <div className="flex flex-col space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs sm:text-sm text-gray-500">Total Products</p>
+              <Package className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
             </div>
-            <Package className="h-8 w-8 text-blue-500" />
+            <p className="text-lg sm:text-2xl font-bold text-blue-600">{statistics?.totalProducts || 0}</p>
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Orders</p>
-              <p className="text-2xl font-bold text-purple-600">
-                {revenueAnalytics?.allTime?.totalOrders || 0}
-              </p>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
+          <div className="flex flex-col space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs sm:text-sm text-gray-500">Total Orders</p>
+              <ShoppingCart className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500" />
             </div>
-            <ShoppingCart className="h-8 w-8 text-purple-500" />
+            <p className="text-lg sm:text-2xl font-bold text-purple-600">
+              {revenueAnalytics?.allTime?.totalOrders || 0}
+            </p>
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Account Balance</p>
-              <p className="text-2xl font-bold text-orange-600">
-                {formatCurrency(financialInfo?.balance || 0)}
-              </p>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
+          <div className="flex flex-col space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs sm:text-sm text-gray-500">Account Balance</p>
+              <CreditCard className="h-6 w-6 sm:h-8 sm:w-8 text-orange-500" />
             </div>
-            <CreditCard className="h-8 w-8 text-orange-500" />
+            <p className="text-lg sm:text-2xl font-bold text-orange-600">
+              {formatCurrency(financialInfo?.balance || 0)}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs - Mobile Responsive */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-6">
+          {/* Mobile Tabs - Scrollable */}
+          <nav className="flex overflow-x-auto px-3 sm:px-6 scrollbar-hide">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm ${
+                  className={`flex items-center py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap min-w-max mr-4 sm:mr-8 ${
                     activeTab === tab.id
                       ? 'border-blue-500 text-blue-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  <Icon className="h-4 w-4 mr-2" />
-                  {tab.label}
+                  <Icon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
                 </button>
               );
             })}
           </nav>
         </div>
 
-        <div className="p-6">
+        <div className="p-3 sm:p-6">
           <AnimatePresence mode="wait">
             {/* Overview Tab */}
             {activeTab === 'overview' && (
@@ -309,35 +313,35 @@ const AdminProfileView = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="space-y-6"
+                className="space-y-4 sm:space-y-6"
               >
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                   {/* Personal Information */}
-                  <div className="bg-gray-50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                      <User className="h-5 w-5 mr-2" />
+                  <div className="bg-gray-50 rounded-lg p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center">
+                      <User className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                       Personal Information
                     </h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Username:</span>
-                        <span className="font-medium">{personalInfo.userName}</span>
+                    <div className="space-y-2 sm:space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:justify-between">
+                        <span className="text-gray-600 text-sm">Username:</span>
+                        <span className="font-medium text-sm sm:text-base">{personalInfo.userName}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Email:</span>
-                        <span className="font-medium">{personalInfo.email}</span>
+                      <div className="flex flex-col sm:flex-row sm:justify-between">
+                        <span className="text-gray-600 text-sm">Email:</span>
+                        <span className="font-medium text-sm sm:text-base break-all">{personalInfo.email}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Phone:</span>
-                        <span className="font-medium">{personalInfo.phone || 'Not provided'}</span>
+                      <div className="flex flex-col sm:flex-row sm:justify-between">
+                        <span className="text-gray-600 text-sm">Phone:</span>
+                        <span className="font-medium text-sm sm:text-base">{personalInfo.phone || 'Not provided'}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Date of Birth:</span>
-                        <span className="font-medium">{formatDate(personalInfo.dateOfBirth)}</span>
+                      <div className="flex flex-col sm:flex-row sm:justify-between">
+                        <span className="text-gray-600 text-sm">Date of Birth:</span>
+                        <span className="font-medium text-sm sm:text-base">{formatDate(personalInfo.dateOfBirth)}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Location:</span>
-                        <span className="font-medium">
+                      <div className="flex flex-col sm:flex-row sm:justify-between">
+                        <span className="text-gray-600 text-sm">Location:</span>
+                        <span className="font-medium text-sm sm:text-base">
                           {shopConfig.baseCity && shopConfig.baseRegion 
                             ? `${shopConfig.baseCity}, ${shopConfig.baseRegion}`
                             : 'Not provided'
@@ -348,69 +352,69 @@ const AdminProfileView = () => {
                   </div>
 
                   {/* Account Statistics */}
-                  <div className="bg-gray-50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                      <Activity className="h-5 w-5 mr-2" />
+                  <div className="bg-gray-50 rounded-lg p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center">
+                      <Activity className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                       Account Statistics
                     </h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Account Age:</span>
-                        <span className="font-medium">{statistics?.accountAge || 0} days</span>
+                    <div className="space-y-2 sm:space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:justify-between">
+                        <span className="text-gray-600 text-sm">Account Age:</span>
+                        <span className="font-medium text-sm sm:text-base">{statistics?.accountAge || 0} days</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Last Login:</span>
-                        <span className="font-medium">
+                      <div className="flex flex-col sm:flex-row sm:justify-between">
+                        <span className="text-gray-600 text-sm">Last Login:</span>
+                        <span className="font-medium text-sm sm:text-base">
                           {statistics?.lastLoginDays !== null 
                             ? `${statistics.lastLoginDays} days ago`
                             : 'Never'
                           }
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Active Products:</span>
-                        <span className="font-medium text-green-600">{statistics?.activeProducts || 0}</span>
+                      <div className="flex flex-col sm:flex-row sm:justify-between">
+                        <span className="text-gray-600 text-sm">Active Products:</span>
+                        <span className="font-medium text-green-600 text-sm sm:text-base">{statistics?.activeProducts || 0}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Out of Stock:</span>
-                        <span className="font-medium text-red-600">{statistics?.outOfStockProducts || 0}</span>
+                      <div className="flex flex-col sm:flex-row sm:justify-between">
+                        <span className="text-gray-600 text-sm">Out of Stock:</span>
+                        <span className="font-medium text-red-600 text-sm sm:text-base">{statistics?.outOfStockProducts || 0}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Shipping Zones:</span>
-                        <span className="font-medium">{statistics?.totalShippingZones || 0}</span>
+                      <div className="flex flex-col sm:flex-row sm:justify-between">
+                        <span className="text-gray-600 text-sm">Shipping Zones:</span>
+                        <span className="font-medium text-sm sm:text-base">{statistics?.totalShippingZones || 0}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Avg. Product Price:</span>
-                        <span className="font-medium">{formatCurrency(statistics?.averageProductPrice || 0)}</span>
+                      <div className="flex flex-col sm:flex-row sm:justify-between">
+                        <span className="text-gray-600 text-sm">Avg. Product Price:</span>
+                        <span className="font-medium text-sm sm:text-base">{formatCurrency(statistics?.averageProductPrice || 0)}</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Financial Overview */}
-                <div className="bg-gray-50 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                    <CreditCard className="h-5 w-5 mr-2" />
+                <div className="bg-gray-50 rounded-lg p-4 sm:p-6">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center">
+                    <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                     Financial Overview
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-green-600">
+                      <p className="text-xl sm:text-2xl font-bold text-green-600">
                         {formatCurrency(financialInfo?.totalEarnings || 0)}
                       </p>
-                      <p className="text-sm text-gray-600">Total Earnings</p>
+                      <p className="text-xs sm:text-sm text-gray-600">Total Earnings</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-blue-600">
+                      <p className="text-xl sm:text-2xl font-bold text-blue-600">
                         {formatCurrency(financialInfo?.balance || 0)}
                       </p>
-                      <p className="text-sm text-gray-600">Current Balance</p>
+                      <p className="text-xs sm:text-sm text-gray-600">Current Balance</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-orange-600">
+                      <p className="text-xl sm:text-2xl font-bold text-orange-600">
                         {formatCurrency(financialInfo?.totalEarningsWithdrawn || 0)}
                       </p>
-                      <p className="text-sm text-gray-600">Total Withdrawn</p>
+                      <p className="text-xs sm:text-sm text-gray-600">Total Withdrawn</p>
                     </div>
                   </div>
                 </div>
@@ -424,15 +428,15 @@ const AdminProfileView = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="space-y-6"
+                className="space-y-4 sm:space-y-6"
               >
                 {/* Period Selector */}
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-gray-800">Revenue Analytics</h3>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-2 sm:space-y-0">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-800">Revenue Analytics</h3>
                   <select
                     value={selectedPeriod}
                     onChange={(e) => setSelectedPeriod(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   >
                     {periods.map(period => (
                       <option key={period.id} value={period.id}>
@@ -443,88 +447,88 @@ const AdminProfileView = () => {
                 </div>
 
                 {revenueAnalytics?.[selectedPeriod] ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
+                    <div className="bg-green-50 rounded-lg p-3 sm:p-4 border border-green-200">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-green-600">Total Revenue</p>
-                          <p className="text-xl font-bold text-green-700">
+                          <p className="text-xs sm:text-sm text-green-600">Total Revenue</p>
+                          <p className="text-lg sm:text-xl font-bold text-green-700">
                             {formatCurrency(revenueAnalytics[selectedPeriod].totalRevenue)}
                           </p>
                         </div>
-                        <DollarSign className="h-8 w-8 text-green-500" />
+                        <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-green-500" />
                       </div>
                     </div>
 
-                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <div className="bg-blue-50 rounded-lg p-3 sm:p-4 border border-blue-200">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-blue-600">Net Revenue</p>
-                          <p className="text-xl font-bold text-blue-700">
+                          <p className="text-xs sm:text-sm text-blue-600">Net Revenue</p>
+                          <p className="text-lg sm:text-xl font-bold text-blue-700">
                             {formatCurrency(revenueAnalytics[selectedPeriod].netRevenue)}
                           </p>
                         </div>
-                        <TrendingUp className="h-8 w-8 text-blue-500" />
+                        <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
                       </div>
                     </div>
 
-                    <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                    <div className="bg-purple-50 rounded-lg p-3 sm:p-4 border border-purple-200">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-purple-600">Total Orders</p>
-                          <p className="text-xl font-bold text-purple-700">
+                          <p className="text-xs sm:text-sm text-purple-600">Total Orders</p>
+                          <p className="text-lg sm:text-xl font-bold text-purple-700">
                             {revenueAnalytics[selectedPeriod].totalOrders}
                           </p>
                         </div>
-                        <ShoppingCart className="h-8 w-8 text-purple-500" />
+                        <ShoppingCart className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500" />
                       </div>
                     </div>
 
-                    <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+                    <div className="bg-orange-50 rounded-lg p-3 sm:p-4 border border-orange-200">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-orange-600">Items Sold</p>
-                          <p className="text-xl font-bold text-orange-700">
+                          <p className="text-xs sm:text-sm text-orange-600">Items Sold</p>
+                          <p className="text-lg sm:text-xl font-bold text-orange-700">
                             {revenueAnalytics[selectedPeriod].totalItemsSold}
                           </p>
                         </div>
-                        <Package className="h-8 w-8 text-orange-500" />
+                        <Package className="h-6 w-6 sm:h-8 sm:w-8 text-orange-500" />
                       </div>
                     </div>
 
-                    <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
+                    <div className="bg-indigo-50 rounded-lg p-3 sm:p-4 border border-indigo-200">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-indigo-600">Shipping Fees</p>
-                          <p className="text-xl font-bold text-indigo-700">
+                          <p className="text-xs sm:text-sm text-indigo-600">Shipping Fees</p>
+                          <p className="text-lg sm:text-xl font-bold text-indigo-700">
                             {formatCurrency(revenueAnalytics[selectedPeriod].totalShippingFees)}
                           </p>
                         </div>
-                        <Truck className="h-8 w-8 text-indigo-500" />
+                        <Truck className="h-6 w-6 sm:h-8 sm:w-8 text-indigo-500" />
                       </div>
                     </div>
 
-                    <div className="bg-red-50 rounded-lg p-4 border border-red-200">
+                    <div className="bg-red-50 rounded-lg p-3 sm:p-4 border border-red-200">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-red-600">Platform Fees</p>
-                          <p className="text-xl font-bold text-red-700">
+                          <p className="text-xs sm:text-sm text-red-600">Platform Fees</p>
+                          <p className="text-lg sm:text-xl font-bold text-red-700">
                             {formatCurrency(revenueAnalytics[selectedPeriod].totalPlatformFees)}
                           </p>
                         </div>
-                        <Percent className="h-8 w-8 text-red-500" />
+                        <Percent className="h-6 w-6 sm:h-8 sm:w-8 text-red-500" />
                       </div>
                     </div>
 
-                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-gray-600">Avg. Order Value</p>
-                          <p className="text-xl font-bold text-gray-700">
+                          <p className="text-xs sm:text-sm text-gray-600">Avg. Order Value</p>
+                          <p className="text-lg sm:text-xl font-bold text-gray-700">
                             {formatCurrency(revenueAnalytics[selectedPeriod].averageOrderValue)}
                           </p>
                         </div>
-                        <BarChart3 className="h-8 w-8 text-gray-500" />
+                        <BarChart3 className="h-6 w-6 sm:h-8 sm:w-8 text-gray-500" />
                       </div>
                     </div>
                   </div>
@@ -544,34 +548,34 @@ const AdminProfileView = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="space-y-6"
+                className="space-y-4 sm:space-y-6"
               >
                 <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-gray-800">Products ({products?.length || 0})</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-800">Products ({products?.length || 0})</h3>
                 </div>
 
                 {products && products.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                     {products.map((product) => (
-                      <div key={product._id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div key={product._id} className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow">
                         <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-gray-800 truncate">{product.title}</h4>
-                            <p className="text-sm text-gray-500">{product.category} • {product.brand}</p>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-gray-800 truncate text-sm sm:text-base">{product.title}</h4>
+                            <p className="text-xs sm:text-sm text-gray-500">{product.category} • {product.brand}</p>
                           </div>
                           {product.images && product.images.length > 0 && (
                             <img 
                               src={product.images[0]} 
                               alt={product.title}
-                              className="w-12 h-12 object-cover rounded-md ml-3"
+                              className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded-md ml-3 flex-shrink-0"
                             />
                           )}
                         </div>
                         
                         <div className="space-y-2">
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Price:</span>
-                            <span className="font-medium">
+                          <div className="flex flex-col sm:flex-row sm:justify-between">
+                            <span className="text-xs sm:text-sm text-gray-600">Price:</span>
+                            <span className="font-medium text-sm">
                               {product.salePrice ? (
                                 <>
                                   <span className="text-green-600">{formatCurrency(product.salePrice)}</span>
@@ -584,15 +588,15 @@ const AdminProfileView = () => {
                               )}
                             </span>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Stock:</span>
-                            <span className={`font-medium ${product.totalStock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <div className="flex flex-col sm:flex-row sm:justify-between">
+                            <span className="text-xs sm:text-sm text-gray-600">Stock:</span>
+                            <span className={`font-medium text-sm ${product.totalStock > 0 ? 'text-green-600' : 'text-red-600'}`}>
                               {product.totalStock}
                             </span>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Created:</span>
-                            <span className="text-sm">{formatDate(product.createdAt)}</span>
+                          <div className="flex flex-col sm:flex-row sm:justify-between">
+                            <span className="text-xs sm:text-sm text-gray-600">Created:</span>
+                            <span className="text-xs sm:text-sm">{formatDate(product.createdAt)}</span>
                           </div>
                         </div>
                       </div>
@@ -614,10 +618,10 @@ const AdminProfileView = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="space-y-6"
+                className="space-y-4 sm:space-y-6"
               >
                 <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-gray-800">Recent Orders ({recentOrders?.length || 0})</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-800">Recent Orders ({recentOrders?.length || 0})</h3>
                 </div>
 
                 {recentOrders && recentOrders.length > 0 ? (
@@ -698,14 +702,14 @@ const AdminProfileView = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="space-y-6"
+                className="space-y-4 sm:space-y-6"
               >
                 <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-gray-800">Shipping Configuration</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-800">Shipping Configuration</h3>
                 </div>
 
                 {/* Shipping Preferences */}
-                <div className="bg-gray-50 rounded-lg p-6">
+                <div className="bg-gray-50 rounded-lg p-4 sm:p-6">
                   <h4 className="font-medium text-gray-800 mb-4">Shipping Preferences</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="flex justify-between">
@@ -799,10 +803,10 @@ const AdminProfileView = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="space-y-6"
+                className="space-y-4 sm:space-y-6"
               >
                 <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-gray-800">Shop Details</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-800">Shop Details</h3>
                 </div>
 
                 {shopConfig.shopName ? (

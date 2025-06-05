@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { useDispatch, useSelector } from 'react-redux';
-import { updateUserProfile, fetchUserProfile } from '@/store/auth-slice';
+import { updateUserProfile, fetchAdminProfile } from '@/store/auth-slice';
 import { User, Camera, Mail, Phone, Calendar, MapPin, Building, Crown, Shield, Save, RotateCcw } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -58,7 +58,7 @@ function AdminProfileInformation() {
     // Only fetch if we don't have user data or if essential fields are missing
     if (!user || !user.firstName || !user.email) {
       console.log('User data missing, fetching profile...');
-      dispatch(fetchUserProfile());
+      dispatch(fetchAdminProfile());
     } else {
       console.log('User data already available, skipping profile fetch');
     }
@@ -116,7 +116,7 @@ function AdminProfileInformation() {
             variant: 'default'
           });
           // Refresh user profile to get updated avatar
-          dispatch(fetchUserProfile());
+          dispatch(fetchAdminProfile());
         } else {
           throw new Error('Failed to update profile picture');
         }
@@ -181,7 +181,7 @@ function AdminProfileInformation() {
         
         // Refresh user profile from backend to ensure we have the latest data
         console.log('Fetching updated profile from backend...');
-        const profileResult = await dispatch(fetchUserProfile());
+        const profileResult = await dispatch(fetchAdminProfile());
         console.log('Profile fetch result after save:', profileResult);
         
         if (profileResult.type.endsWith('/fulfilled')) {

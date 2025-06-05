@@ -107,8 +107,12 @@ const vendorPaymentSlice = createSlice({
       })
       .addCase(fetchPaymentHistory.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.paymentHistory = action.payload.payments;
-        state.pagination = action.payload.pagination;
+        state.paymentHistory = action.payload.data || [];
+        state.pagination = {
+          totalPages: action.payload.totalPages || 0,
+          currentPage: action.payload.currentPage || 1,
+          totalItems: action.payload.totalCount || 0
+        };
       })
       .addCase(fetchPaymentHistory.rejected, (state, action) => {
         state.isLoading = false;
@@ -122,7 +126,15 @@ const vendorPaymentSlice = createSlice({
       })
       .addCase(fetchPaymentSummary.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.summary = action.payload;
+        // Use the enhanced API response that includes user financial data
+        const apiData = action.payload.data || {};
+        state.summary = {
+          totalEarnings: apiData.totalEarnings || 0,
+          platformFees: apiData.platformFees || 0,
+          totalWithdrawn: apiData.totalWithdrawn || 0,
+          currentBalance: apiData.currentBalance || 0,
+          recentPayments: apiData.recentPayments || []
+        };
       })
       .addCase(fetchPaymentSummary.rejected, (state, action) => {
         state.isLoading = false;
@@ -136,7 +148,7 @@ const vendorPaymentSlice = createSlice({
       })
       .addCase(fetchPaymentDetails.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.paymentDetails = action.payload;
+        state.paymentDetails = action.payload.data;
       })
       .addCase(fetchPaymentDetails.rejected, (state, action) => {
         state.isLoading = false;

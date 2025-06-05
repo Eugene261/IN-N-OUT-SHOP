@@ -237,6 +237,27 @@ export const fetchUserProfile = createAsyncThunk(
   }
 );
 
+// Fetch admin profile using admin-specific endpoint
+export const fetchAdminProfile = createAsyncThunk(
+  'auth/fetchAdminProfile',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/admin/shop/profile`,
+        {
+          withCredentials: true,
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { message: 'Failed to fetch admin profile' });
+    }
+  }
+);
+
 export const updateUserSettings = createAsyncThunk(
   'auth/updateSettings',
   async (settingsData, { rejectWithValue, getState }) => {
@@ -383,6 +404,29 @@ const authSlice = createSlice({
         // state.isLoading = false;
         console.log('Auth slice - fetchUserProfile rejected:', action.payload);
         state.error = action.payload?.message || 'Failed to fetch profile';
+      })
+
+      /* Fetch Admin Profile */
+      .addCase(fetchAdminProfile.pending, (state) => {
+        // Don't set global isLoading for profile fetches to avoid infinite loops
+        // state.isLoading = true;
+      })
+      .addCase(fetchAdminProfile.fulfilled, (state, action) => {
+        // Don't set global isLoading for profile fetches
+        // state.isLoading = false;
+        console.log('Auth slice - fetchAdminProfile fulfilled:', action.payload);
+        if (action.payload.success) {
+          state.user = action.payload.shop; // Admin profile returns shop data
+          // Update localStorage with the fetched user data
+          localStorage.setItem('user', JSON.stringify(action.payload.shop));
+          console.log('Updated localStorage with fetched admin data:', action.payload.shop);
+        }
+      })
+      .addCase(fetchAdminProfile.rejected, (state, action) => {
+        // Don't set global isLoading for profile fetches
+        // state.isLoading = false;
+        console.log('Auth slice - fetchAdminProfile rejected:', action.payload);
+        state.error = action.payload?.message || 'Failed to fetch admin profile';
       })
 
       /* Update Settings */

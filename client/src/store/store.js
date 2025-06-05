@@ -29,6 +29,7 @@ import shopFeaturedCollectionSlice from './shop/featured-collection-slice/index.
 
 // Vendor payments slices
 import adminVendorPaymentsSlice from './admin-vendor-payments-slice.js';
+import adminVendorPaymentSlice from './admin/vendor-payment-slice/vendorPaymentSlice.js';
 import superAdminVendorPaymentsSlice from './super-admin-vendor-payments-slice.js';
 
 const store = configureStore({
@@ -52,6 +53,7 @@ const store = configureStore({
         
         // Vendor payment reducers
         adminVendorPayments: adminVendorPaymentsSlice,
+        adminVendorPayment: adminVendorPaymentSlice,
         superAdminVendorPayments: superAdminVendorPaymentsSlice,
         
         // SuperAdmin reducers

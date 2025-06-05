@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { useDispatch, useSelector } from 'react-redux';
-import { updateUserProfile, fetchUserProfile } from '@/store/auth-slice';
+import { updateUserProfile, fetchAdminProfile } from '@/store/auth-slice';
 import { User, Camera, Mail, Phone, Calendar, MapPin, Building, Crown, Shield, Save, RotateCcw, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -59,7 +59,7 @@ function SuperAdminProfileInformation() {
     // Only fetch if we don't have user data or if essential fields are missing
     if (!user || !user.firstName || !user.email) {
       console.log('SuperAdmin: User data missing, fetching profile...');
-      dispatch(fetchUserProfile());
+      dispatch(fetchAdminProfile());
     } else {
       console.log('SuperAdmin: User data already available, skipping profile fetch');
     }
@@ -117,7 +117,7 @@ function SuperAdminProfileInformation() {
             variant: 'default'
           });
           // Refresh user profile to get updated avatar
-          dispatch(fetchUserProfile());
+          dispatch(fetchAdminProfile());
         } else {
           throw new Error('Failed to update profile picture');
         }
@@ -184,7 +184,7 @@ function SuperAdminProfileInformation() {
         setOriginalData({ ...formData });
         
         // Refresh user profile from backend to ensure we have the latest data
-        const profileResult = await dispatch(fetchUserProfile());
+        const profileResult = await dispatch(fetchAdminProfile());
         
         if (profileResult.type.endsWith('/fulfilled')) {
           console.log('SuperAdmin: Profile refreshed successfully after save');

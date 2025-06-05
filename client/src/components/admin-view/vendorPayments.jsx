@@ -2,12 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  fetchVendorPayments, 
+  fetchPaymentHistory, 
   fetchPaymentSummary, 
   fetchPaymentDetails,
   clearPaymentDetails,
-  resetMessages
-} from '../../store/admin-vendor-payments-slice';
+  clearError
+} from '../../store/admin/vendor-payment-slice/vendorPaymentSlice';
 import { 
   DollarSign, 
   Eye, 
@@ -88,28 +88,24 @@ const buttonVariants = {
 const VendorPayments = () => {
   const dispatch = useDispatch();
   const { 
-    vendorPayments: rawVendorPayments, 
+    paymentHistory: rawPaymentHistory, 
     pagination: rawPagination, 
     paymentDetails: rawPaymentDetails, 
     summary: rawSummary, 
     isLoading, 
-    error,
-    success,
-    message
-  } = useSelector(state => state.adminVendorPayments);
+    error
+  } = useSelector(state => state.adminVendorPayment);
   
   // Ensure all data properties have default values
-  const vendorPayments = rawVendorPayments || [];
-  const pagination = rawPagination || { currentPage: 1, totalPages: 1, totalCount: 0 };
+  const vendorPayments = rawPaymentHistory || [];
+  const pagination = rawPagination || { currentPage: 1, totalPages: 1, totalItems: 0 };
   const paymentDetails = rawPaymentDetails || null;
   const summary = rawSummary || {
-    totalPaid: 0,
-    pendingAmount: 0,
-    paymentCount: 0,
-    pendingCount: 0,
-    lastPaymentDate: null,
-    lastPaymentAmount: 0,
-    totalPayments: 0
+    totalEarnings: 0,
+    platformFees: 0,
+    totalWithdrawn: 0,
+    currentBalance: 0,
+    recentPayments: []
   };
   
   // Component state
@@ -158,7 +154,7 @@ const VendorPayments = () => {
 
   // Initial data load
   useEffect(() => {
-    dispatch(fetchVendorPayments({ page: currentPage }));
+    dispatch(fetchPaymentHistory({ page: currentPage }));
     dispatch(fetchPaymentSummary());
   }, [dispatch, currentPage]);
 
@@ -166,13 +162,9 @@ const VendorPayments = () => {
   useEffect(() => {
     if (error) {
       toast.error(error);
-      dispatch(resetMessages());
+      dispatch(clearError());
     }
-    if (success) {
-      toast.success(message);
-      setTimeout(() => dispatch(resetMessages()), 3000);
-    }
-  }, [error, success, message, dispatch]);
+  }, [error, dispatch]);
 
   // Handle view payment details
   const handleViewDetails = (paymentId) => {
@@ -190,13 +182,13 @@ const VendorPayments = () => {
 
   // Handle filters
   const handleFilterApply = () => {
-    dispatch(fetchVendorPayments({ page: 1, ...filters }));
+    dispatch(fetchPaymentHistory({ page: 1, ...filters }));
     setCurrentPage(1);
   };
 
   const handleResetFilters = () => {
     setFilters({ status: '', startDate: '', endDate: '' });
-    dispatch(fetchVendorPayments({ page: 1 }));
+    dispatch(fetchPaymentHistory({ page: 1 }));
     setCurrentPage(1);
   };
 
@@ -208,78 +200,76 @@ const VendorPayments = () => {
   // Render summary cards
   const renderSummaryCards = () => (
     <motion.div 
-      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+      className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-4 sm:mb-8"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
       <motion.div 
-        className="bg-gradient-to-br from-emerald-50 to-green-100 rounded-2xl p-6 border border-emerald-200 shadow-lg hover:shadow-xl transition-shadow duration-300"
+        className="bg-gradient-to-br from-emerald-50 to-green-100 rounded-xl sm:rounded-2xl p-3 sm:p-6 border border-emerald-200 shadow-lg hover:shadow-xl transition-shadow duration-300"
         variants={cardVariants}
         whileHover={{ y: -5, transition: { duration: 0.2 } }}
       >
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-emerald-600 text-sm font-medium">Total Received</p>
-            <p className="text-3xl font-bold text-emerald-900 mt-2">{formatCurrency(summary.totalPaid)}</p>
-            <p className="text-emerald-600 text-xs mt-1">{summary.paymentCount} completed payments</p>
+        <div className="flex flex-col space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-emerald-600 text-xs sm:text-sm font-medium">Total Earnings</p>
+            <div className="bg-emerald-500 rounded-full p-2 sm:p-3">
+              <Wallet className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
+            </div>
           </div>
-          <div className="bg-emerald-500 rounded-full p-3">
-            <Wallet className="h-6 w-6 text-white" />
-          </div>
+          <p className="text-xl sm:text-3xl font-bold text-emerald-900">{formatCurrency(summary.totalEarnings)}</p>
+          <p className="text-emerald-600 text-xs">Lifetime earnings</p>
         </div>
       </motion.div>
 
       <motion.div 
-        className="bg-gradient-to-br from-amber-50 to-orange-100 rounded-2xl p-6 border border-amber-200 shadow-lg hover:shadow-xl transition-shadow duration-300"
+        className="bg-gradient-to-br from-amber-50 to-orange-100 rounded-xl sm:rounded-2xl p-3 sm:p-6 border border-amber-200 shadow-lg hover:shadow-xl transition-shadow duration-300"
         variants={cardVariants}
         whileHover={{ y: -5, transition: { duration: 0.2 } }}
       >
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-amber-600 text-sm font-medium">Pending</p>
-            <p className="text-3xl font-bold text-amber-900 mt-2">{formatCurrency(summary.pendingAmount)}</p>
-            <p className="text-amber-600 text-xs mt-1">{summary.pendingCount} pending payments</p>
+        <div className="flex flex-col space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-amber-600 text-xs sm:text-sm font-medium">Platform Fees</p>
+            <div className="bg-amber-500 rounded-full p-2 sm:p-3">
+              <Clock className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
+            </div>
           </div>
-          <div className="bg-amber-500 rounded-full p-3">
-            <Clock className="h-6 w-6 text-white" />
-          </div>
+          <p className="text-xl sm:text-3xl font-bold text-amber-900">{formatCurrency(summary.platformFees)}</p>
+          <p className="text-amber-600 text-xs">Total deductions</p>
         </div>
       </motion.div>
 
       <motion.div 
-        className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl p-6 border border-blue-200 shadow-lg hover:shadow-xl transition-shadow duration-300"
+        className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl sm:rounded-2xl p-3 sm:p-6 border border-blue-200 shadow-lg hover:shadow-xl transition-shadow duration-300"
         variants={cardVariants}
         whileHover={{ y: -5, transition: { duration: 0.2 } }}
       >
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-blue-600 text-sm font-medium">Last Payment</p>
-            <p className="text-3xl font-bold text-blue-900 mt-2">{formatCurrency(summary.lastPaymentAmount)}</p>
-            <p className="text-blue-600 text-xs mt-1">
-              {summary.lastPaymentDate ? formatDate(summary.lastPaymentDate) : 'No payments yet'}
-            </p>
+        <div className="flex flex-col space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-blue-600 text-xs sm:text-sm font-medium">Total Withdrawn</p>
+            <div className="bg-blue-500 rounded-full p-2 sm:p-3">
+              <Calendar className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
+            </div>
           </div>
-          <div className="bg-blue-500 rounded-full p-3">
-            <Calendar className="h-6 w-6 text-white" />
-          </div>
+          <p className="text-xl sm:text-3xl font-bold text-blue-900">{formatCurrency(summary.totalWithdrawn)}</p>
+          <p className="text-blue-600 text-xs">Amount received</p>
         </div>
       </motion.div>
 
       <motion.div 
-        className="bg-gradient-to-br from-purple-50 to-pink-100 rounded-2xl p-6 border border-purple-200 shadow-lg hover:shadow-xl transition-shadow duration-300"
+        className="bg-gradient-to-br from-purple-50 to-pink-100 rounded-xl sm:rounded-2xl p-3 sm:p-6 border border-purple-200 shadow-lg hover:shadow-xl transition-shadow duration-300"
         variants={cardVariants}
         whileHover={{ y: -5, transition: { duration: 0.2 } }}
       >
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-purple-600 text-sm font-medium">Total Payments</p>
-            <p className="text-3xl font-bold text-purple-900 mt-2">{summary.totalPayments}</p>
-            <p className="text-purple-600 text-xs mt-1">All payment records</p>
+        <div className="flex flex-col space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-purple-600 text-xs sm:text-sm font-medium">Current Balance</p>
+            <div className="bg-purple-500 rounded-full p-2 sm:p-3">
+              <BarChart3 className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
+            </div>
           </div>
-          <div className="bg-purple-500 rounded-full p-3">
-            <BarChart3 className="h-6 w-6 text-white" />
-          </div>
+          <p className="text-xl sm:text-3xl font-bold text-purple-900">{formatCurrency(summary.currentBalance)}</p>
+          <p className="text-purple-600 text-xs">Available balance</p>
         </div>
       </motion.div>
     </motion.div>
@@ -288,41 +278,41 @@ const VendorPayments = () => {
   // Render payments list
   const renderPaymentsList = () => (
     <motion.div 
-      className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden"
+      className="bg-white rounded-xl sm:rounded-2xl shadow-xl border border-gray-100 overflow-hidden"
       variants={cardVariants}
       initial="hidden"
       animate="visible"
     >
-      <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
-          <h3 className="text-xl font-bold text-gray-900">Payment History</h3>
-          <div className="flex space-x-3">
+      <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-3 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900">Payment History</h3>
+          <div className="flex space-x-2 sm:space-x-3">
             <motion.button 
-              className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-              onClick={() => dispatch(fetchVendorPayments({ page: 1 }))}
+              className="inline-flex items-center px-3 sm:px-4 py-2 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              onClick={() => dispatch(fetchPaymentHistory({ page: 1 }))}
               variants={buttonVariants}
               initial="initial"
               whileHover="hover"
               whileTap="tap"
             >
-              <RefreshCw className="h-4 w-4 mr-2" />
+              <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
               Refresh
             </motion.button>
           </div>
         </div>
       </div>
 
-      <div className="p-6">
+      <div className="p-3 sm:p-6">
         {/* Enhanced Filters */}
-        <div className="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-4 mb-4 sm:mb-6 border border-gray-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Status</label>
               <select 
                 name="status" 
                 value={filters.status}
                 onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-md sm:rounded-lg bg-white text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
               >
                 <option value="">All Status</option>
                 <option value="pending">Pending</option>
@@ -332,39 +322,39 @@ const VendorPayments = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Start Date</label>
               <input 
                 type="date" 
                 name="startDate" 
                 value={filters.startDate}
                 onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-md sm:rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">End Date</label>
               <input 
                 type="date" 
                 name="endDate" 
                 value={filters.endDate}
                 onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-md sm:rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
               />
             </div>
-            <div className="flex items-end space-x-2">
+            <div className="flex items-end space-x-1 sm:space-x-2 col-span-1 sm:col-span-2 lg:col-span-1">
               <motion.button 
-                className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                className="flex-1 bg-indigo-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-md sm:rounded-lg text-xs sm:text-sm font-medium hover:bg-indigo-700 transition-colors"
                 onClick={handleFilterApply}
                 variants={buttonVariants}
                 initial="initial"
                 whileHover="hover"
                 whileTap="tap"
               >
-                <Filter className="h-4 w-4 inline mr-2" />
+                <Filter className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1 sm:mr-2" />
                 Apply
               </motion.button>
               <motion.button 
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="px-3 sm:px-4 py-1.5 sm:py-2 border border-gray-300 rounded-md sm:rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                 onClick={handleResetFilters}
                 variants={buttonVariants}
                 initial="initial"
@@ -379,46 +369,46 @@ const VendorPayments = () => {
 
         {/* Payment Cards */}
         {isLoading ? (
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+          <div className="flex justify-center items-center py-8 sm:py-12">
+            <div className="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-indigo-600"></div>
           </div>
         ) : vendorPayments.length === 0 ? (
-          <div className="text-center py-12">
-            <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">No payment records found</p>
-            <p className="text-gray-400 text-sm mt-1">Payments will appear here when processed by the administrator</p>
+          <div className="text-center py-8 sm:py-12">
+            <Receipt className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
+            <p className="text-gray-500 text-base sm:text-lg">No payment records found</p>
+            <p className="text-gray-400 text-xs sm:text-sm mt-1">Payments will appear here when processed by the administrator</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             {vendorPayments.map((payment, index) => (
               <motion.div
                 key={payment._id}
-                className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-all duration-200 hover:border-indigo-200"
+                className="bg-white border border-gray-200 rounded-lg sm:rounded-xl p-3 sm:p-4 hover:shadow-lg transition-all duration-200 hover:border-indigo-200"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 whileHover={{ y: -2 }}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="bg-emerald-100 rounded-full p-2">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                  <div className="flex items-start sm:items-center space-x-3 sm:space-x-4">
+                    <div className="bg-emerald-100 rounded-full p-2 flex-shrink-0">
                       {getPaymentMethodIcon(payment.paymentMethod)}
                     </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-semibold text-gray-900 text-sm sm:text-base truncate">
                         {payment.description || 'Vendor Payment'}
                       </h4>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-xs sm:text-sm text-gray-500">
                         Method: {payment.paymentMethod}
                         {payment.transactionId && ` • Ref: ${payment.transactionId}`}
                       </p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right">
-                      <p className="font-bold text-lg text-gray-900">{formatCurrency(payment.amount)}</p>
-                      <p className="text-sm text-gray-500">{formatDate(payment.createdAt)}</p>
+                  <div className="flex items-center justify-between sm:justify-end space-x-3 sm:space-x-4">
+                    <div className="text-left sm:text-right">
+                      <p className="font-bold text-base sm:text-lg text-gray-900">{formatCurrency(payment.amount)}</p>
+                      <p className="text-xs sm:text-sm text-gray-500">{formatDate(payment.createdAt)}</p>
                     </div>
                     
                     <div className="flex items-center space-x-2">
@@ -427,25 +417,50 @@ const VendorPayments = () => {
                       </span>
                       {payment.receiptUrl && (
                         <div className="bg-emerald-100 rounded-full p-1">
-                          <Receipt className="h-4 w-4 text-emerald-600" />
+                          <Receipt className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-600" />
                         </div>
                       )}
                     </div>
                     
                     <motion.button 
-                      className="bg-indigo-50 text-indigo-600 p-2 rounded-lg hover:bg-indigo-100 transition-colors"
+                      className="bg-indigo-50 text-indigo-600 p-2 rounded-lg hover:bg-indigo-100 transition-colors flex-shrink-0"
                       onClick={() => handleViewDetails(payment._id)}
                       variants={buttonVariants}
                       initial="initial"
                       whileHover="hover"
                       whileTap="tap"
                     >
-                      <Eye className="h-4 w-4" />
+                      <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
                     </motion.button>
                   </div>
                 </div>
               </motion.div>
             ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {pagination.totalPages > 1 && (
+          <div className="mt-4 sm:mt-6 flex justify-center">
+            <div className="flex space-x-1 sm:space-x-2">
+              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(page => (
+                <motion.button
+                  key={page}
+                  className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-md sm:rounded-lg text-xs sm:text-sm font-medium transition-colors ${
+                    currentPage === page
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                  onClick={() => handlePageChange(page)}
+                  variants={buttonVariants}
+                  initial="initial"
+                  whileHover="hover"
+                  whileTap="tap"
+                >
+                  {page}
+                </motion.button>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -589,7 +604,7 @@ const VendorPayments = () => {
 
   return (
     <motion.div 
-      className="min-h-screen bg-gradient-to-br from-gray-50 via-green-50 to-emerald-100 p-6"
+      className="min-h-screen bg-gradient-to-br from-gray-50 via-green-50 to-emerald-100 p-3 sm:p-6"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -597,18 +612,18 @@ const VendorPayments = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div 
-          className="mb-8"
+          className="mb-4 sm:mb-8"
           variants={cardVariants}
         >
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">My Earnings</h1>
-          <p className="text-gray-600">Track your payment history and earnings from sales</p>
+          <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-2">My Earnings</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Track your payment history and earnings from sales</p>
         </motion.div>
 
         {/* Summary Cards */}
         {renderSummaryCards()}
 
         {/* Main Content */}
-        <div className="space-y-8">
+        <div className="space-y-4 sm:space-y-8">
           <AnimatePresence mode="wait">
             {activeView === 'list' ? (
               <motion.div key="list">
