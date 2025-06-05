@@ -323,7 +323,7 @@ function ShoppingHome() {
               </div>
             </div>
           ) : FeatureImageList && FeatureImageList.length > 0 ? (
-            <AnimatePresence initial={false} custom={direction} mode="sync">
+            <AnimatePresence initial={false} custom={direction} mode="wait">
               <motion.div
                 key={`slide-${currentSlide}-${FeatureImageList[currentSlide]?._id}`}
                 custom={direction}
@@ -331,21 +331,17 @@ function ShoppingHome() {
                 initial="enter"
                 animate="center"
                 exit="exit"
-                className="absolute inset-0"
-                style={{
-                  backgroundImage: `url(${FeatureImageList[currentSlide]?.image})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  filter: 'blur(20px)',
-                  transform: 'scale(1.1)'
-                }}
+                className="absolute inset-0 bg-gray-100"
               >
-                <LazyImage
+                <img
                   src={FeatureImageList[currentSlide]?.image}
                   alt={`Banner ${currentSlide + 1}`}
-                  className="w-full h-full object-cover object-center relative z-10"
-                  eager={true}
-                  placeholderSrc="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f3f4f6'/%3E%3C/svg%3E"
+                  className="w-full h-full object-cover object-center"
+                  loading="eager"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    console.error('Failed to load image:', FeatureImageList[currentSlide]?.image);
+                  }}
                 />
               </motion.div>
             </AnimatePresence>

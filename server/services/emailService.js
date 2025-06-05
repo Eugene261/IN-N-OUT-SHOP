@@ -294,11 +294,14 @@ class EmailService {
             transition: all 0.3s ease;
             border: none;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            cursor: pointer;
           }
           .button:hover {
             background: ${headerColor}dd;
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+            text-decoration: none;
+            color: #ffffff;
           }
           .button.secondary {
             background: #6c757d;
@@ -306,6 +309,8 @@ class EmailService {
           }
           .button.secondary:hover {
             background: #5a6268;
+            color: #ffffff;
+            text-decoration: none;
           }
           
           .action-buttons {
@@ -618,9 +623,21 @@ class EmailService {
           </ul>
         </div>
         
-        <div style="text-align: center;">
-          <a href="${process.env.CLIENT_URL || 'http://localhost:3000'}" class="button">Start Shopping Now</a>
-          <a href="${process.env.CLIENT_URL}/support" class="button secondary">Contact Support</a>
+        <div class="action-buttons" style="text-align: center;">
+          <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/shop/listing" 
+             class="button" 
+             target="_blank" 
+             rel="noopener noreferrer"
+             style="display: inline-block; background: #28a745; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 8px;">
+            Start Shopping Now
+          </a>
+          <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/support" 
+             class="button secondary" 
+             target="_blank" 
+             rel="noopener noreferrer"
+             style="display: inline-block; background: #6c757d; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 8px;">
+            Contact Support
+          </a>
         </div>
       `
     });
@@ -683,9 +700,21 @@ class EmailService {
           </ul>
         </div>
         
-        <div style="text-align: center;">
-          <a href="${process.env.CLIENT_URL}/orders/${orderDetails.orderId}" class="button">Track Your Order</a>
-          <a href="${process.env.CLIENT_URL}/support" class="button secondary">Contact Support</a>
+        <div class="action-buttons" style="text-align: center;">
+          <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/shop/account/orders/${orderDetails.orderId}" 
+             class="button" 
+             target="_blank" 
+             rel="noopener noreferrer"
+             style="display: inline-block; background: #28a745; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 8px;">
+            Track Your Order
+          </a>
+          <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/support" 
+             class="button secondary" 
+             target="_blank" 
+             rel="noopener noreferrer"
+             style="display: inline-block; background: #6c757d; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 8px;">
+            Contact Support
+          </a>
         </div>
       `
     });
