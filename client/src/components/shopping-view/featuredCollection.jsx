@@ -56,7 +56,7 @@ const FeaturedCollection = () => {
             animate={{ y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            {activeCollection ? activeCollection.subtitle || 'Comfort and Style' : 'Comfort and Style'}
+            {activeCollection ? activeCollection.subtitle || 'Your Perfect Marketplace' : 'Your Perfect Marketplace'}
           </motion.h2>
           
           <motion.h2
@@ -66,9 +66,9 @@ const FeaturedCollection = () => {
             transition={{ delay: 0.4 }}
           >
             {activeCollection ? (
-              <span dangerouslySetInnerHTML={{ __html: activeCollection.title || 'Apparel made for <span class="text-green-600">everyday</span> life' }} />
+              <span dangerouslySetInnerHTML={{ __html: activeCollection.title || 'Buy Amazing Products or <span class="text-green-600">Sell</span> Your Own' }} />
             ) : (
-              <span>Apparel made for <span className="text-green-600">everyday</span> life</span>
+              <span>Buy Amazing Products or <span className="text-green-600">Sell</span> Your Own</span>
             )}
           </motion.h2>
           
@@ -79,10 +79,11 @@ const FeaturedCollection = () => {
             transition={{ delay: 0.6 }}
           >
             {activeCollection ? activeCollection.description : 
-              'Discover high-quality, comfortable clothing that effortlessly blends fashion and function. Designed to make you look and feel great everyday.'}
+              'Join thousands of buyers and sellers in our thriving marketplace. Discover unique products from trusted vendors or start your own business and reach customers nationwide.'}
           </motion.p>
           
           <motion.div
+            className="flex flex-col sm:flex-row gap-4"
             initial={{ scale: 0.95 }}
             whileInView={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 200 }}
@@ -91,9 +92,17 @@ const FeaturedCollection = () => {
               to={activeCollection && activeCollection.link ? activeCollection.link : '/shop/listing'} 
               className='inline-block bg-black text-white px-8 py-4 rounded-xl
               text-lg font-medium hover:bg-gray-800 transition-all duration-300
-              shadow-md hover:shadow-lg'
+              shadow-md hover:shadow-lg text-center'
             >
-              Shop Now
+              Start Shopping
+            </Link>
+            <Link 
+              to="/auth/register" 
+              className='inline-block bg-green-600 text-white px-8 py-4 rounded-xl
+              text-lg font-medium hover:bg-green-700 transition-all duration-300
+              shadow-md hover:shadow-lg text-center'
+            >
+              Become a Seller
             </Link>
           </motion.div>
         </motion.div>
