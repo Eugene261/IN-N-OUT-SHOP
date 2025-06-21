@@ -94,7 +94,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   );
 
   router.get('/google/callback', 
-    passport.authenticate('google', { failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/login?error=oauth_failed` }),
+    passport.authenticate('google', { failureRedirect: `/api/auth/oauth-redirect?error=oauth_failed` }),
     async (req, res) => {
       try {
         // Generate JWT token for the authenticated user
@@ -122,12 +122,12 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           }
         }
 
-        // Redirect to client with success
-        const redirectUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/oauth-success?token=${token}`;
+        // Use server-side OAuth redirect page to handle cross-domain redirect
+        const redirectUrl = `/api/auth/oauth-redirect?token=${token}`;
         res.redirect(redirectUrl);
       } catch (error) {
         console.error('OAuth callback error:', error);
-        res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/login?error=oauth_callback_failed`);
+        res.redirect(`/api/auth/oauth-redirect?error=oauth_callback_failed`);
       }
     }
   );
@@ -154,7 +154,7 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
   );
 
   router.get('/facebook/callback',
-    passport.authenticate('facebook', { failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/login?error=oauth_failed` }),
+    passport.authenticate('facebook', { failureRedirect: `/api/auth/oauth-redirect?error=oauth_failed` }),
     async (req, res) => {
       try {
         // Generate JWT token for the authenticated user
@@ -182,12 +182,12 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
           }
         }
 
-        // Redirect to client with success
-        const redirectUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/oauth-success?token=${token}`;
+        // Use server-side OAuth redirect page to handle cross-domain redirect
+        const redirectUrl = `/api/auth/oauth-redirect?token=${token}`;
         res.redirect(redirectUrl);
       } catch (error) {
         console.error('OAuth callback error:', error);
-        res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/login?error=oauth_callback_failed`);
+        res.redirect(`/api/auth/oauth-redirect?error=oauth_callback_failed`);
       }
     }
   );
@@ -229,7 +229,7 @@ if (process.env.TWITTER_CONSUMER_KEY && process.env.TWITTER_CONSUMER_SECRET) {
         console.log('Twitter OAuth 2.0 callback failed, trying OAuth 1.0a:', err?.message || info?.message);
         // Fallback to OAuth 1.0a callback
         return passport.authenticate('twitter-oauth1', { 
-          failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/login?error=oauth_failed` 
+          failureRedirect: `/api/auth/oauth-redirect?error=oauth_failed` 
         })(req, res, next);
       }
       req.user = user;
@@ -262,12 +262,12 @@ if (process.env.TWITTER_CONSUMER_KEY && process.env.TWITTER_CONSUMER_SECRET) {
           }
         }
 
-        // Redirect to client with success
-        const redirectUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/oauth-success?token=${token}`;
+        // Use server-side OAuth redirect page to handle cross-domain redirect
+        const redirectUrl = `/api/auth/oauth-redirect?token=${token}`;
         res.redirect(redirectUrl);
       } catch (error) {
         console.error('OAuth callback error:', error);
-        res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/login?error=oauth_callback_failed`);
+        res.redirect(`/api/auth/oauth-redirect?error=oauth_callback_failed`);
       }
     }
   );
@@ -356,6 +356,40 @@ router.get('/oauth-success', (req, res) => {
     message: 'OAuth authentication successful',
     redirect: process.env.CLIENT_URL || 'http://localhost:5173'
   });
+});
+
+// Server-side OAuth success page that redirects to client
+router.get('/oauth-redirect', (req, res) => {
+  const { token, error } = req.query;
+  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+  
+  if (error) {
+    return res.redirect(`${clientUrl}/auth/login?error=${error}`);
+  }
+  
+  if (!token) {
+    return res.redirect(`${clientUrl}/auth/login?error=missing_token`);
+  }
+  
+  // Create a simple HTML page that redirects to client with token
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Redirecting...</title>
+      <meta http-equiv="refresh" content="0; url=${clientUrl}/auth/oauth-success?token=${token}">
+    </head>
+    <body>
+      <p>Redirecting to your account...</p>
+      <script>
+        // Fallback redirect
+        window.location.href = "${clientUrl}/auth/oauth-success?token=${token}";
+      </script>
+    </body>
+    </html>
+  `;
+  
+  res.send(html);
 });
 
 module.exports = router;
