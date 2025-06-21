@@ -326,6 +326,29 @@ router.get('/debug/oauth-urls', (req, res) => {
   });
 });
 
+// Current OAuth callback URLs for easy copy-paste
+router.get('/debug/callback-urls', (req, res) => {
+  const baseUrl = process.env.SERVER_URL || 'http://localhost:5000';
+  
+  res.json({
+    success: true,
+    message: "Copy these URLs to your OAuth provider consoles",
+    google: {
+      console: "Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client IDs",
+      callback: `${baseUrl}/api/auth/google/callback`
+    },
+    facebook: {
+      console: "Facebook Developer Console → App → Facebook Login → Settings",
+      callback: `${baseUrl}/api/auth/facebook/callback`
+    },
+    twitter: {
+      console: "Twitter Developer Portal → App → Settings",
+      callback: `${baseUrl}/api/auth/twitter/callback`,
+      website: baseUrl.replace('/api/auth', '')
+    }
+  });
+});
+
 // OAuth success endpoint for client-side token handling
 router.get('/oauth-success', (req, res) => {
   res.json({
