@@ -444,4 +444,75 @@ router.get('/twitter/callback/test', (req, res) => {
   });
 });
 
+// Simple Twitter callback test (bypass Passport)
+router.get('/twitter/callback/simple', (req, res) => {
+  console.log('=== Simple Twitter Callback Test ===');
+  console.log('Query params:', req.query);
+  console.log('Has oauth_token:', !!req.query.oauth_token);
+  console.log('Has oauth_verifier:', !!req.query.oauth_verifier);
+  console.log('Session ID:', req.sessionID);
+  console.log('Session data:', req.session);
+  console.log('=== End Simple Callback Test ===');
+  
+  res.json({
+    success: true,
+    message: 'Simple callback test working',
+    hasToken: !!req.query.oauth_token,
+    hasVerifier: !!req.query.oauth_verifier,
+    sessionID: req.sessionID
+  });
+});
+
+// Twitter OAuth manual test without Passport
+router.get('/twitter/manual-callback', async (req, res) => {
+  try {
+    console.log('=== Manual Twitter Callback ===');
+    console.log('Query params:', req.query);
+    
+    // Simulate creating a test user (bypass Twitter OAuth entirely)
+    const testUser = {
+      _id: 'test_twitter_user_' + Date.now(),
+      email: 'test@twitter-oauth.local',
+      userName: 'TwitterTestUser',
+      role: 'user',
+      provider: 'twitter'
+    };
+    
+    console.log('Creating test JWT token...');
+    const jwt = require('jsonwebtoken');
+    const token = jwt.sign({
+      id: testUser._id,
+      role: testUser.role,
+      email: testUser.email,
+      userName: testUser.userName
+    }, process.env.JWT_SECRET || 'CLIENT_SECRET_KEY', { expiresIn: '1h' });
+    
+    console.log('Test JWT token created successfully');
+    
+    // Set cookie
+    res.cookie('token', token, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 1000
+    });
+    
+    console.log('Test cookie set, redirecting...');
+    
+    // Redirect to OAuth redirect page
+    const redirectUrl = `/api/auth/oauth-redirect?token=${token}`;
+    console.log('Redirecting to:', redirectUrl);
+    res.redirect(redirectUrl);
+    
+  } catch (error) {
+    console.error('=== Manual Callback Error ===');
+    console.error('Error:', error);
+    console.error('=== End Manual Callback Error ===');
+    res.status(500).json({
+      error: 'Manual callback test failed',
+      message: error.message
+    });
+  }
+});
+
 module.exports = router;
