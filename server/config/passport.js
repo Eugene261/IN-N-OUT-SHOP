@@ -136,13 +136,19 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
 
 // Twitter OAuth Strategy - Only initialize if credentials are provided
 if (process.env.TWITTER_CONSUMER_KEY && process.env.TWITTER_CONSUMER_SECRET) {
-  // Use OAuth 1.0a (most Twitter apps use this)
-  passport.use(new TwitterStrategy({
-    consumerKey: process.env.TWITTER_CONSUMER_KEY,
-    consumerSecret: process.env.TWITTER_CONSUMER_SECRET,
-    callbackURL: `${process.env.SERVER_URL || 'http://localhost:5000'}/api/auth/twitter/callback`,
-    includeEmail: true
-  }, async (token, tokenSecret, profile, done) => {
+  try {
+    console.log('Initializing Twitter OAuth strategy...');
+    console.log('Consumer Key length:', process.env.TWITTER_CONSUMER_KEY?.length);
+    console.log('Consumer Secret length:', process.env.TWITTER_CONSUMER_SECRET?.length);
+    console.log('Callback URL:', `${process.env.SERVER_URL || 'http://localhost:5000'}/api/auth/twitter/callback`);
+    
+    // Use OAuth 1.0a (most Twitter apps use this)
+    passport.use(new TwitterStrategy({
+      consumerKey: process.env.TWITTER_CONSUMER_KEY,
+      consumerSecret: process.env.TWITTER_CONSUMER_SECRET,
+      callbackURL: `${process.env.SERVER_URL || 'http://localhost:5000'}/api/auth/twitter/callback`,
+      includeEmail: true
+    }, async (token, tokenSecret, profile, done) => {
     try {
       console.log('=== Twitter OAuth Debug ===');
       console.log('Token:', token ? 'Present' : 'Missing');
@@ -231,6 +237,15 @@ if (process.env.TWITTER_CONSUMER_KEY && process.env.TWITTER_CONSUMER_SECRET) {
       return done(error, null);
     }
   }));
+  
+  console.log('Twitter OAuth strategy initialized successfully');
+  } catch (strategyError) {
+    console.error('=== Twitter Strategy Initialization Error ===');
+    console.error('Error type:', strategyError.name);
+    console.error('Error message:', strategyError.message);
+    console.error('Error stack:', strategyError.stack);
+    console.error('=== End Twitter Strategy Error ===');
+  }
 } else {
   console.log('Twitter OAuth not configured - missing TWITTER_CONSUMER_KEY or TWITTER_CONSUMER_SECRET');
 }
