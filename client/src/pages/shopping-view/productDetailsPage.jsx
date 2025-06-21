@@ -11,6 +11,7 @@ import { fetchProductDetails, fetchSimilarProducts } from '../../store/shop/prod
 import ReviewForm from '../../components/shopping-view/reviewForm';
 import ReviewsDisplay from '../shopping-view/reviewDisplay';
 import ShoppingProductTile from '../../components/shopping-view/productTile';
+import EnhancedShoppingProductTile from '../../components/shopping-view/enhanced-product-tile';
 import ProductOptionsModal from '../../components/shopping-view/productOptionsModal';
 import NewArrivals from './newArrivals';
 import { fetchAllTaxonomyData } from '@/store/superAdmin/taxonomy-slice';
@@ -632,12 +633,15 @@ function ProductDetailsPage() {
           </div>
         </div>
 
-        <div className="py-10 px-4 sm:px-6 lg:px-8 bg-white">
-          <div className="max-w-7xl mx-auto">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              <Heart className="w-6 h-6" />
-              You May Also Like
-            </h2>
+        <section className="py-12 bg-gray-50">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <span className="text-sm uppercase tracking-widest text-gray-500 mb-2 block">Similar Products</span>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-800 to-gray-600 inline-block">
+                You May Also Like
+              </h2>
+              <div className="w-24 h-1 bg-gradient-to-r from-black to-gray-400 rounded-full mt-4 mx-auto"></div>
+            </div>
 
             {similarProductsLoading ? (
               <div className="flex overflow-x-auto pb-4 hide-scrollbar">
@@ -674,7 +678,7 @@ function ProductDetailsPage() {
 
                 <div
                   ref={similarProductsRef}
-                  className="flex overflow-x-auto pb-6 hide-scrollbar"
+                  className="flex overflow-x-auto pb-6 hide-scrollbar gap-4"
                 >
                   {similarProducts.map(product => {
                     const isInWishlist = wishlistItems?.some(item =>
@@ -685,70 +689,22 @@ function ProductDetailsPage() {
                     return (
                       <div
                         key={product._id}
-                        className="flex-shrink-0 w-64 mx-2 first:ml-0 last:mr-0 bg-white rounded-lg overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200"
+                        className="flex-shrink-0 w-72"
                       >
-                        <div className="relative">
-                          {product.salePrice > 0 && (
-                            <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-sm uppercase font-bold">
-                              Sale
-                            </div>
-                          )}
-                          {product.stock < 5 && product.stock > 0 && (
-                            <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-sm uppercase font-bold">
-                              Low Stock
-                            </div>
-                          )}
-                          <img
-                            src={product.image}
-                            alt={product.title}
-                            className="w-full aspect-square object-cover cursor-pointer"
-                            onClick={() => navigate(`/shop/product/${product._id}`)}
-                          />
-                          <button
-                            className="absolute top-2 right-2 p-1.5 rounded-full bg-white shadow-sm hover:bg-gray-100"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleWishlist(product._id);
-                            }}
-                          >
-                            <Heart
-                              className={`w-5 h-5 ${isInWishlist ? 'fill-red-500 text-red-500' : 'text-gray-400'}`}
-                            />
-                          </button>
-                        </div>
-                        <div className="p-4">
-                          <div className="mb-1 text-xs text-gray-500 uppercase tracking-wide">
-                            {convertIdToName(product.brand, brands)}
-                            {product.category && <span className="ml-2">{convertIdToName(product.category, categories)}</span>}
-                          </div>
-                          <h3
-                            className="font-medium text-gray-900 mb-1 truncate cursor-pointer hover:text-black hover:underline"
-                            onClick={() => navigate(`/shop/product/${product._id}`)}
-                          >
-                            {product.title}
-                          </h3>
-                          <div className="flex items-end gap-2 mb-3">
-                            <span className="font-bold text-lg">GHS {product.price}</span>
-                            {product.salePrice > 0 && (
-                              <span className="text-gray-400 line-through text-sm">GHS {product.salePrice}</span>
-                            )}
-                          </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (!isAuthenticated) {
-                                toast.error("Please login to add items to your cart");
-                                return;
-                              }
-                              setSelectedModalProduct(product);
-                              setIsOptionsModalOpen(true);
-                            }}
-                            className="w-full bg-black text-white py-2.5 rounded flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors"
-                          >
-                            <ShoppingBag className="w-4 h-4" />
-                            Add to Cart
-                          </button>
-                        </div>
+                        <EnhancedShoppingProductTile
+                          product={product}
+                          handleGetProductDetails={() => navigate(`/shop/product/${product._id}`)}
+                          handleAddToCart={() => {
+                            if (!isAuthenticated) {
+                              toast.error("Please login to add items to your cart");
+                              return;
+                            }
+                            setSelectedModalProduct(product);
+                            setIsOptionsModalOpen(true);
+                          }}
+                          handleAddToWishlist={(productId) => handleToggleWishlist(productId)}
+                          isInWishlist={isInWishlist}
+                        />
                       </div>
                     );
                   })}
@@ -760,7 +716,7 @@ function ProductDetailsPage() {
               </div>
             )}
           </div>
-        </div>
+        </section>
 
         <NewArrivals />
       </main>
@@ -779,3 +735,20 @@ function ProductDetailsPage() {
 }
 
 export default ProductDetailsPage;
+
+// CSS for hiding scrollbars - consistent with NewArrivals styling
+const styles = `
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+`;
+
+if (typeof document !== 'undefined') {
+  const styleElement = document.createElement('style');
+  styleElement.textContent = styles;
+  document.head.appendChild(styleElement);
+}
