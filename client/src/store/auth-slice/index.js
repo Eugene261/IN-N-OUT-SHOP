@@ -181,7 +181,7 @@ export const updateUserProfile = createAsyncThunk(
         console.log('Trying with user ID in URL:', userId);
         try {
           response = await axios.put(
-            `${API_BASE_URL}/api/shop/user/profile/${userId}`,
+            `${API_BASE_URL}/api/users/profile/${userId}`,
             formData,
             config
           );
@@ -192,7 +192,7 @@ export const updateUserProfile = createAsyncThunk(
           }
           // Fall back to endpoint without user ID
           response = await axios.put(
-            `${API_BASE_URL}/api/shop/user/profile`,
+            `${API_BASE_URL}/api/users/profile`,
             formData,
             config
           );
@@ -200,7 +200,7 @@ export const updateUserProfile = createAsyncThunk(
       } else {
         // No user ID available, use standard endpoint
         response = await axios.put(
-          `${API_BASE_URL}/api/shop/user/profile`,
+          `${API_BASE_URL}/api/users/profile`,
           formData,
           config
         );
@@ -222,7 +222,7 @@ export const fetchUserProfile = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/api/shop/user/profile`,
+        `${API_BASE_URL}/api/users/profile`,
         {
           withCredentials: true,
           headers: {
@@ -269,8 +269,8 @@ export const updateUserSettings = createAsyncThunk(
         throw new Error('User ID not found');
       }
 
-      const response = await axios.put(
-        `${API_BASE_URL}/api/shop/user/settings/${userId}`,
+      const response = await axios.patch(
+        `${API_BASE_URL}/api/users/${userId}/settings`,
         settingsData,
         {
           withCredentials: true,
