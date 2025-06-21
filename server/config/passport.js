@@ -145,22 +145,25 @@ if (process.env.TWITTER_CONSUMER_KEY && process.env.TWITTER_CONSUMER_SECRET) {
   }, async (token, tokenSecret, profile, done) => {
     try {
       console.log('=== Twitter OAuth Debug ===');
-      console.log('Token:', token);
-      console.log('Token Secret:', tokenSecret);
-      console.log('Profile:', JSON.stringify(profile, null, 2));
-      console.log('Profile ID:', profile.id);
-      console.log('Profile Username:', profile.username);
-      console.log('Profile Display Name:', profile.displayName);
-      console.log('Profile Emails:', profile.emails);
+      console.log('Token:', token ? 'Present' : 'Missing');
+      console.log('Token Secret:', tokenSecret ? 'Present' : 'Missing');
+      console.log('Profile received:', !!profile);
+      console.log('Profile ID:', profile?.id);
+      console.log('Profile Username:', profile?.username);
+      console.log('Profile Display Name:', profile?.displayName);
+      console.log('Profile Emails:', profile?.emails);
+      console.log('Raw Profile:', JSON.stringify(profile, null, 2));
       console.log('=== End Twitter Debug ===');
       
       // Check if user already exists with this Twitter ID
+      console.log('Searching for existing user with Twitter ID:', profile?.id);
       let user = await User.findOne({ twitterId: profile.id });
       
       if (user) {
         console.log('Found existing user with Twitter ID:', user.userName);
         return done(null, user);
       }
+      console.log('No existing user found with Twitter ID');
       
       // Check if user exists with the same email (Twitter might not provide email)
       let emailUser = null;
@@ -184,27 +187,39 @@ if (process.env.TWITTER_CONSUMER_KEY && process.env.TWITTER_CONSUMER_SECRET) {
       // Create new user
       console.log('Creating new user for Twitter OAuth');
       const userName = profile.username || profile.displayName || `twitter_user_${profile.id}`;
-      const email = profile.emails?.[0]?.value || `${userName}@twitter-oauth.local`;
+      
+      // Generate a unique email if Twitter doesn't provide one
+      const baseEmail = profile.emails?.[0]?.value;
+      let email;
+      if (baseEmail) {
+        email = baseEmail;
+      } else {
+        // Create a unique email using timestamp to avoid conflicts
+        email = `${userName.toLowerCase()}_${Date.now()}@twitter-oauth.local`;
+      }
+      
+      console.log('Preparing user data:', {
+        twitterId: profile.id,
+        userName: userName,
+        email: email,
+        hasProfileEmails: !!profile.emails,
+        hasProfilePhotos: !!profile.photos
+      });
       
       const newUser = new User({
         twitterId: profile.id,
         userName: userName,
         email: email,
-        firstName: profile.displayName?.split(' ')[0] || '',
+        firstName: profile.displayName?.split(' ')[0] || userName,
         lastName: profile.displayName?.split(' ').slice(1).join(' ') || '',
         avatar: profile.photos?.[0]?.value || '',
         provider: 'twitter',
         isActive: true
       });
       
-      console.log('New user data:', {
-        twitterId: newUser.twitterId,
-        userName: newUser.userName,
-        email: newUser.email
-      });
-      
+      console.log('Saving new Twitter user...');
       await newUser.save();
-      console.log('New Twitter user created successfully');
+      console.log('New Twitter user created successfully with ID:', newUser._id);
       
       return done(null, newUser);
     } catch (error) {

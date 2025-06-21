@@ -217,13 +217,29 @@ if (process.env.TWITTER_CONSUMER_KEY && process.env.TWITTER_CONSUMER_SECRET) {
     passport.authenticate('twitter', { failureRedirect: `/api/auth/oauth-redirect?error=oauth_failed` }),
     async (req, res) => {
       try {
+        console.log('=== Twitter Callback Debug ===');
+        console.log('User object received:', !!req.user);
+        console.log('User ID:', req.user?._id);
+        console.log('User email:', req.user?.email);
+        console.log('User role:', req.user?.role);
+        console.log('User provider:', req.user?.provider);
+        console.log('=== End Twitter Callback Debug ===');
+
+        if (!req.user) {
+          console.error('No user object in Twitter callback');
+          return res.redirect(`/api/auth/oauth-redirect?error=no_user`);
+        }
+
         // Generate JWT token for the authenticated user
+        console.log('Generating JWT token...');
         const token = jwt.sign({
           id: req.user._id,
           role: req.user.role,
           email: req.user.email,
           userName: req.user.userName
         }, process.env.JWT_SECRET || 'CLIENT_SECRET_KEY', { expiresIn: '1h' });
+
+        console.log('JWT token generated successfully');
 
         // Set cookie and redirect
         res.cookie('token', token, {
@@ -233,10 +249,14 @@ if (process.env.TWITTER_CONSUMER_KEY && process.env.TWITTER_CONSUMER_SECRET) {
           maxAge: 60 * 60 * 1000 // 1 hour
         });
 
+        console.log('Cookie set successfully');
+
         // Send welcome email for new users
         if (req.user.createdAt && new Date() - req.user.createdAt < 5000) {
           try {
+            console.log('Sending welcome email to new Twitter user...');
             await emailService.sendWelcomeEmail(req.user.email, req.user.userName);
+            console.log('Welcome email sent successfully');
           } catch (emailError) {
             console.error('Failed to send welcome email:', emailError);
           }
@@ -244,9 +264,14 @@ if (process.env.TWITTER_CONSUMER_KEY && process.env.TWITTER_CONSUMER_SECRET) {
 
         // Use server-side OAuth redirect page to handle cross-domain redirect
         const redirectUrl = `/api/auth/oauth-redirect?token=${token}`;
+        console.log('Redirecting to:', redirectUrl);
         res.redirect(redirectUrl);
       } catch (error) {
-        console.error('OAuth callback error:', error);
+        console.error('=== Twitter OAuth Callback Error ===');
+        console.error('Error type:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        console.error('=== End Twitter Callback Error ===');
         res.redirect(`/api/auth/oauth-redirect?error=oauth_callback_failed`);
       }
     }
@@ -343,11 +368,20 @@ router.get('/oauth-redirect', (req, res) => {
   const { token, error } = req.query;
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
   
+  console.log('=== OAuth Redirect Debug ===');
+  console.log('Query params:', req.query);
+  console.log('Token present:', !!token);
+  console.log('Error present:', !!error);
+  console.log('Client URL:', clientUrl);
+  console.log('=== End OAuth Redirect Debug ===');
+  
   if (error) {
+    console.log('Redirecting with error:', error);
     return res.redirect(`${clientUrl}/auth/login?error=${error}`);
   }
   
   if (!token) {
+    console.log('Missing token, redirecting to login');
     return res.redirect(`${clientUrl}/auth/login?error=missing_token`);
   }
   
@@ -361,14 +395,19 @@ router.get('/oauth-redirect', (req, res) => {
     </head>
     <body>
       <p>Redirecting to your account...</p>
+      <p>If you are not redirected automatically, <a href="${clientUrl}/auth/oauth-success?token=${token}">click here</a>.</p>
       <script>
+        console.log('OAuth redirect - Token received, redirecting to client...');
         // Fallback redirect
-        window.location.href = "${clientUrl}/auth/oauth-success?token=${token}";
+        setTimeout(() => {
+          window.location.href = "${clientUrl}/auth/oauth-success?token=${token}";
+        }, 1000);
       </script>
     </body>
     </html>
   `;
   
+  console.log('Sending OAuth redirect HTML page');
   res.send(html);
 });
 
