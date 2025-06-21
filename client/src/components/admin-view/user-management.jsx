@@ -56,6 +56,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import { API_BASE_URL } from '@/config/api';
 
 function AdminUserManagement() {
   const { user } = useSelector((state) => state.auth);
@@ -92,7 +93,7 @@ function AdminUserManagement() {
         ...(filters.role && { role: filters.role })
       });
 
-      const response = await fetch(`/api/users/admin/users?${queryParams}`, {
+      const response = await fetch(`${API_BASE_URL}/api/users/admin/users?${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
@@ -142,7 +143,7 @@ function AdminUserManagement() {
 
     setActionLoading(true);
     try {
-      const response = await fetch(`/api/users/admin/users/${userId}/role`, {
+      const response = await fetch(`${API_BASE_URL}/api/users/admin/users/${userId}/role`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -178,7 +179,7 @@ function AdminUserManagement() {
   const handleStatusToggle = async (userId, currentStatus) => {
     setActionLoading(true);
     try {
-      const response = await fetch(`/api/users/admin/users/${userId}/status`, {
+      const response = await fetch(`${API_BASE_URL}/api/users/admin/users/${userId}/status`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -221,7 +222,7 @@ function AdminUserManagement() {
 
     setActionLoading(true);
     try {
-      const response = await fetch(`/api/users/admin/users/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/users/admin/users/${userId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

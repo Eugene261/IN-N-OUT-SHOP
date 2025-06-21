@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
 import { Settings, MapPin, Ship, DollarSign, User, Shield, Info } from 'lucide-react';
+import { API_BASE_URL } from '@/config/api';
 
 function UserSettings() {
   const { user } = useSelector((state) => state.auth);
@@ -32,7 +33,7 @@ function UserSettings() {
 
   const fetchCompleteUserProfile = async () => {
     try {
-      const response = await fetch('/api/users/profile', {
+      const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
@@ -51,7 +52,7 @@ function UserSettings() {
 
   const fetchUserSettings = async () => {
     try {
-      const response = await fetch('/api/users/settings/shipping', {
+      const response = await fetch(`${API_BASE_URL}/api/users/settings/shipping`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
@@ -91,7 +92,7 @@ function UserSettings() {
     setLoading(true);
 
     try {
-      const response = await fetch(`/api/users/${user.id}/settings`, {
+      const response = await fetch(`${API_BASE_URL}/api/users/${user.id}/settings`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

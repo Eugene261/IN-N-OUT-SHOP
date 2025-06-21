@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { Camera, Mail, Phone, Calendar, User, Building } from 'lucide-react';
 import { setUser } from '@/store/auth-slice';
+import { API_BASE_URL } from '@/config/api';
 
 function ProfileInformation() {
   const { user } = useSelector((state) => state.auth);
@@ -32,7 +33,7 @@ function ProfileInformation() {
   // Fetch fresh user profile data from server
   const fetchUserProfile = async () => {
     try {
-      const response = await fetch('/api/users/profile', {
+      const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
@@ -98,7 +99,7 @@ function ProfileInformation() {
     try {
       console.log('Updating profile with data:', profileData);
       
-      const response = await fetch('/api/users/profile', {
+      const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
