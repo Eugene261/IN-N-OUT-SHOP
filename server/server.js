@@ -103,13 +103,15 @@ app.use(express.json());
 
 // Session middleware for OAuth
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'your-session-secret',
+    secret: process.env.SESSION_SECRET || 'your-session-secret-key-for-oauth-sessions',
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true, // Required for OAuth 1.0a
     cookie: {
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    }
+        maxAge: 60 * 60 * 1000, // 1 hour (shorter for better serverless compatibility)
+        sameSite: 'lax'
+    },
+    name: 'oauth.sid' // Custom session name for OAuth
 }));
 
 // Initialize Passport
