@@ -411,4 +411,37 @@ router.get('/oauth-redirect', (req, res) => {
   res.send(html);
 });
 
+// Twitter OAuth test endpoint
+router.get('/twitter/test', (req, res) => {
+  console.log('=== Twitter OAuth Test ===');
+  console.log('Twitter Consumer Key configured:', !!process.env.TWITTER_CONSUMER_KEY);
+  console.log('Twitter Consumer Secret configured:', !!process.env.TWITTER_CONSUMER_SECRET);
+  console.log('Server URL:', process.env.SERVER_URL);
+  console.log('=== End Twitter Test ===');
+  
+  res.json({
+    success: true,
+    configured: !!(process.env.TWITTER_CONSUMER_KEY && process.env.TWITTER_CONSUMER_SECRET),
+    serverUrl: process.env.SERVER_URL,
+    callbackUrl: `${process.env.SERVER_URL || 'http://localhost:5000'}/api/auth/twitter/callback`
+  });
+});
+
+// Twitter OAuth manual callback test
+router.get('/twitter/callback/test', (req, res) => {
+  console.log('=== Twitter Callback Test ===');
+  console.log('Query params:', req.query);
+  console.log('Session:', req.session);
+  console.log('User:', req.user);
+  console.log('=== End Twitter Callback Test ===');
+  
+  res.json({
+    success: true,
+    query: req.query,
+    hasSession: !!req.session,
+    hasUser: !!req.user,
+    sessionKeys: req.session ? Object.keys(req.session) : []
+  });
+});
+
 module.exports = router;
