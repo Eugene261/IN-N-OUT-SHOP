@@ -67,6 +67,14 @@ export const loginFormControls = [
       placeholder: "Enter your email",
       componentType: "input",
       type: "email",
+      required: true,
+      validation: {
+        required: "Email is required",
+        pattern: {
+          value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+          message: "Please enter a valid email address"
+        }
+      }
   },
   {
       name: "password",
@@ -74,6 +82,14 @@ export const loginFormControls = [
       placeholder: "Enter your password",
       componentType: "input",
       type: "password",
+      required: true,
+      validation: {
+        required: "Password is required",
+        minLength: {
+          value: 6,
+          message: "Password must be at least 6 characters"
+        }
+      }
   },
 ];
 
