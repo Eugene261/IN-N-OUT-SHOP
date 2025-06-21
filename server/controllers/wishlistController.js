@@ -1,24 +1,116 @@
 const Wishlist = require('../models/wishlist');
 const Product = require('../models/Products');
 const mongoose = require('mongoose');
+const { v4: uuidv4 } = require('uuid');
 
-// Add a product to wishlist
-exports.addToWishlist = async (req, res) => {
+// Utility function to generate or get guest ID
+const getGuestId = (req) => {
+  if (!req.session.guestId) {
+    req.session.guestId = uuidv4();
+  }
+  return req.session.guestId;
+};
+
+// Helper function to get formatted wishlist items (moved to top)
+async function getFormattedWishlistItems(userIdentifier) {
   try {
-    const { userId, productId } = req.body;
+    // Find the wishlist
+    const wishlist = await Wishlist.findOne(userIdentifier);
+    
+    if (!wishlist) {
+      return [];
+    }
+    
+    if (!wishlist.products || !Array.isArray(wishlist.products) || wishlist.products.length === 0) {
+      return [];
+    }
 
-    if (!userId || !productId) {
+    // Clean up any invalid product references
+    const validProductIds = wishlist.products
+      .filter(item => {
+        return item && item.productId && mongoose.Types.ObjectId.isValid(item.productId);
+      })
+      .map(item => item.productId);
+
+    if (validProductIds.length === 0) {
+      return [];
+    }
+
+    // Fetch all products in one query
+    const products = await Product.find({
+      _id: { $in: validProductIds }
+    }).select('title price salePrice image brand totalStock');
+
+    // Create a map for quick lookup
+    const productMap = {};
+    products.forEach(product => {
+      productMap[product._id.toString()] = product;
+    });
+
+    // Update wishlist to remove references to deleted products
+    const validWishlistItems = wishlist.products.filter(item => {
+      return item && 
+             item.productId && 
+             mongoose.Types.ObjectId.isValid(item.productId) && 
+             productMap[item.productId.toString()];
+    });
+
+    // If we found invalid items, update the wishlist
+    if (validWishlistItems.length !== wishlist.products.length) {
+      wishlist.products = validWishlistItems;
+      await wishlist.save();
+    }
+
+    // Format the response data
+    const formattedItems = validWishlistItems.map((item) => {
+      const product = productMap[item.productId.toString()];
+      
+      return {
+        _id: item._id,
+        productId: product._id,
+        title: product.title || 'Unknown',
+        price: product.price || 0,
+        salePrice: product.salePrice || 0,
+        image: product.image || '',
+        brand: product.brand || '',
+        totalStock: product.totalStock || 0
+      };
+    });
+
+    return formattedItems;
+  } catch (error) {
+    console.error('Error getting formatted wishlist items:', error);
+    return [];
+  }
+}
+
+// Add a product to wishlist (supports both authenticated and guest users)
+const addToWishlist = async (req, res) => {
+  try {
+    const { userId, productId, guestId } = req.body;
+
+    if (!productId) {
       return res.status(400).json({
         success: false,
-        message: 'User ID and Product ID are required'
+        message: 'Product ID is required'
       });
     }
 
-    // Validate ObjectIds
-    if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(productId)) {
+    // Determine user identification - prefer userId if available, otherwise use guestId
+    let userIdentifier = {};
+    if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+      userIdentifier.userId = userId;
+    } else {
+      // For guest users, use provided guestId or generate/get from session
+      const guestIdentifier = guestId || getGuestId(req);
+      userIdentifier.guestId = guestIdentifier;
+    }
+
+    // Validate productId
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid User ID or Product ID'
+        message: 'Invalid Product ID'
       });
     }
 
@@ -32,12 +124,12 @@ exports.addToWishlist = async (req, res) => {
     }
 
     // Find the user's wishlist or create a new one
-    let wishlist = await Wishlist.findOne({ userId });
+    let wishlist = await Wishlist.findOne(userIdentifier);
 
     if (!wishlist) {
-      // Create new wishlist if it doesn't exist
+      // Create new wishlist
       wishlist = new Wishlist({
-        userId,
+        ...userIdentifier,
         products: [{ productId }]
       });
     } else {
@@ -75,11 +167,18 @@ exports.addToWishlist = async (req, res) => {
       totalStock: product.totalStock
     };
 
-    return res.status(200).json({
+    // Return guest ID in response if this is a guest user
+    const responseData = {
       success: true,
       message: 'Product added to wishlist',
-      data: [productDetails] // Return just the added product
-    });
+      data: [productDetails]
+    };
+
+    if (userIdentifier.guestId) {
+      responseData.guestId = userIdentifier.guestId;
+    }
+
+    return res.status(200).json(responseData);
   } catch (error) {
     console.error('Error adding to wishlist:', error);
     return res.status(500).json({
@@ -90,28 +189,45 @@ exports.addToWishlist = async (req, res) => {
   }
 };
 
-// Remove a product from wishlist
-exports.removeFromWishlist = async (req, res) => {
+// Remove a product from wishlist (supports both authenticated and guest users)
+const removeFromWishlist = async (req, res) => {
   try {
     const { userId, productId } = req.params;
+    const { guestId } = req.query; // Guest ID passed as query parameter
 
-    if (!userId || !productId) {
+    if (!productId) {
       return res.status(400).json({
         success: false,
-        message: 'User ID and Product ID are required'
+        message: 'Product ID is required'
       });
     }
 
-    // Validate ObjectIds
-    if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(productId)) {
+    // Determine user identification
+    let userIdentifier = {};
+    if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+      userIdentifier.userId = userId;
+    } else {
+      // For guest users, use provided guestId or get from session
+      const guestIdentifier = guestId || req.session.guestId;
+      if (!guestIdentifier) {
+        return res.status(400).json({
+          success: false,
+          message: 'Guest ID is required for non-authenticated users'
+        });
+      }
+      userIdentifier.guestId = guestIdentifier;
+    }
+
+    // Validate productId
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid User ID or Product ID'
+        message: 'Invalid Product ID'
       });
     }
 
     // Find the user's wishlist
-    const wishlist = await Wishlist.findOne({ userId });
+    const wishlist = await Wishlist.findOne(userIdentifier);
 
     if (!wishlist) {
       return res.status(404).json({
@@ -131,7 +247,7 @@ exports.removeFromWishlist = async (req, res) => {
     await wishlist.save();
 
     // Get the updated wishlist items
-    const updatedWishlistItems = await getFormattedWishlistItems(userId);
+    const updatedWishlistItems = await getFormattedWishlistItems(userIdentifier);
 
     return res.status(200).json({
       success: true,
@@ -148,44 +264,36 @@ exports.removeFromWishlist = async (req, res) => {
   }
 };
 
-// Get user's wishlist
-exports.getWishlist = async (req, res) => {
-  console.log('getWishlist called with userId:', req.params.userId);
+// Get user's wishlist (supports both authenticated and guest users)
+const getWishlist = async (req, res) => {
   try {
     const { userId } = req.params;
+    const { guestId } = req.query; // Guest ID passed as query parameter
 
-    if (!userId) {
-      console.log('No userId provided');
+    // Determine user identification
+    let userIdentifier = {};
+    if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+      userIdentifier.userId = userId;
+    } else {
+      // For guest users, use provided guestId or get from session
+      const guestIdentifier = guestId || req.session.guestId;
+      if (!guestIdentifier) {
       return res.status(400).json({
         success: false,
-        message: 'User ID is required'
+          message: 'Guest ID is required for non-authenticated users'
       });
     }
-
-    // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      console.log('Invalid userId format:', userId);
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid User ID'
-      });
+      userIdentifier.guestId = guestIdentifier;
     }
 
-    console.log('Calling getFormattedWishlistItems for userId:', userId);
     // Get formatted wishlist items
-    try {
-      const wishlistItems = await getFormattedWishlistItems(userId);
-      console.log('Successfully got wishlist items:', wishlistItems);
+    const wishlistItems = await getFormattedWishlistItems(userIdentifier);
 
       return res.status(200).json({
         success: true,
         message: 'Wishlist retrieved successfully',
         data: wishlistItems
       });
-    } catch (innerError) {
-      console.error('Error in getFormattedWishlistItems:', innerError);
-      throw innerError;
-    }
   } catch (error) {
     console.error('Error fetching wishlist:', error);
     return res.status(500).json({
@@ -196,112 +304,83 @@ exports.getWishlist = async (req, res) => {
   }
 };
 
-// Helper function to get formatted wishlist items
-async function getFormattedWishlistItems(userId) {
-  console.log('getFormattedWishlistItems called with userId:', userId);
+// Migrate guest wishlist to user account when user logs in
+const migrateGuestWishlist = async (req, res) => {
   try {
-    // Find the user's wishlist
-    console.log('Finding wishlist for userId:', userId);
-    const wishlist = await Wishlist.findOne({ userId });
-    console.log('Wishlist found:', wishlist ? 'Yes' : 'No');
-    
-    if (!wishlist) {
-      console.log('No wishlist found for userId:', userId);
-      return [];
-    }
-    
-    console.log('Wishlist products:', wishlist.products ? wishlist.products.length : 'null');
-    
-    if (!wishlist.products || !Array.isArray(wishlist.products) || wishlist.products.length === 0) {
-      console.log('No products in wishlist or invalid products array');
-      return [];
-    }
+    const { userId, guestId } = req.body;
 
-    // Log each product in the wishlist for debugging
-    wishlist.products.forEach((item, index) => {
-      console.log(`Wishlist item ${index}:`, {
-        exists: !!item,
-        hasProductId: item ? !!item.productId : false,
-        productId: item && item.productId ? item.productId.toString() : 'null',
-        isValidObjectId: item && item.productId ? mongoose.Types.ObjectId.isValid(item.productId) : false
+    if (!userId || !guestId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID and Guest ID are required'
       });
-    });
-
-    // Clean up any invalid product references
-    const validProductIds = wishlist.products
-      .filter(item => {
-        const isValid = item && item.productId && mongoose.Types.ObjectId.isValid(item.productId);
-        if (!isValid) console.log('Filtering out invalid product reference:', item);
-        return isValid;
-      })
-      .map(item => item.productId);
-
-    console.log('Valid product IDs count:', validProductIds.length);
-
-    // Fetch all products in one query
-    console.log('Fetching products from database...');
-    const products = await Product.find({
-      _id: { $in: validProductIds }
-    }).select('title price salePrice image brand totalStock');
-
-    console.log('Products found in database:', products.length);
-
-    // Create a map for quick lookup
-    const productMap = {};
-    products.forEach(product => {
-      productMap[product._id.toString()] = product;
-    });
-
-    // Update wishlist to remove references to deleted products
-    const validWishlistItems = wishlist.products.filter(item => {
-      const isValid = item && 
-                      item.productId && 
-                      mongoose.Types.ObjectId.isValid(item.productId) && 
-                      productMap[item.productId.toString()];
-      if (!isValid) console.log('Filtering out wishlist item with invalid/deleted product:', item);
-      return isValid;
-    });
-
-    console.log('Valid wishlist items count:', validWishlistItems.length);
-
-    // If we found invalid items, update the wishlist
-    if (validWishlistItems.length !== wishlist.products.length) {
-      console.log('Updating wishlist to remove invalid product references');
-      wishlist.products = validWishlistItems;
-      await wishlist.save();
-      console.log('Wishlist updated successfully');
     }
 
-    // Format the response data
-    console.log('Formatting response data...');
-    const formattedItems = validWishlistItems.map((item, index) => {
-      try {
-        const product = productMap[item.productId.toString()];
-        if (!product) {
-          console.log(`Item ${index}: No product found in map for ID ${item.productId}`);
-          return null;
-        }
-        
-        return {
-          _id: item._id,
-          productId: product._id,
-          title: product.title || 'Unknown',
-          price: product.price || 0,
-          salePrice: product.salePrice || 0,
-          image: product.image || '',
-          brand: product.brand || '',
-          totalStock: product.totalStock || 0
-        };
-      } catch (err) {
-        console.error(`Error formatting item ${index}:`, err);
-        return null;
-      }
-    }).filter(Boolean); // Remove any null items
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid User ID'
+      });
+    }
 
-    console.log('Final formatted items count:', formattedItems.length);
-    return formattedItems;
+    // Find guest wishlist
+    const guestWishlist = await Wishlist.findOne({ guestId });
+    if (!guestWishlist || !guestWishlist.products.length) {
+      return res.status(200).json({
+        success: true,
+        message: 'No guest wishlist found to migrate',
+        data: []
+      });
+    }
+
+    // Find or create user wishlist
+    let userWishlist = await Wishlist.findOne({ userId });
+    
+    if (!userWishlist) {
+      // Create new user wishlist with guest items
+      userWishlist = new Wishlist({
+        userId,
+        products: guestWishlist.products
+      });
+    } else {
+      // Merge guest items with user wishlist, avoiding duplicates
+      const existingProductIds = userWishlist.products.map(item => 
+        item.productId.toString()
+      );
+      
+      const newProducts = guestWishlist.products.filter(item =>
+        !existingProductIds.includes(item.productId.toString())
+      );
+      
+      userWishlist.products.push(...newProducts);
+    }
+
+    await userWishlist.save();
+
+    // Delete guest wishlist
+    await Wishlist.deleteOne({ guestId });
+
+    // Get formatted wishlist items
+    const wishlistItems = await getFormattedWishlistItems({ userId });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Guest wishlist migrated successfully',
+      data: wishlistItems
+    });
   } catch (error) {
-    console.error('Error getting formatted wishlist items:', error);
-    return [];
+    console.error('Error migrating guest wishlist:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to migrate guest wishlist',
+      error: error.message
+    });
   }
-}
+};
+
+module.exports = {
+  addToWishlist,
+  removeFromWishlist,
+  getWishlist,
+  migrateGuestWishlist
+};

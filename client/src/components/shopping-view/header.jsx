@@ -244,14 +244,20 @@ function HeaderRightContent() {
                 console.error('Error fetching cart:', err);
               });
               
-            // Fetch wishlist items as well
-            dispatch(fetchWishlistItems(userId));
+                          // Fetch wishlist items as well
+            dispatch(fetchWishlistItems({ userId }));
           }
         } else {
           // We're on the order confirmation page
           console.log('On order confirmation page, not fetching cart');
           // Don't clear the wishlist or manipulate anything else on this page
         }
+      }
+    } else {
+      // Guest user - fetch guest wishlist
+      const guestId = localStorage.getItem('guestId');
+      if (guestId) {
+        dispatch(fetchWishlistItems({ guestId }));
       }
     }
   }, [user, dispatch]);
@@ -274,23 +280,21 @@ function HeaderRightContent() {
 
   return (
     <div className="flex items-center space-x-1">
-      {/* Wishlist Button */}
-      {user && (
-        <Link to="/shop/wishlist">
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="relative p-2 rounded-md hover:bg-gray-50 transition-all duration-200"
-          >
-            <Heart className={`w-5 h-5 ${wishlistItems?.length > 0 ? 'fill-red-500 text-red-500' : 'text-gray-900'}`} />
-            {wishlistItems?.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium shadow-sm text-xs">
-                {wishlistItems.length}
-              </span>
-            )}
-          </motion.div>
-        </Link>
-      )}
+      {/* Wishlist Button - Available for both authenticated and guest users */}
+      <Link to="/shop/wishlist">
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="relative p-2 rounded-md hover:bg-gray-50 transition-all duration-200"
+        >
+          <Heart className={`w-5 h-5 ${wishlistItems?.length > 0 ? 'fill-red-500 text-red-500' : 'text-gray-900'}`} />
+          {wishlistItems?.length > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium shadow-sm text-xs">
+              {wishlistItems.length}
+            </span>
+          )}
+        </motion.div>
+      </Link>
       
       {/* Cart Button - Only shown when user is logged in */}
       {user && (

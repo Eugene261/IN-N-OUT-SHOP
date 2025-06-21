@@ -1,6 +1,6 @@
 // App.jsx
 import { Routes, Route } from "react-router-dom";
-import AuthLayout from "./components/auth/Layout";import AuthLogin from "./pages/auth/login";import AuthRegister from "./pages/auth/register";import ForgotPassword from "./pages/auth/forgot-password";import ResetPassword from "./pages/auth/reset-password";
+import AuthLayout from "./components/auth/Layout";import AuthLogin from "./pages/auth/login";import AuthRegister from "./pages/auth/register";import ForgotPassword from "./pages/auth/forgot-password";import ResetPassword from "./pages/auth/reset-password";import OAuthSuccess from "./pages/auth/oauth-success";
 import AdminLayout from "./components/admin-view/layout";
 import AdminProducts from "./pages/admin-view/products";
 import AdminDashboard from "./pages/admin-view/dashboard";
@@ -20,7 +20,8 @@ import CheckAuth from "./components/common/checkAuth";
 import UnauthPage from "./pages/unauth-page";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
-import { checkAuth } from "./store/auth-slice";
+import { useLocation } from "react-router-dom";
+import { checkAuth, setLoading } from "./store/auth-slice";
 import ShoppingLoader from "./components/common/ShoppingLoader";
 // PayPal import removed
 import OrderConfirmationPage from "./pages/shopping-view/orderConfirmation";
@@ -58,10 +59,18 @@ import setupAxiosInterceptors from "./utils/axiosInterceptor";
 function App() {
   const {user, isAuthenticated, isLoading } = useSelector(state => state.auth);
   const dispatch = useDispatch();
+  const location = useLocation();
 
   useEffect(() => {
     // Setup axios interceptors for token expiration handling
     setupAxiosInterceptors();
+    
+    // Skip checkAuth if we're on the oauth-success page, as it will handle authentication
+    if (location.pathname === '/auth/oauth-success') {
+      console.log('App: Skipping checkAuth on oauth-success page');
+      dispatch(setLoading(false)); // Set loading to false since we're not running checkAuth
+      return;
+    }
     
     console.log('App: Dispatching checkAuth...');
     dispatch(checkAuth());
@@ -76,7 +85,17 @@ function App() {
     }, 10000);
 
     return () => clearTimeout(timeout);
-  }, [dispatch]);
+  }, [dispatch, location.pathname]);
+
+  // Separate effect to handle token synchronization after OAuth
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    // If we have a token but Redux state shows not authenticated, sync the state
+    if (token && !isAuthenticated && !isLoading && location.pathname !== '/auth/oauth-success') {
+      console.log('App: Token exists but not authenticated, syncing auth state...');
+      dispatch(checkAuth());
+    }
+  }, [dispatch, isAuthenticated, isLoading, location.pathname]);
 
   // Add debugging for loading state
   useEffect(() => {
@@ -107,6 +126,9 @@ function App() {
             }
           />
                               <Route path='/auth' element={            <CheckAuth isAuthenticated={isAuthenticated} user={user}>              <AuthLayout/>            </CheckAuth>          }>            <Route path='login' element={<AuthLogin />} />            <Route path='register' element={<AuthRegister />} />            <Route path='forgot-password' element={<ForgotPassword />} />            <Route path='reset-password/:token' element={<ResetPassword />} />          </Route>
+
+          {/* OAuth Success Route - Outside CheckAuth to prevent redirect loops */}
+          <Route path='/auth/oauth-success' element={<OAuthSuccess />} />
 
           {/* ADMIN */}
           <Route path='/admin' element={
@@ -168,11 +190,7 @@ function App() {
                 <ShoppingAccount />
               </CheckAuth>
             } />
-            <Route path='wishlist' element={
-              <CheckAuth isAuthenticated={isAuthenticated} user={user}>
-                <WishlistPage />
-              </CheckAuth>
-            } />
+            <Route path='wishlist' element={<WishlistPage />} />
 
             {/* Information Pages */}
             <Route path="contact-us" element={<ContactUs />} />

@@ -13,7 +13,31 @@ const UserSchema = new mongoose.Schema({
     },
     password : {
         type : String,
-        required : true
+        required : function() {
+            // Password is required only if no OAuth provider is used
+            return !this.googleId && !this.facebookId && !this.twitterId;
+        }
+    },
+    // OAuth provider fields
+    googleId: {
+        type: String,
+        unique: true,
+        sparse: true // Allows multiple null values
+    },
+    facebookId: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
+    twitterId: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
+    provider: {
+        type: String,
+        enum: ['local', 'google', 'facebook', 'twitter'],
+        default: 'local'
     },
     role : {
         type : String,

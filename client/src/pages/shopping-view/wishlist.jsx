@@ -25,28 +25,52 @@ const WishlistPage = () => {
         console.log("Fetching wishlist for user ID:", userId);
         // Add a small delay to ensure authentication is fully processed
         const timer = setTimeout(() => {
-          dispatch(fetchWishlistItems(userId));
+          dispatch(fetchWishlistItems({ userId }));
         }, 300);
         
         return () => clearTimeout(timer);
       } else {
         console.error("User object exists but no ID found:", user);
       }
+    } else {
+      // Guest user - fetch guest wishlist
+      const guestId = localStorage.getItem('guestId');
+      if (guestId) {
+        console.log("Fetching wishlist for guest ID:", guestId);
+        dispatch(fetchWishlistItems({ guestId }));
+      } else {
+        // Generate a new guest ID and fetch empty wishlist
+        const newGuestId = 'guest_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('guestId', newGuestId);
+        console.log("Generated new guest ID:", newGuestId);
+        dispatch(fetchWishlistItems({ guestId: newGuestId }));
+      }
     }
   }, [dispatch, user]);
 
   const handleRemoveFromWishlist = (productId) => {
-    if (!user) return;
+    let removeParams = {};
     
-    // Handle both user.id and user._id formats to ensure compatibility
-    const userId = user.id || user._id;
-    if (!userId) {
-      console.error("User object exists but no ID found:", user);
-      toast.error('User information is incomplete');
-      return;
+    if (user) {
+      // Authenticated user
+      const userId = user.id || user._id;
+      if (!userId) {
+        console.error("User object exists but no ID found:", user);
+        toast.error('User information is incomplete');
+        return;
+      }
+      removeParams = { userId, productId };
+    } else {
+      // Guest user
+      const guestId = localStorage.getItem('guestId');
+      if (!guestId) {
+        toast.error('Unable to remove from wishlist');
+        return;
+      }
+      removeParams = { guestId, productId };
     }
     
-    dispatch(removeFromWishlist({ userId, productId }))
+    dispatch(removeFromWishlist(removeParams))
       .unwrap()
       .then((result) => {
         console.log("Removed from wishlist result:", result);
@@ -203,7 +227,7 @@ const WishlistPage = () => {
           </div>
           <h2 className="text-2xl font-medium text-gray-900 mb-2">Your wishlist is empty</h2>
           <p className="text-gray-500 mb-6">Start adding items to your wishlist by clicking the heart icon on products</p>
-          <Link to="/shop/products">
+          <Link to="/shop/listing">
             <motion.button
               className="py-2.5 px-6 bg-black text-white rounded-lg text-sm font-medium 
               hover:bg-gray-800 transition-colors"

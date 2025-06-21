@@ -41,9 +41,15 @@ const NewArrivals = () => {
       console.error("Error dispatching fetchNewArrivalProducts:", error);
     }
 
-    // Fetch wishlist items if user is logged in
+    // Fetch wishlist items for both authenticated and guest users
     if (user && user._id) {
-      dispatch(fetchWishlistItems(user._id));
+      dispatch(fetchWishlistItems({ userId: user._id }));
+    } else {
+      // Guest user - fetch guest wishlist
+      const guestId = localStorage.getItem('guestId');
+      if (guestId) {
+        dispatch(fetchWishlistItems({ guestId }));
+      }
     }
   }, [dispatch, user]);
 
@@ -99,26 +105,19 @@ const NewArrivals = () => {
   const handleToggleWishlist = (e, product) => {
     e.stopPropagation();
     
-    if (!user) {
-      toast.info("Please login to add items to your wishlist", {
-        description: "You'll be redirected to the login page",
-        duration: 3000
-      });
-      // Set a timeout to allow the toast to be shown before redirecting
-      setTimeout(() => {
-        // Store the current page URL in sessionStorage to redirect back after login
-        sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
-        navigate('/auth/login');
-      }, 1500);
-      return;
-    }
+    let wishlistParams = {};
     
-    // Ensure user ID is available
-    const userId = user?.id || user?._id;
-    if (!userId) {
-      console.error("User is authenticated but ID is missing:", user);
-      toast.error("User information is incomplete. Please try logging in again.");
-      return;
+    if (user && (user._id || user.id)) {
+      // Authenticated user
+      wishlistParams.userId = user._id || user.id;
+    } else {
+      // Guest user - get or create guest ID
+      let guestId = localStorage.getItem('guestId');
+      if (!guestId) {
+        guestId = 'guest_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('guestId', guestId);
+      }
+      wishlistParams.guestId = guestId;
     }
     
     const productId = product._id;
@@ -134,7 +133,7 @@ const NewArrivals = () => {
     );
     
     if (isInWishlist) {
-      dispatch(removeFromWishlist({ userId, productId }))
+      dispatch(removeFromWishlist({ ...wishlistParams, productId }))
         .then(() => {
           toast.success("Removed from wishlist");
         })
@@ -143,7 +142,7 @@ const NewArrivals = () => {
           toast.error("Failed to remove from wishlist");
         });
     } else {
-      dispatch(addToWishlist({ userId, productId }))
+      dispatch(addToWishlist({ ...wishlistParams, productId }))
         .then(() => {
           toast.success("Added to wishlist");
         })

@@ -8,32 +8,56 @@ const initialState = {
   error: null
 };
 
-// Add to wishlist
+// Utility function to get or generate guest ID
+const getGuestId = () => {
+  let guestId = localStorage.getItem('guestId');
+  if (!guestId) {
+    guestId = 'guest_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('guestId', guestId);
+  }
+  return guestId;
+};
+
+// Add to wishlist (supports both authenticated and guest users)
 export const addToWishlist = createAsyncThunk(
   "wishlist/addToWishlist",
-  async ({ userId, productId }, { rejectWithValue, getState }) => {
+  async ({ userId, productId, guestId }, { rejectWithValue, getState }) => {
     // Validate inputs before making the API call
-    if (!userId || !productId) {
-      console.error("Missing required parameters:", { userId, productId });
-      return rejectWithValue("User ID and Product ID are required");
+    if (!productId) {
+      console.error("Missing required parameter: productId");
+      return rejectWithValue("Product ID is required");
+    }
+
+    // Determine user identification
+    let requestData = { productId };
+    if (userId) {
+      requestData.userId = userId;
+    } else {
+      requestData.guestId = guestId || getGuestId();
     }
     
     try {
-      console.log("Adding to wishlist:", { userId, productId });
+      console.log("Adding to wishlist:", requestData);
       
       // Make the API call to add to wishlist
       const response = await axios.post(
         `${API_BASE_URL}/api/shop/wishlist/add`,
-        { userId, productId }
+        requestData
       );
 
       if (response.data.success) {
         console.log("Wishlist add response:", response.data);
         
         // After successful add, fetch the complete updated wishlist
-        const wishlistResponse = await axios.get(
-          `${API_BASE_URL}/api/shop/wishlist/${userId}`
-        );
+        let wishlistUrl = '';
+        if (userId) {
+          wishlistUrl = `${API_BASE_URL}/api/shop/wishlist/${userId}`;
+        } else {
+          const guestIdentifier = guestId || getGuestId();
+          wishlistUrl = `${API_BASE_URL}/api/shop/wishlist/guest?guestId=${guestIdentifier}`;
+        }
+        
+        const wishlistResponse = await axios.get(wishlistUrl);
         
         return wishlistResponse.data;
       } else {
@@ -53,22 +77,34 @@ export const addToWishlist = createAsyncThunk(
   }
 );
 
-// Remove from wishlist
+// Remove from wishlist (supports both authenticated and guest users)
 export const removeFromWishlist = createAsyncThunk(
   "wishlist/removeFromWishlist",
-  async ({ userId, productId }, { rejectWithValue }) => {
+  async ({ userId, productId, guestId }, { rejectWithValue }) => {
     // Validate inputs before making the API call
-    if (!userId || !productId) {
-      console.error("Missing required parameters:", { userId, productId });
-      return rejectWithValue("User ID and Product ID are required");
+    if (!productId) {
+      console.error("Missing required parameter: productId");
+      return rejectWithValue("Product ID is required");
+    }
+
+    // Determine user identification
+    let urlParams = '';
+    if (userId) {
+      urlParams = `/${userId}/${productId}`;
+    } else {
+      const guestIdentifier = guestId || localStorage.getItem('guestId');
+      if (!guestIdentifier) {
+        return rejectWithValue("Guest ID is required for non-authenticated users");
+      }
+      urlParams = `/guest/${productId}?guestId=${guestIdentifier}`;
     }
     
     try {
-      console.log("Removing from wishlist:", { userId, productId });
+      console.log("Removing from wishlist:", { userId, productId, guestId });
       
       // Make the API call to remove from wishlist
       const response = await axios.delete(
-        `${API_BASE_URL}/api/shop/wishlist/remove/${userId}/${productId}`
+        `${API_BASE_URL}/api/shop/wishlist/remove${urlParams}`
       );
       console.log("Wishlist remove response:", response.data);
       
@@ -82,18 +118,31 @@ export const removeFromWishlist = createAsyncThunk(
   }
 );
 
-// Fetch wishlist items
+// Fetch wishlist items (supports both authenticated and guest users)
 export const fetchWishlistItems = createAsyncThunk(
   "wishlist/fetchWishlistItems",
-  async (userId, { rejectWithValue }) => {
-    if (!userId) {
-      console.log("No user ID provided for fetchWishlistItems, returning empty array");
-      return { data: [] };
+  async ({ userId, guestId }, { rejectWithValue }) => {
+    // For guest users, use guestId; for authenticated users, use userId
+    let urlParams = '';
+    let identifier = '';
+    
+    if (userId) {
+      urlParams = `/${userId}`;
+      identifier = userId;
+    } else {
+      const guestIdentifier = guestId || localStorage.getItem('guestId');
+      if (!guestIdentifier) {
+        console.log("No user ID or guest ID provided for fetchWishlistItems, returning empty array");
+        return { data: [] };
+      }
+      urlParams = `/guest?guestId=${guestIdentifier}`;
+      identifier = guestIdentifier;
     }
+
     try {
-      console.log("Fetching wishlist for user:", userId);
+      console.log("Fetching wishlist for:", identifier);
       const response = await axios.get(
-        `${API_BASE_URL}/api/shop/wishlist/${userId}`
+        `${API_BASE_URL}/api/shop/wishlist${urlParams}`
       );
       console.log("Wishlist fetch response:", response.data);
       
@@ -110,6 +159,27 @@ export const fetchWishlistItems = createAsyncThunk(
       console.error("Error response data:", error.response?.data);
       // Return an empty array on error to prevent UI crashes
       return { data: [] };
+    }
+  }
+);
+
+// Migrate guest wishlist to user account when user logs in
+export const migrateGuestWishlist = createAsyncThunk(
+  "wishlist/migrateGuestWishlist",
+  async ({ userId, guestId }, { rejectWithValue }) => {
+    try {
+      console.log("Migrating guest wishlist:", { userId, guestId });
+      
+      const response = await axios.post(
+        `${API_BASE_URL}/api/shop/wishlist/migrate`,
+        { userId, guestId }
+      );
+      
+      console.log("Wishlist migration response:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Error migrating wishlist:", error);
+      return rejectWithValue(error.response?.data || "Failed to migrate wishlist");
     }
   }
 );
@@ -191,6 +261,20 @@ const wishlistSlice = createSlice({
       .addCase(fetchWishlistItems.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload || "Failed to fetch wishlist";
+      })
+      
+      // Migrate guest wishlist
+      .addCase(migrateGuestWishlist.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(migrateGuestWishlist.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.wishlistItems = action.payload.data || [];
+      })
+      .addCase(migrateGuestWishlist.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload || "Failed to migrate wishlist";
       });
   },
 });

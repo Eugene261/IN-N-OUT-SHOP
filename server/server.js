@@ -3,6 +3,8 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const path = require('path');
+const session = require('express-session');
+const passport = require('./config/passport');
 
 // Environment variable validation
 console.log('=== ENVIRONMENT VALIDATION ===');
@@ -98,6 +100,21 @@ app.use(
 
 app.use(cookieParser());
 app.use(express.json());
+
+// Session middleware for OAuth
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'your-session-secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+}));
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

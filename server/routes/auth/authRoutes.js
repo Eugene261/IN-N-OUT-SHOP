@@ -2,6 +2,8 @@ const express = require('express');
 const { registerUser, loginUser, logoutUser, authMiddleware, forgotPassword, verifyResetToken, resetPassword } = require('../../controllers/authController');
 const { authRateLimiter } = require('../../Middleware/rateLimiter');
 const emailService = require('../../services/emailService');
+const passport = require('../../config/passport');
+const jwt = require('jsonwebtoken');
 
 const router = express.Router()
 
@@ -81,6 +83,149 @@ router.post('/test-email', authRateLimiter, async (req, res) => {
             error: process.env.NODE_ENV === 'development' ? error.message : 'Email service error'
         });
     }
+});
+
+// OAuth Routes
+
+// Google OAuth
+router.get('/google', 
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+router.get('/google/callback', 
+  passport.authenticate('google', { failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/login?error=oauth_failed` }),
+  async (req, res) => {
+    try {
+      // Generate JWT token for the authenticated user
+      const token = jwt.sign({
+        id: req.user._id,
+        role: req.user.role,
+        email: req.user.email,
+        userName: req.user.userName
+      }, process.env.JWT_SECRET || 'CLIENT_SECRET_KEY', { expiresIn: '1h' });
+
+      // Set cookie and redirect
+      res.cookie('token', token, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 1000 // 1 hour
+      });
+
+      // Send welcome email for new users
+      if (req.user.createdAt && new Date() - req.user.createdAt < 5000) {
+        try {
+          await emailService.sendWelcomeEmail(req.user.email, req.user.userName);
+        } catch (emailError) {
+          console.error('Failed to send welcome email:', emailError);
+        }
+      }
+
+      // Redirect to client with success
+      const redirectUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/oauth-success?token=${token}`;
+      res.redirect(redirectUrl);
+    } catch (error) {
+      console.error('OAuth callback error:', error);
+      res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/login?error=oauth_callback_failed`);
+    }
+  }
+);
+
+// Facebook OAuth
+router.get('/facebook',
+  passport.authenticate('facebook', { scope: ['email'] })
+);
+
+router.get('/facebook/callback',
+  passport.authenticate('facebook', { failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/login?error=oauth_failed` }),
+  async (req, res) => {
+    try {
+      // Generate JWT token for the authenticated user
+      const token = jwt.sign({
+        id: req.user._id,
+        role: req.user.role,
+        email: req.user.email,
+        userName: req.user.userName
+      }, process.env.JWT_SECRET || 'CLIENT_SECRET_KEY', { expiresIn: '1h' });
+
+      // Set cookie and redirect
+      res.cookie('token', token, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 1000 // 1 hour
+      });
+
+      // Send welcome email for new users
+      if (req.user.createdAt && new Date() - req.user.createdAt < 5000) {
+        try {
+          await emailService.sendWelcomeEmail(req.user.email, req.user.userName);
+        } catch (emailError) {
+          console.error('Failed to send welcome email:', emailError);
+        }
+      }
+
+      // Redirect to client with success
+      const redirectUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/oauth-success?token=${token}`;
+      res.redirect(redirectUrl);
+    } catch (error) {
+      console.error('OAuth callback error:', error);
+      res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/login?error=oauth_callback_failed`);
+    }
+  }
+);
+
+// Twitter OAuth
+router.get('/twitter',
+  passport.authenticate('twitter')
+);
+
+router.get('/twitter/callback',
+  passport.authenticate('twitter', { failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/login?error=oauth_failed` }),
+  async (req, res) => {
+    try {
+      // Generate JWT token for the authenticated user
+      const token = jwt.sign({
+        id: req.user._id,
+        role: req.user.role,
+        email: req.user.email,
+        userName: req.user.userName
+      }, process.env.JWT_SECRET || 'CLIENT_SECRET_KEY', { expiresIn: '1h' });
+
+      // Set cookie and redirect
+      res.cookie('token', token, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 1000 // 1 hour
+      });
+
+      // Send welcome email for new users
+      if (req.user.createdAt && new Date() - req.user.createdAt < 5000) {
+        try {
+          await emailService.sendWelcomeEmail(req.user.email, req.user.userName);
+        } catch (emailError) {
+          console.error('Failed to send welcome email:', emailError);
+        }
+      }
+
+      // Redirect to client with success
+      const redirectUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/oauth-success?token=${token}`;
+      res.redirect(redirectUrl);
+    } catch (error) {
+      console.error('OAuth callback error:', error);
+      res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/login?error=oauth_callback_failed`);
+    }
+  }
+);
+
+// OAuth success endpoint for client-side token handling
+router.get('/oauth-success', (req, res) => {
+  res.json({
+    success: true,
+    message: 'OAuth authentication successful',
+    redirect: process.env.CLIENT_URL || 'http://localhost:5173'
+  });
 });
 
 module.exports = router;

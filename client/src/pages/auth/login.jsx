@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react'
 import { useDispatch } from 'react-redux';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
+import OAuthButtons from '@/components/auth/OAuthButtons';
 
 const initialState = {
   email: '',
@@ -118,7 +119,29 @@ function AuthLogin() {
           </Link>
         </p>
       </div>
-      <CommonForm         formControls={loginFormControls}        buttonText={isLoading ? 'Signing In...' : 'Sign In'}        formData={formData}        setFormData={setFormData}        onSubmit={onSubmit}        disabled={isLoading}      />            {/* Forgot Password Link */}      <div className="text-center">        <Link           to="/auth/forgot-password"           className="text-sm text-blue-600 hover:text-blue-800 hover:underline font-medium"        >          Forgot your password?        </Link>      </div>    </div>
+      
+      <CommonForm 
+        formControls={loginFormControls}
+        buttonText={isLoading ? 'Signing In...' : 'Sign In'}
+        formData={formData}
+        setFormData={setFormData}
+        onSubmit={onSubmit}
+        disabled={isLoading}
+      />
+      
+      {/* OAuth Buttons */}
+      <OAuthButtons />
+      
+      {/* Forgot Password Link */}
+      <div className="text-center">
+        <Link 
+          to="/auth/forgot-password"
+          className="text-sm text-blue-600 hover:text-blue-800 hover:underline font-medium"
+        >
+          Forgot your password?
+        </Link>
+      </div>
+    </div>
   );
 }
 

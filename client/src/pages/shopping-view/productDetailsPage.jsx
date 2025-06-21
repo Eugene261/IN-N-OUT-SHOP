@@ -238,23 +238,19 @@ function ProductDetailsPage() {
   };
 
   function handleToggleWishlist(productId) {
-    if (!isAuthenticated) {
-      toast.info("Please login to add items to your wishlist", {
-        description: "You'll be redirected to the login page",
-        duration: 3000
-      });
-      setTimeout(() => {
-        sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
-        navigate('/auth/login');
-      }, 1500);
-      return;
-    }
-
-    const userId = user?.id || user?._id;
-    if (!userId) {
-      console.error("User is authenticated but ID is missing:", user);
-      toast.error("User information is incomplete. Please try logging in again.");
-      return;
+    let wishlistParams = {};
+    
+    if (isAuthenticated && user && (user._id || user.id)) {
+      // Authenticated user
+      wishlistParams.userId = user._id || user.id;
+    } else {
+      // Guest user - get or create guest ID
+      let guestId = localStorage.getItem('guestId');
+      if (!guestId) {
+        guestId = 'guest_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('guestId', guestId);
+      }
+      wishlistParams.guestId = guestId;
     }
 
     const targetProductId = productId || productDetails?._id;
@@ -270,13 +266,13 @@ function ProductDetailsPage() {
 
     if (isProductInWishlist) {
       dispatch(removeFromWishlist({
-        userId,
+        ...wishlistParams,
         productId: targetProductId
       }));
       toast.success("Removed from wishlist");
     } else {
       dispatch(addToWishlist({
-        userId,
+        ...wishlistParams,
         productId: targetProductId
       }));
       toast.success("Added to wishlist");

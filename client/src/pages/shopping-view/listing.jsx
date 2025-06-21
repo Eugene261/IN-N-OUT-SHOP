@@ -152,9 +152,15 @@ function ShoppingListing() {
     // Fetch available shops for filtering
     dispatch(fetchAvailableShops());
     
-    // Fetch wishlist items if user is logged in
+    // Fetch wishlist items for both authenticated and guest users
     if (user && (user._id || user.id)) {
-      dispatch(fetchWishlistItems(user._id || user.id));
+      dispatch(fetchWishlistItems({ userId: user._id || user.id }));
+    } else {
+      // Guest user - fetch guest wishlist
+      const guestId = localStorage.getItem('guestId');
+      if (guestId) {
+        dispatch(fetchWishlistItems({ guestId }));
+      }
     }
   }, [dispatch, user]);
 
@@ -335,23 +341,27 @@ function ShoppingListing() {
   }
 
   function handleAddToWishlist(getCurrentProductId) {
-    // Check if user is authenticated
-    if (!user || !user.id) {
-      toast.error("Please login to add items to your wishlist", {
-        position: 'top-center',
-        duration: 2000
-      });
-      return;
+    let wishlistParams = {};
+    
+    if (user && (user._id || user.id)) {
+      // Authenticated user
+      wishlistParams.userId = user._id || user.id;
+    } else {
+      // Guest user - get or create guest ID
+      let guestId = localStorage.getItem('guestId');
+      if (!guestId) {
+        guestId = 'guest_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('guestId', guestId);
+      }
+      wishlistParams.guestId = guestId;
     }
-
-    const userId = user._id || user.id;
     
     // Check if product is already in wishlist
     const isInWishlist = wishlistItems?.some(item => item.productId === getCurrentProductId);
     
     if (isInWishlist) {
       // Remove from wishlist
-      dispatch(removeFromWishlist({ userId, productId: getCurrentProductId }))
+      dispatch(removeFromWishlist({ ...wishlistParams, productId: getCurrentProductId }))
         .then((result) => {
           if (result?.payload?.success) {
             toast.success("Removed from wishlist", {
@@ -362,7 +372,7 @@ function ShoppingListing() {
         });
     } else {
       // Add to wishlist
-      dispatch(addToWishlist({ userId, productId: getCurrentProductId }))
+      dispatch(addToWishlist({ ...wishlistParams, productId: getCurrentProductId }))
         .then((result) => {
           if (result?.payload?.success) {
             toast.success("Added to wishlist", {
