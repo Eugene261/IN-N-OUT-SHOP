@@ -2,7 +2,6 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const FacebookStrategy = require('passport-facebook').Strategy;
 const TwitterStrategy = require('passport-twitter').Strategy;
-const TwitterOAuth2Strategy = require('passport-twitter-oauth2').Strategy;
 const User = require('../models/User');
 
 // Serialize user for session storage
@@ -137,86 +136,8 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
 
 // Twitter OAuth Strategy - Only initialize if credentials are provided
 if (process.env.TWITTER_CONSUMER_KEY && process.env.TWITTER_CONSUMER_SECRET) {
-  // Try OAuth 2.0 first (modern Twitter apps)
-  passport.use('twitter-oauth2', new TwitterOAuth2Strategy({
-    clientID: process.env.TWITTER_CONSUMER_KEY,
-    clientSecret: process.env.TWITTER_CONSUMER_SECRET,
-    callbackURL: `${process.env.SERVER_URL || 'http://localhost:5000'}/api/auth/twitter/callback`,
-    scope: ['tweet.read', 'users.read']
-  }, async (accessToken, refreshToken, profile, done) => {
-    try {
-      console.log('=== Twitter OAuth 2.0 Debug ===');
-      console.log('Access Token:', accessToken ? 'Present' : 'Missing');
-      console.log('Profile:', JSON.stringify(profile, null, 2));
-      console.log('Profile ID:', profile.id);
-      console.log('Profile Username:', profile.username);
-      console.log('Profile Display Name:', profile.name);
-      console.log('=== End Twitter Debug ===');
-      
-      // Check if user already exists with this Twitter ID
-      let user = await User.findOne({ twitterId: profile.id });
-      
-      if (user) {
-        console.log('Found existing user with Twitter ID:', user.userName);
-        return done(null, user);
-      }
-      
-      // Check if user exists with the same email (Twitter OAuth 2.0 might not provide email)
-      let emailUser = null;
-      if (profile.email) {
-        console.log('Checking for existing user with email:', profile.email);
-        emailUser = await User.findOne({ email: profile.email });
-      }
-      
-      if (emailUser) {
-        console.log('Found existing user with email, linking Twitter account');
-        emailUser.twitterId = profile.id;
-        emailUser.provider = 'twitter';
-        if (!emailUser.avatar && profile.profile_image_url) {
-          emailUser.avatar = profile.profile_image_url;
-        }
-        await emailUser.save();
-        return done(null, emailUser);
-      }
-      
-      // Create new user
-      console.log('Creating new user for Twitter OAuth 2.0');
-      const userName = profile.username || profile.name || `twitter_user_${profile.id}`;
-      const email = profile.email || `${userName}@twitter-oauth.local`;
-      
-      const newUser = new User({
-        twitterId: profile.id,
-        userName: userName,
-        email: email,
-        firstName: profile.name?.split(' ')[0] || '',
-        lastName: profile.name?.split(' ').slice(1).join(' ') || '',
-        avatar: profile.profile_image_url || '',
-        provider: 'twitter',
-        isActive: true
-      });
-      
-      console.log('New user data:', {
-        twitterId: newUser.twitterId,
-        userName: newUser.userName,
-        email: newUser.email
-      });
-      
-      await newUser.save();
-      console.log('New Twitter user created successfully');
-      
-      return done(null, newUser);
-    } catch (error) {
-      console.error('=== Twitter OAuth 2.0 Error ===');
-      console.error('Error type:', error.name);
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-      console.error('=== End Twitter Error ===');
-      return done(error, null);
-    }
-  }));
-  
-  // Fallback to OAuth 1.0a if OAuth 2.0 fails
-  passport.use('twitter-oauth1', new TwitterStrategy({
+  // Use OAuth 1.0a (most Twitter apps use this)
+  passport.use('twitter', new TwitterStrategy({
     consumerKey: process.env.TWITTER_CONSUMER_KEY,
     consumerSecret: process.env.TWITTER_CONSUMER_SECRET,
     callbackURL: `${process.env.SERVER_URL || 'http://localhost:5000'}/api/auth/twitter/callback`,
@@ -287,7 +208,7 @@ if (process.env.TWITTER_CONSUMER_KEY && process.env.TWITTER_CONSUMER_SECRET) {
       
       return done(null, newUser);
     } catch (error) {
-      console.error('=== Twitter OAuth 1.0a Error ===');
+      console.error('=== Twitter OAuth Error ===');
       console.error('Error type:', error.name);
       console.error('Error message:', error.message);
       console.error('Error stack:', error.stack);

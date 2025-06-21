@@ -207,35 +207,15 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
   });
 }
 
-// Twitter OAuth - Try OAuth 2.0 first, fallback to OAuth 1.0a
+// Twitter OAuth - Using OAuth 1.0a (standard for Twitter)
 if (process.env.TWITTER_CONSUMER_KEY && process.env.TWITTER_CONSUMER_SECRET) {
-  router.get('/twitter', (req, res, next) => {
-    // Try OAuth 2.0 first
-    passport.authenticate('twitter-oauth2', (err, user, info) => {
-      if (err || !user) {
-        console.log('Twitter OAuth 2.0 failed, trying OAuth 1.0a:', err?.message || info?.message);
-        // Fallback to OAuth 1.0a
-        return passport.authenticate('twitter-oauth1')(req, res, next);
-      }
-      req.user = user;
-      next();
-    })(req, res, next);
-  });
+  router.get('/twitter',
+    passport.authenticate('twitter')
+  );
 
-  router.get('/twitter/callback', (req, res, next) => {
-    // Try OAuth 2.0 callback first
-    passport.authenticate('twitter-oauth2', { session: false }, (err, user, info) => {
-      if (err || !user) {
-        console.log('Twitter OAuth 2.0 callback failed, trying OAuth 1.0a:', err?.message || info?.message);
-        // Fallback to OAuth 1.0a callback
-        return passport.authenticate('twitter-oauth1', { 
-          failureRedirect: `/api/auth/oauth-redirect?error=oauth_failed` 
-        })(req, res, next);
-      }
-      req.user = user;
-      next();
-         })(req, res, next);
-   }, async (req, res) => {
+  router.get('/twitter/callback',
+    passport.authenticate('twitter', { failureRedirect: `/api/auth/oauth-redirect?error=oauth_failed` }),
+    async (req, res) => {
       try {
         // Generate JWT token for the authenticated user
         const token = jwt.sign({
