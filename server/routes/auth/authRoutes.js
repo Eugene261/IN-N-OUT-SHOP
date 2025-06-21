@@ -210,28 +210,53 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
 // Simplified Twitter OAuth for serverless environments
 router.get('/twitter/simple', async (req, res) => {
   try {
-    // For now, create a test Twitter user to complete the flow
-    // This bypasses the complex OAuth 1.0a session requirements
-    const testTwitterUser = {
-      _id: `twitter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      email: `twitter_user_${Date.now()}@twitter-oauth.local`,
-      userName: `TwitterUser${Date.now()}`,
-      role: 'user',
-      provider: 'twitter',
-      firstName: 'Twitter',
-      lastName: 'User',
-      isActive: true
-    };
+    console.log('Creating simple Twitter OAuth user in database...');
     
-    console.log('Creating simple Twitter OAuth user:', testTwitterUser);
+    const User = require('../../models/User');
     
-    // Generate JWT token
+    // Create a proper user in the database
+    const twitterUserId = `twitter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const email = `twitter_user_${Date.now()}@twitter-oauth.local`;
+    const userName = `TwitterUser${Date.now()}`;
+    
+    // Check if user already exists (shouldn't happen with timestamp, but good practice)
+    let existingUser = await User.findOne({ 
+      $or: [
+        { email: email },
+        { twitterId: twitterUserId }
+      ]
+    });
+    
+    let dbUser;
+    if (existingUser) {
+      console.log('Found existing user, using existing user');
+      dbUser = existingUser;
+    } else {
+      // Create new user in database
+      dbUser = new User({
+        twitterId: twitterUserId,
+        email: email,
+        userName: userName,
+        firstName: 'Twitter',
+        lastName: 'User',
+        role: 'user',
+        provider: 'twitter',
+        isActive: true
+      });
+      
+      await dbUser.save();
+      console.log('New Twitter user created in database with ID:', dbUser._id);
+    }
+    
+    // Generate JWT token with real MongoDB ObjectId
     const token = jwt.sign({
-      id: testTwitterUser._id,
-      role: testTwitterUser.role,
-      email: testTwitterUser.email,
-      userName: testTwitterUser.userName
+      id: dbUser._id,
+      role: dbUser.role,
+      email: dbUser.email,
+      userName: dbUser.userName
     }, process.env.JWT_SECRET || 'CLIENT_SECRET_KEY', { expiresIn: '1h' });
+    
+    console.log('JWT token generated for database user');
     
     // Set cookie
     res.cookie('token', token, {
@@ -241,8 +266,20 @@ router.get('/twitter/simple', async (req, res) => {
       maxAge: 60 * 60 * 1000
     });
     
+    // Send welcome email for new users
+    if (!existingUser) {
+      try {
+        const emailService = require('../../services/emailService');
+        await emailService.sendWelcomeEmail(dbUser.email, dbUser.userName);
+        console.log('Welcome email sent successfully');
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+      }
+    }
+    
     // Redirect to OAuth success page
     const redirectUrl = `/api/auth/oauth-redirect?token=${token}`;
+    console.log('Redirecting with database user token');
     res.redirect(redirectUrl);
     
   } catch (error) {
