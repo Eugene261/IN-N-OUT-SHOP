@@ -214,7 +214,33 @@ if (process.env.TWITTER_CONSUMER_KEY && process.env.TWITTER_CONSUMER_SECRET) {
   );
 
   router.get('/twitter/callback',
-    passport.authenticate('twitter', { failureRedirect: `/api/auth/oauth-redirect?error=oauth_failed` }),
+    (req, res, next) => {
+      console.log('=== Twitter Callback Start ===');
+      console.log('Query params:', req.query);
+      console.log('Session ID:', req.sessionID);
+      console.log('Session keys:', req.session ? Object.keys(req.session) : 'No session');
+      
+      passport.authenticate('twitter', (err, user, info) => {
+        console.log('=== Passport Authenticate Result ===');
+        console.log('Error:', err);
+        console.log('User:', !!user);
+        console.log('Info:', info);
+        console.log('=== End Passport Result ===');
+        
+        if (err) {
+          console.error('Passport authentication error:', err);
+          return res.redirect(`/api/auth/oauth-redirect?error=passport_error`);
+        }
+        
+        if (!user) {
+          console.error('No user returned from Passport');
+          return res.redirect(`/api/auth/oauth-redirect?error=no_user_passport`);
+        }
+        
+        req.user = user;
+        next();
+      })(req, res, next);
+    },
     async (req, res) => {
       try {
         console.log('=== Twitter Callback Debug ===');
