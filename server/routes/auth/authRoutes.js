@@ -207,15 +207,35 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
   });
 }
 
-// Twitter OAuth
+// Twitter OAuth - Try OAuth 2.0 first, fallback to OAuth 1.0a
 if (process.env.TWITTER_CONSUMER_KEY && process.env.TWITTER_CONSUMER_SECRET) {
-  router.get('/twitter',
-    passport.authenticate('twitter')
-  );
+  router.get('/twitter', (req, res, next) => {
+    // Try OAuth 2.0 first
+    passport.authenticate('twitter-oauth2', (err, user, info) => {
+      if (err || !user) {
+        console.log('Twitter OAuth 2.0 failed, trying OAuth 1.0a:', err?.message || info?.message);
+        // Fallback to OAuth 1.0a
+        return passport.authenticate('twitter-oauth1')(req, res, next);
+      }
+      req.user = user;
+      next();
+    })(req, res, next);
+  });
 
-  router.get('/twitter/callback',
-    passport.authenticate('twitter', { failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/login?error=oauth_failed` }),
-    async (req, res) => {
+  router.get('/twitter/callback', (req, res, next) => {
+    // Try OAuth 2.0 callback first
+    passport.authenticate('twitter-oauth2', { session: false }, (err, user, info) => {
+      if (err || !user) {
+        console.log('Twitter OAuth 2.0 callback failed, trying OAuth 1.0a:', err?.message || info?.message);
+        // Fallback to OAuth 1.0a callback
+        return passport.authenticate('twitter-oauth1', { 
+          failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/login?error=oauth_failed` 
+        })(req, res, next);
+      }
+      req.user = user;
+      next();
+         })(req, res, next);
+   }, async (req, res) => {
       try {
         // Generate JWT token for the authenticated user
         const token = jwt.sign({
@@ -278,6 +298,31 @@ router.get('/oauth-providers', (req, res) => {
   res.json({
     success: true,
     providers
+  });
+});
+
+// Debug endpoint for OAuth callback URLs
+router.get('/debug/oauth-urls', (req, res) => {
+  const baseUrl = process.env.SERVER_URL || 'http://localhost:5000';
+  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+  
+  res.json({
+    success: true,
+    urls: {
+      serverUrl: baseUrl,
+      clientUrl: clientUrl,
+      callbacks: {
+        google: `${baseUrl}/api/auth/google/callback`,
+        facebook: `${baseUrl}/api/auth/facebook/callback`,
+        twitter: `${baseUrl}/api/auth/twitter/callback`
+      },
+      environment: {
+        NODE_ENV: process.env.NODE_ENV,
+        hasGoogleCredentials: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+        hasFacebookCredentials: !!(process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET),
+        hasTwitterCredentials: !!(process.env.TWITTER_CONSUMER_KEY && process.env.TWITTER_CONSUMER_SECRET)
+      }
+    }
   });
 });
 
