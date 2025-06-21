@@ -137,7 +137,7 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
 // Twitter OAuth Strategy - Only initialize if credentials are provided
 if (process.env.TWITTER_CONSUMER_KEY && process.env.TWITTER_CONSUMER_SECRET) {
   // Use OAuth 1.0a (most Twitter apps use this)
-  passport.use('twitter', new TwitterStrategy({
+  passport.use(new TwitterStrategy({
     consumerKey: process.env.TWITTER_CONSUMER_KEY,
     consumerSecret: process.env.TWITTER_CONSUMER_SECRET,
     callbackURL: `${process.env.SERVER_URL || 'http://localhost:5000'}/api/auth/twitter/callback`,
