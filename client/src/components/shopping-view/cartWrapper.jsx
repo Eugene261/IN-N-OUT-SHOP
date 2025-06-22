@@ -72,7 +72,7 @@ function UserCartWraper({cartItems}) {
           
           <motion.button 
             onClick={() => {
-              navigate('/shop/checkout')
+              navigate('/shop/checkout/address')
               dispatch(closeCart());
             }}
             className="w-full mt-4 py-3 px-6 bg-black text-white font-medium rounded-lg 

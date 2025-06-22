@@ -15,6 +15,9 @@ import NotFound from "./pages/not-found";
 import ShoppingHome from "./pages/shopping-view/home";
 import ShoppingListing from "./pages/shopping-view/listing";
 import ShoppingCheckout from "./pages/shopping-view/checkout";
+import CheckoutAddressSelection from "./pages/shopping-view/checkout-address";
+import CheckoutReview from "./pages/shopping-view/checkout-review";
+import CheckoutPayment from "./pages/shopping-view/checkout-payment";
 import ShoppingAccount from "./pages/shopping-view/account";
 import CheckAuth from "./components/common/checkAuth";
 import UnauthPage from "./pages/unauth-page";
@@ -164,9 +167,26 @@ function App() {
                     {/* SHOP */}          <Route path='/shop' element={<ShoppingLayout />}>            <Route path='' element={<ShoppingHome />} />            <Route path='home' element={<ShoppingHome />} />            <Route path='listing' element={<ShoppingListing />} />            <Route path='shops' element={<ShopsDirectory />} />            <Route path='search' element={<SearchProducts />} />            <Route path='product/:productId' element={<ProductDetailsPage />} />
             
             {/* Routes that require authentication */}
+            {/* Multi-step Checkout Routes */}
+            <Route path='checkout/address' element={
+              <CheckAuth isAuthenticated={isAuthenticated} user={user}>
+                <CheckoutAddressSelection />
+              </CheckAuth>
+            } />
+            <Route path='checkout/review' element={
+              <CheckAuth isAuthenticated={isAuthenticated} user={user}>
+                <CheckoutReview />
+              </CheckAuth>
+            } />
+            <Route path='checkout/payment' element={
+              <CheckAuth isAuthenticated={isAuthenticated} user={user}>
+                <CheckoutPayment />
+              </CheckAuth>
+            } />
+            {/* Legacy checkout route - redirect to new flow */}
             <Route path='checkout' element={
               <CheckAuth isAuthenticated={isAuthenticated} user={user}>
-                <ShoppingCheckout />
+                <CheckoutAddressSelection />
               </CheckAuth>
             } />
             {/* PayPal return route removed */}

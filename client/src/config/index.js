@@ -1,3 +1,24 @@
+// Ghana Regions Data
+export const ghanaRegions = [
+    { id: "greater-accra", label: "Greater Accra" },
+    { id: "ashanti", label: "Ashanti" },
+    { id: "western", label: "Western" },
+    { id: "central", label: "Central" },
+    { id: "eastern", label: "Eastern" },
+    { id: "volta", label: "Volta" },
+    { id: "northern", label: "Northern" },
+    { id: "upper-east", label: "Upper East" },
+    { id: "upper-west", label: "Upper West" },
+    { id: "brong-ahafo", label: "Brong Ahafo" },
+    { id: "western-north", label: "Western North" },
+    { id: "ahafo", label: "Ahafo" },
+    { id: "bono", label: "Bono" },
+    { id: "bono-east", label: "Bono East" },
+    { id: "oti", label: "Oti" },
+    { id: "savannah", label: "Savannah" },
+    { id: "north-east", label: "North East" }
+];
+
 export const registerFormControls = [
   {
       name: "userName",
@@ -699,10 +720,10 @@ export const addressFormControls = [
     {
         label: "Region",
         name: "region",
-        componentType: "input",
-        type: "text",
-        placeholder: "Enter your region",
-        required: true
+        componentType: "select",
+        placeholder: "Select your region",
+        required: true,
+        options: ghanaRegions
     },
     {
         label: "Address",

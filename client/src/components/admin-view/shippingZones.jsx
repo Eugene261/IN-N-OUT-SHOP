@@ -18,9 +18,11 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Trash2, Plus, Edit, Save, X, Truck, MapPin, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { ghanaRegions } from '@/config';
 
 const ShippingZones = () => {
   const { user, isAuthenticated } = useSelector(state => state.auth);
@@ -298,73 +300,6 @@ const ShippingZones = () => {
     }
   };
 
-  // Function to fix all shipping zones to use the correct base region
-  const fixAllShippingZones = async () => {
-    try {
-      console.log("Starting fixAllShippingZones with base region:", savedBaseRegion);
-      console.log("Current zones:", zones);
-      
-      if (!savedBaseRegion) {
-        toast.error('Please set a base region first');
-        return;
-      }
-      
-      setLoading(true);
-      const token = getToken();
-      
-      if (!token) {
-        toast.error('Authentication token missing');
-        setAuthError(true);
-        return;
-      }
-      
-      // Update each zone
-      let successCount = 0;
-      let failCount = 0;
-      
-      for (const zone of zones) {
-        console.log(`Processing zone: ${zone.name}, current vendorRegion: ${zone.vendorRegion}, target: ${savedBaseRegion}`);
-        
-        // Skip if the zone already has the correct base region
-        if (zone.vendorRegion === savedBaseRegion) {
-          console.log(`Zone ${zone.name} already has correct base region, skipping`);
-          continue;
-        }
-        
-        // Create a simplified update object
-        const updateData = {
-          vendorRegion: savedBaseRegion
-        };
-        
-        console.log(`Updating zone ${zone.name} with data:`, updateData);
-        
-        try {
-          const result = await updateShippingZone(zone._id, updateData, token);
-          console.log(`Update result for zone ${zone.name}:`, result);
-          successCount++;
-        } catch (error) {
-          console.error(`Error updating zone ${zone.name}:`, error);
-          console.error("Error response:", error.response?.data);
-          failCount++;
-        }
-      }
-      
-      toast.success(`Updated ${successCount} shipping zones with correct base region`);
-      if (failCount > 0) {
-        toast.error(`Failed to update ${failCount} shipping zones`);
-      }
-      
-      // Refresh zones
-      console.log("Refreshing zones after updates");
-      await fetchZones();
-    } catch (error) {
-      console.error('Error fixing shipping zones:', error);
-      toast.error('Error fixing shipping zones');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleDeleteZone = async (zoneId) => {
     if (!confirm('Are you sure you want to delete this shipping zone?')) return;
     
@@ -440,58 +375,21 @@ const ShippingZones = () => {
     }
   };
 
-  // Function to call the debug fix zones API
-  const handleDebugFixZones = async () => {
-    try {
-      if (!savedBaseRegion) {
-        toast.error('Please set a base region first');
-        return;
-      }
-      
-      setLoading(true);
-      const token = getToken();
-      
-      if (!token) {
-        toast.error('Authentication token missing');
-        setAuthError(true);
-        return;
-      }
-      
-      // Call our special debug endpoint
-      console.log("Calling debug fix zones API...");
-      const result = await debugFixShippingZones(savedBaseRegion, token);
-      
-      if (result.success) {
-        toast.success(`Fixed ${result.message}`);
-      } else {
-        toast.error(result.message || 'Failed to fix zones');
-      }
-      
-      // Refresh zones
-      await fetchZones();
-    } catch (error) {
-      console.error('Error in debug fix zones:', error);
-      toast.error('Error fixing zones');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Base Region Modal
   const BaseRegionModal = () => {
     // Use local state for the input field to improve handling
     const [inputValue, setInputValue] = useState(baseRegion || '');
     
     // Handle input changes separately
-    const handleInputChange = (e) => {
-      setInputValue(e.target.value);
+    const handleSelectChange = (value) => {
+      setInputValue(value);
     };
     
     // Update parent state only on form submission
     const handleSubmit = (e) => {
       e.preventDefault();
       if (!inputValue.trim()) {
-        toast.error('Please enter a base region');
+        toast.error('Please select a base region');
         return;
       }
       
@@ -507,11 +405,11 @@ const ShippingZones = () => {
     
     return (
       <div 
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
         onClick={() => setShowBaseRegionModal(false)}
       >
         <div 
-          className="bg-white rounded-lg p-6 w-full max-w-md"
+          className="bg-white rounded-lg p-6 w-full max-w-md mx-auto"
           onClick={handleModalClick}
         >
           <h2 className="text-xl font-bold mb-4">Set Your Base Region</h2>
@@ -521,19 +419,22 @@ const ShippingZones = () => {
           
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">Base Region</label>
-              <input
-                type="text"
-                value={inputValue}
-                onChange={handleInputChange}
-                placeholder="e.g., Greater Accra"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-                autoFocus
-              />
+              <label className="block text-sm font-medium mb-2">Base Region</label>
+              <Select value={inputValue} onValueChange={handleSelectChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select your region" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ghanaRegions.map((region) => (
+                    <SelectItem key={region.id} value={region.label}>
+                      {region.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
-            <div className="mb-2 mt-4">
+            <div className="mb-4">
               <div className="flex items-center">
                 <input 
                   type="checkbox" 
@@ -547,17 +448,17 @@ const ShippingZones = () => {
               </div>
             </div>
             
-            <div className="flex justify-end space-x-2">
+            <div className="flex flex-col sm:flex-row justify-end gap-2">
               <button
                 type="button"
-                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 order-2 sm:order-1"
                 onClick={() => setShowBaseRegionModal(false)}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 order-1 sm:order-2"
               >
                 Save Base Region
               </button>
@@ -569,13 +470,14 @@ const ShippingZones = () => {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="container mx-auto py-4 sm:py-6 px-4 space-y-6">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <h1 className="text-2xl font-bold">Shipping Management</h1>
       </div>
       
       {/* Base Region Section */}
-      <div className="mb-6 flex justify-between items-center">
+      <div className="mb-6 flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
         <div>
           <h2 className="text-xl font-bold">Shipping Zones</h2>
           {savedBaseRegion && (
@@ -587,10 +489,10 @@ const ShippingZones = () => {
         </div>
         
         {!authError && (
-          <div className="flex space-x-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <button
               onClick={() => setShowBaseRegionModal(true)}
-              className="flex items-center space-x-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md"
+              className="flex items-center justify-center space-x-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm"
             >
               <MapPin size={16} />
               <span>{savedBaseRegion ? 'Change Base Region' : 'Add Base Region'}</span>
@@ -598,7 +500,7 @@ const ShippingZones = () => {
             
             <button
               onClick={() => setShowNewZoneForm(!showNewZoneForm)}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
+              className="flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm"
             >
               {showNewZoneForm ? (
                 <>
@@ -621,9 +523,9 @@ const ShippingZones = () => {
 
       {/* Authentication Error */}
       {authError && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4 flex items-center text-red-700">
-          <AlertTriangle className="h-5 w-5 mr-3" />
-          <div>
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 flex items-start text-red-700">
+          <AlertTriangle className="h-5 w-5 mr-3 mt-0.5 flex-shrink-0" />
+          <div className="min-w-0">
             <h3 className="font-medium">Authentication Error</h3>
             <p className="text-sm">You don't have permission to access this page or your session has expired.</p>
             <button 
@@ -644,9 +546,9 @@ const ShippingZones = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleNewZoneSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Zone Name</label>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium">Zone Name</label>
                   <Input
                     type="text"
                     value={newZone.name}
@@ -656,31 +558,39 @@ const ShippingZones = () => {
                   />
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium mb-1">Delivery Region</label>
-                  <Input
-                    type="text"
-                    value={newZone.region}
-                    onChange={(e) => setNewZone({ ...newZone, region: e.target.value })}
-                    placeholder="e.g., Greater Accra"
-                    required
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium">Delivery Region</label>
+                  <Select 
+                    value={newZone.region} 
+                    onValueChange={(value) => setNewZone({ ...newZone, region: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select delivery region" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ghanaRegions.map((region) => (
+                        <SelectItem key={region.id} value={region.label}>
+                          {region.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500">
                     The region where this shipping rate applies
                   </p>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium mb-1">Base Rate (GHS) - Optional</label>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium">Base Rate (GHS) - Optional</label>
                   <Input
                     type="number"
                     value={newZone.baseRate}
                     onChange={(e) => setNewZone({ ...newZone, baseRate: parseFloat(e.target.value) || 0 })}
                     min="0"
                     step="0.01"
-                    placeholder="0 (uses admin preferences)"
+                    placeholder="0"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500">
                     Leave as 0 to use your admin shipping preferences instead
                   </p>
                 </div>
@@ -697,15 +607,15 @@ const ShippingZones = () => {
                 </label>
               </div>
 
-              {/* Additional Rates */}
+              {/* Additional Rates Section */}
               <div className="border-t pt-4 mt-4">
                 <h3 className="text-md font-semibold mb-3">Additional Rates</h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Type</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-3">
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium">Type</label>
                     <select
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                       value={newRateType}
                       onChange={(e) => setNewRateType(e.target.value)}
                     >
@@ -714,8 +624,8 @@ const ShippingZones = () => {
                     </select>
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium">
                       {newRateType === 'weight' ? 'Min Weight (kg)' : 'Min Order Value (GHS)'}
                     </label>
                     <Input
@@ -724,11 +634,12 @@ const ShippingZones = () => {
                       onChange={(e) => setNewRateThreshold(e.target.value)}
                       min="0"
                       step="0.01"
+                      className="text-sm"
                     />
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium">
                       Additional Fee (GHS)
                     </label>
                     <Input
@@ -736,6 +647,7 @@ const ShippingZones = () => {
                       value={newRateFee}
                       onChange={(e) => setNewRateFee(e.target.value)}
                       step="0.01"
+                      className="text-sm"
                     />
                   </div>
                   
@@ -743,7 +655,7 @@ const ShippingZones = () => {
                     <button
                       type="button"
                       onClick={addAdditionalRate}
-                      className="h-8 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                      className="w-full h-9 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
                     >
                       Add Rate
                     </button>
@@ -754,10 +666,10 @@ const ShippingZones = () => {
                 {newZone.additionalRates.length > 0 && (
                   <div className="border rounded-md p-3 mb-3">
                     <h4 className="text-sm font-medium mb-2">Configured Additional Rates</h4>
-                    <ul className="space-y-2">
+                    <div className="space-y-2">
                       {newZone.additionalRates.map((rate, index) => (
-                        <li key={index} className="flex justify-between items-center text-sm bg-gray-50 p-2 rounded">
-                          <span>
+                        <div key={index} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-sm bg-gray-50 p-2 rounded">
+                          <span className="flex-1">
                             {rate.type === 'weight' 
                               ? `Weight ≥ ${rate.threshold}kg: ${rate.additionalFee > 0 ? '+' : ''}${rate.additionalFee} GHS` 
                               : `Order ≥ ${rate.threshold} GHS: ${rate.additionalFee > 0 ? '+' : ''}${rate.additionalFee} GHS`}
@@ -765,21 +677,21 @@ const ShippingZones = () => {
                           <button
                             type="button"
                             onClick={() => removeAdditionalRate(index)}
-                            className="h-7 w-7 p-0 flex items-center justify-center bg-transparent hover:bg-gray-200 rounded-full"
+                            className="h-7 w-7 p-0 flex items-center justify-center bg-transparent hover:bg-gray-200 rounded-full self-end sm:self-center"
                           >
                             <Trash2 size={14} className="text-red-500" />
                           </button>
-                        </li>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 )}
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex justify-end pt-4">
                 <button 
                   type="submit" 
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
+                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
                 >
                   Create Shipping Zone
                 </button>
@@ -803,12 +715,12 @@ const ShippingZones = () => {
         <div className="text-center py-8 bg-gray-50 rounded-lg">
           <Truck className="h-12 w-12 mx-auto text-gray-400 mb-3" />
           <h3 className="text-lg font-medium text-gray-800">No Shipping Zones</h3>
-          <p className="text-gray-500 mt-1">
+          <p className="text-gray-500 mt-1 px-4">
             Create your first shipping zone to start setting up delivery rates.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {zones.map(zone => (
             <Card key={zone._id} className={`overflow-hidden ${zone.isDefault ? 'border-blue-400' : ''}`}>
               {zone.isDefault && (
@@ -818,22 +730,22 @@ const ShippingZones = () => {
               )}
               
               <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg font-semibold flex items-center">
-                    <MapPin className="h-4 w-4 mr-2 text-gray-500" />
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                  <CardTitle className="text-lg font-semibold flex items-center flex-1 min-w-0">
+                    <MapPin className="h-4 w-4 mr-2 text-gray-500 flex-shrink-0" />
                     {editingZone && editingZone._id === zone._id ? (
                       <Input
                         type="text"
                         value={editingZone.name}
                         onChange={(e) => setEditingZone({ ...editingZone, name: e.target.value })}
-                        className="font-semibold"
+                        className="font-semibold text-base"
                       />
                     ) : (
-                      zone.name
+                      <span className="truncate">{zone.name}</span>
                     )}
                   </CardTitle>
                   
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-2 flex-shrink-0">
                     {editingZone && editingZone._id === zone._id ? (
                       <>
                         <button
@@ -872,39 +784,57 @@ const ShippingZones = () => {
               
               <CardContent className="pt-2">
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center text-sm">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 text-sm">
                     <span className="text-gray-500">Delivery Region:</span>
                     <span className="font-medium">
                       {editingZone && editingZone._id === zone._id ? (
-                        <Input
-                          type="text"
-                          value={editingZone.region}
-                          onChange={(e) => setEditingZone({ ...editingZone, region: e.target.value })}
-                          className="w-40 text-right"
-                        />
+                        <Select 
+                          value={editingZone.region} 
+                          onValueChange={(value) => setEditingZone({ ...editingZone, region: value })}
+                        >
+                          <SelectTrigger className="w-full sm:w-40">
+                            <SelectValue placeholder="Select region" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ghanaRegions.map((region) => (
+                              <SelectItem key={region.id} value={region.label}>
+                                {region.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       ) : (
                         zone.region
                       )}
                     </span>
                   </div>
                   
-                  <div className="flex justify-between items-center text-sm">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 text-sm">
                     <span className="text-gray-500">Your Base Region:</span>
                     <span className="font-medium">
                       {editingZone && editingZone._id === zone._id ? (
-                        <Input
-                          type="text"
-                          value={editingZone.vendorRegion || savedBaseRegion}
-                          onChange={(e) => setEditingZone({ ...editingZone, vendorRegion: e.target.value })}
-                          className="w-40 text-right"
-                        />
+                        <Select 
+                          value={editingZone.vendorRegion || savedBaseRegion} 
+                          onValueChange={(value) => setEditingZone({ ...editingZone, vendorRegion: value })}
+                        >
+                          <SelectTrigger className="w-full sm:w-40">
+                            <SelectValue placeholder="Select base region" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ghanaRegions.map((region) => (
+                              <SelectItem key={region.id} value={region.label}>
+                                {region.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       ) : (
                         zone.displayBaseRegion || savedBaseRegion || zone.vendorRegion
                       )}
                     </span>
                   </div>
                   
-                  <div className="flex justify-between items-center text-sm">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 text-sm">
                     <span className="text-gray-500">Base Rate:</span>
                     <span className="font-medium">
                       {editingZone && editingZone._id === zone._id ? (
@@ -914,7 +844,7 @@ const ShippingZones = () => {
                           onChange={(e) => setEditingZone({ ...editingZone, baseRate: parseFloat(e.target.value) })}
                           min="0"
                           step="0.01"
-                          className="w-24 text-right"
+                          className="w-full sm:w-24 text-right"
                         />
                       ) : (
                         `GHS ${zone.baseRate.toFixed(2)}`
@@ -922,19 +852,14 @@ const ShippingZones = () => {
                     </span>
                   </div>
                   
-                  {/* Same Region Cap Fee section removed */}
-                  
                   {editingZone && editingZone._id === zone._id && (
-                    <>
-                      {/* Same Region Cap Fee input field removed */}
-                      <div className="flex items-center justify-between text-sm pt-2">
-                        <span className="text-gray-500">Default Zone:</span>
-                        <Switch
-                          checked={editingZone.isDefault}
-                          onCheckedChange={(checked) => setEditingZone({ ...editingZone, isDefault: checked })}
-                        />
-                      </div>
-                    </>
+                    <div className="flex items-center justify-between text-sm pt-2">
+                      <span className="text-gray-500">Default Zone:</span>
+                      <Switch
+                        checked={editingZone.isDefault}
+                        onCheckedChange={(checked) => setEditingZone({ ...editingZone, isDefault: checked })}
+                      />
+                    </div>
                   )}
                 </div>
                 
@@ -944,7 +869,7 @@ const ShippingZones = () => {
                     <h4 className="text-sm font-medium mb-2">Additional Rates</h4>
                     
                     {editingZone && editingZone._id === zone._id && (
-                      <div className="grid grid-cols-4 gap-2 mb-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
                         <select
                           className="text-sm px-2 py-1 border border-gray-300 rounded-md"
                           value={newRateType}
@@ -976,18 +901,18 @@ const ShippingZones = () => {
                         <button
                           type="button"
                           onClick={addAdditionalRate}
-                          className="h-8 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                          className="h-8 px-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
                         >
                           Add
                         </button>
                       </div>
                     )}
                     
-                    <ul className="space-y-1 text-sm">
+                    <div className="space-y-1 text-sm">
                       {editingZone && editingZone._id === zone._id
                         ? editingZone.additionalRates && editingZone.additionalRates.map((rate, index) => (
-                            <li key={index} className="flex justify-between items-center bg-gray-50 p-2 rounded">
-                              <span>
+                            <div key={index} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-gray-50 p-2 rounded">
+                              <span className="flex-1">
                                 {rate.type === 'weight' 
                                   ? `Weight ≥ ${rate.threshold}kg: ${rate.additionalFee > 0 ? '+' : ''}${rate.additionalFee} GHS` 
                                   : `Order ≥ ${rate.threshold} GHS: ${rate.additionalFee > 0 ? '+' : ''}${rate.additionalFee} GHS`}
@@ -995,39 +920,39 @@ const ShippingZones = () => {
                               <button
                                 type="button"
                                 onClick={() => removeAdditionalRate(index, true)}
-                                className="h-7 w-7 p-0 flex items-center justify-center bg-transparent hover:bg-gray-200 rounded-full"
+                                className="h-7 w-7 p-0 flex items-center justify-center bg-transparent hover:bg-gray-200 rounded-full self-end sm:self-center"
                               >
                                 <Trash2 size={14} className="text-red-500" />
                               </button>
-                            </li>
+                            </div>
                           ))
                         : zone.additionalRates && zone.additionalRates.map((rate, index) => (
-                            <li key={index} className="flex justify-between items-center bg-gray-50 p-2 rounded">
+                            <div key={index} className="flex justify-between items-center bg-gray-50 p-2 rounded">
                               <span>
                                 {rate.type === 'weight' 
                                   ? `Weight ≥ ${rate.threshold}kg: ${rate.additionalFee > 0 ? '+' : ''}${rate.additionalFee} GHS` 
                                   : `Order ≥ ${rate.threshold} GHS: ${rate.additionalFee > 0 ? '+' : ''}${rate.additionalFee} GHS`}
                               </span>
-                            </li>
+                            </div>
                           ))}
-                    </ul>
+                    </div>
                   </div>
                 ) : null}
                 
                 {/* Add Save button at the bottom when in edit mode */}
                 {editingZone && editingZone._id === zone._id && (
-                  <div className="mt-4 pt-4 border-t flex justify-end">
+                  <div className="mt-4 pt-4 border-t flex flex-col sm:flex-row justify-end gap-2">
                     <button
                       type="button"
                       onClick={() => setEditingZone(null)}
-                      className="mr-2 px-4 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 text-gray-700"
+                      className="px-4 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 text-gray-700 order-2 sm:order-1"
                     >
                       Cancel
                     </button>
                     <button
                       type="button"
                       onClick={() => handleUpdateZone(zone._id)}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center"
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center justify-center order-1 sm:order-2"
                     >
                       <Save className="h-4 w-4 mr-2" />
                       Save Changes

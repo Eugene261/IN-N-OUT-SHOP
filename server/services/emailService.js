@@ -103,12 +103,7 @@ class EmailService {
         'X-MSMail-Priority': 'Normal',
         'Importance': 'Normal',
         'List-Unsubscribe': `<${process.env.CLIENT_URL}/unsubscribe>`,
-        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-        'Return-Path': process.env.EMAIL_FROM || process.env.EMAIL_USER,
-        'Message-ID': `<${Date.now()}.${Math.random().toString(36).substr(2, 9)}@${process.env.EMAIL_DOMAIN || 'innoutstore.com'}>`,
-        'MIME-Version': '1.0',
-        'Content-Type': 'text/html; charset=UTF-8',
-        'Content-Transfer-Encoding': '8bit'
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
       }
     };
 

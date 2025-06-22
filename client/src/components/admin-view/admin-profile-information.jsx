@@ -2,11 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateUserProfile, fetchAdminProfile } from '@/store/auth-slice';
 import { User, Camera, Mail, Phone, Calendar, MapPin, Building, Crown, Shield, Save, RotateCcw } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { ghanaRegions } from '@/config';
 
 function AdminProfileInformation() {
   const { toast } = useToast();
@@ -66,6 +68,13 @@ function AdminProfileInformation() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSelectChange = (value, name) => {
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -229,7 +238,7 @@ function AdminProfileInformation() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center space-x-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6">
             <div className="relative">
               <motion.div
                 whileHover={{ scale: 1.05 }}
@@ -241,11 +250,11 @@ function AdminProfileInformation() {
                   <img
                     src={user.avatar}
                     alt="Profile"
-                    className="w-24 h-24 rounded-full object-cover border-4 border-gray-200 hover:border-blue-300 transition-colors"
+                    className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover border-4 border-gray-200 hover:border-blue-300 transition-colors"
                   />
                 ) : (
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border-4 border-gray-200 hover:border-blue-300 transition-colors">
-                    <span className="text-2xl font-bold text-white">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border-4 border-gray-200 hover:border-blue-300 transition-colors">
+                    <span className="text-2xl sm:text-3xl font-bold text-white">
                       {(user?.firstName || user?.userName || 'A').charAt(0).toUpperCase()}
                     </span>
                   </div>
@@ -275,7 +284,7 @@ function AdminProfileInformation() {
               />
             </div>
             
-            <div className="flex-1">
+            <div className="flex-1 text-center sm:text-left">
               <button
                 onClick={handleAvatarClick}
                 disabled={uploading}
@@ -301,7 +310,7 @@ function AdminProfileInformation() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="firstName" className="flex items-center gap-2">
                 <User className="w-4 h-4" />
@@ -331,7 +340,7 @@ function AdminProfileInformation() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="email" className="flex items-center gap-2">
                 <Mail className="w-4 h-4" />
@@ -373,6 +382,7 @@ function AdminProfileInformation() {
               type="date"
               value={formData.dateOfBirth}
               onChange={handleInputChange}
+              className="w-full sm:w-auto"
             />
           </div>
         </CardContent>
@@ -387,19 +397,27 @@ function AdminProfileInformation() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="baseRegion" className="flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
                 Base Region
               </Label>
-              <Input
-                id="baseRegion"
-                name="baseRegion"
-                value={formData.baseRegion}
-                onChange={handleInputChange}
-                placeholder="Enter your region"
-              />
+              <Select 
+                value={formData.baseRegion} 
+                onValueChange={(value) => handleSelectChange(value, 'baseRegion')}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your region" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ghanaRegions.map((region) => (
+                    <SelectItem key={region.id} value={region.label}>
+                      {region.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="space-y-2">
@@ -436,11 +454,11 @@ function AdminProfileInformation() {
       </Card>
 
       {/* Action Buttons */}
-      <div className="flex justify-end space-x-4">
+      <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
         <button
           onClick={handleReset}
           disabled={!hasChanges || loading}
-          className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <RotateCcw className="w-4 h-4 mr-2" />
           Reset Changes
@@ -449,7 +467,7 @@ function AdminProfileInformation() {
         <button
           onClick={handleSave}
           disabled={!hasChanges || loading}
-          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? (
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>

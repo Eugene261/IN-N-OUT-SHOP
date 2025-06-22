@@ -16,7 +16,8 @@ function CommonForm({
   onSubmit, 
   buttonText, 
   disabled,
-  buttonDisabled 
+  buttonDisabled,
+  isAuthForm = false 
 }) {
   // State for validation errors
   const [errors, setErrors] = useState({});
@@ -96,8 +97,8 @@ function CommonForm({
   };
   
   const renderInputsByComponentType = (controlItem) => {
-    const value = formData[controlItem.name] !== undefined ? formData[controlItem.name] : 
-                  (controlItem.componentType === 'multiselect' ? [] : '');
+    let element = null;
+    const value = formData[controlItem.name] || '';
     
     const error = errors[controlItem.name];
     
@@ -112,7 +113,7 @@ function CommonForm({
 
     switch (controlItem.componentType) {
       case 'input':
-        return (
+        element = (
           <div className="space-y-1">
             <Input
               {...commonProps}
@@ -138,6 +139,7 @@ function CommonForm({
             )}
           </div>
         );
+        break;
       
       case 'select':
         // Filter options for dynamic fields like subcategory and brand
@@ -167,7 +169,7 @@ function CommonForm({
           console.log('Using all options (no filtering):', selectOptions);
         }
         
-        return (
+        element = (
           <div id={`${controlItem.name}-field`}>
             <Select 
               value={value || ""}
@@ -217,6 +219,7 @@ function CommonForm({
             )}
           </div>
         );
+        break;
 
       case 'multiselect':
         // Filter options based on selected category if this is a dynamic field
@@ -276,7 +279,7 @@ function CommonForm({
         
         console.log('Final filtered options for', controlItem.name, ':', filteredOptions);
         
-        return (
+        element = (
           <div className="space-y-1">
             {/* Only show the label if it's not already shown by the form field */}
             {!controlItem.skipLabel && (
@@ -312,11 +315,12 @@ function CommonForm({
             )}
           </div>
         );
+        break;
         
       case 'textarea':
         // Use the rich text editor for description field, regular textarea for others
         if (controlItem.name === 'description') {
-          return (
+          element = (
             <div className="space-y-1">
               <RichTextEditor
                 value={value}
@@ -333,7 +337,7 @@ function CommonForm({
             </div>
           );
         } else {
-          return (
+          element = (
             <div className="space-y-1">
               <Textarea
                 {...commonProps}
@@ -353,10 +357,14 @@ function CommonForm({
             </div>
           );
         }
+        break;
         
       default:
-        return <Input {...commonProps} type={controlItem.type} />;
+        element = <Input {...commonProps} type={controlItem.type} />;
+        break;
     }
+
+    return element;
   };
 
   // Password visibility toggle for password fields
@@ -505,21 +513,40 @@ function CommonForm({
 
   return (
     <motion.div 
-      className="w-full max-w-md mx-auto"
+      className={`w-full ${isAuthForm ? 'max-w-md mx-auto' : 'max-w-none'}`}
       initial="hidden"
       animate="visible"
       variants={formVariants}
     >
-      <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 backdrop-blur-sm">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-6">
+      <div className={`bg-white rounded-lg shadow-sm border border-gray-100 ${
+        isAuthForm 
+          ? 'p-6 sm:p-8 shadow-lg' 
+          : 'p-4 sm:p-6 lg:p-8'
+      }`}>
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+          <div className={`${
+            isAuthForm 
+              ? 'space-y-4 sm:space-y-6' 
+              : 'grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6'
+          }`}>
             {formControls.map((controlItem) => (
               <motion.div 
                 key={controlItem.name} 
-                className="grid w-full"
+                className={`${
+                  isAuthForm 
+                    ? 'space-y-2' 
+                    : `${
+                        controlItem.componentType === 'textarea' || 
+                        controlItem.name === 'description' ||
+                        controlItem.name === 'address' ||
+                        controlItem.name === 'notes'
+                          ? 'lg:col-span-2' 
+                          : ''
+                      } space-y-2`
+                } `}
                 variants={itemVariants}
               >
-                <div className="mb-2">
+                <div className="space-y-1">
                   <div className="flex items-center justify-between">
                     <Label 
                       htmlFor={controlItem.name}
@@ -538,7 +565,7 @@ function CommonForm({
                   </div>
                 </div>
                 
-                <div className="mt-1">
+                <div className="w-full">
                   {controlItem.type === 'password' 
                     ? renderPasswordField(
                         controlItem, 
@@ -548,7 +575,7 @@ function CommonForm({
                           id: controlItem.name,
                           value: formData[controlItem.name] !== undefined ? formData[controlItem.name] : '',
                           disabled: disabled,
-                          className: `bg-white border-${errors[controlItem.name] ? 'red-500' : 'gray-300'} rounded-lg focus:border-${errors[controlItem.name] ? 'red-500' : 'black'} focus:ring-2 focus:ring-${errors[controlItem.name] ? 'red-200' : 'gray-400'}`
+                          className: `w-full bg-white border-${errors[controlItem.name] ? 'red-500' : 'gray-300'} rounded-lg focus:border-${errors[controlItem.name] ? 'red-500' : 'black'} focus:ring-2 focus:ring-${errors[controlItem.name] ? 'red-200' : 'gray-400'}`
                         }, 
                         errors[controlItem.name]
                       )
@@ -563,10 +590,15 @@ function CommonForm({
             variants={itemVariants}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
+            className="pt-4"
           >
             <Button 
               type="submit" 
-              className="w-full py-3 bg-gradient-to-r from-black to-gray-800 hover:from-gray-800 hover:to-black text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
+              className={`${
+                isAuthForm 
+                  ? 'w-full' 
+                  : 'w-full sm:w-auto'
+              } px-8 py-3 bg-gradient-to-r from-black to-gray-800 hover:from-gray-800 hover:to-black text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-300`}
               disabled={disabled || buttonDisabled}
             >
               {buttonText}

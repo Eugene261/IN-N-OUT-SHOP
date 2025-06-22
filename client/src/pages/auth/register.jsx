@@ -61,6 +61,7 @@ function AuthRegister() {
         setFormData={setFormData}
         onSubmit={onSubmit}
         disabled={isLoading}
+        isAuthForm={true}
       />
       
       {/* OAuth Buttons */}

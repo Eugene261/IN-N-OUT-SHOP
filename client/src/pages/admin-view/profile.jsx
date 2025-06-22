@@ -17,40 +17,40 @@ function AdminProfile() {
       {/* Header Section */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-8">
-            <div className="flex items-center space-x-4">
-              <div className="flex-shrink-0">
+          <div className="py-6 sm:py-8">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+              <div className="flex-shrink-0 self-center sm:self-start">
                 <div className="relative">
                   {user?.avatar ? (
                     <img
-                      className="h-20 w-20 rounded-full object-cover border-4 border-gray-200"
+                      className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-4 border-gray-200"
                       src={user.avatar}
                       alt={`${user.firstName || user.userName}'s avatar`}
                     />
                   ) : (
-                    <div className="h-20 w-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border-4 border-gray-200">
-                      <span className="text-2xl font-bold text-white">
+                    <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border-4 border-gray-200">
+                      <span className="text-lg sm:text-2xl font-bold text-white">
                         {(user?.firstName || user?.userName || 'A').charAt(0).toUpperCase()}
                       </span>
                     </div>
                   )}
                   <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 border-2 border-gray-200">
                     {isSuperAdmin ? (
-                      <Crown className="h-5 w-5 text-yellow-500" />
+                      <Crown className="h-3 w-3 sm:h-5 sm:w-5 text-yellow-500" />
                     ) : (
-                      <Shield className="h-5 w-5 text-blue-500" />
+                      <Shield className="h-3 w-3 sm:h-5 sm:w-5 text-blue-500" />
                     )}
                   </div>
                 </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              <div className="flex-1 min-w-0 text-center sm:text-left">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
                   {user?.firstName && user?.lastName 
                     ? `${user.firstName} ${user.lastName}` 
                     : user?.userName || 'Admin User'}
                 </h1>
-                <div className="flex items-center space-x-4 text-sm text-gray-500">
-                  <div className="flex items-center space-x-1">
+                <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 text-sm text-gray-500">
+                  <div className="flex items-center justify-center sm:justify-start space-x-1">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       isSuperAdmin 
                         ? 'bg-yellow-100 text-yellow-800' 
@@ -59,22 +59,26 @@ function AdminProfile() {
                       {isSuperAdmin ? (
                         <>
                           <Crown className="mr-1 h-3 w-3" />
-                          Super Administrator
+                          <span className="hidden sm:inline">Super Administrator</span>
+                          <span className="sm:hidden">Super Admin</span>
                         </>
                       ) : (
                         <>
                           <Shield className="mr-1 h-3 w-3" />
-                          Administrator
+                          <span className="hidden sm:inline">Administrator</span>
+                          <span className="sm:hidden">Admin</span>
                         </>
                       )}
                     </span>
                   </div>
                   {user?.email && (
-                    <span className="truncate">{user.email}</span>
+                    <span className="truncate text-center sm:text-left">{user.email}</span>
                   )}
                   {user?.lastLogin && (
-                    <span>
-                      Last login: {new Date(user.lastLogin).toLocaleDateString()}
+                    <span className="text-center sm:text-left">
+                      <span className="hidden sm:inline">Last login: </span>
+                      <span className="sm:hidden">Last: </span>
+                      {new Date(user.lastLogin).toLocaleDateString()}
                     </span>
                   )}
                 </div>
@@ -85,31 +89,31 @@ function AdminProfile() {
       </div>
 
       {/* Content Section */}
-      <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="bg-white rounded-lg shadow border border-gray-200">
           <Tabs defaultValue='profile' className="w-full">
-            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-4">
-              <TabsTrigger value='profile' className='cursor-pointer flex items-center gap-2'>
-                <User className="h-4 w-4" />
-                <span className="hidden sm:inline">Profile</span>
+            <TabsList className={`grid w-full ${isSuperAdmin ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} gap-0`}>
+              <TabsTrigger value='profile' className='cursor-pointer flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4'>
+                <User className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden xs:inline">Profile</span>
               </TabsTrigger>
-              <TabsTrigger value='password' className='cursor-pointer flex items-center gap-2'>
-                <Lock className="h-4 w-4" />
-                <span className="hidden sm:inline">Password</span>
+              <TabsTrigger value='password' className='cursor-pointer flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4'>
+                <Lock className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden xs:inline">Password</span>
               </TabsTrigger>
-              <TabsTrigger value='settings' className='cursor-pointer flex items-center gap-2'>
-                <Settings className="h-4 w-4" />
-                <span className="hidden sm:inline">Settings</span>
+              <TabsTrigger value='settings' className='cursor-pointer flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4'>
+                <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden xs:inline">Settings</span>
               </TabsTrigger>
               {isSuperAdmin && (
-                <TabsTrigger value='users' className='cursor-pointer flex items-center gap-2'>
-                  <Users className="h-4 w-4" />
-                  <span className="hidden sm:inline">Users</span>
+                <TabsTrigger value='users' className='cursor-pointer flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4'>
+                  <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden xs:inline">Users</span>
                 </TabsTrigger>
               )}
             </TabsList>
 
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <TabsContent value='profile' className="mt-0">
                 <AdminProfileInformation />
               </TabsContent>

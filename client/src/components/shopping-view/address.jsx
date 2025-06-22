@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import CommonForm from '../common/form';
 import { addressFormControls } from '@/config';
-import { PlusCircle, MapPin, Home, Navigation, AlertCircle } from 'lucide-react';
+import { PlusCircle, MapPin, Home, Navigation, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import { addNewAddress, deleteAddress, fetchAllAddresses, editAddress } from '@/store/shop/address-slice';
@@ -148,83 +148,95 @@ function Address({setCurrentSelectedAddress, selectedId}) {
             transition={{ duration: 0.5, type: 'spring', stiffness: 300 }}
             className="max-w-4xl mx-auto p-4"
         >
-            <Card className="border border-gray-200 shadow-md rounded-xl overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-indigo-50 to-blue-50 border-b border-gray-200 p-6">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-3 bg-indigo-100 text-indigo-600 rounded-full shadow-sm">
-                                <MapPin size={20} />
-                            </div>
-                            <div className="flex flex-col">
-                                <h3 className="text-lg font-semibold text-gray-900">Shipping Addresses</h3>
-                                <p className="text-sm text-gray-500">Manage your delivery locations</p>
+            <Card className="border border-gray-200 shadow-lg rounded-xl overflow-hidden bg-white">
+                {/* Unified Header */}
+                <CardHeader className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-6">
+                    <div className="flex flex-col space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-full">
+                                    <MapPin size={24} className="text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-bold">Shipping Addresses</h2>
+                                    <p className="text-indigo-100 mt-1">Manage your delivery locations</p>
+                                </div>
                             </div>
                         </div>
+                        
+                        {/* Add Address Button */}
                         <motion.button 
                             onClick={() => setShowForm(!showForm)}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg shadow-sm transition-all duration-200 ${showForm 
-                                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' 
-                                : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
-                            whileHover={{ scale: 1.03 }}
-                            whileTap={{ scale: 0.97 }}
+                            className="flex items-center justify-center gap-2 px-6 py-3 bg-white/20 backdrop-blur-sm rounded-lg border border-white/30 text-white hover:bg-white/30 transition-all duration-200 self-start"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
                         >
-                            <PlusCircle size={18} />
+                            <PlusCircle size={20} />
                             <span className="font-medium">{showForm ? 'Cancel' : 'Add New Address'}</span>
+                            {showForm ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </motion.button>
                     </div>
                 </CardHeader>
 
-                <AnimatePresence mode="wait">
-                    {showForm ? (
-                        <motion.div
-                            key="address-form"
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            transition={{ duration: 0.3, type: 'spring', stiffness: 300 }}
-                        >
-                            <CardContent className="p-6 bg-white">
-                                <div className="mb-4 p-4 bg-blue-50 border border-blue-100 rounded-lg">
-                                    <div className="flex items-start space-x-3">
-                                        <div className="p-2 bg-blue-100 text-blue-600 rounded-full mt-0.5">
-                                            <AlertCircle size={16} />
-                                        </div>
-                                        <div>
-                                            <h4 className="text-sm font-medium text-blue-800">Add a New Address</h4>
-                                            <p className="text-xs text-blue-600 mt-1">Please fill in all required fields to add a new shipping address.</p>
+                <CardContent className="p-0">
+                    {/* Add Address Form */}
+                    <AnimatePresence>
+                        {showForm && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                className="border-b border-gray-200"
+                            >
+                                <div className="p-6 bg-gray-50">
+                                    <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <div className="flex items-start space-x-3">
+                                            <div className="p-2 bg-blue-100 text-blue-600 rounded-full">
+                                                <AlertCircle size={16} />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-sm font-medium text-blue-800">Add New Address</h4>
+                                                <p className="text-xs text-blue-600 mt-1">Fill in all required fields to add a new shipping address. You can add up to 3 addresses.</p>
+                                            </div>
                                         </div>
                                     </div>
+                                    <CommonForm 
+                                        formControls={addressFormControls}
+                                        formData={formData}
+                                        setFormData={setFormData}
+                                        buttonText="Save Address"
+                                        onSubmit={handleManageAddress}
+                                        buttonDisabled={!isFormValid()}
+                                        errors={errors}
+                                    />
                                 </div>
-                                <CommonForm 
-                                    formControls={addressFormControls}
-                                    formData={formData}
-                                    setFormData={setFormData}
-                                    buttonText="Save Address"
-                                    onSubmit={handleManageAddress}
-                                    buttonDisabled={!isFormValid()}
-                                    errors={errors}
-                                />
-                            </CardContent>
-                        </motion.div>
-                    ) : (
-                        <motion.div
-                            key="address-list"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="p-6"
-                        >
-                            {addressList && addressList.length > 0 ? (
-                                <div className="space-y-4">
-                                    {addressList.length > 0 && (
-                                        <div className="mb-2">
-                                            <p className="text-sm text-gray-500 flex items-center gap-2">
-                                                <Navigation className="text-indigo-500" size={16} />
-                                                {setCurrentSelectedAddress ? 'Select an address for delivery' : 'Your saved addresses'}
-                                            </p>
-                                        </div>
-                                    )}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Address List */}
+                    <div className="p-6">
+                        {addressList && addressList.length > 0 ? (
+                            <div className="space-y-6">
+                                {/* List Header */}
+                                <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                            <Navigation className="text-indigo-500" size={20} />
+                                            Your Addresses
+                                        </h3>
+                                        <p className="text-sm text-gray-500 mt-1">
+                                            {setCurrentSelectedAddress ? 'Select an address for delivery' : `${addressList.length} saved address${addressList.length > 1 ? 'es' : ''}`}
+                                        </p>
+                                    </div>
+                                    <div className="text-sm text-gray-400">
+                                        {addressList.length}/3 addresses
+                                    </div>
+                                </div>
+
+                                {/* Address Cards */}
+                                <div className="grid gap-4">
                                     {addressList.map(singleAddressItem => (
                                         <AccordionAddressCard 
                                             selectedId={selectedId}
@@ -236,29 +248,29 @@ function Address({setCurrentSelectedAddress, selectedId}) {
                                         />
                                     ))}
                                 </div>
-                            ) : (
-                                <div className="text-center py-10 px-4">
-                                    <div className="bg-gray-50 p-6 rounded-xl inline-flex items-center justify-center mb-4">
-                                        <Home className="h-16 w-16 text-indigo-300" />
-                                    </div>
-                                    <h3 className="mt-2 text-lg font-medium text-gray-900">No addresses found</h3>
-                                    <p className="mt-2 text-sm text-gray-500 max-w-md mx-auto">You haven't added any shipping addresses yet. Add your first address to get started.</p>
-                                    <div className="mt-6">
-                                        <motion.button
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            onClick={() => setShowForm(true)}
-                                            className="inline-flex items-center px-5 py-2.5 shadow-sm text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
-                                        >
-                                            <PlusCircle className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-                                            Add Your First Address
-                                        </motion.button>
-                                    </div>
+                            </div>
+                        ) : (
+                            <div className="text-center py-12">
+                                <div className="bg-gray-50 p-8 rounded-2xl inline-flex items-center justify-center mb-6">
+                                    <Home className="h-20 w-20 text-indigo-300" />
                                 </div>
-                            )}
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2">No addresses found</h3>
+                                <p className="text-gray-500 max-w-md mx-auto mb-6">
+                                    You haven't added any shipping addresses yet. Add your first address to get started with deliveries.
+                                </p>
+                                <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => setShowForm(true)}
+                                    className="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200"
+                                >
+                                    <PlusCircle className="mr-2 h-5 w-5" />
+                                    Add Your First Address
+                                </motion.button>
+                            </div>
+                        )}
+                    </div>
+                </CardContent>
             </Card>
         </motion.div>
     );

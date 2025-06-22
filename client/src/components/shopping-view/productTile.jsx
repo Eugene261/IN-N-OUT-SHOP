@@ -204,35 +204,35 @@ function ShoppingProductTile({ product, handleAddToCart, onAddToCart }) {
         </div>
         
         {/* Product details */}
-        <CardContent className="p-4 flex-grow">
+        <CardContent className="p-3 sm:p-4 flex-grow">
           {/* Brand and category */}
           <div className="flex justify-between items-center mb-2">
-            <span className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+            <span className="text-xs uppercase tracking-wider text-gray-500 font-medium truncate">
               {displayBrand}
             </span>
-            <span className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+            <span className="text-xs uppercase tracking-wider text-gray-500 font-medium truncate">
               {displayCategory}
             </span>
           </div>
           
           {/* Product title */}
-          <h2 className="text-base font-semibold mb-3 text-gray-900 line-clamp-2 min-h-[2.5rem]">
+          <h2 className="text-sm sm:text-base font-semibold mb-2 sm:mb-3 text-gray-900 line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem]">
             {product?.title}
           </h2>
           
           {/* Price display */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-2 sm:mb-3">
             {product?.salePrice > 0 ? (
               <>
-                <span className="text-lg font-bold text-black">
+                <span className="text-base sm:text-lg font-bold text-black">
                   GHS {product?.price?.toFixed(2)}
                 </span>
-                <span className="line-through text-gray-400 text-sm">
+                <span className="line-through text-gray-400 text-xs sm:text-sm">
                   GHS {product?.salePrice?.toFixed(2)}
                 </span>
               </>
             ) : (
-              <span className="text-lg font-bold text-black">
+              <span className="text-base sm:text-lg font-bold text-black">
                 GHS {product?.price?.toFixed(2)}
               </span>
             )}
@@ -242,7 +242,7 @@ function ShoppingProductTile({ product, handleAddToCart, onAddToCart }) {
           {product?.totalStock > 0 && (
             <button
               onClick={(e) => handleAddToCartClick(e, product?._id, product?.totalStock)}
-              className="mt-3 w-full py-2 px-3 bg-black text-white rounded-md flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors text-sm hidden sm:flex"
+              className="mt-2 w-full py-2 px-3 bg-black text-white rounded-md flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors text-sm hidden sm:flex"
             >
               <ShoppingBag className="w-3.5 h-3.5" />
               Add to Cart
@@ -251,28 +251,17 @@ function ShoppingProductTile({ product, handleAddToCart, onAddToCart }) {
         </CardContent>
 
         {/* Mobile-only button (visible on small screens) */}
-        <CardFooter className="p-4 pt-0 mt-auto sm:hidden">
-          {product?.totalStock === 0 ? (
+        {product?.totalStock > 0 && (
+          <div className="sm:hidden p-3 pt-0">
             <button
-              disabled
-              className="w-full py-2.5 px-4 rounded-lg bg-gray-200 text-gray-500
-              font-medium flex items-center justify-center gap-2 cursor-not-allowed"
-            > 
-              <ShoppingBag className="w-4 h-4" />
-              Out of Stock
-            </button>
-          ) : (
-            <motion.button
               onClick={(e) => handleAddToCartClick(e, product?._id, product?.totalStock)}
-              className="w-full py-2.5 px-4 rounded-lg bg-black text-white
-              font-medium flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors"
-              whileTap={{ scale: 0.98 }}
+              className="w-full py-2 px-3 bg-black text-white rounded-md flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors text-sm"
             >
-              <ShoppingBag className="w-4 h-4" />
+              <ShoppingBag className="w-3.5 h-3.5" />
               Add to Cart
-            </motion.button>
-          )}
-        </CardFooter>
+            </button>
+          </div>
+        )}
       </Card>
     </motion.div>
   );

@@ -127,6 +127,7 @@ function AuthLogin() {
         setFormData={setFormData}
         onSubmit={onSubmit}
         disabled={isLoading}
+        isAuthForm={true}
       />
       
       {/* OAuth Buttons */}

@@ -28,11 +28,19 @@ function AdminLayout() {
   };
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen bg-white overflow-hidden">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+          onClick={closeSidebar}
+        />
+      )}
+
       {/* Mobile sidebar */}
       <div 
         ref={sidebarRef}
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 sm:w-72 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:hidden ${
           sidebarOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full'
         }`}
       >
@@ -43,17 +51,21 @@ function AdminLayout() {
       </div>
       
       {/* Desktop sidebar */}
-      <div className="hidden lg:flex w-64 bg-white border-r border-gray-200">
-        <AdminSidebar />
+      <div className="hidden lg:flex lg:flex-shrink-0">
+        <div className="w-64 bg-white border-r border-gray-200">
+          <AdminSidebar />
+        </div>
       </div>
       
       {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <AdminHeader onMenuToggle={toggleSidebar} />
         
-        <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
-          <div className="max-w-7xl mx-auto">
-            <Outlet />
+        <main className="flex-1 overflow-y-auto bg-gray-50">
+          <div className="p-4 sm:p-6 max-w-full">
+            <div className="max-w-7xl mx-auto">
+              <Outlet />
+            </div>
           </div>
         </main>
       </div>
