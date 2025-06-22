@@ -210,19 +210,19 @@ function ProfileInformation() {
 
   return (
     <Card className="w-full max-w-4xl mx-auto">
-      <CardHeader className="pb-6">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-2xl font-bold">Profile Information</CardTitle>
+      <CardHeader className="pb-4 sm:pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <CardTitle className="text-xl sm:text-2xl font-bold">Profile Information</CardTitle>
           <Badge className={getRoleColor(user?.role)}>
             {user?.role === 'superAdmin' ? 'Super Admin' : user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)}
           </Badge>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4 sm:px-6">
         <form onSubmit={handleUpdateProfile} className="space-y-6">
           {/* Avatar Section */}
-          <div className="flex items-center space-x-6">
-            <div className="relative">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
+            <div className="relative flex-shrink-0">
               <Avatar className="w-24 h-24">
                 <AvatarImage src={profileData.avatar} alt="Profile" />
                 <AvatarFallback className="text-lg">
@@ -239,32 +239,38 @@ function ProfileInformation() {
                 />
               </label>
             </div>
-            <div className="flex-1">
-              <h3 className="text-xl font-semibold">
+            <div className="flex-1 min-w-0 w-full">
+              <h3 className="text-xl font-semibold break-words">
                 {profileData.firstName || profileData.lastName 
                   ? `${profileData.firstName} ${profileData.lastName}`.trim()
                   : profileData.userName
                 }
               </h3>
-              <div className="space-y-1 mt-2">
-                <p className="text-muted-foreground flex items-center gap-2">
-                  <Mail className="w-4 h-4" />
-                  {profileData.email}
-                </p>
-                {profileData.phone && (
-                  <p className="text-muted-foreground flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
-                    {profileData.phone}
+              <div className="space-y-2 mt-3">
+                <div className="flex items-start gap-2 min-w-0">
+                  <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                  <p className="text-muted-foreground break-all text-sm sm:text-base min-w-0">
+                    {profileData.email}
                   </p>
+                </div>
+                {profileData.phone && (
+                  <div className="flex items-start gap-2 min-w-0">
+                    <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                    <p className="text-muted-foreground break-words text-sm sm:text-base">
+                      {profileData.phone}
+                    </p>
+                  </div>
                 )}
                 {profileData.dateOfBirth && (
-                  <p className="text-muted-foreground flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    Born {formatDate(profileData.dateOfBirth)}
-                  </p>
+                  <div className="flex items-start gap-2 min-w-0">
+                    <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                    <p className="text-muted-foreground text-sm sm:text-base">
+                      Born {formatDate(profileData.dateOfBirth)}
+                    </p>
+                  </div>
                 )}
                 {user?.lastLogin && (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     Last login: {new Date(user.lastLogin).toLocaleDateString()}
                   </p>
                 )}

@@ -210,7 +210,11 @@ function App() {
                 <ShoppingAccount />
               </CheckAuth>
             } />
-            <Route path='wishlist' element={<WishlistPage />} />
+            <Route path='wishlist' element={
+              <CheckAuth isAuthenticated={isAuthenticated} user={user}>
+                <WishlistPage />
+              </CheckAuth>
+            } />
 
             {/* Information Pages */}
             <Route path="contact-us" element={<ContactUs />} />

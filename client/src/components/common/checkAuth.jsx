@@ -46,7 +46,22 @@ function CheckAuth({ isAuthenticated, user, children, requiredRole }) {
 
     // Not authenticated - redirect to login except for shop pages and password reset pages
     if (!isAuthenticated) {
-        // Allow access to shop pages without authentication
+        // Define protected shop routes that require authentication
+        const protectedShopRoutes = [
+            '/shop/account',
+            '/shop/checkout',
+            '/shop/order-confirmation',
+            '/shop/wishlist'
+        ];
+        
+        // Check if current path is a protected shop route
+        const isProtectedShopRoute = protectedShopRoutes.some(route => path.startsWith(route));
+        
+        if (isProtectedShopRoute) {
+            return <Navigate to="/auth/login" replace />;
+        }
+        
+        // Allow access to other shop pages without authentication
         if (path.startsWith('/shop')) {
             return <>{children}</>;
         }
