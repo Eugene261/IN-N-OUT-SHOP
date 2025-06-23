@@ -348,18 +348,3 @@ router.get('/oauth-redirect', (req, res) => {
   `;
   
   console.log('Sending OAuth redirect HTML page');
-  res.send(html);
-});
-
-module.exports = router; 
-                 r e s . r e d i r e c t ( r e d i r e c t U r l ) ;  
-             }   c a t c h   ( e r r o r )   {  
-                 c o n s o l e . e r r o r ( ' O A u t h   c a l l b a c k   e r r o r : ' ,   e r r o r ) ;  
-                 r e s . r e d i r e c t ( ' / a p i / a u t h / o a u t h - r e d i r e c t ? e r r o r = o a u t h _ c a l l b a c k _ f a i l e d ' ) ;  
-             }  
-         }  
-     ) ;  
- }  
-  
- m o d u l e . e x p o r t s   =   r o u t e r ;  
- 
