@@ -129,7 +129,7 @@ const EnhancedHeroCarousel = ({ FeatureImageList, isLoading }) => {
 
   return (
     <motion.div 
-      className="relative w-full h-[300px] sm:h-[350px] md:h-[400px] lg:h-[450px] max-h-[500px] overflow-hidden bg-gray-900"
+      className="relative w-full h-[500px] sm:h-[600px] md:h-[700px] lg:h-[80vh] max-h-[800px] overflow-hidden bg-gray-900"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
@@ -151,24 +151,7 @@ const EnhancedHeroCarousel = ({ FeatureImageList, isLoading }) => {
             isActive={true}
           />
           
-          {/* Hero Content Overlay */}
-          <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-            <motion.div 
-              className="text-center text-white px-4 max-w-4xl"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.8 }}
-            >
-              <motion.button
-                onClick={() => navigate('/shop/listing')}
-                className="px-8 py-4 bg-white text-black font-semibold rounded-full hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Shop Now
-              </motion.button>
-            </motion.div>
-          </div>
+
         </motion.div>
       </AnimatePresence>
 

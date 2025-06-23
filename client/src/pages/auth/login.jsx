@@ -1,11 +1,11 @@
-import CommonForm from '@/components/common/form';
+import SimpleForm from '@/components/common/SimpleForm';
 import { loginFormControls } from '@/config';
 import { loginUser } from '@/store/auth-slice';
 import React, { useState, useEffect } from 'react'
 import { useDispatch } from 'react-redux';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
-import OAuthButtons from '@/components/auth/OAuthButtons';
+import SimpleOAuthButtons from '@/components/auth/SimpleOAuthButtons';
 
 const initialState = {
   email: '',
@@ -109,18 +109,18 @@ function AuthLogin() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-6">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Sign In</h1>
-        <p className="mt-2">Don't have an account?
-          <Link className='font-medium ml-2 text-blue-800 hover:underline' 
-          to='/auth/register'>
-            Register
+    <div className="mx-auto w-full max-w-md space-y-8">
+      <div className="text-center space-y-2">
+        <h1 className="text-2xl font-bold text-gray-900">Sign In</h1>
+        <p className="text-gray-600">
+          Don't have an account?{' '}
+          <Link className='font-medium text-gray-900 hover:underline' to='/auth/register'>
+            Sign up
           </Link>
         </p>
       </div>
       
-      <CommonForm 
+      <SimpleForm 
         formControls={loginFormControls}
         buttonText={isLoading ? 'Signing In...' : 'Sign In'}
         formData={formData}
@@ -130,14 +130,12 @@ function AuthLogin() {
         isAuthForm={true}
       />
       
-      {/* OAuth Buttons */}
-      <OAuthButtons />
+      <SimpleOAuthButtons />
       
-      {/* Forgot Password Link */}
       <div className="text-center">
         <Link 
           to="/auth/forgot-password"
-          className="text-sm text-blue-600 hover:text-blue-800 hover:underline font-medium"
+          className="text-sm text-gray-600 hover:text-gray-900 hover:underline"
         >
           Forgot your password?
         </Link>

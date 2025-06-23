@@ -1,11 +1,11 @@
-import CommonForm from '@/components/common/form';
+import SimpleForm from '@/components/common/SimpleForm';
 import { registerFormControls } from '@/config';
 import { registerUser } from '@/store/auth-slice';
 import React, { useState } from 'react'
 import { useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import OAuthButtons from '@/components/auth/OAuthButtons';
+import SimpleOAuthButtons from '@/components/auth/SimpleOAuthButtons';
 
 const initialState = {
   userName: '',
@@ -41,22 +41,22 @@ function AuthRegister() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-6">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Sign Up</h1>
-        <p className="mt-2">
-          Already have an account?
+    <div className="mx-auto w-full max-w-md space-y-8">
+      <div className="text-center space-y-2">
+        <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
+        <p className="text-gray-600">
+          Already have an account?{' '}
           <Link 
-            className='font-medium ml-2 text-blue-800 hover:underline' 
+            className='font-medium text-gray-900 hover:underline' 
             to='/auth/login'
           >
-            Login
+            Sign in
           </Link>
         </p>
       </div>
-      <CommonForm 
+      <SimpleForm 
         formControls={registerFormControls}
-        buttonText={isLoading ? 'Signing Up...' : 'Sign Up'}
+        buttonText={isLoading ? 'Creating Account...' : 'Create Account'}
         formData={formData}
         setFormData={setFormData}
         onSubmit={onSubmit}
@@ -64,8 +64,7 @@ function AuthRegister() {
         isAuthForm={true}
       />
       
-      {/* OAuth Buttons */}
-      <OAuthButtons />
+      <SimpleOAuthButtons />
     </div>
   );
 };
