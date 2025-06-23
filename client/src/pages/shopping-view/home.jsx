@@ -37,6 +37,7 @@ import ValueProposition from '../../components/shopping-view/ValueProposition';
 import CustomerTestimonials from '../../components/shopping-view/CustomerTestimonials';
 import NewsletterSection from '../../components/shopping-view/NewsletterSection';
 import StatsSection from '../../components/shopping-view/StatsSection';
+import EnhancedHeroCarousel from '../../components/shopping-view/EnhancedHeroCarousel'
 
 /* const categoriesWithIcon = [
   { id: "men", label: "Men", icon: Shirt },
@@ -55,35 +56,85 @@ const brandWithIcons = [
   { id: "h&m", label: "H&M", icon: Leaf }, // Eco-friendly fast fashion
 ]; */
 
+// Default banner images as fallback
+const DEFAULT_BANNERS = [
+  {
+    id: 'default-1',
+    image: bannerOne,
+    title: 'Welcome to IN-N-OUT Store',
+    subtitle: 'Discover Premium Products'
+  },
+  {
+    id: 'default-2', 
+    image: bannerTwo,
+    title: 'Quality You Can Trust',
+    subtitle: 'Shop with Confidence'
+  },
+  {
+    id: 'default-3',
+    image: bannerThree,
+    title: 'Fast & Reliable Delivery',
+    subtitle: 'Get Your Orders Quickly'
+  }
+];
+
+// Enhanced Image Loading Component
+const HeroImage = ({ src, alt, onLoad, onError, isActive }) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+    onLoad && onLoad();
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
+    onError && onError();
+  };
+
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+      {/* Loading skeleton */}
+      {!imageLoaded && !imageError && (
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 animate-pulse">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
+        </div>
+      )}
+      
+      {/* Actual image */}
+      <img
+        src={src}
+        alt={alt}
+        className={`w-full h-full object-cover object-center transition-all duration-700 ${
+          imageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
+        }`}
+        onLoad={handleImageLoad}
+        onError={handleImageError}
+        loading={isActive ? "eager" : "lazy"}
+      />
+      
+      {/* Overlay gradient for better text readability */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+    </div>
+  );
+};
+
 function ShoppingHome() {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [direction, setDirection] = useState(0); // -1 for left, 1 for right
-  const { productList } = useSelector(state => state.shopProducts)
-  const navigate = useNavigate();
-  const { user } = useSelector(state => state.auth);
-  const { cartItems } = useSelector(state => state.shopCart);
-  const { wishlistItems } = useSelector(state => state.wishlist);
-  const [productsToShow, setProductsToShow] = useState([]);
-  const { FeatureImageList } = useSelector(state => state.commonFeature);
-  const dispatch = useDispatch();
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [productsToShow, setProductsToShow] = useState([]);
   const [showBackToTop, setShowBackToTop] = useState(false);
 
-  useEffect(() => {
-    // Reset filters when home page loads
-    sessionStorage.removeItem('filters');
-    
-    // Only set up the timer if FeatureImageList exists and has items
-    if (FeatureImageList && FeatureImageList.length > 0) {
-      const timer = setInterval(() => {
-        setDirection(1);
-        setCurrentSlide(prevSlide => (prevSlide + 1) % FeatureImageList.length);
-      }, 6000);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-      return () => clearInterval(timer);
-    }
-  }, [FeatureImageList]);
+  const { user } = useSelector(state => state.auth);
+  const { productList } = useSelector(state => state.shopProducts);
+  const { cartItems } = useSelector(state => state.shopCart);
+  const { wishlistItems } = useSelector(state => state.shopWishlist);
+  const { FeatureImageList, isLoading } = useSelector(state => state.commonFeature);
 
   // Handle scroll for Back to Top button
   useEffect(() => {
@@ -119,26 +170,42 @@ function ShoppingHome() {
   }
 
   function handleAddToCart(getCurrentProductId){
-    // Check if user is authenticated
-    if (!user || !user.id) {
-      toast.error("Please login to add items to your cart", {
-        position: 'top-center',
-        duration: 2000
-      });
+    const product = productList.find(p => p._id === getCurrentProductId);
+    
+    if (!product) {
+      toast.error("Product not found");
       return;
     }
-    
-    // Find the product by ID
-    const product = productList?.find(p => p._id === getCurrentProductId);
-    
-    if (product) {
-      // Open the options modal with the selected product
+
+    // Check if product has variants (sizes, colors, etc.)
+    const hasVariants = (product.sizes && product.sizes.length > 0) || 
+                       (product.colors && product.colors.length > 0);
+
+    if (hasVariants) {
+      // Show options modal for products with variants
       setSelectedProduct(product);
       setIsOptionsModalOpen(true);
     } else {
-      toast.error("Product not found", {
-        position: 'top-center',
-        duration: 2000
+      // Add directly to cart for products without variants
+      let guestId = null;
+      if (!user) {
+        guestId = localStorage.getItem('guestId');
+        if (!guestId) {
+          guestId = 'guest_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+          localStorage.setItem('guestId', guestId);
+        }
+      }
+
+      dispatch(addToCart({
+        userId: user?.id || user?._id,
+        guestId: guestId,
+        productId: getCurrentProductId, 
+        quantity: 1
+      })).then((data) => {
+        if (data?.payload?.success) {
+          dispatch(fetchCartItems(user?._id || user?.id || { guestId }));
+          toast.success('Product added to cart');
+        }
       });
     }
   }
@@ -147,10 +214,8 @@ function ShoppingHome() {
     let wishlistParams = {};
     
     if (user && (user._id || user.id)) {
-      // Authenticated user
       wishlistParams.userId = user._id || user.id;
     } else {
-      // Guest user - get or create guest ID
       let guestId = localStorage.getItem('guestId');
       if (!guestId) {
         guestId = 'guest_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -159,11 +224,9 @@ function ShoppingHome() {
       wishlistParams.guestId = guestId;
     }
     
-    // Check if product is already in wishlist
     const isInWishlist = wishlistItems?.some(item => item.productId === getCurrentProductId);
     
     if (isInWishlist) {
-      // Remove from wishlist
       dispatch(removeFromWishlist({ ...wishlistParams, productId: getCurrentProductId }))
         .then((result) => {
           if (result?.payload?.success) {
@@ -174,7 +237,6 @@ function ShoppingHome() {
           }
         });
     } else {
-      // Add to wishlist
       dispatch(addToWishlist({ ...wishlistParams, productId: getCurrentProductId }))
         .then((result) => {
           if (result?.payload?.success) {
@@ -187,19 +249,7 @@ function ShoppingHome() {
     }
   }
 
-  const goToNextSlide = () => {
-    if (FeatureImageList && FeatureImageList.length > 0) {
-      setDirection(1);
-      setCurrentSlide(prevSlide => (prevSlide + 1) % FeatureImageList.length);
-    }
-  };
 
-  const goToPrevSlide = () => {
-    if (FeatureImageList && FeatureImageList.length > 0) {
-      setDirection(-1);
-      setCurrentSlide(prevSlide => (prevSlide - 1 + FeatureImageList.length) % FeatureImageList.length);
-    }
-  };
 
   const sectionVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -231,33 +281,7 @@ function ShoppingHome() {
     });
   };
 
-  const slideVariants = {
-    enter: (direction) => ({
-      x: direction > 0 ? '100%' : '-100%',
-      opacity: 0,
-      scale: 1,
-    }),
-    center: {
-      x: 0,
-      opacity: 1,
-      scale: 1,
-      transition: {
-        x: { type: 'spring', stiffness: 300, damping: 30 },
-        opacity: { duration: 0.4 },
-        scale: { duration: 0.4 }
-      }
-    },
-    exit: (direction) => ({
-      x: direction > 0 ? '-100%' : '100%',
-      opacity: 0,
-      scale: 1,
-      transition: {
-        x: { type: 'spring', stiffness: 300, damping: 30 },
-        opacity: { duration: 0.4 },
-        scale: { duration: 0.4 }
-      }
-    })
-  };
+
 
   const [refreshKey, setRefreshKey] = useState(0);
   
@@ -299,135 +323,20 @@ function ShoppingHome() {
   }, [productList]);
 
 
-  // Fetch feature images with loading state management
-  const [imagesLoading, setImagesLoading] = useState(true);
+  // Feature images loading state is managed by Redux store
   
   useEffect(() => {
-    setImagesLoading(true);
-    dispatch(getFeatureImages())
-      .then(() => {
-        // Add a small delay to ensure images are properly loaded
-        setTimeout(() => setImagesLoading(false), 100);
-      })
-      .catch(() => setImagesLoading(false));
+    dispatch(getFeatureImages());
   }, [dispatch]);
   
     return (
       <div className='flex flex-col min-h-screen'>
         <PageTitle title="Home" />
-        {/* Enhanced Banner Slider */}
-        <motion.div 
-          className="relative w-full h-[400px] sm:h-[500px] md:h-[600px] lg:h-[90vh] max-h-[1000px] overflow-hidden bg-gray-100"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="absolute inset-0 z-10 pointer-events-none"></div>
-          
-          {imagesLoading ? (
-            // Show loading state while images are being fetched
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-              <div className="animate-pulse flex flex-col items-center">
-                <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                <p className="mt-4 text-gray-600 font-medium">Loading featured images...</p>
-              </div>
-            </div>
-          ) : FeatureImageList && FeatureImageList.length > 0 ? (
-            <AnimatePresence initial={false} custom={direction} mode="wait">
-              <motion.div
-                key={`slide-${currentSlide}-${FeatureImageList[currentSlide]?._id}`}
-                custom={direction}
-                variants={slideVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                className="absolute inset-0 bg-gray-100"
-              >
-                <img
-                  src={FeatureImageList[currentSlide]?.image}
-                  alt={`Banner ${currentSlide + 1}`}
-                  className="w-full h-full object-cover object-center"
-                  loading="eager"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    console.error('Failed to load image:', FeatureImageList[currentSlide]?.image);
-                  }}
-                />
-              </motion.div>
-            </AnimatePresence>
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-b from-gray-100 to-gray-200 flex items-center justify-center">
-              <div className="text-center p-8">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-300 flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-gray-700 mb-2">No Featured Images</h3>
-                <p className="text-gray-500">Add featured images in the admin dashboard to display here.</p>
-              </div>
-            </div>
-          )}
-  
-          {/* Navigation Buttons */}
-          <motion.button
-            onClick={goToPrevSlide}
-            className='absolute top-1/2 left-2 sm:left-6 z-20 transform -translate-y-1/2 p-2 sm:p-3
-            rounded-full bg-gray-700/80 backdrop-blur-md shadow-lg border border-white/30
-            hover:bg-gray-400 transition-all'
-            whileHover={{ 
-              scale: 1.1,
-              boxShadow: "0 0 15px rgba(255, 255, 255, 0.5)"
-            }}
-            whileTap={{ scale: 0.9 }}
-          >
-            <ChevronLeft className='w-4 h-4 sm:w-5 sm:h-5 text-white' />
-          </motion.button>
-  
-          <motion.button 
-            onClick={goToNextSlide}
-            className='absolute top-1/2 right-2 sm:right-6 z-20 transform -translate-y-1/2 p-2 sm:p-3
-            rounded-full bg-gray-700/80 backdrop-blur-md shadow-lg border border-white/30
-            hover:bg-gray-400 transition-all'
-            whileHover={{ 
-              scale: 1.1,
-              boxShadow: "0 0 15px rgba(255, 255, 255, 0.5)"
-            }}
-            whileTap={{ scale: 0.9 }}
-          >
-            <ChevronRight className='w-4 h-4 sm:w-5 sm:h-5 text-white' />
-          </motion.button>
-  
-          {/* Slide Indicators */}
-          <div className="absolute bottom-4 sm:bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex space-x-2 sm:space-x-3">
-            {!imagesLoading && FeatureImageList && FeatureImageList.length > 0 && 
-              FeatureImageList.map((_, index) => (
-                <motion.button
-                  key={index}
-                  onClick={() => {
-                    setDirection(index > currentSlide ? 1 : -1);
-                    setCurrentSlide(index);
-                  }}
-                  className={`w-1.5 sm:w-2 h-6 sm:h-8 rounded-full transition-all overflow-hidden relative`}
-                  whileHover={{ scale: 1.1 }}
-                  animate={{ 
-                    backgroundColor: index === currentSlide ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.3)',
-                    width: index === currentSlide ? '20px' : '6px'
-                  }}
-                  transition={{ duration: 0.3 }}
-                >
-                  {index === currentSlide && (
-                    <motion.div 
-                      className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500"
-                      animate={{ opacity: [0.7, 1, 0.7] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    />
-                  )}
-                </motion.button>
-              ))
-            }
-          </div>
-        </motion.div>
+        {/* Enhanced Hero Banner Slider */}
+        <EnhancedHeroCarousel 
+          FeatureImageList={FeatureImageList} 
+          isLoading={isLoading}
+        />
   
         {/* Categories Section */}
        {/*  <motion.section 
