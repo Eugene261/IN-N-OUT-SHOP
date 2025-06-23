@@ -129,7 +129,7 @@ const EnhancedHeroCarousel = ({ FeatureImageList, isLoading }) => {
 
   return (
     <motion.div 
-      className="relative w-full h-[400px] sm:h-[500px] md:h-[600px] lg:h-[90vh] max-h-[1000px] overflow-hidden bg-gray-900"
+      className="relative w-full h-[300px] sm:h-[350px] md:h-[400px] lg:h-[450px] max-h-[500px] overflow-hidden bg-gray-900"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
