@@ -45,9 +45,17 @@ router.post('/test-email', authRateLimiter, async (req, res) => {
             });
         }
 
+        console.log('=== EMAIL TEST DEBUG ===');
+        console.log('EMAIL_PROVIDER:', process.env.EMAIL_PROVIDER);
+        console.log('SMTP_HOST:', process.env.SMTP_HOST);
+        console.log('EMAIL_USER:', process.env.EMAIL_USER);
+        console.log('EMAIL_FROM:', process.env.EMAIL_FROM);
+        console.log('Has EMAIL_PASSWORD:', !!process.env.EMAIL_PASSWORD);
+
         let result;
         switch (type) {
             case 'welcome':
+                console.log('Testing welcome email to:', email);
                 result = await emailService.sendWelcomeEmail(email, 'Test User');
                 break;
             case 'reset':
@@ -55,6 +63,7 @@ router.post('/test-email', authRateLimiter, async (req, res) => {
                 result = await emailService.sendPasswordResetEmail(email, testResetUrl, 'Test User');
                 break;
             default:
+                console.log('Testing basic email to:', email);
                 result = await emailService.sendEmail({
                     to: email,
                     subject: 'Test Email - IN-N-OUT Store',
@@ -62,6 +71,7 @@ router.post('/test-email', authRateLimiter, async (req, res) => {
                         <h1>🎉 Email Service Test</h1>
                         <p>If you're reading this, your email service is working correctly!</p>
                         <p>Timestamp: ${new Date().toISOString()}</p>
+                        <p>EMAIL_PROVIDER: ${process.env.EMAIL_PROVIDER}</p>
                         <hr>
                         <small>This is a test email from IN-N-OUT Store</small>
                     `
@@ -72,7 +82,12 @@ router.post('/test-email', authRateLimiter, async (req, res) => {
         res.status(200).json({
             success: true,
             message: `Test ${type} email sent successfully`,
-            messageId: result.messageId
+            messageId: result.messageId,
+            debug: {
+                emailProvider: process.env.EMAIL_PROVIDER,
+                emailUser: process.env.EMAIL_USER,
+                smtpHost: process.env.SMTP_HOST
+            }
         });
 
     } catch (error) {
@@ -80,7 +95,8 @@ router.post('/test-email', authRateLimiter, async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to send test email',
-            error: process.env.NODE_ENV === 'development' ? error.message : 'Email service error'
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Email service error',
+            details: error.stack
         });
     }
 });
@@ -247,14 +263,14 @@ router.get('/debug/oauth-urls', (req, res) => {
       serverUrl: baseUrl,
       clientUrl: clientUrl,
       callbacks: {
-              google: `${baseUrl}/api/auth/google/callback`,
-      facebook: `${baseUrl}/api/auth/facebook/callback`
+        google: `${baseUrl}/api/auth/google/callback`,
+        facebook: `${baseUrl}/api/auth/facebook/callback`
       },
       environment: {
         NODE_ENV: process.env.NODE_ENV,
-            hasGoogleCredentials: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
-    hasFacebookCredentials: !!(process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET),
-    twitterDisabled: true
+        hasGoogleCredentials: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+        hasFacebookCredentials: !!(process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET),
+        twitterDisabled: true
       }
     }
   });
@@ -335,6 +351,15 @@ router.get('/oauth-redirect', (req, res) => {
   res.send(html);
 });
 
-
-
-module.exports = router;
+module.exports = router; 
+                 r e s . r e d i r e c t ( r e d i r e c t U r l ) ;  
+             }   c a t c h   ( e r r o r )   {  
+                 c o n s o l e . e r r o r ( ' O A u t h   c a l l b a c k   e r r o r : ' ,   e r r o r ) ;  
+                 r e s . r e d i r e c t ( ' / a p i / a u t h / o a u t h - r e d i r e c t ? e r r o r = o a u t h _ c a l l b a c k _ f a i l e d ' ) ;  
+             }  
+         }  
+     ) ;  
+ }  
+  
+ m o d u l e . e x p o r t s   =   r o u t e r ;  
+ 
