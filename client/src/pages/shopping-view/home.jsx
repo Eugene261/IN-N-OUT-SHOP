@@ -1,8 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react'
-import LazyImage from '../../components/common/LazyImage'
 import { toast } from 'sonner';
 import PageTitle from '../../components/common/PageTitle';
-import ShoppingLoader from '@/components/common/ShoppingLoader';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -66,11 +64,9 @@ function ShoppingHome() {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const { user } = useSelector(state => state.auth);
   const { productList } = useSelector(state => state.shopProducts);
-  const { cartItems } = useSelector(state => state.shopCart);
   const { wishlistItems } = useSelector(state => state.shopWishlist);
   const { FeatureImageList, isLoading } = useSelector(state => state.commonFeature);
 
@@ -93,10 +89,10 @@ function ShoppingHome() {
     };
   }, []);
 
-  function handleNaviagteToListingPage(getCerrentItem, section){
+  function handleNavigateToListingPage(getCurrentItem, section){
     sessionStorage.removeItem('filters');
     const currentFilter = {
-      [section] : [getCerrentItem.id]
+      [section] : [getCurrentItem.id]
     }
 
     sessionStorage.setItem('filters', JSON.stringify(currentFilter));
@@ -303,7 +299,7 @@ function ShoppingHome() {
                   whileHover={{ y: -5 }}
                 >
                   <Card 
-                    onClick={() => handleNaviagteToListingPage(categoryItem, 'category')}
+                    onClick={() => handleNavigateToListingPage(categoryItem, 'category')}
                     className='cursor-pointer group relative overflow-hidden shadow-lg hover:shadow-xl transition-all'
                   >
                     <CardContent className='flex flex-col items-center justify-center p-6 sm:p-8 h-full bg-white'>
@@ -352,7 +348,7 @@ function ShoppingHome() {
                 >
                   <Card 
                     className='cursor-pointer group relative overflow-hidden shadow-md hover:shadow-lg transition-all h-full'
-                    onClick={() => handleNaviagteToListingPage(brandItem, 'brand')}
+                    onClick={() => handleNavigateToListingPage(brandItem, 'brand')}
                   >
                     <CardContent className='flex flex-col items-center justify-center p-6 bg-gray-50 group-hover:bg-white transition-colors'>
                       <motion.div
