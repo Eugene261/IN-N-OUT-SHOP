@@ -56,69 +56,7 @@ const brandWithIcons = [
   { id: "h&m", label: "H&M", icon: Leaf }, // Eco-friendly fast fashion
 ]; */
 
-// Default banner images as fallback
-const DEFAULT_BANNERS = [
-  {
-    id: 'default-1',
-    image: bannerOne,
-    title: 'Welcome to IN-N-OUT Store',
-    subtitle: 'Discover Premium Products'
-  },
-  {
-    id: 'default-2', 
-    image: bannerTwo,
-    title: 'Quality You Can Trust',
-    subtitle: 'Shop with Confidence'
-  },
-  {
-    id: 'default-3',
-    image: bannerThree,
-    title: 'Fast & Reliable Delivery',
-    subtitle: 'Get Your Orders Quickly'
-  }
-];
 
-// Enhanced Image Loading Component
-const HeroImage = ({ src, alt, onLoad, onError, isActive }) => {
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
-
-  const handleImageLoad = () => {
-    setImageLoaded(true);
-    onLoad && onLoad();
-  };
-
-  const handleImageError = () => {
-    setImageError(true);
-    onError && onError();
-  };
-
-  return (
-    <div className="absolute inset-0 overflow-hidden">
-      {/* Loading skeleton */}
-      {!imageLoaded && !imageError && (
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 animate-pulse">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
-        </div>
-      )}
-      
-      {/* Actual image */}
-      <img
-        src={src}
-        alt={alt}
-        className={`w-full h-full object-cover object-center transition-all duration-700 ${
-          imageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
-        }`}
-        onLoad={handleImageLoad}
-        onError={handleImageError}
-        loading={isActive ? "eager" : "lazy"}
-      />
-      
-      {/* Overlay gradient for better text readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
-    </div>
-  );
-};
 
 function ShoppingHome() {
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
