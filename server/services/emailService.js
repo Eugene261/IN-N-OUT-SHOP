@@ -140,6 +140,55 @@ class EmailService {
       .trim();
   }
 
+  // Helper method to get appropriate sender based on email type
+  getSenderConfig(emailType) {
+    const senderConfigs = {
+      // Personal emails from admin
+      'welcome': {
+        from: `"Eugene - IN-N-OUT Store" <${process.env.ADMIN_EMAIL || process.env.EMAIL_FROM}>`,
+        replyTo: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM
+      },
+      'contact_reply': {
+        from: `"Eugene - IN-N-OUT Store" <${process.env.ADMIN_EMAIL || process.env.EMAIL_FROM}>`,
+        replyTo: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM
+      },
+      'admin_welcome': {
+        from: `"Eugene - IN-N-OUT Store" <${process.env.ADMIN_EMAIL || process.env.EMAIL_FROM}>`,
+        replyTo: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM
+      },
+      
+      // System emails from noreply
+      'order_confirmation': {
+        from: `"IN-N-OUT Store" <${process.env.EMAIL_USER}>`,
+        replyTo: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM
+      },
+      'order_status': {
+        from: `"IN-N-OUT Store" <${process.env.EMAIL_USER}>`,
+        replyTo: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM
+      },
+      'password_reset': {
+        from: `"IN-N-OUT Store Security" <${process.env.EMAIL_USER}>`,
+        replyTo: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM
+      },
+      'low_stock': {
+        from: `"IN-N-OUT Store System" <${process.env.EMAIL_USER}>`,
+        replyTo: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM
+      },
+      'system_notification': {
+        from: `"IN-N-OUT Store System" <${process.env.EMAIL_USER}>`,
+        replyTo: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM
+      },
+      
+      // Default fallback
+      'default': {
+        from: `"IN-N-OUT Store" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+        replyTo: process.env.REPLY_TO_EMAIL || process.env.EMAIL_FROM || process.env.EMAIL_USER
+      }
+    };
+
+    return senderConfigs[emailType] || senderConfigs['default'];
+  }
+
   // Modern email template generator with improved design and spam prevention
   getModernEmailTemplate({ title, headerColor, icon, content }) {
     const logoUrl = process.env.LOGO_URL || `${process.env.CLIENT_URL}/favicon.svg`;
@@ -589,10 +638,12 @@ class EmailService {
       `
     });
 
+    const senderConfig = this.getSenderConfig('password_reset');
     return await this.sendEmail({
       to: email,
       subject: 'Password Reset Request - IN-N-OUT Store',
-      html: htmlContent
+      html: htmlContent,
+      ...senderConfig
     });
   }
 
@@ -605,6 +656,7 @@ class EmailService {
         <div class="notification-header">
           <h2>Welcome ${userName}!</h2>
           <p>Thank you for joining IN-N-OUT Store! Your account has been successfully created.</p>
+          <p><em>I'm Eugene, and I personally welcome you to our store family!</em></p>
         </div>
         
         <div class="next-steps">
@@ -616,6 +668,12 @@ class EmailService {
             <li>📦 Track your orders in real-time</li>
             <li>⭐ Leave reviews and earn rewards</li>
           </ul>
+        </div>
+        
+        <div class="message-box">
+          <h3>💬 A Personal Note</h3>
+          <p>If you have any questions or need assistance, don't hesitate to reach out. I'm here to ensure you have the best shopping experience possible!</p>
+          <p style="margin-top: 15px;"><strong>- Eugene, Founder</strong></p>
         </div>
         
         <div class="action-buttons" style="text-align: center;">
@@ -637,10 +695,13 @@ class EmailService {
       `
     });
 
+    // Send welcome email from admin for personal touch
     return await this.sendEmail({
       to: email,
       subject: 'Welcome to IN-N-OUT Store! 🎉',
-      html: htmlContent
+      html: htmlContent,
+      from: `"Eugene - IN-N-OUT Store" <${process.env.ADMIN_EMAIL || process.env.EMAIL_FROM}>`,
+      replyTo: process.env.SUPPORT_EMAIL || process.env.REPLY_TO_EMAIL || process.env.EMAIL_FROM
     });
   }
 
@@ -714,10 +775,12 @@ class EmailService {
       `
     });
 
+    const senderConfig = this.getSenderConfig('order_confirmation');
     return await this.sendEmail({
       to: email,
       subject: `Order Confirmation #${orderDetails.orderId} - IN-N-OUT Store`,
-      html: htmlContent
+      html: htmlContent,
+      ...senderConfig
     });
   }
 
@@ -782,10 +845,12 @@ class EmailService {
       `
     });
 
+    const senderConfig = this.getSenderConfig('order_status');
     return await this.sendEmail({
       to: email,
       subject: `Order Update #${orderDetails.orderId} - ${config.message.replace('!', '')}`,
-      html: htmlContent
+      html: htmlContent,
+      ...senderConfig
     });
   }
 
@@ -1008,14 +1073,18 @@ class EmailService {
     await this.sendEmail({
       to: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM,
       subject: `📧 Contact Form: ${contactDetails.subject}`,
-      html: adminHtmlContent
+      html: adminHtmlContent,
+      from: `"IN-N-OUT Store System" <${process.env.EMAIL_USER}>`,
+      replyTo: contactDetails.email // Allow direct reply to customer
     });
 
-    // Send auto-reply to customer
+    // Send auto-reply to customer from admin for personal touch
     return await this.sendEmail({
       to: contactDetails.email,
       subject: '✅ Thank you for contacting IN-N-OUT Store',
-      html: customerHtmlContent
+      html: customerHtmlContent,
+      from: `"Eugene - IN-N-OUT Store" <${process.env.ADMIN_EMAIL || process.env.EMAIL_FROM}>`,
+      replyTo: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM
     });
   }
 
