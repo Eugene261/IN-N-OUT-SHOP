@@ -67,7 +67,7 @@ function ShoppingHome() {
 
   const { user } = useSelector(state => state.auth);
   const { productList } = useSelector(state => state.shopProducts);
-  const { wishlistItems } = useSelector(state => state.shopWishlist);
+  const { wishlistItems } = useSelector(state => state.wishlist);
   const { FeatureImageList, isLoading } = useSelector(state => state.commonFeature);
 
   // Handle scroll for Back to Top button
