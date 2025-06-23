@@ -159,12 +159,6 @@ const EnhancedHeroCarousel = ({ FeatureImageList, isLoading }) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.8 }}
             >
-              <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg">
-                {imagesToUse[currentSlide]?.title || 'Welcome to IN-N-OUT Store'}
-              </h1>
-              <p className="text-lg sm:text-xl md:text-2xl mb-8 drop-shadow-md opacity-90">
-                {imagesToUse[currentSlide]?.subtitle || 'Discover Premium Products'}
-              </p>
               <motion.button
                 onClick={() => navigate('/shop/listing')}
                 className="px-8 py-4 bg-white text-black font-semibold rounded-full hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl"
