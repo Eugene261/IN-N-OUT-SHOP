@@ -85,12 +85,14 @@ const WishlistPage = () => {
 
   const navigate = useNavigate();
 
-  const handleViewProductDetails = (product) => {
+  const handleViewProductDetails = (productId) => {
     // Navigate to the product details page
-    if (product._id) {
-      navigate(`/shop/product/${product._id}`);
-    } else if (product.productId && typeof product.productId === 'string') {
-      navigate(`/shop/product/${product.productId}`);
+    console.log('Navigating to product:', productId);
+    if (productId) {
+      navigate(`/shop/product/${productId}`);
+    } else {
+      console.error('No product ID provided for navigation');
+      toast.error('Unable to view product details');
     }
   };
 
@@ -170,17 +172,22 @@ const WishlistPage = () => {
         >
           {wishlistItems.map((item, index) => {
             // Extract product information based on different possible data structures
-            const productId = item.productId || item._id;
+            const productId = item.productId?._id || item.productId || item._id;
+            const productData = item.productId || item.product || item;
+            
             const product = {
               _id: productId,
-              title: item.title || item.product?.title || `Product ${index + 1}`,
-              image: item.image || item.product?.image,
-              price: item.price || item.product?.price || 0,
-              salePrice: item.salePrice || item.product?.salePrice || 0,
-              brand: item.brand || item.product?.brand || 'Brand',
-              category: item.category || item.product?.category || 'Category',
-              totalStock: item.totalStock || item.product?.totalStock || 0,
-              description: item.description || item.product?.description || 'No description available'
+              title: productData.title || `Product ${index + 1}`,
+              image: productData.image,
+              price: productData.price || 0,
+              salePrice: productData.salePrice || 0,
+              brand: productData.brand || 'Brand',
+              category: productData.category || 'Category',
+              totalStock: productData.totalStock || 0,
+              description: productData.description || 'No description available',
+              colors: productData.colors || [],
+              sizes: productData.sizes || [],
+              createdBy: productData.createdBy
             };
             
             console.log(`Rendering wishlist item ${index}:`, { productId, product });
@@ -197,10 +204,14 @@ const WishlistPage = () => {
                     // Format the product data properly for the modal
                     const formattedProduct = {
                       _id: productId,
+                      title: product.title,
                       name: product.title,
                       image: product.image,
                       price: product.price,
+                      salePrice: product.salePrice,
                       brand: product.brand,
+                      category: product.category,
+                      totalStock: product.totalStock,
                       description: product.description
                     };
                     
@@ -208,7 +219,7 @@ const WishlistPage = () => {
                     setSelectedProduct(formattedProduct);
                     setIsOptionsModalOpen(true);
                   }}
-                  handleAddToWishlist={() => handleRemoveFromWishlist(productId)}
+                  handleAddToWishlist={(id) => handleRemoveFromWishlist(id || productId)}
                   isInWishlist={true}
                 />
               </motion.div>

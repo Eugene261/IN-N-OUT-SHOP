@@ -189,8 +189,8 @@ function SimpleForm({
               </div>
             )}
 
-            {/* Password Requirements - only show for password fields and when user starts typing */}
-            {isPasswordField && value && controlItem.name === 'password' && (
+            {/* Password Requirements - only show for password fields on register page and when user starts typing */}
+            {isPasswordField && value && controlItem.name === 'password' && buttonText.toLowerCase().includes('create') && (
               <div className="mt-3 p-3 bg-gray-50 rounded-lg border">
                 <p className="text-sm font-medium text-gray-700 mb-2">Password Requirements:</p>
                 <div className="space-y-1">

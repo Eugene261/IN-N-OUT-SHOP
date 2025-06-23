@@ -52,14 +52,14 @@ function ShoppingAccount() {
       <div className="container mx-auto grid grid-cols-1 gap-6 sm:gap-8 py-6 sm:py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col rounded-lg border bg-background p-4 sm:p-6 shadow-sm">
           <Tabs defaultValue='profile' >
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1">
-              <TabsTrigger value='profile' className='cursor-pointer text-xs sm:text-sm'>Profile</TabsTrigger>
-              <TabsTrigger value='password' className='cursor-pointer text-xs sm:text-sm'>Password</TabsTrigger>
-              <TabsTrigger value='settings' className='cursor-pointer text-xs sm:text-sm'>Settings</TabsTrigger>
-              <TabsTrigger value='orders' className='cursor-pointer text-xs sm:text-sm'>Orders</TabsTrigger>
-              <TabsTrigger value='address' className='cursor-pointer text-xs sm:text-sm'>Address</TabsTrigger>
+            <TabsList className="flex flex-wrap w-full gap-1 h-auto p-1">
+              <TabsTrigger value='profile' className='cursor-pointer text-xs sm:text-sm px-2 py-2 flex-1 min-w-0'>Profile</TabsTrigger>
+              <TabsTrigger value='password' className='cursor-pointer text-xs sm:text-sm px-2 py-2 flex-1 min-w-0'>Password</TabsTrigger>
+              <TabsTrigger value='settings' className='cursor-pointer text-xs sm:text-sm px-2 py-2 flex-1 min-w-0'>Settings</TabsTrigger>
+              <TabsTrigger value='orders' className='cursor-pointer text-xs sm:text-sm px-2 py-2 flex-1 min-w-0'>Orders</TabsTrigger>
+              <TabsTrigger value='address' className='cursor-pointer text-xs sm:text-sm px-2 py-2 flex-1 min-w-0'>Address</TabsTrigger>
               {isAdmin && (
-                <TabsTrigger value='users' className='cursor-pointer text-xs sm:text-sm'>Users</TabsTrigger>
+                <TabsTrigger value='users' className='cursor-pointer text-xs sm:text-sm px-2 py-2 flex-1 min-w-0'>Users</TabsTrigger>
               )}
             </TabsList>
 
