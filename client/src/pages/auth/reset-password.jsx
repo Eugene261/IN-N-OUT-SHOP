@@ -133,43 +133,54 @@ function ResetPassword() {
   // Invalid token UI
   if (isValidToken === false) {
     return (
-      <div className="mx-auto w-full max-w-md space-y-6">
-        <Card>
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-              <AlertCircle className="h-6 w-6 text-red-600" />
-            </div>
-            <CardTitle className="text-2xl font-bold">Invalid Reset Link</CardTitle>
-            <CardDescription>
-              This password reset link is invalid or has expired.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600 text-center">
-                Reset links expire after 1 hour for security reasons.
-              </p>
-              <div className="flex gap-2">
-                <Link
-                  to="/auth/forgot-password"
-                  className="flex-1"
-                >
-                  <Button variant="outline" className="w-full">
-                    Request New Link
-                  </Button>
-                </Link>
-                <Link
-                  to="/auth/login"
-                  className="flex-1"
-                >
-                  <Button className="w-full">
-                    Back to Login
-                  </Button>
-                </Link>
+      <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-md space-y-6">
+          <Card>
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                <AlertCircle className="h-6 w-6 text-red-600" />
               </div>
-            </div>
-          </CardContent>
-        </Card>
+              <CardTitle className="text-xl sm:text-2xl font-bold">Invalid Reset Link</CardTitle>
+              <CardDescription className="text-sm sm:text-base">
+                This password reset link is invalid or has expired.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <h4 className="font-medium text-amber-800 mb-2">Common reasons for invalid links:</h4>
+                  <ul className="text-sm text-amber-700 space-y-1">
+                    <li>• Link has expired (1 hour limit)</li>
+                    <li>• Link was accessed from a different device/browser</li>
+                    <li>• Link was already used</li>
+                    <li>• You may have accessed from a different domain</li>
+                  </ul>
+                </div>
+                <p className="text-sm text-gray-600 text-center">
+                  Reset links expire after 1 hour for security reasons.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Link
+                    to="/auth/forgot-password"
+                    className="flex-1"
+                  >
+                    <Button variant="outline" className="w-full">
+                      Request New Link
+                    </Button>
+                  </Link>
+                  <Link
+                    to="/auth/login"
+                    className="flex-1"
+                  >
+                    <Button className="w-full">
+                      Back to Login
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -177,30 +188,32 @@ function ResetPassword() {
   // Success UI
   if (resetSuccess) {
     return (
-      <div className="mx-auto w-full max-w-md space-y-6">
-        <Card>
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-              <CheckCircle className="h-6 w-6 text-green-600" />
-            </div>
-            <CardTitle className="text-2xl font-bold">Password Reset Successfully!</CardTitle>
-            <CardDescription>
-              Your password has been updated. You can now sign in with your new password.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-center">
-              <p className="text-sm text-gray-600 mb-4">
-                Redirecting to login page in a few seconds...
-              </p>
-              <Link to="/auth/login">
-                <Button className="w-full">
-                  Go to Login
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-md space-y-6">
+          <Card>
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
+              <CardTitle className="text-xl sm:text-2xl font-bold">Password Reset Successfully!</CardTitle>
+              <CardDescription className="text-sm sm:text-base">
+                Your password has been updated. You can now sign in with your new password.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="text-center">
+                <p className="text-sm text-gray-600 mb-4">
+                  Redirecting to login page in a few seconds...
+                </p>
+                <Link to="/auth/login">
+                  <Button className="w-full">
+                    Go to Login
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -208,112 +221,116 @@ function ResetPassword() {
   // Loading state
   if (isValidToken === null) {
     return (
-      <div className="mx-auto w-full max-w-md space-y-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Verifying reset link...</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-md space-y-6">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Verifying reset link...</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   // Reset password form
   return (
-    <div className="mx-auto w-full max-w-md space-y-6">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Set new password</h1>
-        <p className="mt-2 text-gray-600">
-          Enter your new password below.
-        </p>
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-md space-y-6">
+        <div className="text-center">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Set new password</h1>
+          <p className="mt-2 text-sm sm:text-base text-gray-600">
+            Enter your new password below.
+          </p>
+        </div>
+
+        <Card>
+          <CardContent className="pt-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="password" className="flex items-center gap-2">
+                  <Lock className="h-4 w-4" />
+                  New Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Enter your new password"
+                    value={passwords.password}
+                    onChange={(e) => handlePasswordChange('password', e.target.value)}
+                    disabled={isLoading}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-400" />
+                    )}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Password must be at least 8 characters and include uppercase, lowercase, number and special character (@$!%*?&)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="flex items-center gap-2">
+                  <Lock className="h-4 w-4" />
+                  Confirm New Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    placeholder="Confirm your new password"
+                    value={passwords.confirmPassword}
+                    onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
+                    disabled={isLoading}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-400" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Resetting...' : 'Reset Password'}
+              </Button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <Link
+                to="/auth/login"
+                className="text-sm text-gray-600 hover:text-gray-800 hover:underline"
+              >
+                Back to login
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-
-      <Card>
-        <CardContent className="pt-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="password" className="flex items-center gap-2">
-                <Lock className="h-4 w-4" />
-                New Password
-              </Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Enter your new password"
-                  value={passwords.password}
-                  onChange={(e) => handlePasswordChange('password', e.target.value)}
-                  disabled={isLoading}
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-gray-400" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-gray-400" />
-                  )}
-                </button>
-              </div>
-              <p className="text-xs text-gray-500">
-                Password must be at least 8 characters and include uppercase, lowercase, number and special character (@$!%*?&)
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="flex items-center gap-2">
-                <Lock className="h-4 w-4" />
-                Confirm New Password
-              </Label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  placeholder="Confirm your new password"
-                  value={passwords.confirmPassword}
-                  onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
-                  disabled={isLoading}
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="h-4 w-4 text-gray-400" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-gray-400" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Resetting...' : 'Reset Password'}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <Link
-              to="/auth/login"
-              className="text-sm text-gray-600 hover:text-gray-800 hover:underline"
-            >
-              Back to login
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

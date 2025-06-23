@@ -301,9 +301,9 @@ function AuthLayout() {
         />
         
         {/* Content card with glass effect */}
-        <div className="w-full max-w-md relative z-10 px-6 py-8 sm:px-10">
+        <div className="w-full max-w-md relative z-10 px-4 sm:px-6 py-6 sm:py-8 lg:px-10">
           <motion.div
-            className="bg-white/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 p-8 overflow-hidden"
+            className="bg-white/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8 overflow-hidden"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.5 }}
@@ -316,7 +316,7 @@ function AuthLayout() {
             
             {/* Security badge */}
             <motion.div 
-              className="mt-8 flex items-center justify-center text-xs text-gray-500 gap-1.5"
+              className="mt-6 sm:mt-8 flex items-center justify-center text-xs text-gray-500 gap-1.5"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1.2 }}

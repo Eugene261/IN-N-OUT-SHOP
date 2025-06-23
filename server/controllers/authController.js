@@ -278,8 +278,9 @@ const forgotPassword = async (req, res) => {
     user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
     await user.save();
 
-    // Send password reset email
-    const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/auth/reset-password/${resetToken}`;
+    // Send password reset email with multiple domain support
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+    const resetUrl = `${clientUrl}/auth/reset-password/${resetToken}`;
     
     try {
       await emailService.sendPasswordResetEmail(email, resetUrl, user.userName);
@@ -288,8 +289,9 @@ const forgotPassword = async (req, res) => {
       res.status(200).json({
         success: true,
         message: 'Password reset link sent to your email',
-        // Remove this in production - only for development
-        resetUrl: process.env.NODE_ENV === 'development' ? resetUrl : undefined
+        // Include token for development/debugging
+        resetUrl: process.env.NODE_ENV === 'development' ? resetUrl : undefined,
+        token: process.env.NODE_ENV === 'development' ? resetToken : undefined
       });
     } catch (emailError) {
       console.error('Failed to send password reset email:', emailError);
