@@ -143,18 +143,18 @@ class EmailService {
   // Helper method to get appropriate sender based on email type
   getSenderConfig(emailType) {
     const senderConfigs = {
-      // Personal emails from admin
+      // Personal emails from admin (using authenticated email but admin display name)
       'welcome': {
-        from: `"Eugene - IN-N-OUT Store" <${process.env.ADMIN_EMAIL || process.env.EMAIL_FROM}>`,
-        replyTo: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM
+        from: `"Eugene - IN-N-OUT Store" <${process.env.EMAIL_USER}>`,
+        replyTo: process.env.ADMIN_EMAIL || process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM
       },
       'contact_reply': {
-        from: `"Eugene - IN-N-OUT Store" <${process.env.ADMIN_EMAIL || process.env.EMAIL_FROM}>`,
-        replyTo: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM
+        from: `"Eugene - IN-N-OUT Store" <${process.env.EMAIL_USER}>`,
+        replyTo: process.env.ADMIN_EMAIL || process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM
       },
       'admin_welcome': {
-        from: `"Eugene - IN-N-OUT Store" <${process.env.ADMIN_EMAIL || process.env.EMAIL_FROM}>`,
-        replyTo: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM
+        from: `"Eugene - IN-N-OUT Store" <${process.env.EMAIL_USER}>`,
+        replyTo: process.env.ADMIN_EMAIL || process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM
       },
       
       // System emails from noreply
@@ -695,13 +695,13 @@ class EmailService {
       `
     });
 
-    // Send welcome email from admin for personal touch
+    // Send welcome email using proper sender configuration
+    const senderConfig = this.getSenderConfig('welcome');
     return await this.sendEmail({
       to: email,
       subject: 'Welcome to IN-N-OUT Store! 🎉',
       html: htmlContent,
-      from: `"Eugene - IN-N-OUT Store" <${process.env.ADMIN_EMAIL || process.env.EMAIL_FROM}>`,
-      replyTo: process.env.SUPPORT_EMAIL || process.env.REPLY_TO_EMAIL || process.env.EMAIL_FROM
+      ...senderConfig
     });
   }
 
@@ -1078,13 +1078,13 @@ class EmailService {
       replyTo: contactDetails.email // Allow direct reply to customer
     });
 
-    // Send auto-reply to customer from admin for personal touch
+    // Send auto-reply to customer using proper sender configuration
+    const customerSenderConfig = this.getSenderConfig('contact_reply');
     return await this.sendEmail({
       to: contactDetails.email,
       subject: '✅ Thank you for contacting IN-N-OUT Store',
       html: customerHtmlContent,
-      from: `"Eugene - IN-N-OUT Store" <${process.env.ADMIN_EMAIL || process.env.EMAIL_FROM}>`,
-      replyTo: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM
+      ...customerSenderConfig
     });
   }
 
