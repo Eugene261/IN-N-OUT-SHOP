@@ -171,13 +171,36 @@ const WishlistPage = () => {
           className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6"
         >
           {wishlistItems.map((item, index) => {
+            // Enhanced debugging to understand the data structure
+            console.log(`Raw wishlist item ${index}:`, JSON.stringify(item, null, 2));
+            
             // Extract product information based on different possible data structures
-            const productId = item.productId?._id || item.productId || item._id;
-            const productData = item.productId || item.product || item;
+            let productId, productData;
+            
+            if (item.productId && typeof item.productId === 'object' && item.productId._id) {
+              // Case 1: productId is populated object
+              productId = item.productId._id;
+              productData = item.productId;
+              console.log(`Case 1 - Populated productId:`, productData);
+            } else if (item.productId && typeof item.productId === 'string') {
+              // Case 2: productId is just an ID string, check if other fields exist on item
+              productId = item.productId;
+              productData = item; // Use the item itself if it has product fields
+              console.log(`Case 2 - String productId, using item:`, productData);
+            } else if (item._id) {
+              // Case 3: Direct product data
+              productId = item._id;
+              productData = item;
+              console.log(`Case 3 - Direct product:`, productData);
+            } else {
+              console.error(`Unknown wishlist item structure:`, item);
+              productId = `unknown_${index}`;
+              productData = {};
+            }
             
             const product = {
               _id: productId,
-              title: productData.title || `Product ${index + 1}`,
+              title: productData.title || productData.name || `Product ${index + 1}`,
               image: productData.image,
               price: productData.price || 0,
               salePrice: productData.salePrice || 0,
@@ -190,7 +213,7 @@ const WishlistPage = () => {
               createdBy: productData.createdBy
             };
             
-            console.log(`Rendering wishlist item ${index}:`, { productId, product });
+            console.log(`Final product object for rendering:`, product);
             
             return (
               <motion.div
