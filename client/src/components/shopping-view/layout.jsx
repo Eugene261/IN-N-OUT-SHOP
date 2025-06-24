@@ -10,7 +10,7 @@ function ShoppingLayout() {
         {/* Common Header */}
         <Topbar />
         <ShoppingHeader />
-        <main className='flex flex-col w-full'>
+        <main className='flex flex-col w-full pt-[104px]'> {/* Add top padding to account for fixed header */}
             <Outlet/>
         </main>
         <Footer />

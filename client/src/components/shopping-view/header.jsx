@@ -447,7 +447,7 @@ function ShoppingHeader() {
 
   return (
     <motion.header 
-      className='sticky top-0 z-50 w-full bg-white text-gray-900 backdrop-blur-sm bg-white/90 border-b border-gray-100 shadow-md'
+      className='fixed top-[40px] left-0 right-0 z-50 w-full bg-white text-gray-900 backdrop-blur-sm bg-white/95 border-b border-gray-100 shadow-md'
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}

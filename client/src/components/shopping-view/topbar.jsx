@@ -29,7 +29,7 @@ const Topbar = () => {
   }, []);
 
   return (
-    <div className='bg-gradient-to-r from-blue-900 to-indigo-900 py-2 overflow-hidden'>
+    <div className='fixed top-0 left-0 right-0 z-40 bg-gradient-to-r from-blue-900 to-indigo-900 py-2 overflow-hidden'>
       <div className='container mx-auto px-4 lg:px-8'>
         <div className='relative h-6 overflow-hidden'>
           <AnimatePresence mode='wait'>
