@@ -348,3 +348,7 @@ router.get('/oauth-redirect', (req, res) => {
   `;
   
   console.log('Sending OAuth redirect HTML page');
+  res.send(html);
+});
+
+module.exports = router;
