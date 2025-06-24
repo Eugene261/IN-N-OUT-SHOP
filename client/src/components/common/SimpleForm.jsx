@@ -319,7 +319,7 @@ function SimpleForm({
       <Button
         type="submit"
         disabled={disabled || buttonDisabled}
-        className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-base transition-colors"
+        className="w-full h-14 bg-black hover:bg-gray-900 text-white font-medium rounded-lg text-base transition-colors"
       >
         {disabled ? 'Processing...' : buttonText}
       </Button>

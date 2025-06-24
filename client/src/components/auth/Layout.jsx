@@ -1,17 +1,27 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import ShoppingHeader from '../shopping-view/header';
+import Topbar from '../shopping-view/topbar';
 
 function AuthLayout() {
   return (
-    <div className='flex min-h-screen w-full overflow-hidden'>
-      {/* Left sided - Animated Background */}
-      <motion.div 
-        initial={{ x: -100, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="hidden lg:flex flex-col items-center justify-center relative bg-black w-1/2 overflow-hidden"
-      >
+    <div className="flex flex-col min-h-screen w-full overflow-hidden">
+      {/* Desktop Header - Only shown on large screens */}
+      <div className="hidden lg:block">
+        <Topbar />
+        <ShoppingHeader />
+      </div>
+      
+      {/* Main Auth Content */}
+      <div className='flex flex-1 min-h-screen lg:min-h-0 w-full overflow-hidden'>
+        {/* Left sided - Animated Background - Hidden on mobile */}
+        <motion.div 
+          initial={{ x: -100, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="hidden lg:flex flex-col items-center justify-center relative bg-black w-1/2 overflow-hidden"
+        >
         {/* Animated gradient background */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/60 to-black z-0 opacity-80"></div>
         
@@ -253,24 +263,24 @@ function AuthLayout() {
         </div>
       </motion.div>
 
-      {/* Right sided - Content */}
+              {/* Right sided - Content - Full screen on mobile */}
       <motion.div 
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
-        className="flex flex-1 items-center justify-center relative overflow-hidden"
+        className="flex flex-1 lg:flex-1 w-full lg:w-auto items-center justify-center relative overflow-hidden min-h-screen lg:min-h-0"
       >
-        {/* Modern gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-gray-100"></div>
+        {/* Modern gradient background - subtle on mobile, more pronounced on desktop */}
+        <div className="absolute inset-0 bg-white lg:bg-gradient-to-br lg:from-gray-50 lg:via-white lg:to-gray-100"></div>
         
-        {/* Decorative grid pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+        {/* Decorative grid pattern - hidden on mobile */}
+        <div className="absolute inset-0 hidden lg:block bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:24px_24px]"></div>
         
-        {/* Animated background elements */}
-        <div className="absolute top-10 right-10 w-72 h-72 bg-blue-50 rounded-full filter blur-3xl opacity-60 animate-pulse"></div>
-        <div className="absolute bottom-10 left-10 w-80 h-80 bg-indigo-50 rounded-full filter blur-3xl opacity-50 animate-pulse delay-1000"></div>
+        {/* Animated background elements - hidden on mobile */}
+        <div className="absolute top-10 right-10 w-72 h-72 bg-blue-50 rounded-full filter blur-3xl opacity-60 animate-pulse hidden lg:block"></div>
+        <div className="absolute bottom-10 left-10 w-80 h-80 bg-indigo-50 rounded-full filter blur-3xl opacity-50 animate-pulse delay-1000 hidden lg:block"></div>
         <motion.div 
-          className="absolute top-1/4 right-1/4 w-6 h-6 rounded-full bg-indigo-200 opacity-70"
+          className="absolute top-1/4 right-1/4 w-6 h-6 rounded-full bg-indigo-200 opacity-70 hidden lg:block"
           animate={{ 
             y: [0, -20, 0],
             scale: [1, 1.2, 1],
@@ -279,7 +289,7 @@ function AuthLayout() {
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div 
-          className="absolute bottom-1/3 left-1/3 w-4 h-4 rounded-full bg-blue-300 opacity-60"
+          className="absolute bottom-1/3 left-1/3 w-4 h-4 rounded-full bg-blue-300 opacity-60 hidden lg:block"
           animate={{ 
             y: [0, 15, 0],
             scale: [1, 1.1, 1],
@@ -288,35 +298,35 @@ function AuthLayout() {
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 1 }}
         />
         
-        {/* Decorative shapes */}
+        {/* Decorative shapes - hidden on mobile */}
         <motion.div 
-          className="absolute top-20 left-1/4 w-12 h-12 border-2 border-gray-200 rounded-lg opacity-40"
+          className="absolute top-20 left-1/4 w-12 h-12 border-2 border-gray-200 rounded-lg opacity-40 hidden lg:block"
           animate={{ rotate: 360 }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
         />
         <motion.div 
-          className="absolute bottom-32 right-1/4 w-16 h-16 border-2 border-gray-200 rounded-full opacity-30"
+          className="absolute bottom-32 right-1/4 w-16 h-16 border-2 border-gray-200 rounded-full opacity-30 hidden lg:block"
           animate={{ rotate: -360 }}
           transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
         />
         
-        {/* Content card with glass effect */}
-        <div className="w-full max-w-md relative z-10 px-4 sm:px-6 py-6 sm:py-8 lg:px-10">
+        {/* Content card - full screen on mobile, card on desktop */}
+        <div className="w-full h-full lg:max-w-md lg:h-auto relative z-10 px-0 py-0 lg:px-4 lg:py-6 flex items-center justify-center">
           <motion.div
-            className="bg-white/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8 overflow-hidden"
+            className="w-full h-full lg:h-auto bg-white lg:bg-white/80 lg:backdrop-blur-md lg:rounded-2xl lg:shadow-xl lg:border lg:border-gray-100 p-6 sm:p-8 overflow-hidden flex flex-col justify-center lg:justify-start"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.5 }}
           >
-            {/* Brand indicator at top */}
-            <div className="absolute -top-10 -right-10 w-20 h-20 bg-black rounded-full flex items-end justify-start p-2 opacity-10"></div>
+            {/* Brand indicator at top - desktop only */}
+            <div className="absolute -top-10 -right-10 w-20 h-20 bg-black rounded-full flex items-end justify-start p-2 opacity-10 hidden lg:block"></div>
             
             {/* Content */}
             <Outlet/>
             
-            {/* Security badge */}
+            {/* Security badge - hidden on mobile to keep it clean */}
             <motion.div 
-              className="mt-6 sm:mt-8 flex items-center justify-center text-xs text-gray-500 gap-1.5"
+              className="mt-6 sm:mt-8 flex items-center justify-center text-xs text-gray-500 gap-1.5 hidden lg:flex"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1.2 }}
@@ -330,6 +340,7 @@ function AuthLayout() {
           </motion.div>
         </div>
       </motion.div>
+      </div>
     </div>
   );
 }

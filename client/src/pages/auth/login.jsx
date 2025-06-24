@@ -139,36 +139,67 @@ function AuthLogin() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-8">
-      <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold text-gray-900">Sign In</h1>
-        <p className="text-gray-600">
-          Don't have an account?{' '}
-          <Link className='font-medium text-gray-900 hover:underline' to='/auth/register'>
-            Sign up
-          </Link>
-        </p>
+    <div className="w-full space-y-0 lg:space-y-8 flex flex-col h-full lg:h-auto">
+      {/* Close button for mobile - goes to shop home */}
+      <div className="flex justify-between items-center lg:hidden mb-6">
+        <div></div>
+        <h2 className="text-xl font-semibold">Come on in</h2>
+        <Link to="/shop/home" className="text-2xl text-gray-500 hover:text-gray-700 transition-colors">×</Link>
       </div>
       
-      <SimpleForm 
-        formControls={loginFormControls}
-        buttonText={isLoading ? 'Signing In...' : 'Sign In'}
-        formData={formData}
-        setFormData={setFormData}
-        onSubmit={onSubmit}
-        disabled={isLoading}
-        isAuthForm={true}
-      />
+      {/* Tab navigation */}
+      <div className="flex border-b border-gray-200 mb-8 lg:mb-6">
+        <div className="flex-1 text-center">
+          <div className="text-gray-900 border-b-2 border-black pb-2 font-medium">
+            SIGN IN
+          </div>
+        </div>
+        <div className="flex-1 text-center">
+          <Link to="/auth/register" className="text-gray-500 pb-2 font-medium block hover:text-gray-700">
+            I'M NEW HERE
+          </Link>
+        </div>
+      </div>
       
-      <SimpleOAuthButtons />
-      
-      <div className="text-center">
-        <Link 
-          to="/auth/forgot-password"
-          className="text-sm text-gray-600 hover:text-gray-900 hover:underline"
-        >
-          Forgot your password?
-        </Link>
+      <div className="flex-1 flex flex-col justify-center lg:justify-start space-y-6">
+        <SimpleForm 
+          formControls={loginFormControls}
+          buttonText={isLoading ? 'Signing In...' : 'Sign In'}
+          formData={formData}
+          setFormData={setFormData}
+          onSubmit={onSubmit}
+          disabled={isLoading}
+          isAuthForm={true}
+        />
+        
+        {/* Terms and conditions */}
+        <div className="text-sm text-gray-600 text-center lg:text-left">
+          By signing in, you agree to our{' '}
+          <Link to="/terms" className="underline hover:text-gray-900">Terms & Conditions</Link>,{' '}
+          <Link to="/privacy" className="underline hover:text-gray-900">Privacy and Cookie Policy</Link>, and to join our loyalty programme
+        </div>
+        
+        {/* OR divider */}
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">OR</span>
+          </div>
+        </div>
+        
+        <SimpleOAuthButtons />
+        
+        {/* Forgot password link - moved to bottom */}
+        <div className="text-center mt-6">
+          <Link 
+            to="/auth/forgot-password"
+            className="text-sm text-gray-600 hover:text-gray-900 hover:underline"
+          >
+            Forgot your password?
+          </Link>
+        </div>
       </div>
     </div>
   );

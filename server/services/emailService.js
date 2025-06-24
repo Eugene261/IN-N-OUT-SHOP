@@ -95,9 +95,13 @@ class EmailService {
     }
 
     // Enhanced anti-spam and deliverability headers
+    // Handle EMAIL_FROM that might already include display name
+    const fromAddress = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+    const cleanFromAddress = fromAddress.includes('<') ? fromAddress.match(/<(.+)>/)[1] : fromAddress;
+    
     const defaultOptions = {
-      from: `"IN-N-OUT Store" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
-      replyTo: process.env.REPLY_TO_EMAIL || process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      from: `"IN-N-OUT Store" <${cleanFromAddress}>`,
+      replyTo: process.env.REPLY_TO_EMAIL || cleanFromAddress,
       headers: {
         // Mailer identification
         'X-Mailer': 'IN-N-OUT Store Email Service v2.0',
@@ -269,10 +273,16 @@ class EmailService {
     const baseDomain = process.env.EMAIL_DOMAIN || 'in-nd-out.com';
     const emailUser = process.env.EMAIL_USER;
     
+    // Ensure we always use the authenticated email address for 'from' field
+    // to prevent sender address rejection errors
+    // Handle EMAIL_FROM that might already include display name
+    const fromAddress = process.env.EMAIL_FROM || emailUser;
+    const authenticatedFrom = fromAddress.includes('<') ? fromAddress.match(/<(.+)>/)[1] : fromAddress;
+    
     const senderConfigs = {
       // Personal emails from admin (professional but personal)
       'welcome': {
-        from: `"Eugene at IN-N-OUT Store" <${emailUser}>`,
+        from: `"Eugene at IN-N-OUT Store" <${authenticatedFrom}>`,
         replyTo: `eugene@${baseDomain}`,
         headers: {
           'X-Email-Category': 'welcome',
@@ -280,7 +290,7 @@ class EmailService {
         }
       },
       'contact_reply': {
-        from: `"Eugene - Customer Support" <${emailUser}>`,
+        from: `"Eugene - Customer Support" <${authenticatedFrom}>`,
         replyTo: `support@${baseDomain}`,
         headers: {
           'X-Email-Category': 'customer-support',
@@ -288,7 +298,7 @@ class EmailService {
         }
       },
       'admin_welcome': {
-        from: `"IN-N-OUT Store - Admin Team" <${emailUser}>`,
+        from: `"IN-N-OUT Store - Admin Team" <${authenticatedFrom}>`,
         replyTo: `admin@${baseDomain}`,
         headers: {
           'X-Email-Category': 'admin-welcome',
@@ -298,7 +308,7 @@ class EmailService {
       
       // Transactional emails (high deliverability priority)
       'order_confirmation': {
-        from: `"IN-N-OUT Store Orders" <${emailUser}>`,
+        from: `"IN-N-OUT Store Orders" <${authenticatedFrom}>`,
         replyTo: `orders@${baseDomain}`,
         headers: {
           'X-Email-Category': 'order-confirmation',
@@ -308,7 +318,7 @@ class EmailService {
         }
       },
       'order_status': {
-        from: `"IN-N-OUT Store Shipping" <${emailUser}>`,
+        from: `"IN-N-OUT Store Shipping" <${authenticatedFrom}>`,
         replyTo: `shipping@${baseDomain}`,
         headers: {
           'X-Email-Category': 'order-status',
@@ -316,7 +326,7 @@ class EmailService {
         }
       },
       'password_reset': {
-        from: `"IN-N-OUT Store Security" <${emailUser}>`,
+        from: `"IN-N-OUT Store Security" <${authenticatedFrom}>`,
         replyTo: `security@${baseDomain}`,
         headers: {
           'X-Email-Category': 'password-reset',
@@ -328,7 +338,7 @@ class EmailService {
       
       // System notifications
       'low_stock': {
-        from: `"IN-N-OUT Store Inventory" <${emailUser}>`,
+        from: `"IN-N-OUT Store Inventory" <${authenticatedFrom}>`,
         replyTo: `inventory@${baseDomain}`,
         headers: {
           'X-Email-Category': 'inventory-alert',
@@ -336,7 +346,7 @@ class EmailService {
         }
       },
       'system_notification': {
-        from: `"IN-N-OUT Store System" <${emailUser}>`,
+        from: `"IN-N-OUT Store System" <${authenticatedFrom}>`,
         replyTo: `system@${baseDomain}`,
         headers: {
           'X-Email-Category': 'system-notification',
@@ -346,7 +356,7 @@ class EmailService {
       
       // Default fallback with professional sender
       'default': {
-        from: `"IN-N-OUT Store" <${emailUser}>`,
+        from: `"IN-N-OUT Store" <${authenticatedFrom}>`,
         replyTo: `hello@${baseDomain}`,
         headers: {
           'X-Email-Category': 'general',
@@ -1249,7 +1259,7 @@ class EmailService {
       to: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM,
       subject: `📧 Contact Form: ${contactDetails.subject}`,
       html: adminHtmlContent,
-      from: `"IN-N-OUT Store System" <${process.env.EMAIL_USER}>`,
+      from: `"IN-N-OUT Store System" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
       replyTo: contactDetails.email // Allow direct reply to customer
     });
 
