@@ -136,7 +136,12 @@ const SimpleOAuthButtons = ({ onOAuthLogin }) => {
       {availableProviders.google && (
         <Button
           type="button"
-          onClick={handleGoogleLogin}
+          onClick={(e) => {
+            console.log('🎯 BUTTON CLICKED - Google', e);
+            e.preventDefault();
+            e.stopPropagation();
+            handleGoogleLogin();
+          }}
           variant="outline"
           className="w-full h-12 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-lg flex items-center justify-center gap-3"
         >
@@ -153,7 +158,12 @@ const SimpleOAuthButtons = ({ onOAuthLogin }) => {
       {availableProviders.facebook && (
         <Button
           type="button"
-          onClick={handleFacebookLogin}
+          onClick={(e) => {
+            console.log('🎯 BUTTON CLICKED - Facebook', e);
+            e.preventDefault();
+            e.stopPropagation();
+            handleFacebookLogin();
+          }}
           variant="outline"
           className="w-full h-12 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-lg flex items-center justify-center gap-3"
         >

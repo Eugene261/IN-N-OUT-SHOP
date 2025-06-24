@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react'
 import { useDispatch } from 'react-redux';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
-import SimpleOAuthButtons from '@/components/auth/SimpleOAuthButtons';
+import OAuthButtons from '@/components/auth/OAuthButtons';
 
 const initialState = {
   email: '',
@@ -130,7 +130,7 @@ function AuthLogin() {
         isAuthForm={true}
       />
       
-      <SimpleOAuthButtons />
+      <OAuthButtons />
       
       <div className="text-center">
         <Link 

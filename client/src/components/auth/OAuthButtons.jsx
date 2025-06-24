@@ -15,14 +15,16 @@ const OAuthButtons = ({ onOAuthLogin }) => {
     // Check which OAuth providers are available
     const checkOAuthProviders = async () => {
       try {
+        console.log('🔍 Original OAuthButtons: Checking providers at:', `${API_BASE_URL}/api/auth/oauth-providers`);
         const response = await fetch(`${API_BASE_URL}/api/auth/oauth-providers`);
         const data = await response.json();
         
         if (data.success) {
           setAvailableProviders(data.providers);
+          console.log('✅ Original OAuthButtons: Providers set to:', data.providers);
         }
       } catch (error) {
-        console.error('Failed to check OAuth providers:', error);
+        console.error('❌ Original OAuthButtons: Failed to check OAuth providers:', error);
         // Default to false for all providers if check fails
         setAvailableProviders({ google: false, facebook: false, twitter: false });
       } finally {
@@ -34,27 +36,36 @@ const OAuthButtons = ({ onOAuthLogin }) => {
   }, []);
 
   const handleGoogleLogin = () => {
+    console.log('🚀 Google OAuth button clicked!');
     if (onOAuthLogin) {
       onOAuthLogin('google');
     }
+    const url = `${API_BASE_URL}/api/auth/google`;
+    console.log('📍 Redirecting to Google OAuth:', url);
     // Redirect to Google OAuth
-    window.location.href = `${API_BASE_URL}/api/auth/google`;
+    window.location.href = url;
   };
 
   const handleFacebookLogin = () => {
+    console.log('🚀 Facebook OAuth button clicked!');
     if (onOAuthLogin) {
       onOAuthLogin('facebook');
     }
+    const url = `${API_BASE_URL}/api/auth/facebook`;
+    console.log('📍 Redirecting to Facebook OAuth:', url);
     // Redirect to Facebook OAuth
-    window.location.href = `${API_BASE_URL}/api/auth/facebook`;
+    window.location.href = url;
   };
 
   const handleTwitterLogin = () => {
+    console.log('🚀 Twitter OAuth button clicked!');
     if (onOAuthLogin) {
       onOAuthLogin('twitter');
     }
+    const url = `${API_BASE_URL}/api/auth/twitter`;
+    console.log('📍 Redirecting to Twitter OAuth:', url);
     // Redirect to Twitter OAuth
-    window.location.href = `${API_BASE_URL}/api/auth/twitter`;
+    window.location.href = url;
   };
 
   // Don't render anything if no providers are available
