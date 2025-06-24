@@ -14,13 +14,13 @@ function AuthLayout() {
       </div>
       
       {/* Main Auth Content */}
-      <div className='flex flex-1 w-full overflow-hidden min-h-screen lg:min-h-[calc(100vh-104px)]'>
+      <div className='flex flex-1 w-full min-h-screen lg:min-h-[calc(100vh-104px)]'>
         {/* Left sided - Animated Background - Hidden on mobile */}
         <motion.div 
           initial={{ x: -100, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="hidden lg:flex flex-col items-center justify-center relative bg-black w-1/2 overflow-hidden lg:h-[calc(100vh-104px)]"
+          className="hidden lg:flex flex-col items-center justify-center relative bg-black w-1/2"
         >
         {/* Animated gradient background */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/60 to-black z-0 opacity-80"></div>
@@ -268,7 +268,7 @@ function AuthLayout() {
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
-        className="flex flex-1 w-full items-center justify-center relative overflow-hidden min-h-screen lg:min-h-[calc(100vh-104px)]"
+        className="flex flex-1 w-full lg:w-1/2 items-center justify-center relative min-h-screen"
       >
         {/* Modern gradient background - subtle on mobile, more pronounced on desktop */}
         <div className="absolute inset-0 bg-white lg:bg-gradient-to-br lg:from-gray-50 lg:via-white lg:to-gray-100"></div>
@@ -311,7 +311,7 @@ function AuthLayout() {
         />
         
         {/* Content card - full screen on mobile, card on desktop */}
-        <div className="w-full h-full lg:max-w-md lg:h-auto relative z-10 px-0 py-0 lg:px-4 lg:py-6 flex items-center justify-center lg:justify-center">
+        <div className="w-full h-full lg:max-w-md relative z-10 px-0 py-0 lg:px-4 lg:py-6 flex items-center justify-center">
           <motion.div
             className="w-full h-full lg:h-auto bg-white lg:bg-white/80 lg:backdrop-blur-md lg:rounded-2xl lg:shadow-xl lg:border lg:border-gray-100 p-6 sm:p-8 overflow-hidden flex flex-col justify-center"
             initial={{ y: 20, opacity: 0 }}
