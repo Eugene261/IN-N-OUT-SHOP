@@ -240,16 +240,50 @@ router.get('/twitter/callback', (req, res) => {
 
 // OAuth providers status endpoint
 router.get('/oauth-providers', (req, res) => {
-  const providers = {
-    google: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
-    facebook: !!(process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET),
-    twitter: false // Temporarily disabled
-  };
-  
-  res.json({
-    success: true,
-    providers
-  });
+  try {
+    console.log('🔍 OAuth providers endpoint called');
+    console.log('Environment check:', {
+      NODE_ENV: process.env.NODE_ENV,
+      GOOGLE_CLIENT_ID: !!process.env.GOOGLE_CLIENT_ID,
+      GOOGLE_CLIENT_SECRET: !!process.env.GOOGLE_CLIENT_SECRET,
+      FACEBOOK_APP_ID: !!process.env.FACEBOOK_APP_ID,
+      FACEBOOK_APP_SECRET: !!process.env.FACEBOOK_APP_SECRET
+    });
+
+    const providers = {
+      google: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+      facebook: !!(process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET),
+      twitter: false // Temporarily disabled
+    };
+
+    console.log('✅ OAuth providers calculated:', providers);
+    
+    const response = {
+      success: true,
+      providers,
+      debug: {
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV,
+        hasAnyProvider: !!(providers.google || providers.facebook || providers.twitter)
+      }
+    };
+
+    console.log('📤 Sending OAuth providers response:', response);
+    res.status(200).json(response);
+
+  } catch (error) {
+    console.error('❌ OAuth providers endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to check OAuth providers',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+      providers: {
+        google: false,
+        facebook: false,
+        twitter: false
+      }
+    });
+  }
 });
 
 // Debug endpoint for OAuth callback URLs

@@ -9,19 +9,34 @@ const SimpleOAuthButtons = ({ onOAuthLogin }) => {
     twitter: false
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const checkOAuthProviders = async () => {
       try {
+        console.log('🔍 Checking OAuth providers at:', `${API_BASE_URL}/api/auth/oauth-providers`);
         const response = await fetch(`${API_BASE_URL}/api/auth/oauth-providers`);
+        console.log('📡 OAuth providers response status:', response.status);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         const data = await response.json();
+        console.log('✅ OAuth providers data:', data);
         
         if (data.success) {
           setAvailableProviders(data.providers);
+          console.log('🎯 Available providers set to:', data.providers);
+        } else {
+          console.warn('⚠️ OAuth providers API returned success=false:', data);
+          setError('OAuth service not available');
         }
       } catch (error) {
-        console.error('Failed to check OAuth providers:', error);
-        setAvailableProviders({ google: false, facebook: false, twitter: false });
+        console.error('❌ Failed to check OAuth providers:', error);
+        setError(error.message);
+        // For debugging: temporarily enable buttons even if API fails
+        setAvailableProviders({ google: true, facebook: true, twitter: false });
       } finally {
         setLoading(false);
       }
@@ -31,38 +46,80 @@ const SimpleOAuthButtons = ({ onOAuthLogin }) => {
   }, []);
 
   const handleGoogleLogin = () => {
-    if (onOAuthLogin) {
-      onOAuthLogin('google');
+    console.log('🚀 Google login clicked');
+    try {
+      if (onOAuthLogin) {
+        onOAuthLogin('google');
+      }
+      const url = `${API_BASE_URL}/api/auth/google`;
+      console.log('📍 Redirecting to:', url);
+      window.location.href = url;
+    } catch (error) {
+      console.error('❌ Google login error:', error);
     }
-    window.location.href = `${API_BASE_URL}/api/auth/google`;
   };
 
   const handleFacebookLogin = () => {
-    if (onOAuthLogin) {
-      onOAuthLogin('facebook');
+    console.log('🚀 Facebook login clicked');
+    try {
+      if (onOAuthLogin) {
+        onOAuthLogin('facebook');
+      }
+      const url = `${API_BASE_URL}/api/auth/facebook`;
+      console.log('📍 Redirecting to:', url);
+      window.location.href = url;
+    } catch (error) {
+      console.error('❌ Facebook login error:', error);
     }
-    window.location.href = `${API_BASE_URL}/api/auth/facebook`;
   };
 
   const handleTwitterLogin = () => {
-    if (onOAuthLogin) {
-      onOAuthLogin('twitter');
+    console.log('🚀 Twitter login clicked');
+    try {
+      if (onOAuthLogin) {
+        onOAuthLogin('twitter');
+      }
+      const url = `${API_BASE_URL}/api/auth/twitter`;
+      console.log('📍 Redirecting to:', url);
+      window.location.href = url;
+    } catch (error) {
+      console.error('❌ Twitter login error:', error);
     }
-    window.location.href = `${API_BASE_URL}/api/auth/twitter`;
   };
 
   const hasAnyProvider = availableProviders.google || availableProviders.facebook || availableProviders.twitter;
   
+  console.log('🔍 OAuth Debug:', {
+    loading,
+    error,
+    availableProviders,
+    hasAnyProvider,
+    API_BASE_URL
+  });
+  
   if (loading) {
     return (
       <div className="text-center">
-        <div className="text-sm text-gray-400">Loading...</div>
+        <div className="text-sm text-gray-400">Loading OAuth providers...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center">
+        <div className="text-sm text-red-500 mb-2">OAuth Error: {error}</div>
+        <div className="text-xs text-gray-400">Check console for details</div>
       </div>
     );
   }
 
   if (!hasAnyProvider) {
-    return null;
+    return (
+      <div className="text-center">
+        <div className="text-sm text-gray-400">No OAuth providers available</div>
+      </div>
+    );
   }
 
   return (
