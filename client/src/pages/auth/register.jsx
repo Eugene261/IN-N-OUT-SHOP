@@ -79,14 +79,14 @@ function AuthRegister() {
           <input type="checkbox" id="terms" className="mt-1 h-4 w-4 text-black border-gray-300 rounded focus:ring-black" defaultChecked />
           <label htmlFor="terms" className="text-sm text-gray-600">
             Sign up and never miss out on exclusive member rewards, tailored new arrivals and new launches. Unsubscribe at the bottom of our emails.{' '}
-            <Link to="/learn-more" className="underline hover:text-gray-900">Find out more</Link>
+            <Link to="/shop/about-us" className="underline hover:text-gray-900">Find out more</Link>
           </label>
         </div>
         
         <div className="text-sm text-gray-600 text-center lg:text-left">
           By registering, you agree to our{' '}
-          <Link to="/terms" className="underline hover:text-gray-900">Terms & Conditions</Link>,{' '}
-          <Link to="/privacy" className="underline hover:text-gray-900">Privacy and Cookie Policy</Link>, and to join our loyalty programme
+          <Link to="/shop/terms-of-service" className="underline hover:text-gray-900">Terms & Conditions</Link>,{' '}
+          <Link to="/shop/privacy-policy" className="underline hover:text-gray-900">Privacy and Cookie Policy</Link>, and to join our loyalty programme
         </div>
         
         {/* OR divider */}

@@ -175,8 +175,8 @@ function AuthLogin() {
         {/* Terms and conditions */}
         <div className="text-sm text-gray-600 text-center lg:text-left">
           By signing in, you agree to our{' '}
-          <Link to="/terms" className="underline hover:text-gray-900">Terms & Conditions</Link>,{' '}
-          <Link to="/privacy" className="underline hover:text-gray-900">Privacy and Cookie Policy</Link>, and to join our loyalty programme
+          <Link to="/shop/terms-of-service" className="underline hover:text-gray-900">Terms & Conditions</Link>,{' '}
+          <Link to="/shop/privacy-policy" className="underline hover:text-gray-900">Privacy and Cookie Policy</Link>, and to join our loyalty programme
         </div>
         
         {/* OR divider */}
