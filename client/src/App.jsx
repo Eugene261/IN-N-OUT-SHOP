@@ -46,7 +46,9 @@ import SuperAdminOrdersPage from "./pages/super-admin-view/orders";
 import SuperAdminProductsPage from "./pages/super-admin-view/products";
 import SuperAdminFeaturedPage from "./pages/super-admin-view/featured";
 import SuperAdminVendorPaymentsPage from "./pages/super-admin-view/vendorPayments";
-import SuperAdminProfile from "./pages/super-admin-view/profile";import TaxonomyManagement from "./pages/superAdmin-view/TaxonomyManagement";
+import SuperAdminProfile from "./pages/super-admin-view/profile";
+import VideosPage from "./pages/super-admin-view/videos";
+import TaxonomyManagement from "./pages/superAdmin-view/TaxonomyManagement";
 
 // Admin vendor payments
 import AdminVendorPaymentsPage from "./pages/admin-view/vendorPayments";
@@ -161,7 +163,11 @@ function App() {
             <Route path='users/profile/:adminId' element={<AdminProfileView />} />
             <Route path='orders' element={<SuperAdminOrdersPage />} />
             <Route path='products' element={<SuperAdminProductsPage />} />
-                        <Route path='featured' element={<SuperAdminFeaturedPage />} />            <Route path='taxonomy' element={<TaxonomyManagement />} />            <Route path='vendor-payments' element={<SuperAdminVendorPaymentsPage />} />            <Route path='profile' element={<SuperAdminProfile />} />
+                        <Route path='featured' element={<SuperAdminFeaturedPage />} />
+            <Route path='videos' element={<VideosPage />} />
+            <Route path='taxonomy' element={<TaxonomyManagement />} />
+            <Route path='vendor-payments' element={<SuperAdminVendorPaymentsPage />} />
+            <Route path='profile' element={<SuperAdminProfile />} />
           </Route>
 
                     {/* SHOP */}          <Route path='/shop' element={<ShoppingLayout />}>            <Route path='' element={<ShoppingHome />} />            <Route path='home' element={<ShoppingHome />} />            <Route path='listing' element={<ShoppingListing />} />            <Route path='shops' element={<ShopsDirectory />} />            <Route path='search' element={<SearchProducts />} />            <Route path='product/:productId' element={<ProductDetailsPage />} />
