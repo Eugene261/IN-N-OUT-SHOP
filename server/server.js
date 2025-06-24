@@ -72,8 +72,27 @@ const shopRoutes = require('./routes/admin/shopRoutes');
 
 const app = express()
 const PORT = process.env.PORT || 5000;
+
+// Global error handling for unhandled promise rejections and uncaught exceptions
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🚨 Unhandled Promise Rejection at:', promise, 'reason:', reason);
+  // Don't exit the process in production to avoid downtime
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('🚨 Uncaught Exception:', error);
+  // Log the error and exit gracefully
+  console.error('Stack:', error.stack);
+  process.exit(1);
+});
+
+// Initialize database connection
 connectDB();
 
+// CORS Configuration
 app.use(
     cors({
         origin: [
@@ -104,7 +123,7 @@ app.use(
 );
 
 app.use(cookieParser());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // Increase JSON payload limit
 
 // Session middleware for OAuth
 app.use(session({
@@ -122,6 +141,14 @@ app.use(session({
 // Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Request logging middleware (only in development)
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+    next();
+  });
+}
 
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -185,9 +212,140 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/admin/shop', shopRoutes);
 app.use('/api/admin/vendor-payments', require('./routes/admin/vendorPaymentRoutes'));
 
-app.listen(PORT, () =>
-console.log(`Server is running on port ${PORT}`)
-);
+// 404 handler for API routes - Fixed route pattern
+app.use('/api', (req, res, next) => {
+  // Only handle requests that haven't been handled by previous routes
+  if (!res.headersSent) {
+    res.status(404).json({
+      success: false,
+      message: `API endpoint ${req.originalUrl} not found`,
+      timestamp: new Date().toISOString()
+    });
+  } else {
+    next();
+  }
+});
+
+// Global Error Handling Middleware
+app.use((error, req, res, next) => {
+  console.error('🚨 Global Error Handler:', {
+    message: error.message,
+    stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+    url: req.originalUrl,
+    method: req.method,
+    timestamp: new Date().toISOString(),
+    userAgent: req.get('User-Agent'),
+    ip: req.ip
+  });
+
+  // Handle specific error types
+  if (error.name === 'ValidationError') {
+    return res.status(400).json({
+      success: false,
+      message: 'Validation Error',
+      errors: Object.values(error.errors).map(err => err.message),
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  if (error.name === 'CastError') {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid ID format',
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  if (error.code === 11000) {
+    return res.status(409).json({
+      success: false,
+      message: 'Duplicate entry found',
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  if (error.name === 'JsonWebTokenError') {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid token',
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  if (error.name === 'TokenExpiredError') {
+    return res.status(401).json({
+      success: false,
+      message: 'Token expired',
+      tokenExpired: true,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // Default error response
+  res.status(error.status || 500).json({
+    success: false,
+    message: process.env.NODE_ENV === 'production' 
+      ? 'Internal server error' 
+      : error.message || 'Something went wrong',
+    ...(process.env.NODE_ENV === 'development' && { stack: error.stack }),
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Graceful shutdown handling
+const gracefulShutdown = () => {
+  console.log('🔄 Received shutdown signal, starting graceful shutdown...');
+  
+  // Close server
+  server.close(() => {
+    console.log('✅ HTTP server closed');
+    
+    // Close database connection
+    require('mongoose').connection.close(false, () => {
+      console.log('✅ MongoDB connection closed');
+      process.exit(0);
+    });
+  });
+  
+  // Force close server after 30 seconds
+  setTimeout(() => {
+    console.error('⚠️ Could not close connections in time, forcefully shutting down');
+    process.exit(1);
+  }, 30000);
+};
+
+// Start server
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Server is running on port ${PORT}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`📝 Timestamp: ${new Date().toISOString()}`);
+});
+
+// Graceful shutdown listeners
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
+
+// Handle server errors
+server.on('error', (error) => {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  const bind = typeof PORT === 'string' ? 'Pipe ' + PORT : 'Port ' + PORT;
+
+  switch (error.code) {
+    case 'EACCES':
+      console.error(`❌ ${bind} requires elevated privileges`);
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(`❌ ${bind} is already in use`);
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+});
 
 
 
