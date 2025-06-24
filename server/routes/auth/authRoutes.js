@@ -112,16 +112,41 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   router.get('/google/callback', 
     passport.authenticate('google', { failureRedirect: `/api/auth/oauth-redirect?error=oauth_failed` }),
     async (req, res) => {
+      console.log('🚀 Google OAuth callback started');
+      console.log('User from passport:', req.user ? 'Present' : 'Missing');
+      console.log('Session ID:', req.sessionID);
+      
       try {
+        // Check if user exists
+        if (!req.user) {
+          console.error('❌ No user found in request after OAuth');
+          return res.redirect(`/api/auth/oauth-redirect?error=no_user_data`);
+        }
+
+        console.log('✅ User data received:', {
+          id: req.user._id,
+          email: req.user.email,
+          userName: req.user.userName,
+          role: req.user.role
+        });
+
+        // Check JWT_SECRET
+        const jwtSecret = process.env.JWT_SECRET || 'CLIENT_SECRET_KEY';
+        console.log('JWT Secret configured:', !!process.env.JWT_SECRET);
+
         // Generate JWT token for the authenticated user
+        console.log('🔑 Generating JWT token...');
         const token = jwt.sign({
           id: req.user._id,
           role: req.user.role,
           email: req.user.email,
           userName: req.user.userName
-        }, process.env.JWT_SECRET || 'CLIENT_SECRET_KEY', { expiresIn: '1h' });
+        }, jwtSecret, { expiresIn: '1h' });
+
+        console.log('✅ JWT token generated successfully');
 
         // Set cookie and redirect
+        console.log('🍪 Setting auth cookie...');
         res.cookie('token', token, {
           httpOnly: false,
           secure: process.env.NODE_ENV === 'production',
@@ -129,21 +154,51 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           maxAge: 60 * 60 * 1000 // 1 hour
         });
 
+        console.log('✅ Cookie set successfully');
+
+        // Check if this is a new user (created within last 5 seconds)
+        const isNewUser = req.user.createdAt && new Date() - req.user.createdAt < 5000;
+        console.log('Is new user:', isNewUser);
+
         // Send welcome email for new users
-        if (req.user.createdAt && new Date() - req.user.createdAt < 5000) {
+        if (isNewUser) {
           try {
+            console.log('📧 Attempting to send welcome email...');
             await emailService.sendWelcomeEmail(req.user.email, req.user.userName);
+            console.log('✅ Welcome email sent successfully');
           } catch (emailError) {
-            console.error('Failed to send welcome email:', emailError);
+            console.error('⚠️ Failed to send welcome email (non-critical):', emailError.message);
+            // Don't fail the OAuth flow for email issues
           }
         }
 
         // Use server-side OAuth redirect page to handle cross-domain redirect
         const redirectUrl = `/api/auth/oauth-redirect?token=${token}`;
+        console.log('🔄 Redirecting to:', redirectUrl);
+        
         res.redirect(redirectUrl);
+        console.log('✅ Google OAuth callback completed successfully');
+
       } catch (error) {
-        console.error('OAuth callback error:', error);
-        res.redirect(`/api/auth/oauth-redirect?error=oauth_callback_failed`);
+        console.error('❌ OAuth callback error:', error);
+        console.error('Error stack:', error.stack);
+        console.error('Error details:', {
+          name: error.name,
+          message: error.message,
+          code: error.code
+        });
+        
+        // More specific error handling
+        if (error.name === 'JsonWebTokenError') {
+          console.error('JWT Error - likely missing or invalid JWT_SECRET');
+          return res.redirect(`/api/auth/oauth-redirect?error=jwt_error`);
+        } else if (error.name === 'MongoError' || error.name === 'MongooseError') {
+          console.error('Database Error during OAuth');
+          return res.redirect(`/api/auth/oauth-redirect?error=database_error`);
+        } else {
+          console.error('Unknown OAuth callback error');
+          return res.redirect(`/api/auth/oauth-redirect?error=oauth_callback_failed`);
+        }
       }
     }
   );
@@ -351,12 +406,24 @@ router.get('/oauth-redirect', (req, res) => {
   
   if (error) {
     console.log('Redirecting with error:', error);
-    return res.redirect(`${clientUrl}/auth/login?error=${error}`);
+    
+    // Map error types to user-friendly messages
+    const errorMessages = {
+      'oauth_failed': 'OAuth authentication failed',
+      'no_user_data': 'No user data received from OAuth provider',
+      'jwt_error': 'Authentication token generation failed',
+      'database_error': 'Database connection error during authentication',
+      'oauth_callback_failed': 'OAuth callback processing failed',
+      'missing_token': 'Authentication token is missing'
+    };
+    
+    const errorMessage = errorMessages[error] || 'Authentication failed';
+    return res.redirect(`${clientUrl}/auth/login?error=${error}&message=${encodeURIComponent(errorMessage)}`);
   }
   
   if (!token) {
     console.log('Missing token, redirecting to login');
-    return res.redirect(`${clientUrl}/auth/login?error=missing_token`);
+    return res.redirect(`${clientUrl}/auth/login?error=missing_token&message=${encodeURIComponent('Authentication token is missing')}`);
   }
   
   // Create a simple HTML page that redirects to client with token

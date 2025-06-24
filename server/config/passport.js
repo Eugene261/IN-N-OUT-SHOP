@@ -18,6 +18,25 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
+// Helper function to generate unique username
+const generateUniqueUsername = async (baseUsername) => {
+  let username = baseUsername;
+  let counter = 1;
+  
+  while (await User.findOne({ userName: username })) {
+    username = `${baseUsername}${counter}`;
+    counter++;
+    
+    // Prevent infinite loop
+    if (counter > 1000) {
+      username = `${baseUsername}_${Date.now()}`;
+      break;
+    }
+  }
+  
+  return username;
+};
+
 // Google OAuth Strategy - Only initialize if credentials are provided
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   passport.use(new GoogleStrategy({
@@ -25,21 +44,35 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: `${process.env.SERVER_URL || 'http://localhost:5000'}/api/auth/google/callback`
   }, async (accessToken, refreshToken, profile, done) => {
+    console.log('🔍 Google OAuth Strategy started');
+    console.log('Profile ID:', profile.id);
+    console.log('Profile email:', profile.emails?.[0]?.value);
+    console.log('Profile display name:', profile.displayName);
+    
     try {
-      console.log('Google OAuth profile:', profile);
+      // Validate required data
+      if (!profile.emails || profile.emails.length === 0) {
+        console.error('❌ No email provided by Google OAuth');
+        return done(new Error('No email provided by Google'), null);
+      }
+
+      const email = profile.emails[0].value;
       
       // Check if user already exists with this Google ID
+      console.log('🔍 Checking for existing user with Google ID...');
       let user = await User.findOne({ googleId: profile.id });
       
       if (user) {
-        // User exists, return the user
+        console.log('✅ Found existing user with Google ID:', user._id);
         return done(null, user);
       }
       
       // Check if user exists with the same email
-      user = await User.findOne({ email: profile.emails[0].value });
+      console.log('🔍 Checking for existing user with email...');
+      user = await User.findOne({ email: email });
       
       if (user) {
+        console.log('✅ Found existing user with email, linking Google account...');
         // User exists with same email, link the Google account
         user.googleId = profile.id;
         user.provider = 'google';
@@ -47,26 +80,61 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           user.avatar = profile.photos[0].value;
         }
         await user.save();
+        console.log('✅ Google account linked successfully');
         return done(null, user);
       }
       
       // Create new user
-      const newUser = new User({
+      console.log('🆕 Creating new user...');
+      
+      // Generate base username
+      const baseUsername = profile.displayName 
+        ? profile.displayName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
+        : email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+      
+      console.log('Base username:', baseUsername);
+      
+      // Generate unique username
+      const uniqueUsername = await generateUniqueUsername(baseUsername);
+      console.log('Unique username generated:', uniqueUsername);
+      
+      const newUserData = {
         googleId: profile.id,
-        userName: profile.displayName || profile.emails[0].value.split('@')[0],
-        email: profile.emails[0].value,
+        userName: uniqueUsername,
+        email: email,
         firstName: profile.name?.givenName || '',
         lastName: profile.name?.familyName || '',
         avatar: profile.photos?.[0]?.value || '',
         provider: 'google',
         isActive: true
-      });
+      };
       
+      console.log('New user data:', newUserData);
+      
+      const newUser = new User(newUserData);
       await newUser.save();
+      
+      console.log('✅ New user created successfully:', newUser._id);
       
       return done(null, newUser);
     } catch (error) {
-      console.error('Google OAuth error:', error);
+      console.error('❌ Google OAuth Strategy error:', error);
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
+      
+      // Provide more specific error information
+      if (error.name === 'ValidationError') {
+        console.error('User validation error:', error.errors);
+      } else if (error.name === 'MongoError' || error.name === 'MongooseError') {
+        console.error('Database connection or operation error');
+      } else if (error.code === 11000) {
+        console.error('Duplicate key error - username or email already exists');
+      }
+      
       return done(error, null);
     }
   }));

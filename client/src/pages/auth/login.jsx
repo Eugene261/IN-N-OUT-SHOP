@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react'
 import { useDispatch } from 'react-redux';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
-import OAuthButtons from '@/components/auth/OAuthButtons';
+import SimpleOAuthButtons from '@/components/auth/SimpleOAuthButtons';
 
 const initialState = {
   email: '',
@@ -28,6 +28,8 @@ function AuthLogin() {
     // Then check URL query parameters
     const queryParams = new URLSearchParams(location.search);
     const redirectFromQuery = queryParams.get('redirect');
+    const oauthError = queryParams.get('error');
+    const oauthErrorMessage = queryParams.get('message');
     
     if (redirectFromQuery) {
       setRedirectPath(redirectFromQuery);
@@ -35,6 +37,34 @@ function AuthLogin() {
       sessionStorage.setItem('redirectAfterLogin', redirectFromQuery);
     } else if (savedRedirectPath) {
       setRedirectPath(savedRedirectPath);
+    }
+    
+    // Handle OAuth errors
+    if (oauthError) {
+      console.error('OAuth error received:', oauthError, oauthErrorMessage);
+      const errorMessage = oauthErrorMessage || 'OAuth authentication failed. Please try again.';
+      toast.error(errorMessage, {
+        duration: 8000,
+        description: 'You can try using OAuth again or login with email/password',
+        action: {
+          label: 'Dismiss',
+          onClick: () => {
+            // Clear error from URL
+            const url = new URL(window.location);
+            url.searchParams.delete('error');
+            url.searchParams.delete('message');
+            window.history.replaceState({}, '', url);
+          },
+        },
+      });
+      
+      // Clear error from URL after showing toast
+      setTimeout(() => {
+        const url = new URL(window.location);
+        url.searchParams.delete('error');
+        url.searchParams.delete('message');
+        window.history.replaceState({}, '', url);
+      }, 1000);
     }
     
     // Log for debugging
@@ -130,7 +160,7 @@ function AuthLogin() {
         isAuthForm={true}
       />
       
-      <OAuthButtons />
+      <SimpleOAuthButtons />
       
       <div className="text-center">
         <Link 
