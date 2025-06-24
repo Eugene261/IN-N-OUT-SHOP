@@ -41,7 +41,9 @@ const contactRouter = require('./routes/common/contactRoutes.js');
 const wishlistRouter = require('./routes/wishlistRoutes.js');
 const shopFeaturedCollectionRouter = require('./routes/shop/featuredCollectionRoutes.js');
 
-
+// Video routes
+const shopVideoRouter = require('./routes/shop/videoRoutes.js');
+const superAdminVideoRouter = require('./routes/superAdmin/videoRoutes.js');
 
 // Payment routes
 const paystackRouter = require('./routes/payment/paystackRoutes.js');
@@ -167,6 +169,9 @@ app.use('/api/common', contactRouter);
 app.use('/api/shop/wishlist', wishlistRouter);
 app.use('/api/shop/featured-collections', shopFeaturedCollectionRouter);
 
+// Video routes
+app.use('/api/shop/videos', shopVideoRouter);
+
 // Shipping routes
 app.use('/api/shop/shipping', shippingRouter);
 
@@ -192,6 +197,7 @@ app.use('/api/superAdmin/featured', superAdminFeaturedRouter);
 app.use('/api/superAdmin/featured-collections', superAdminFeaturedCollectionRouter);
 app.use('/api/superAdmin/revenue', superAdminRevenueRouter);
 app.use('/api/superAdmin/taxonomy', superAdminTaxonomyRouter);
+app.use('/api/superAdmin/videos', superAdminVideoRouter);
 app.use('/api/superAdmin/vendor-payments', require('./routes/superAdmin/vendorPaymentRoutes'));
 
 // Test route
