@@ -14,7 +14,7 @@ function AuthLayout() {
       </div>
       
       {/* Main Auth Content */}
-      <div className='flex flex-1 min-h-screen lg:min-h-0 w-full overflow-hidden'>
+      <div className='flex flex-1 min-h-screen lg:min-h-[calc(100vh-104px)] w-full overflow-hidden'>
         {/* Left sided - Animated Background - Hidden on mobile */}
         <motion.div 
           initial={{ x: -100, opacity: 0 }}
@@ -311,7 +311,7 @@ function AuthLayout() {
         />
         
         {/* Content card - full screen on mobile, card on desktop */}
-        <div className="w-full h-full lg:max-w-md lg:h-auto relative z-10 px-0 py-0 lg:px-4 lg:py-6 flex items-center justify-center">
+        <div className="w-full h-full lg:max-w-md lg:h-auto relative z-10 px-0 py-0 lg:px-4 lg:py-6 lg:pt-[120px] flex items-center justify-center lg:justify-start">
           <motion.div
             className="w-full h-full lg:h-auto bg-white lg:bg-white/80 lg:backdrop-blur-md lg:rounded-2xl lg:shadow-xl lg:border lg:border-gray-100 p-6 sm:p-8 overflow-hidden flex flex-col justify-center lg:justify-start"
             initial={{ y: 20, opacity: 0 }}
