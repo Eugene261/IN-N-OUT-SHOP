@@ -32,9 +32,7 @@ import FeaturedCollection from '../../components/shopping-view/featuredCollectio
 import FeaturedSection from '../../components/shopping-view/featuredSection';
 import ProductOptionsModal from '../../components/shopping-view/productOptionsModal';
 import ValueProposition from '../../components/shopping-view/ValueProposition';
-import CustomerTestimonials from '../../components/shopping-view/CustomerTestimonials';
 import NewsletterSection from '../../components/shopping-view/NewsletterSection';
-import StatsSection from '../../components/shopping-view/StatsSection';
 import EnhancedHeroCarousel from '../../components/shopping-view/EnhancedHeroCarousel'
 
 /* const categoriesWithIcon = [
@@ -447,10 +445,6 @@ function ShoppingHome() {
         <NewArrivals />
   
         <FeaturedCollection />
-
-        <StatsSection />
-
-        <CustomerTestimonials />
 
         <FeaturedSection />
 

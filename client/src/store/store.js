@@ -13,9 +13,7 @@ import shopReviewSlice from './shop/review-slice/index.js';
 import commonFeatureSlice from './common-slice/index.js';
 import wishlistSlice from './shop/wishlist-slice/index.js';
 
-// Stats and testimonials slices
-import statsSlice from './shop/stats-slice/index.js';
-import testimonialsSlice from './shop/testimonials-slice/index.js';
+
 
 // SuperAdmin slices
 import superAdminUsersSlice from './super-admin/user-slice/index.js';
@@ -46,10 +44,6 @@ const store = configureStore({
         shopReview : shopReviewSlice,
         commonFeature: commonFeatureSlice,
         wishlist: wishlistSlice,
-        
-        // Stats and testimonials reducers
-        stats: statsSlice,
-        testimonials: testimonialsSlice,
         
         // Vendor payment reducers
         adminVendorPayments: adminVendorPaymentsSlice,

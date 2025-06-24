@@ -41,9 +41,7 @@ const contactRouter = require('./routes/common/contactRoutes.js');
 const wishlistRouter = require('./routes/wishlistRoutes.js');
 const shopFeaturedCollectionRouter = require('./routes/shop/featuredCollectionRoutes.js');
 
-// Stats and testimonials routes
-const statsRouter = require('./routes/shop/stats-routes.js');
-const testimonialsRouter = require('./routes/shop/testimonials-routes.js');
+
 
 // Payment routes
 const paystackRouter = require('./routes/payment/paystackRoutes.js');
@@ -168,10 +166,6 @@ app.use('/api/common/feature', commonFeatureRouter);
 app.use('/api/common', contactRouter);
 app.use('/api/shop/wishlist', wishlistRouter);
 app.use('/api/shop/featured-collections', shopFeaturedCollectionRouter);
-
-// Stats and testimonials routes
-app.use('/api/shop/stats', statsRouter);
-app.use('/api/shop/testimonials', testimonialsRouter);
 
 // Shipping routes
 app.use('/api/shop/shipping', shippingRouter);
