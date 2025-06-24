@@ -268,7 +268,7 @@ function AuthLayout() {
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
-        className="flex flex-1 w-full lg:w-1/2 items-center justify-center relative min-h-screen"
+        className="flex flex-1 w-full lg:w-1/2 items-center justify-center relative min-h-screen lg:pt-[104px]"
       >
         {/* Modern gradient background - subtle on mobile, more pronounced on desktop */}
         <div className="absolute inset-0 bg-white lg:bg-gradient-to-br lg:from-gray-50 lg:via-white lg:to-gray-100"></div>
