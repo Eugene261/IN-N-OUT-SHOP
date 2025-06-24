@@ -29,6 +29,7 @@ import { addToWishlist, removeFromWishlist, fetchWishlistItems } from '@/store/s
 import BestSeller from './bestSeller';
 import NewArrivals from './newArrivals';
 import FeaturedCollection from '../../components/shopping-view/featuredCollection';
+import FeaturedVideos from '../../components/shopping-view/FeaturedVideos';
 import FeaturedSection from '../../components/shopping-view/featuredSection';
 import ProductOptionsModal from '../../components/shopping-view/productOptionsModal';
 import ValueProposition from '../../components/shopping-view/ValueProposition';
@@ -445,6 +446,8 @@ function ShoppingHome() {
         <NewArrivals />
   
         <FeaturedCollection />
+
+        <FeaturedVideos />
 
         <FeaturedSection />
 
