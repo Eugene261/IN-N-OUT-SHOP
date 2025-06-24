@@ -15,7 +15,7 @@ import wishlistSlice from './shop/wishlist-slice/index.js';
 
 // Video slices
 import shopVideoSlice from './shop/video-slice/index.js';
-import superAdminVideoSlice from './super-admin/video-slice/index.js';
+import superAdminVideoSlice from './superAdmin/video-slice/index.js';
 
 // SuperAdmin slices
 import superAdminUsersSlice from './super-admin/user-slice/index.js';
