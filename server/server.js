@@ -84,6 +84,8 @@ app.use(
             // Production domains
             'https://in-nd-out.com',
             'https://www.in-nd-out.com',
+            // API domain for debugging
+            'https://api.in-nd-out.com'
         ].filter(Boolean), // Remove any undefined values
         methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH', 'OPTIONS'],
         allowedHeaders: [
@@ -92,9 +94,12 @@ app.use(
             "Cache-Control",
             "Expires",
             "Pragma",
-            "Cookie"
+            "Cookie",
+            "X-Requested-With",
+            "Accept"
         ],
-        credentials : true
+        credentials: true,
+        optionsSuccessStatus: 200 // For legacy browser support
     })
 );
 
