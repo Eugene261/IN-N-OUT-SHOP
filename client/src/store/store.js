@@ -13,7 +13,9 @@ import shopReviewSlice from './shop/review-slice/index.js';
 import commonFeatureSlice from './common-slice/index.js';
 import wishlistSlice from './shop/wishlist-slice/index.js';
 
-
+// Video slices
+import shopVideoSlice from './shop/video-slice/index.js';
+import superAdminVideoSlice from './super-admin/video-slice/index.js';
 
 // SuperAdmin slices
 import superAdminUsersSlice from './super-admin/user-slice/index.js';
@@ -44,6 +46,10 @@ const store = configureStore({
         shopReview : shopReviewSlice,
         commonFeature: commonFeatureSlice,
         wishlist: wishlistSlice,
+        
+        // Video reducers
+        shopVideos: shopVideoSlice,
+        superAdminVideos: superAdminVideoSlice,
         
         // Vendor payment reducers
         adminVendorPayments: adminVendorPaymentsSlice,
