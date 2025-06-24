@@ -14,7 +14,7 @@ import FeaturedCollectionList from '@/components/superAdmin-view/featuredCollect
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, RefreshCw } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 
 const containerVariants = {
   hidden: { opacity: 0 },

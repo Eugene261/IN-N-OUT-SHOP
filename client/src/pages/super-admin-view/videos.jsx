@@ -9,12 +9,12 @@ import {
   toggleVideoFeatured,
   updateVideoPriorities
 } from '@/store/superAdmin/video-slice/index.js';
-import VideoForm from '@/components/super-admin-view/videoForm';
-import VideoList from '@/components/super-admin-view/videoList';
+import VideoForm from '@/components/super-admin-view/videoForm.jsx';
+import VideoList from '@/components/super-admin-view/videoList.jsx';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, RefreshCw, Video } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 
 const containerVariants = {
   hidden: { opacity: 0 },
