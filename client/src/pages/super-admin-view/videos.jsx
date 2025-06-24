@@ -8,7 +8,7 @@ import {
   deleteVideo,
   toggleVideoFeatured,
   updateVideoPriorities
-} from '@/store/superAdmin/video-slice';
+} from '@/store/superAdmin/video-slice/index.js';
 import VideoForm from '@/components/super-admin-view/videoForm';
 import VideoList from '@/components/super-admin-view/videoList';
 import { Button } from '@/components/ui/button';

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchFeaturedVideos, toggleVideoLike, trackVideoView } from '@/store/shop/video-slice';
+import { fetchFeaturedVideos, toggleVideoLike, trackVideoView } from '@/store/shop/video-slice/index.js';
 import { Button } from '../ui/button';
 import { Play, Heart, Eye, Clock, User, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
