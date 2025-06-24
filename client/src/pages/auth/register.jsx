@@ -74,6 +74,18 @@ function AuthRegister() {
           isAuthForm={true}
         />
         
+        {/* OR divider */}
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">OR</span>
+          </div>
+        </div>
+        
+        <SimpleOAuthButtons />
+        
         {/* Terms and conditions with checkbox */}
         <div className="flex items-start space-x-3">
           <input type="checkbox" id="terms" className="mt-1 h-4 w-4 text-black border-gray-300 rounded focus:ring-black" defaultChecked />
@@ -88,18 +100,6 @@ function AuthRegister() {
           <Link to="/shop/terms-of-service" className="underline hover:text-gray-900">Terms & Conditions</Link>,{' '}
           <Link to="/shop/privacy-policy" className="underline hover:text-gray-900">Privacy and Cookie Policy</Link>, and to join our loyalty programme
         </div>
-        
-        {/* OR divider */}
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300" />
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">OR</span>
-          </div>
-        </div>
-        
-        <SimpleOAuthButtons />
       </div>
     </div>
   );

@@ -172,13 +172,6 @@ function AuthLogin() {
           isAuthForm={true}
         />
         
-        {/* Terms and conditions */}
-        <div className="text-sm text-gray-600 text-center lg:text-left">
-          By signing in, you agree to our{' '}
-          <Link to="/shop/terms-of-service" className="underline hover:text-gray-900">Terms & Conditions</Link>,{' '}
-          <Link to="/shop/privacy-policy" className="underline hover:text-gray-900">Privacy and Cookie Policy</Link>, and to join our loyalty programme
-        </div>
-        
         {/* OR divider */}
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
@@ -190,6 +183,13 @@ function AuthLogin() {
         </div>
         
         <SimpleOAuthButtons />
+        
+        {/* Terms and conditions */}
+        <div className="text-sm text-gray-600 text-center lg:text-left">
+          By signing in, you agree to our{' '}
+          <Link to="/shop/terms-of-service" className="underline hover:text-gray-900">Terms & Conditions</Link>,{' '}
+          <Link to="/shop/privacy-policy" className="underline hover:text-gray-900">Privacy and Cookie Policy</Link>, and to join our loyalty programme
+        </div>
         
         {/* Forgot password link - moved to bottom */}
         <div className="text-center mt-6">
