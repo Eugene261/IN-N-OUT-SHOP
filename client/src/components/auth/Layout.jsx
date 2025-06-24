@@ -313,7 +313,7 @@ function AuthLayout() {
         {/* Content card - full screen on mobile, card on desktop */}
         <div className="w-full h-full lg:max-w-md lg:h-auto relative z-10 px-0 py-0 lg:px-4 lg:py-6 flex items-center justify-center lg:justify-center">
           <motion.div
-            className="w-full h-full lg:h-auto bg-white lg:bg-white/80 lg:backdrop-blur-md lg:rounded-2xl lg:shadow-xl lg:border lg:border-gray-100 p-6 sm:p-8 overflow-hidden flex flex-col justify-center lg:justify-start"
+            className="w-full h-full lg:h-auto bg-white lg:bg-white/80 lg:backdrop-blur-md lg:rounded-2xl lg:shadow-xl lg:border lg:border-gray-100 p-6 sm:p-8 overflow-hidden flex flex-col justify-center"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.5 }}
