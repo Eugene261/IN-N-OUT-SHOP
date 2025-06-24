@@ -198,7 +198,15 @@ class EmailService {
 
   // Modern email template generator with improved design and spam prevention
   getModernEmailTemplate({ title, headerColor, icon, content }) {
-    const logoUrl = process.env.LOGO_URL || `${process.env.CLIENT_URL}/favicon.svg`;
+    // Use the red IN-N-OUT logo for emails
+    const logoSvg = `
+      <svg width="40" height="40" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100" height="100" rx="8" fill="#DC2626"/>
+        <text x="50" y="35" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-weight="bold" font-size="18">IN</text>
+        <text x="50" y="55" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-weight="bold" font-size="12">N</text>
+        <text x="50" y="75" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-weight="bold" font-size="18">OUT</text>
+      </svg>
+    `;
     
     return `
       <!DOCTYPE html>
@@ -287,10 +295,9 @@ class EmailService {
             backdrop-filter: blur(10px);
             border: 2px solid rgba(255,255,255,0.3);
           }
-          .logo img {
+          .logo svg {
             width: 36px;
             height: 36px;
-            filter: brightness(0) invert(1);
           }
           .logo .icon {
             font-size: 28px;
@@ -584,20 +591,8 @@ class EmailService {
         <div class="email-container">
           <div class="header">
             <div class="logo-container">
-              <div class="logo" style="background: rgba(255,255,255,0.95); border-radius: 12px; padding: 12px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                <svg width="48" height="48" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-                  <rect width="32" height="32" fill="white"/>
-                  <g fill="#E20A17">
-                    <rect x="2" y="8" width="2" height="16"/>
-                    <rect x="6" y="8" width="2" height="16"/>
-                    <rect x="12" y="8" width="2" height="16"/>
-                    <path d="M8 8 L12 24 L12 22 L8 6 Z"/>
-                    <rect x="16" y="8" width="2" height="16"/>
-                    <rect x="22" y="8" width="2" height="16"/>
-                    <path d="M18 8 L22 24 L22 22 L18 6 Z"/>
-                    <circle cx="27" cy="16" r="4" stroke="#E20A17" stroke-width="2" fill="white"/>
-                  </g>
-                </svg>
+              <div class="logo">
+                ${logoSvg}
               </div>
             </div>
             <h1>${title}</h1>

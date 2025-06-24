@@ -62,21 +62,35 @@ const registerUser = async (req, res) => {
         password: hashPassword,
       });
   
-      await newUser.save();
-  
-      // Send welcome email (optional - don't fail registration if email fails)
+      const savedUser = await newUser.save();
+      console.log('✅ User registered successfully:', { email, userName, id: savedUser._id });
+
+      // Send welcome email (enhanced with better error handling)
       try {
-        await emailService.sendWelcomeEmail(email, userName);
-        console.log('Welcome email sent to:', email);
+        console.log('📧 Attempting to send welcome email to:', email);
+        
+        // Verify email service is configured
+        if (!emailService.transporter) {
+          console.error('⚠️ Email service not configured - skipping welcome email');
+        } else {
+          await emailService.sendWelcomeEmail(email, userName);
+          console.log('✅ Welcome email sent successfully to:', email);
+        }
       } catch (emailError) {
-        console.error('Failed to send welcome email:', emailError);
+        console.error('❌ Failed to send welcome email:', emailError);
+        console.error('Email error details:', {
+          name: emailError.name,
+          message: emailError.message,
+          code: emailError.code,
+          command: emailError.command
+        });
         // Continue with registration even if email fails
       }
   
       // Return success response (excluding password)
       res.status(201).json({
         success: true,
-        message: 'Registration successful',
+        message: 'Registration successful! Welcome email sent if email service is configured.',
       });
   
     } catch (error) {

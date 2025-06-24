@@ -892,7 +892,7 @@ const createOrderAfterPayment = async (req, res) => {
             
             console.log('Order saved successfully with ID:', savedOrder._id);
             
-            // Send order confirmation email to customer
+            // Send order confirmation email to customer (FIXED: Removed duplicate)
             try {
                 const user = await User.findById(orderData.userId);
                 if (user) {
@@ -916,39 +916,10 @@ const createOrderAfterPayment = async (req, res) => {
                         user.userName,
                         orderDetails
                     );
-                    console.log('Order confirmation email sent to customer:', user.email);
+                    console.log('✅ Order confirmation email sent to customer:', user.email);
                 }
             } catch (emailError) {
-                console.error('Failed to send order confirmation email:', emailError);
-                // Don't fail the order creation if email fails
-            }
-            
-            // Send order confirmation email to customer
-            try {
-                const customer = await User.findById(savedOrder.user);
-                if (customer) {
-                    await emailService.sendOrderConfirmationEmail(
-                        customer.email,
-                        customer.userName,
-                        {
-                            orderId: savedOrder._id,
-                            orderDate: savedOrder.orderDate,
-                            totalAmount: savedOrder.totalAmount,
-                            paymentMethod: savedOrder.paymentMethod,
-                            estimatedDelivery: '3-5 business days',
-                            items: savedOrder.cartItems.map(item => ({
-                                title: item.title,
-                                image: item.image,
-                                quantity: item.quantity,
-                                price: item.price
-                            })),
-                            shippingAddress: savedOrder.addressInfo
-                        }
-                    );
-                    console.log(`Order confirmation email sent to customer: ${customer.email}`);
-                }
-            } catch (emailError) {
-                console.error('Failed to send order confirmation email:', emailError);
+                console.error('❌ Failed to send order confirmation email:', emailError);
                 // Don't fail the order creation if email fails
             }
 
