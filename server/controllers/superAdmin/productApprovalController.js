@@ -446,16 +446,20 @@ const getApprovalStats = async (req, res) => {
       });
     }
 
-    const timeframe = req.query.timeframe || '30'; // days
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - parseInt(timeframe));
+    const timeframe = req.query.timeframe || 'all'; // Show all by default
+    
+    // Build match condition - if timeframe is 'all', don't filter by date
+    let matchCondition = {};
+    if (timeframe !== 'all' && !isNaN(parseInt(timeframe))) {
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - parseInt(timeframe));
+      matchCondition.submittedAt = { $gte: startDate };
+    }
 
     // Get approval stats
     const stats = await Product.aggregate([
       {
-        $match: {
-          submittedAt: { $gte: startDate }
-        }
+        $match: matchCondition
       },
       {
         $group: {
@@ -467,14 +471,22 @@ const getApprovalStats = async (req, res) => {
     ]);
 
     // Get approval time stats
+    let approvalTimesMatch = {
+      approvalStatus: 'approved',
+      submittedAt: { $exists: true },
+      approvedAt: { $exists: true }
+    };
+    
+    // Add date filter only if timeframe is specified
+    if (timeframe !== 'all' && !isNaN(parseInt(timeframe))) {
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - parseInt(timeframe));
+      approvalTimesMatch.approvedAt = { $gte: startDate };
+    }
+    
     const approvalTimes = await Product.aggregate([
       {
-        $match: {
-          approvalStatus: 'approved',
-          approvedAt: { $gte: startDate },
-          submittedAt: { $exists: true },
-          approvedAt: { $exists: true }
-        }
+        $match: approvalTimesMatch
       },
       {
         $project: {
@@ -497,12 +509,27 @@ const getApprovalStats = async (req, res) => {
     ]);
 
     // Get recent activity
-    const recentActivity = await Product.find({
-      $or: [
-        { approvedAt: { $gte: startDate } },
-        { rejectedAt: { $gte: startDate } }
-      ]
-    })
+    let recentActivityFilter = {};
+    if (timeframe !== 'all' && !isNaN(parseInt(timeframe))) {
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - parseInt(timeframe));
+      recentActivityFilter = {
+        $or: [
+          { approvedAt: { $gte: startDate } },
+          { rejectedAt: { $gte: startDate } }
+        ]
+      };
+    } else {
+      // For 'all' timeframe, get recent activity from all approved/rejected products
+      recentActivityFilter = {
+        $or: [
+          { approvalStatus: 'approved', approvedAt: { $exists: true } },
+          { approvalStatus: 'rejected', rejectedAt: { $exists: true } }
+        ]
+      };
+    }
+    
+    const recentActivity = await Product.find(recentActivityFilter)
     .populate('createdBy', 'userName email')
     .populate('approvedBy', 'userName email')
     .sort({ updatedAt: -1 })
@@ -517,7 +544,7 @@ const getApprovalStats = async (req, res) => {
           approvalTimes: approvalTimes[0] || null
         },
         recentActivity,
-        timeframe: parseInt(timeframe)
+        timeframe: timeframe === 'all' ? 'all' : parseInt(timeframe)
       }
     });
 
