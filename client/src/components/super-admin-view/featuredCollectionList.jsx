@@ -80,6 +80,7 @@ const FeaturedCollectionList = ({ onEdit }) => {
   };
   
   if (isLoading) {
+    console.log('FeaturedCollectionList: Component is in loading state');
     return (
       <div className="flex justify-center items-center h-32">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -88,6 +89,7 @@ const FeaturedCollectionList = ({ onEdit }) => {
   }
   
   if (error) {
+    console.log('FeaturedCollectionList: Component has error:', error);
     return (
       <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
         <p>Error: {error}</p>
@@ -95,7 +97,17 @@ const FeaturedCollectionList = ({ onEdit }) => {
     );
   }
   
-  if (collections.length === 0) {
+  console.log('FeaturedCollectionList: Checking collections.length:', {
+    collections,
+    collectionsType: typeof collections,
+    isArray: Array.isArray(collections),
+    length: collections ? collections.length : 'no length property',
+    truthyCheck: !!collections,
+    lengthCheck: collections && collections.length > 0
+  });
+  
+  if (!collections || collections.length === 0) {
+    console.log('FeaturedCollectionList: Showing empty state - collections:', collections);
     return (
       <div className="bg-gray-50 border border-gray-200 rounded-md p-6 text-center">
         <p className="text-gray-500">No featured collections found. Create one to get started!</p>

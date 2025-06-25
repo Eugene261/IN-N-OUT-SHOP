@@ -857,7 +857,17 @@ const SuperAdminFeatured = () => {
                     className="w-8 h-8 border-2 border-blue-200 border-t-blue-600 rounded-full"
                   />
                 </div>
-              ) : featuredCollections && featuredCollections.length > 0 ? (
+              ) : (() => {
+                console.log('SuperAdminFeatured: Evaluating collections display condition:', {
+                  featuredCollections,
+                  hasCollections: !!featuredCollections,
+                  collectionsLength: featuredCollections ? featuredCollections.length : 'no length',
+                  isArray: Array.isArray(featuredCollections),
+                  condition: featuredCollections && featuredCollections.length > 0
+                });
+                
+                return featuredCollections && featuredCollections.length > 0;
+              })() ? (
                 <FeaturedCollectionList 
                   onEdit={(collection) => {
                     setEditingCollection(collection);
