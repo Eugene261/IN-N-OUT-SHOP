@@ -35,9 +35,15 @@ export const fetchVideos = createAsyncThunk(
       const params = new URLSearchParams();
       if (page) params.append('page', page);
       if (limit) params.append('limit', limit);
-      if (status) params.append('status', status);
-      if (category) params.append('category', category);
-      if (isFeatured !== undefined) params.append('isFeatured', isFeatured);
+      
+      // Convert "all" values back to empty strings for backend compatibility
+      const finalStatus = status === 'all' ? '' : status;
+      const finalCategory = category === 'all' ? '' : category;
+      const finalIsFeatured = isFeatured === 'all' ? '' : isFeatured;
+      
+      if (finalStatus && finalStatus.trim() !== '') params.append('status', finalStatus);
+      if (finalCategory && finalCategory.trim() !== '') params.append('category', finalCategory);
+      if (finalIsFeatured !== undefined && finalIsFeatured !== '' && finalIsFeatured !== null) params.append('isFeatured', finalIsFeatured);
 
       const response = await axios.get(
         `${import.meta.env.VITE_API_URL}/api/superAdmin/videos?${params.toString()}`,

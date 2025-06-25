@@ -200,7 +200,9 @@ function CommonForm({
                 className="z-[9999] bg-white border-gray-300"
                 sideOffset={5}
               >
-                {selectOptions.map(optionItem => (
+                {selectOptions
+                  .filter(optionItem => optionItem.id && optionItem.id.trim() !== '')
+                  .map(optionItem => (
                   <SelectItem 
                     key={`${optionItem.id}-${optionItem.categories ? optionItem.categories.join('-') : ''}`} 
                     value={optionItem.id}

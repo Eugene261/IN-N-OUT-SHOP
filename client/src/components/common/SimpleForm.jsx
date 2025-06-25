@@ -268,7 +268,9 @@ function SimpleForm({
                 <SelectValue placeholder={controlItem.placeholder} />
               </SelectTrigger>
               <SelectContent className="bg-white border border-gray-300">
-                {controlItem.options?.map(optionItem => (
+                {controlItem.options
+                  ?.filter(optionItem => optionItem.id && optionItem.id.trim() !== '')
+                  .map(optionItem => (
                   <SelectItem key={optionItem.id} value={optionItem.id}>
                     {optionItem.label}
                   </SelectItem>

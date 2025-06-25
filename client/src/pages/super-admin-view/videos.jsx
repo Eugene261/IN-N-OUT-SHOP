@@ -47,9 +47,9 @@ function VideosPage() {
   const [filters, setFilters] = useState({
     page: 1,
     limit: 10,
-    status: '',
-    category: '',
-    isFeatured: ''
+    status: 'all',
+    category: 'all',
+    isFeatured: 'all'
   });
 
   useEffect(() => {

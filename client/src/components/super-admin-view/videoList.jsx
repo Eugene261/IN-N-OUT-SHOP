@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Edit, Trash2, Star, StarOff, Play, Eye, Calendar, User, Tag, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const VIDEO_CATEGORIES = [
-  { value: '', label: 'All Categories' },
+  { value: 'all', label: 'All Categories' },
   { value: 'showcase', label: 'Product Showcase' },
   { value: 'unboxing', label: 'Unboxing' },
   { value: 'haul', label: 'Fashion Haul' },
@@ -17,14 +17,14 @@ const VIDEO_CATEGORIES = [
 ];
 
 const STATUS_OPTIONS = [
-  { value: '', label: 'All Status' },
+  { value: 'all', label: 'All Status' },
   { value: 'draft', label: 'Draft' },
   { value: 'published', label: 'Published' },
   { value: 'archived', label: 'Archived' }
 ];
 
 const FEATURED_OPTIONS = [
-  { value: '', label: 'All Videos' },
+  { value: 'all', label: 'All Videos' },
   { value: 'true', label: 'Featured Only' },
   { value: 'false', label: 'Not Featured' }
 ];
