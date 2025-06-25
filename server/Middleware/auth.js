@@ -35,6 +35,38 @@ const authMiddleware = async (req, res, next) => {
     }
 };
 
+// Optional authentication middleware - doesn't fail for guest users
+const optionalAuthMiddleware = async (req, res, next) => {
+    // Get token from cookies
+    let token = req.cookies.token;
+    
+    // If no token in cookies, check Authorization header
+    if (!token && req.headers.authorization) {
+        const authHeader = req.headers.authorization;
+        // Check if it's a Bearer token
+        if (authHeader.startsWith('Bearer ')) {
+            token = authHeader.substring(7);
+            console.log('Using token from Authorization header');
+        }
+    }
+
+    // If no token, continue as guest user
+    if (!token) {
+        req.user = null;
+        return next();
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'CLIENT_SECRET_KEY');
+        req.user = decoded;
+        next();
+    } catch (error) {
+        // If token is invalid, continue as guest user
+        req.user = null;
+        next();
+    }
+};
+
 // Verify token middleware (enhanced)
 const verifyToken = (req, res, next) => {
     // Get token from cookies
@@ -113,6 +145,7 @@ const isSuperAdmin = async (req, res, next) => {
 // Export all middleware functions
 module.exports = {
     authMiddleware,
+    optionalAuthMiddleware,
     verifyToken,
     isAdmin,
     isSuperAdmin

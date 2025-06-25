@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { authMiddleware } = require('../../Middleware/auth.js');
+const { authMiddleware, optionalAuthMiddleware } = require('../../Middleware/auth.js');
 const { 
   getFeaturedVideos,
   getPublishedVideos,
@@ -21,20 +21,7 @@ router.get('/:id/comments', getVideoComments);
 router.put('/:id/view', trackVideoView);
 
 // Routes that support both authenticated and guest users
-router.post('/:id/like', (req, res, next) => {
-  // Try to authenticate, but don't require it
-  authMiddleware(req, res, (err) => {
-    // Continue regardless of auth status
-    next();
-  });
-}, toggleVideoLike);
-
-router.post('/:id/comment', (req, res, next) => {
-  // Try to authenticate, but don't require it
-  authMiddleware(req, res, (err) => {
-    // Continue regardless of auth status
-    next();
-  });
-}, addVideoComment);
+router.post('/:id/like', optionalAuthMiddleware, toggleVideoLike);
+router.post('/:id/comment', optionalAuthMiddleware, addVideoComment);
 
 module.exports = router; 
