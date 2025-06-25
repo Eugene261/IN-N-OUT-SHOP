@@ -27,6 +27,7 @@ const MessagingDashboard = () => {
   const [availableUsers, setAvailableUsers] = useState([]);
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showConversations, setShowConversations] = useState(true); // Mobile: toggle between conversations and chat
 
   useEffect(() => {
     fetchConversations();
@@ -108,6 +109,7 @@ const MessagingDashboard = () => {
         setConversations(prev => [newConversation, ...prev]);
         setActiveConversation(newConversation);
         setShowNewChatModal(false);
+        setShowConversations(false); // Switch to chat view on mobile
         toast.success(`Started conversation with ${recipientName}`);
       }
     } catch (error) {
@@ -209,16 +211,18 @@ const MessagingDashboard = () => {
   return (
     <div className="h-screen bg-gray-50 flex">
       {/* Conversations Sidebar */}
-      <div className="w-1/3 bg-white border-r border-gray-200 flex flex-col">
+      <div className={`${
+        showConversations ? 'flex' : 'hidden'
+      } lg:flex lg:w-1/3 w-full bg-white border-r border-gray-200 flex-col`}>
         {/* Header */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-semibold text-gray-900">Messages</h1>
+            <h1 className="text-lg lg:text-xl font-semibold text-gray-900">Messages</h1>
             <button
               onClick={() => setShowNewChatModal(true)}
               className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
             </button>
           </div>
           
@@ -252,15 +256,18 @@ const MessagingDashboard = () => {
                     key={conversation._id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={`p-4 cursor-pointer hover:bg-gray-50 ${
+                    className={`p-3 lg:p-4 cursor-pointer hover:bg-gray-50 ${
                       activeConversation?._id === conversation._id ? 'bg-blue-50 border-r-2 border-blue-600' : ''
                     }`}
-                    onClick={() => setActiveConversation(conversation)}
+                    onClick={() => {
+                      setActiveConversation(conversation);
+                      setShowConversations(false); // Switch to chat view on mobile
+                    }}
                   >
                     <div className="flex items-start space-x-3">
                       <div className="flex-shrink-0">
-                        <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                          <User className="w-6 h-6 text-gray-600" />
+                        <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                          <User className="w-4 h-4 lg:w-6 lg:h-6 text-gray-600" />
                         </div>
                       </div>
                       
@@ -269,21 +276,21 @@ const MessagingDashboard = () => {
                           <p className="text-sm font-medium text-gray-900 truncate">
                             {otherUser?.userName || 'Unknown User'}
                           </p>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-1 lg:space-x-2">
                             {conversation.lastMessage?.sentAt && (
                               <span className="text-xs text-gray-500">
                                 {formatTime(conversation.lastMessage.sentAt)}
                               </span>
                             )}
                             {unreadCount > 0 && (
-                              <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                              <span className="bg-blue-600 text-white text-xs rounded-full px-1.5 py-0.5 lg:px-2 lg:py-1 min-w-[16px] lg:min-w-[20px] text-center">
                                 {unreadCount}
                               </span>
                             )}
                           </div>
                         </div>
                         
-                        <p className="text-sm text-gray-600 truncate mt-1">
+                        <p className="text-xs lg:text-sm text-gray-600 truncate mt-1">
                           {conversation.lastMessage?.content || 'No messages yet'}
                         </p>
                         
@@ -307,34 +314,46 @@ const MessagingDashboard = () => {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className={`${
+        showConversations ? 'hidden' : 'flex'
+      } lg:flex flex-1 flex-col`}>
         {activeConversation ? (
           <>
             {/* Chat Header */}
-            <div className="bg-white p-4 border-b border-gray-200">
+            <div className="bg-white p-3 lg:p-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                    <User className="w-6 h-6 text-gray-600" />
+                  {/* Back button for mobile */}
+                  <button
+                    onClick={() => setShowConversations(true)}
+                    className="lg:hidden p-1 text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  
+                  <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 lg:w-6 lg:h-6 text-gray-600" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-medium text-gray-900">
+                    <h2 className="text-base lg:text-lg font-medium text-gray-900">
                       {getOtherParticipant(activeConversation)?.userName || 'Unknown User'}
                     </h2>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-xs lg:text-sm text-gray-500">
                       {getOtherParticipant(activeConversation)?.role === 'superAdmin' ? 'Super Admin' : 'Admin'}
                     </p>
                   </div>
                 </div>
                 
                 <button className="p-2 text-gray-400 hover:text-gray-600">
-                  <MoreVertical className="w-5 h-5" />
+                  <MoreVertical className="w-4 h-4 lg:w-5 lg:h-5" />
                 </button>
               </div>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-3 lg:space-y-4">
               {messages.map((message) => (
                 <motion.div
                   key={message._id}
@@ -342,7 +361,7 @@ const MessagingDashboard = () => {
                   animate={{ opacity: 1, y: 0 }}
                   className={`flex ${message.sender._id === user.id ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                  <div className={`max-w-xs lg:max-w-md px-3 lg:px-4 py-2 rounded-lg ${
                     message.sender._id === user.id
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-200 text-gray-900'
@@ -367,9 +386,9 @@ const MessagingDashboard = () => {
             </div>
 
             {/* Message Input */}
-            <div className="bg-white p-4 border-t border-gray-200">
+            <div className="bg-white p-3 lg:p-4 border-t border-gray-200">
               <div className="flex items-center space-x-2">
-                <button className="p-2 text-gray-400 hover:text-gray-600">
+                <button className="p-2 text-gray-400 hover:text-gray-600 hidden lg:block">
                   <Paperclip className="w-5 h-5" />
                 </button>
                 <div className="flex-1 relative">
@@ -379,7 +398,7 @@ const MessagingDashboard = () => {
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder="Type a message..."
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 lg:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
                     disabled={sendingMessage}
                   />
                 </div>
@@ -388,17 +407,17 @@ const MessagingDashboard = () => {
                   disabled={!newMessage.trim() || sendingMessage}
                   className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Send className="w-5 h-5" />
+                  <Send className="w-4 h-4 lg:w-5 lg:h-5" />
                 </button>
               </div>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center p-4">
             <div className="text-center">
-              <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No conversation selected</h3>
-              <p className="text-gray-500">Choose a conversation from the sidebar or start a new one</p>
+              <MessageSquare className="w-10 h-10 lg:w-12 lg:h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-base lg:text-lg font-medium text-gray-900 mb-2">No conversation selected</h3>
+              <p className="text-sm lg:text-base text-gray-500">Choose a conversation from the sidebar or start a new one</p>
             </div>
           </div>
         )}
@@ -418,33 +437,33 @@ const MessagingDashboard = () => {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-lg shadow-xl max-w-md w-full"
+              className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-6">
+              <div className="p-4 lg:p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Start New Conversation</h2>
+                  <h2 className="text-base lg:text-lg font-semibold text-gray-900">Start New Conversation</h2>
                   <button
                     onClick={() => setShowNewChatModal(false)}
                     className="text-gray-400 hover:text-gray-600"
                   >
-                    <X className="w-6 h-6" />
+                    <X className="w-5 h-5 lg:w-6 lg:h-6" />
                   </button>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2 lg:space-y-3">
                   {availableUsers.map((availableUser) => (
                     <div
                       key={availableUser._id}
                       onClick={() => startNewConversation(availableUser._id, availableUser.userName)}
-                      className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer"
+                      className="flex items-center space-x-3 p-2 lg:p-3 hover:bg-gray-50 rounded-lg cursor-pointer"
                     >
-                      <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                        <User className="w-6 h-6 text-gray-600" />
+                      <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                        <User className="w-4 h-4 lg:w-6 lg:h-6 text-gray-600" />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">{availableUser.userName}</p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm lg:text-base font-medium text-gray-900">{availableUser.userName}</p>
+                        <p className="text-xs lg:text-sm text-gray-500">
                           {availableUser.role === 'superAdmin' ? 'Super Admin' : 'Admin'}
                         </p>
                       </div>
@@ -453,7 +472,7 @@ const MessagingDashboard = () => {
                 </div>
 
                 {availableUsers.length === 0 && (
-                  <p className="text-center text-gray-500 py-4">
+                  <p className="text-center text-gray-500 py-4 text-sm lg:text-base">
                     No users available for messaging
                   </p>
                 )}

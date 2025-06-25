@@ -193,19 +193,19 @@ const ProductApprovalDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4 lg:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-6 lg:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Product Approval Dashboard</h1>
-              <p className="text-gray-600">Review and manage product submissions from admins</p>
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">Product Approval Dashboard</h1>
+              <p className="text-gray-600 text-sm lg:text-base">Review and manage product submissions from admins</p>
             </div>
             <button
               onClick={fetchData}
               disabled={loading}
-              className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
@@ -215,19 +215,19 @@ const ProductApprovalDashboard = () => {
 
         {/* Statistics Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-6 lg:mb-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-lg shadow-sm p-6"
+              className="bg-white rounded-lg shadow-sm p-4 lg:p-6"
             >
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <Clock className="h-8 w-8 text-yellow-600" />
+                  <Clock className="h-6 w-6 lg:h-8 lg:w-8 text-yellow-600" />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Pending Review</p>
-                  <p className="text-2xl font-semibold text-gray-900">
+                <div className="ml-3 lg:ml-4 min-w-0">
+                  <p className="text-xs lg:text-sm font-medium text-gray-600 truncate">Pending Review</p>
+                  <p className="text-lg lg:text-2xl font-semibold text-gray-900">
                     {stats?.byStatus?.find(s => s._id === 'pending')?.count || 0}
                   </p>
                 </div>
@@ -238,15 +238,15 @@ const ProductApprovalDashboard = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-white rounded-lg shadow-sm p-6"
+              className="bg-white rounded-lg shadow-sm p-4 lg:p-6"
             >
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <CheckCircle className="h-8 w-8 text-green-600" />
+                  <CheckCircle className="h-6 w-6 lg:h-8 lg:w-8 text-green-600" />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Approved</p>
-                  <p className="text-2xl font-semibold text-gray-900">
+                <div className="ml-3 lg:ml-4 min-w-0">
+                  <p className="text-xs lg:text-sm font-medium text-gray-600 truncate">Approved</p>
+                  <p className="text-lg lg:text-2xl font-semibold text-gray-900">
                     {stats?.byStatus?.find(s => s._id === 'approved')?.count || 0}
                   </p>
                 </div>
@@ -257,15 +257,15 @@ const ProductApprovalDashboard = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-white rounded-lg shadow-sm p-6"
+              className="bg-white rounded-lg shadow-sm p-4 lg:p-6"
             >
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <XCircle className="h-8 w-8 text-red-600" />
+                  <XCircle className="h-6 w-6 lg:h-8 lg:w-8 text-red-600" />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Rejected</p>
-                  <p className="text-2xl font-semibold text-gray-900">
+                <div className="ml-3 lg:ml-4 min-w-0">
+                  <p className="text-xs lg:text-sm font-medium text-gray-600 truncate">Rejected</p>
+                  <p className="text-lg lg:text-2xl font-semibold text-gray-900">
                     {stats?.byStatus?.find(s => s._id === 'rejected')?.count || 0}
                   </p>
                 </div>
@@ -276,15 +276,15 @@ const ProductApprovalDashboard = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="bg-white rounded-lg shadow-sm p-6"
+              className="bg-white rounded-lg shadow-sm p-4 lg:p-6 col-span-2 lg:col-span-1"
             >
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <TrendingUp className="h-8 w-8 text-blue-600" />
+                  <TrendingUp className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600" />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Avg Review Time</p>
-                  <p className="text-2xl font-semibold text-gray-900">
+                <div className="ml-3 lg:ml-4 min-w-0">
+                  <p className="text-xs lg:text-sm font-medium text-gray-600 truncate">Avg Review Time</p>
+                  <p className="text-lg lg:text-2xl font-semibold text-gray-900">
                     {stats?.approvalTimes?.avgApprovalTimeHours 
                       ? `${Math.round(stats?.approvalTimes?.avgApprovalTimeHours)}h`
                       : 'N/A'
@@ -297,40 +297,43 @@ const ProductApprovalDashboard = () => {
         )}
 
         {/* Tabs and Search */}
-        <div className="bg-white rounded-lg shadow-sm mb-6">
+        <div className="bg-white rounded-lg shadow-sm mb-4 lg:mb-6">
           <div className="border-b border-gray-200">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4">
-              <nav className="flex space-x-8">
-                {[
-                  { key: 'pending', label: 'Pending Review', count: stats?.byStatus?.find(s => s._id === 'pending')?.count || 0 },
-                  { key: 'all', label: 'All Products', count: stats?.total || 0 },
-                  { key: 'approved', label: 'Approved', count: stats?.byStatus?.find(s => s._id === 'approved')?.count || 0 },
-                  { key: 'rejected', label: 'Rejected', count: stats?.byStatus?.find(s => s._id === 'rejected')?.count || 0 }
-                ].map((tab) => (
-                  <button
-                    key={tab.key}
-                    onClick={() => dispatch(setActiveTab(tab.key))}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === tab.key
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    {tab.label} ({tab.count})
-                  </button>
-                ))}
-              </nav>
-
-              <div className="mt-4 sm:mt-0 relative">
+            <div className="flex flex-col gap-4 p-4">
+              {/* Search Bar - Mobile First */}
+              <div className="relative lg:order-2">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
                   placeholder="Search products..."
                   value={searchTerm}
                   onChange={(e) => dispatch(setSearchTerm(e.target.value))}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 />
               </div>
+
+              {/* Tabs - Scrollable on mobile */}
+              <nav className="flex space-x-1 overflow-x-auto scrollbar-hide lg:order-1 lg:space-x-8">
+                {[
+                  { key: 'pending', label: 'Pending', longLabel: 'Pending Review', count: stats?.byStatus?.find(s => s._id === 'pending')?.count || 0 },
+                  { key: 'all', label: 'All', longLabel: 'All Products', count: stats?.total || 0 },
+                  { key: 'approved', label: 'Approved', longLabel: 'Approved', count: stats?.byStatus?.find(s => s._id === 'approved')?.count || 0 },
+                  { key: 'rejected', label: 'Rejected', longLabel: 'Rejected', count: stats?.byStatus?.find(s => s._id === 'rejected')?.count || 0 }
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => dispatch(setActiveTab(tab.key))}
+                    className={`flex-shrink-0 py-2 px-3 lg:px-1 border-b-2 font-medium text-xs lg:text-sm whitespace-nowrap ${
+                      activeTab === tab.key
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className="lg:hidden">{tab.label} ({tab.count})</span>
+                    <span className="hidden lg:inline">{tab.longLabel} ({tab.count})</span>
+                  </button>
+                ))}
+              </nav>
             </div>
           </div>
 
@@ -344,87 +347,101 @@ const ProductApprovalDashboard = () => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ delay: index * 0.05 }}
-                  className="p-6 hover:bg-gray-50"
+                  className="p-4 lg:p-6 hover:bg-gray-50"
                 >
-                  <div className="flex items-start space-x-4">
-                    <img
-                      src={product.image || '/placeholder-product.jpg'}
-                      alt={product.title}
-                      className="w-16 h-16 rounded-lg object-cover"
-                    />
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-medium text-gray-900 truncate">
-                            {product.title}
-                          </h3>
-                          <p className="text-sm text-gray-500 mt-1">
-                            {product.description?.substring(0, 100)}...
-                          </p>
-                          
-                          <div className="flex items-center space-x-4 mt-3">
-                            <span className="text-sm text-gray-600">
-                              <ShoppingBag className="w-4 h-4 inline mr-1" />
-                              {product.category}
-                            </span>
-                            <span className="text-sm text-gray-600">
-                              <User className="w-4 h-4 inline mr-1" />
-                              {product.createdBy?.userName}
-                            </span>
-                            <span className="text-sm text-gray-600">
-                              <Calendar className="w-4 h-4 inline mr-1" />
-                              {new Date(product.submittedAt).toLocaleDateString()}
-                            </span>
+                  <div className="flex flex-col lg:flex-row lg:items-start space-y-3 lg:space-y-0 lg:space-x-4">
+                    <div className="flex items-start space-x-3 lg:space-x-4">
+                      <img
+                        src={product.image || '/placeholder-product.jpg'}
+                        alt={product.title}
+                        className="w-12 h-12 lg:w-16 lg:h-16 rounded-lg object-cover flex-shrink-0"
+                      />
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-base lg:text-lg font-medium text-gray-900 truncate">
+                              {product.title}
+                            </h3>
+                            <p className="text-sm text-gray-500 mt-1 line-clamp-2 lg:line-clamp-none">
+                              {product.description?.substring(0, 100)}...
+                            </p>
+                          </div>
+
+                          <div className="flex items-start space-x-2 ml-3 lg:hidden">
+                            <div className="text-right">
+                              <p className="text-base font-semibold text-gray-900">
+                                Gh₵{product.price}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Stock: {product.totalStock}
+                              </p>
+                            </div>
+                            {getStatusBadge(product.approvalStatus)}
                           </div>
                         </div>
-
-                        <div className="flex items-center space-x-3 ml-4">
-                          <div className="text-right">
-                            <p className="text-lg font-semibold text-gray-900">
-                              Gh₵{product.price}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Stock: {product.totalStock}
-                            </p>
-                          </div>
-                          
-                          {getStatusBadge(product.approvalStatus)}
+                        
+                        <div className="flex flex-wrap items-center gap-2 lg:gap-4 mt-2 lg:mt-3">
+                          <span className="text-xs lg:text-sm text-gray-600 flex items-center">
+                            <ShoppingBag className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
+                            {product.category}
+                          </span>
+                          <span className="text-xs lg:text-sm text-gray-600 flex items-center">
+                            <User className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
+                            {product.createdBy?.userName}
+                          </span>
+                          <span className="text-xs lg:text-sm text-gray-600 flex items-center">
+                            <Calendar className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
+                            {new Date(product.submittedAt).toLocaleDateString()}
+                          </span>
                         </div>
                       </div>
+                    </div>
 
-                      {product.approvalStatus === 'pending' && (
-                        <div className="flex items-center space-x-3 mt-4">
-                          <button
-                            onClick={() => handleApproveProduct(product._id)}
-                            disabled={actionLoading === product._id}
-                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 disabled:opacity-50"
-                          >
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            Quick Approve
-                          </button>
-                          
-                          <button
-                            onClick={() => openApprovalModal(product)}
-                            disabled={actionLoading === product._id}
-                            className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-                          >
-                            <Eye className="w-4 h-4 mr-1" />
-                            Review
-                          </button>
-                        </div>
-                      )}
-
-                      {product.approvalComments && (
-                        <div className="mt-3 p-3 bg-gray-100 rounded-lg">
-                          <p className="text-sm text-gray-700">
-                            <MessageSquare className="w-4 h-4 inline mr-1" />
-                            {product.approvalComments}
-                          </p>
-                        </div>
-                      )}
+                    <div className="hidden lg:flex lg:items-center lg:space-x-3">
+                      <div className="text-right">
+                        <p className="text-lg font-semibold text-gray-900">
+                          Gh₵{product.price}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Stock: {product.totalStock}
+                        </p>
+                      </div>
+                      
+                      {getStatusBadge(product.approvalStatus)}
                     </div>
                   </div>
+
+                  {product.approvalStatus === 'pending' && (
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 mt-4">
+                      <button
+                        onClick={() => handleApproveProduct(product._id)}
+                        disabled={actionLoading === product._id}
+                        className="w-full sm:w-auto inline-flex items-center justify-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 disabled:opacity-50"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Quick Approve
+                      </button>
+                      
+                      <button
+                        onClick={() => openApprovalModal(product)}
+                        disabled={actionLoading === product._id}
+                        className="w-full sm:w-auto inline-flex items-center justify-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        <Eye className="w-4 h-4 mr-1" />
+                        Review
+                      </button>
+                    </div>
+                  )}
+
+                  {product.approvalComments && (
+                    <div className="mt-3 p-3 bg-gray-100 rounded-lg">
+                      <p className="text-sm text-gray-700">
+                        <MessageSquare className="w-4 h-4 inline mr-1" />
+                        {product.approvalComments}
+                      </p>
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -485,60 +502,60 @@ const ProductApprovalDashboard = () => {
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto mx-4"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-gray-900">
+                <div className="p-4 lg:p-6">
+                  <div className="flex items-start justify-between mb-4 lg:mb-6">
+                    <h2 className="text-lg lg:text-xl font-semibold text-gray-900 pr-4">
                       Review Product: {selectedProduct.title}
                     </h2>
                     <button
                       onClick={() => dispatch(closeModal())}
-                      className="text-gray-400 hover:text-gray-600"
+                      className="text-gray-400 hover:text-gray-600 flex-shrink-0"
                     >
-                      <XCircle className="w-6 h-6" />
+                      <XCircle className="w-5 h-5 lg:w-6 lg:h-6" />
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-4 lg:mb-6">
                     <div>
                       <img
                         src={selectedProduct.image || '/placeholder-product.jpg'}
                         alt={selectedProduct.title}
-                        className="w-full h-48 object-cover rounded-lg"
+                        className="w-full h-40 lg:h-48 object-cover rounded-lg"
                       />
                     </div>
                     
                     <div className="space-y-3">
                       <div>
                         <label className="text-sm font-medium text-gray-700">Price</label>
-                        <p className="text-lg font-semibold">Gh₵{selectedProduct.price}</p>
+                        <p className="text-base lg:text-lg font-semibold">Gh₵{selectedProduct.price}</p>
                       </div>
                       
                       <div>
                         <label className="text-sm font-medium text-gray-700">Category</label>
-                        <p>{selectedProduct.category}</p>
+                        <p className="text-sm lg:text-base">{selectedProduct.category}</p>
                       </div>
                       
                       <div>
                         <label className="text-sm font-medium text-gray-700">Stock</label>
-                        <p>{selectedProduct.totalStock} units</p>
+                        <p className="text-sm lg:text-base">{selectedProduct.totalStock} units</p>
                       </div>
                       
                       <div>
                         <label className="text-sm font-medium text-gray-700">Submitted by</label>
-                        <p>{selectedProduct.createdBy?.userName}</p>
+                        <p className="text-sm lg:text-base">{selectedProduct.createdBy?.userName}</p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mb-6">
+                  <div className="mb-4 lg:mb-6">
                     <label className="text-sm font-medium text-gray-700">Description</label>
-                    <p className="text-gray-600 mt-1">{selectedProduct.description}</p>
+                    <p className="text-gray-600 mt-1 text-sm lg:text-base">{selectedProduct.description}</p>
                   </div>
 
-                  <div className="mb-6">
+                  <div className="mb-4 lg:mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Comments (optional for approval, required for rejection)
                     </label>
@@ -546,15 +563,15 @@ const ProductApprovalDashboard = () => {
                       value={approvalComments}
                       onChange={(e) => setApprovalComments(e.target.value)}
                       rows={4}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
                       placeholder="Add comments about image quality, content appropriateness, etc..."
                     />
                   </div>
 
-                  <div className="flex items-center justify-end space-x-3">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3">
                     <button
                       onClick={() => dispatch(closeModal())}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                      className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
                     >
                       Cancel
                     </button>
@@ -562,7 +579,7 @@ const ProductApprovalDashboard = () => {
                     <button
                       onClick={() => handleRejectProduct(selectedProduct._id, approvalComments)}
                       disabled={actionLoading === selectedProduct._id}
-                      className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 disabled:opacity-50"
+                      className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 disabled:opacity-50"
                     >
                       <XCircle className="w-4 h-4 mr-1 inline" />
                       Reject
@@ -571,7 +588,7 @@ const ProductApprovalDashboard = () => {
                     <button
                       onClick={() => handleApproveProduct(selectedProduct._id, approvalComments)}
                       disabled={actionLoading === selectedProduct._id}
-                      className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 disabled:opacity-50"
+                      className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 disabled:opacity-50"
                     >
                       <CheckCircle className="w-4 h-4 mr-1 inline" />
                       Approve
