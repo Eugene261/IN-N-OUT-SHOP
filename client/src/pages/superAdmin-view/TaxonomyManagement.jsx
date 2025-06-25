@@ -173,7 +173,7 @@ const TaxonomyManagement = () => {
               <button
                 onClick={handlePopulateTaxonomy}
                 disabled={isPopulating}
-                className="flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                className="flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm sm:text-base w-full sm:w-auto"
               >
                 {isPopulating ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -184,7 +184,7 @@ const TaxonomyManagement = () => {
               </button>
 
               {/* Search */}
-              <div className="relative">
+              <div className="relative w-full sm:w-auto">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
@@ -209,12 +209,12 @@ const TaxonomyManagement = () => {
       {/* Tab Navigation */}
       <div className="bg-white border-b border-gray-200 overflow-x-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-4 sm:space-x-8 min-w-max" aria-label="Tabs">
+          <nav className="flex space-x-2 sm:space-x-4 lg:space-x-8 min-w-max pb-2 sm:pb-0" aria-label="Tabs">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id)}
-                className={`relative py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200 whitespace-nowrap ${
+                className={`relative py-3 sm:py-4 px-2 sm:px-3 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200 whitespace-nowrap flex-shrink-0 ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -222,9 +222,9 @@ const TaxonomyManagement = () => {
               >
                 <div className="flex items-center space-x-1 sm:space-x-2">
                   <tab.icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                  <span className="sm:hidden">{tab.label.substring(0, 3)}</span>
-                  <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs rounded-full ${
+                  <span className="hidden xs:inline sm:inline">{tab.label}</span>
+                  <span className="xs:hidden sm:hidden">{tab.label.substring(0, 3)}</span>
+                  <span className={`px-1 sm:px-1.5 lg:px-2 py-0.5 sm:py-1 text-xs rounded-full ${
                     activeTab === tab.id
                       ? 'bg-blue-100 text-blue-600'
                       : 'bg-gray-100 text-gray-600'

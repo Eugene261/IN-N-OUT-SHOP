@@ -153,19 +153,19 @@ const SubcategoryManager = ({ searchTerm, isLoading, error }) => {
   return (
     <div className="space-y-6">
       {/* Header Actions */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <h2 className="text-2xl font-bold text-gray-900">Subcategories</h2>
-          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+      <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+        <div className="flex items-center space-x-3 sm:space-x-4">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Subcategories</h2>
+          <span className="px-2 sm:px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs sm:text-sm font-medium">
             {filteredSubcategories.length} total
           </span>
         </div>
         
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-3">
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="all">All Categories</option>
             {categories.map(category => (
@@ -177,7 +177,7 @@ const SubcategoryManager = ({ searchTerm, isLoading, error }) => {
           
           <button
             onClick={() => setShowInactive(!showInactive)}
-            className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto ${
               showInactive 
                 ? 'bg-gray-100 text-gray-700' 
                 : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
@@ -189,7 +189,7 @@ const SubcategoryManager = ({ searchTerm, isLoading, error }) => {
           
           <button
             onClick={handleCreateSubcategory}
-            className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center justify-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm w-full sm:w-auto"
           >
             <Plus className="w-4 h-4" />
             <span>Add Subcategory</span>
