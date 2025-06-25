@@ -180,7 +180,7 @@ function EnhancedFeaturedVideos() {
 
   const scroll = (direction) => {
     if (scrollContainerRef.current) {
-      const scrollAmount = 280; // Width of one card plus gap
+      const scrollAmount = window.innerWidth >= 1024 ? 360 : 300; // Larger scroll for larger cards
       const currentScroll = scrollContainerRef.current.scrollLeft;
       const newScroll = direction === 'left' 
         ? currentScroll - scrollAmount 
@@ -268,7 +268,7 @@ function EnhancedFeaturedVideos() {
           <div className="relative">
             <div 
               ref={scrollContainerRef}
-              className="flex gap-4 overflow-x-auto scrollbar-hide pb-4"
+              className="flex gap-4 lg:gap-6 overflow-x-auto scrollbar-hide pb-4"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               {featuredVideos.map((video, index) => {
@@ -285,12 +285,11 @@ function EnhancedFeaturedVideos() {
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.6, delay: index * 0.1 }}
-                    className="flex-none group relative bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md border border-gray-100 transition-all duration-300"
-                    style={{ width: '260px' }} // Fixed width to show peek of next card
+                    className="flex-none group relative bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md border border-gray-100 transition-all duration-300 w-72 lg:w-80"
                   >
-                    {/* Video Container - Product card height */}
+                    {/* Video Container - Responsive dimensions */}
                     <div 
-                      className="relative aspect-[4/3] overflow-hidden cursor-pointer"
+                      className="relative aspect-[3/2] lg:aspect-[16/10] overflow-hidden cursor-pointer"
                       onClick={(e) => handleVideoTap(e, video._id)}
                     >
                       <video
@@ -316,7 +315,7 @@ function EnhancedFeaturedVideos() {
                           whileTap={{ scale: 0.9 }}
                           className={`${
                             isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'
-                          } transition-all duration-300 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg`}
+                          } transition-all duration-300 bg-white/90 hover:bg-white rounded-full p-3 lg:p-4 shadow-lg`}
                           onClick={(e) => {
                             e.stopPropagation();
                             const videoRef = videoRefs.current[video._id];
@@ -328,9 +327,9 @@ function EnhancedFeaturedVideos() {
                           }}
                         >
                           {isPlaying ? (
-                            <Pause className="h-5 w-5 text-gray-700 fill-current" />
+                            <Pause className="h-5 w-5 lg:h-6 lg:w-6 text-gray-700 fill-current" />
                           ) : (
-                            <Play className="h-5 w-5 text-gray-700 fill-current ml-0.5" />
+                            <Play className="h-5 w-5 lg:h-6 lg:w-6 text-gray-700 fill-current ml-0.5" />
                           )}
                         </motion.button>
                       </div>
@@ -385,25 +384,25 @@ function EnhancedFeaturedVideos() {
                       )}
                     </div>
 
-                    {/* Video Info - Compact design */}
-                    <div className="p-3">
-                      <h3 className="font-semibold text-gray-900 mb-1 text-sm leading-tight line-clamp-1">
+                    {/* Video Info - Responsive design */}
+                    <div className="p-3 lg:p-4">
+                      <h3 className="font-semibold text-gray-900 mb-1 lg:mb-2 text-sm lg:text-base leading-tight line-clamp-1">
                         {video.title}
                       </h3>
                       
-                      <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-                        <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-between text-xs lg:text-sm text-gray-500 mb-2">
+                        <div className="flex items-center gap-3 lg:gap-4">
                           <span className="flex items-center gap-1">
-                            <Heart className="h-3 w-3" />
+                            <Heart className="h-3 w-3 lg:h-4 lg:w-4" />
                             {likeCount}
                           </span>
                           <span className="flex items-center gap-1">
-                            <Eye className="h-3 w-3" />
+                            <Eye className="h-3 w-3 lg:h-4 lg:w-4" />
                             {formatViews(video.views)}
                           </span>
                         </div>
                         <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
+                          <Clock className="h-3 w-3 lg:h-4 lg:w-4" />
                           {formatDuration(video.duration)}
                         </span>
                       </div>
@@ -412,15 +411,15 @@ function EnhancedFeaturedVideos() {
                         <motion.button
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
-                          className="text-xs text-gray-600 hover:text-gray-900 flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-full w-full justify-center"
+                          className="text-xs lg:text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1 lg:gap-2 bg-gray-50 px-2 lg:px-3 py-1 lg:py-1.5 rounded-full w-full justify-center"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleVendorClick(video);
                           }}
                         >
-                          <User className="h-3 w-3" />
+                          <User className="h-3 w-3 lg:h-4 lg:w-4" />
                           {video.vendorId.shopName || video.vendorId.userName}
-                          <ArrowRight className="h-3 w-3" />
+                          <ArrowRight className="h-3 w-3 lg:h-4 lg:w-4" />
                         </motion.button>
                       )}
                     </div>
