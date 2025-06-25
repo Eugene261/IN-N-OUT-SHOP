@@ -155,3 +155,15 @@
 .animate-shimmer {
   animation: shimmer 2s infinite;
 }
+
+/* Scrollbar hide utility */
+.scrollbar-hide {
+  /* Firefox */
+  scrollbar-width: none;
+  /* Safari and Chrome */
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
