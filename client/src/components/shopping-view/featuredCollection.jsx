@@ -28,9 +28,9 @@ const FeaturedCollection = () => {
     console.error('Error loading featured collections:', error);
   }
   
-  // Use the first active collection or fallback to default content
+  // Use the first active collection sorted by position, or fallback to default content
   const activeCollection = collections && collections.length > 0 
-    ? collections.find(collection => collection.active) 
+    ? collections.find(collection => collection.isActive === true) || collections[0]
     : null;
 
   return (
@@ -50,14 +50,14 @@ const FeaturedCollection = () => {
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.6 }}
         >
-          <motion.h2
+          <motion.h3
             className="text-lg font-semibold text-gray-700 mb-2"
             initial={{ y: 10 }}
             animate={{ y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            {activeCollection ? activeCollection.subtitle || 'Your Perfect Marketplace' : 'Your Perfect Marketplace'}
-          </motion.h2>
+            {activeCollection ? 'Featured Collection' : 'Your Perfect Marketplace'}
+          </motion.h3>
           
           <motion.h2
             className='text-4xl lg:text-5xl xl:text-6xl font-bold mb-6 leading-tight'
@@ -66,7 +66,7 @@ const FeaturedCollection = () => {
             transition={{ delay: 0.4 }}
           >
             {activeCollection ? (
-              <span dangerouslySetInnerHTML={{ __html: activeCollection.title || 'Buy Amazing Products or <span class="text-green-600">Sell</span> Your Own' }} />
+              <span>{activeCollection.title}</span>
             ) : (
               <span>Buy Amazing Products or <span className="text-green-600">Sell</span> Your Own</span>
             )}
@@ -78,7 +78,8 @@ const FeaturedCollection = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
           >
-            {activeCollection ? activeCollection.description : 
+            {activeCollection && activeCollection.description ? 
+              activeCollection.description :
               'Join thousands of buyers and sellers in our thriving marketplace. Discover unique products from trusted vendors or start your own business and reach customers nationwide.'}
           </motion.p>
           
@@ -89,7 +90,7 @@ const FeaturedCollection = () => {
             transition={{ type: 'spring', stiffness: 200 }}
           >
             <Link 
-              to={activeCollection && activeCollection.link ? activeCollection.link : '/shop/listing'} 
+              to={activeCollection && activeCollection.linkTo ? activeCollection.linkTo : '/shop/listing'} 
               className='inline-block bg-black text-white px-8 py-4 rounded-xl
               text-lg font-medium hover:bg-gray-800 transition-all duration-300
               shadow-md hover:shadow-lg text-center'
@@ -117,7 +118,7 @@ const FeaturedCollection = () => {
         >
           <div className="relative before:absolute before:inset-0 before:bg-gradient-to-r before:from-green-50/50 before:to-transparent lg:before:hidden">
             <motion.img 
-              src={activeCollection && activeCollection.imageUrl ? activeCollection.imageUrl : featured} 
+              src={activeCollection && activeCollection.image ? activeCollection.image : featured} 
               alt={activeCollection ? activeCollection.title || 'Featured collection' : 'Featured collection'}
               className='w-full h-[400px] lg:h-[500px] object-cover object-center
               rounded-3xl lg:rounded-none'

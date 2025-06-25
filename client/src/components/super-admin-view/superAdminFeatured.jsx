@@ -9,6 +9,7 @@ import { fetchFeaturedProducts } from '../../store/super-admin/products-slice/in
 import { getFeatureImages, deleteFeatureImage, addFeatureImage, addFeatureMedia } from '../../store/common-slice/index';
 import { createFeaturedCollection, updateFeaturedCollection, fetchFeaturedCollections } from '../../store/superAdmin/featured-collection-slice';
 import { API_BASE_URL } from '@/config/api';
+import { toast } from 'sonner';
 import { 
   Star, 
   Zap, 
@@ -721,55 +722,57 @@ const SuperAdminFeatured = () => {
           {showCollectionForm ? (
             <FeaturedCollectionForm 
               initialData={editingCollection} 
-              onSubmit={(formData) => {
+              onSubmit={async (formData) => {
                 console.log('Form submitted with data:', formData);
                 
-                // Create a FormData object for image upload if needed
-                const submitData = new FormData();
-                
-                // Add all form fields to the FormData
-                submitData.append('title', formData.title);
-                submitData.append('description', formData.description);
-                submitData.append('linkTo', formData.linkTo);
-                submitData.append('position', formData.position);
-                submitData.append('isActive', formData.isActive);
-                
-                // If there's a new image file, add it to the FormData
-                if (formData.imageFile) {
-                  submitData.append('image', formData.imageFile);
-                } else if (formData.image) {
-                  // If using an existing image URL
-                  submitData.append('imageUrl', formData.image);
-                }
-                
-                // Dispatch the appropriate action based on whether we're editing or creating
-                if (editingCollection) {
-                  dispatch(updateFeaturedCollection({ 
-                    id: editingCollection._id, 
-                    data: submitData 
-                  }))
-                    .unwrap()
-                    .then(() => {
-                      // Refresh the collections list
-                      dispatch(fetchFeaturedCollections());
-                      setShowCollectionForm(false);
-                      setEditingCollection(null);
-                    })
-                    .catch(error => {
-                      console.error('Failed to update collection:', error);
-                    });
-                } else {
-                  dispatch(createFeaturedCollection(submitData))
-                    .unwrap()
-                    .then(() => {
-                      // Refresh the collections list
-                      dispatch(fetchFeaturedCollections());
-                      setShowCollectionForm(false);
-                      setEditingCollection(null);
-                    })
-                    .catch(error => {
-                      console.error('Failed to create collection:', error);
-                    });
+                try {
+                  let submitData;
+                  
+                  // If there's a new image file, use FormData for multipart upload
+                  if (formData.imageFile) {
+                    submitData = new FormData();
+                    submitData.append('title', formData.title);
+                    submitData.append('description', formData.description);
+                    submitData.append('linkTo', formData.linkTo);
+                    submitData.append('position', formData.position);
+                    submitData.append('isActive', formData.isActive);
+                    submitData.append('image', formData.imageFile);
+                  } else {
+                    // If no new image file, use JSON data
+                    submitData = {
+                      title: formData.title,
+                      description: formData.description,
+                      linkTo: formData.linkTo,
+                      position: parseInt(formData.position),
+                      isActive: formData.isActive
+                    };
+                    
+                    // Include existing image URL if available
+                    if (formData.image) {
+                      submitData.image = formData.image;
+                    }
+                  }
+                  
+                  // Dispatch the appropriate action
+                  if (editingCollection) {
+                    await dispatch(updateFeaturedCollection({ 
+                      id: editingCollection._id, 
+                      data: submitData 
+                    })).unwrap();
+                    toast.success('Featured collection updated successfully!');
+                  } else {
+                    await dispatch(createFeaturedCollection(submitData)).unwrap();
+                    toast.success('Featured collection created successfully!');
+                  }
+                  
+                  // Refresh the collections list and close form
+                  dispatch(fetchFeaturedCollections());
+                  setShowCollectionForm(false);
+                  setEditingCollection(null);
+                  
+                } catch (error) {
+                  console.error('Failed to save collection:', error);
+                  toast.error(error.message || 'Failed to save featured collection');
                 }
               }}
               onCancel={() => {
