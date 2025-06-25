@@ -214,7 +214,7 @@ const ProductApprovalDashboard = () => {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Pending Review</p>
                   <p className="text-2xl font-semibold text-gray-900">
-                    {stats.stats.byStatus.find(s => s._id === 'pending')?.count || 0}
+                    {stats?.byStatus?.find(s => s._id === 'pending')?.count || 0}
                   </p>
                 </div>
               </div>
@@ -233,7 +233,7 @@ const ProductApprovalDashboard = () => {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Approved</p>
                   <p className="text-2xl font-semibold text-gray-900">
-                    {stats.stats.byStatus.find(s => s._id === 'approved')?.count || 0}
+                    {stats?.byStatus?.find(s => s._id === 'approved')?.count || 0}
                   </p>
                 </div>
               </div>
@@ -252,7 +252,7 @@ const ProductApprovalDashboard = () => {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Rejected</p>
                   <p className="text-2xl font-semibold text-gray-900">
-                    {stats.stats.byStatus.find(s => s._id === 'rejected')?.count || 0}
+                    {stats?.byStatus?.find(s => s._id === 'rejected')?.count || 0}
                   </p>
                 </div>
               </div>
@@ -271,8 +271,8 @@ const ProductApprovalDashboard = () => {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Avg Review Time</p>
                   <p className="text-2xl font-semibold text-gray-900">
-                    {stats.stats.approvalTimes?.avgApprovalTimeHours 
-                      ? `${Math.round(stats.stats.approvalTimes.avgApprovalTimeHours)}h`
+                    {stats?.approvalTimes?.avgApprovalTimeHours 
+                      ? `${Math.round(stats?.approvalTimes?.avgApprovalTimeHours)}h`
                       : 'N/A'
                     }
                   </p>
@@ -288,10 +288,10 @@ const ProductApprovalDashboard = () => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4">
               <nav className="flex space-x-8">
                 {[
-                  { key: 'pending', label: 'Pending Review', count: stats?.stats.byStatus.find(s => s._id === 'pending')?.count || 0 },
-                  { key: 'all', label: 'All Products', count: stats?.stats.total || 0 },
-                  { key: 'approved', label: 'Approved', count: stats?.stats.byStatus.find(s => s._id === 'approved')?.count || 0 },
-                  { key: 'rejected', label: 'Rejected', count: stats?.stats.byStatus.find(s => s._id === 'rejected')?.count || 0 }
+                  { key: 'pending', label: 'Pending Review', count: stats?.byStatus?.find(s => s._id === 'pending')?.count || 0 },
+                  { key: 'all', label: 'All Products', count: stats?.total || 0 },
+                  { key: 'approved', label: 'Approved', count: stats?.byStatus?.find(s => s._id === 'approved')?.count || 0 },
+                  { key: 'rejected', label: 'Rejected', count: stats?.byStatus?.find(s => s._id === 'rejected')?.count || 0 }
                 ].map((tab) => (
                   <button
                     key={tab.key}
