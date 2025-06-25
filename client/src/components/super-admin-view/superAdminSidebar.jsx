@@ -111,7 +111,7 @@ function SuperAdminSidebar({ onItemClick, onClose }) {
   const isProfileActive = location.pathname.includes('/super-admin/profile');
 
   return (
-    <div className="h-full flex flex-col bg-white border-r border-gray-200 text-gray-900 relative">
+    <div className="h-full flex flex-col bg-white border-r border-gray-200 text-gray-900 relative overflow-hidden">
       {/* Close button - only visible on mobile */}
       <motion.button
         className="lg:hidden absolute top-4 right-4 p-1.5 rounded-full text-gray-500 hover:text-black z-10"
@@ -124,7 +124,8 @@ function SuperAdminSidebar({ onItemClick, onClose }) {
         <X className="h-5 w-5" />
       </motion.button>
       
-      <div className="p-4 border-b border-gray-200">
+      {/* Header - Fixed */}
+      <div className="flex-shrink-0 p-4 border-b border-gray-200">
         <Link to="/super-admin/dashboard" className="flex items-center gap-2 group">
           <motion.div
             whileHover={{ rotate: 180 }}
@@ -147,9 +148,9 @@ function SuperAdminSidebar({ onItemClick, onClose }) {
         </Link>
       </div>
       
-      {/* Clickable User info - links to profile */}
+      {/* User info - Fixed */}
       <motion.div 
-        className="p-4 border-b border-gray-200"
+        className="flex-shrink-0 p-4 border-b border-gray-200"
         whileHover="hover"
         whileTap="tap"
         variants={userInfoVariants}
@@ -196,8 +197,9 @@ function SuperAdminSidebar({ onItemClick, onClose }) {
         </Link>
       </motion.div>
       
+      {/* Scrollable Menu Section */}
       <motion.div 
-        className="flex-1 py-4 space-y-1"
+        className="flex-1 overflow-y-auto py-4 space-y-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
         initial="hidden"
         animate="visible"
         variants={containerVariants}
@@ -260,7 +262,7 @@ function SuperAdminSidebar({ onItemClick, onClose }) {
         >
           <button
             onClick={handleLogout}
-            className="flex items-center w-full px-3 py-3 rounded-lg text-red-600 hover:bg-red-50"
+            className="flex items-center w-full px-3 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
           >
             <LogOut className="h-5 w-5" />
             <span className="ml-3 font-medium">Sign out</span>
@@ -268,8 +270,9 @@ function SuperAdminSidebar({ onItemClick, onClose }) {
         </motion.div>
       </motion.div>
       
+      {/* Footer - Fixed */}
       <motion.div 
-        className="p-4 text-center text-xs text-gray-500 border-t border-gray-200"
+        className="flex-shrink-0 p-4 text-center text-xs text-gray-500 border-t border-gray-200"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
