@@ -57,14 +57,32 @@ const getFeaturedCollectionById = async (req, res) => {
  */
 const createFeaturedCollection = async (req, res) => {
   try {
-    console.log('Create Featured Collection - Request body:', req.body);
-    console.log('Create Featured Collection - Request file:', req.file ? 'File present' : 'No file');
+    console.log('=== CREATE FEATURED COLLECTION START ===');
+    console.log('Request method:', req.method);
+    console.log('Request headers:', req.headers);
+    console.log('Request body:', req.body);
+    console.log('Request file:', req.file ? {
+      fieldname: req.file.fieldname,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    } : 'No file');
     
     const { title, description, linkTo, position, isActive } = req.body;
     let imageUrl = req.body.imageUrl || req.body.image || ''; // Accept both imageUrl and image fields
     
+    console.log('Extracted fields:', {
+      title,
+      description,
+      linkTo,
+      position,
+      isActive,
+      imageUrl
+    });
+    
     // Validate required fields
     if (!title) {
+      console.log('Validation failed: Title is required');
       return res.status(400).json({
         success: false,
         message: 'Title is required'
@@ -87,28 +105,20 @@ const createFeaturedCollection = async (req, res) => {
         console.error('Error uploading image:', uploadError);
         return res.status(400).json({
           success: false,
-          message: 'Failed to upload image'
+          message: 'Failed to upload image',
+          error: uploadError.message
         });
       }
     }
     
     // Check if we have an image URL after potential upload
     if (!imageUrl) {
-      console.log('No image URL provided');
+      console.log('Validation failed: No image URL provided');
       return res.status(400).json({
         success: false,
         message: 'Image is required'
       });
     }
-    
-    console.log('Creating featured collection with data:', {
-      title,
-      description,
-      image: imageUrl,
-      linkTo: linkTo || '/shop',
-      position: position || 0,
-      isActive: isActive !== undefined ? isActive : true
-    });
     
     // Parse isActive properly (handle string 'true'/'false' from FormData)
     let parsedIsActive = true;
@@ -120,19 +130,24 @@ const createFeaturedCollection = async (req, res) => {
       }
     }
     
-    // Create new featured collection
-    const newCollection = new FeaturedCollection({
+    const collectionData = {
       title,
       description: description || '',
       image: imageUrl,
       linkTo: linkTo || '/shop',
       position: parseInt(position) || 0,
       isActive: parsedIsActive
-    });
+    };
+    
+    console.log('Creating featured collection with data:', collectionData);
+    
+    // Create new featured collection
+    const newCollection = new FeaturedCollection(collectionData);
     
     await newCollection.save();
     
     console.log('Featured collection created successfully:', newCollection._id);
+    console.log('=== CREATE FEATURED COLLECTION END ===');
     
     res.status(201).json({
       success: true,
@@ -140,11 +155,18 @@ const createFeaturedCollection = async (req, res) => {
       data: newCollection
     });
   } catch (error) {
-    console.error('Error creating featured collection:', error);
+    console.error('=== CREATE FEATURED COLLECTION ERROR ===');
+    console.error('Error type:', error.constructor.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', error);
+    console.error('=== END ERROR DETAILS ===');
+    
     res.status(500).json({
       success: false,
       message: 'Failed to create featured collection',
-      error: error.message
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 };

@@ -44,19 +44,42 @@ export const createFeaturedCollection = createAsyncThunk(
   'featuredCollections/create',
   async (collectionData, { rejectWithValue }) => {
     try {
+      console.log('Redux: Creating featured collection with data:', collectionData);
+      console.log('Redux: Data type:', collectionData instanceof FormData ? 'FormData' : 'JSON');
+      
+      // Determine if we're sending FormData or JSON
+      const isFormData = collectionData instanceof FormData;
+      
+      const config = {
+        withCredentials: true,
+        headers: {}
+      };
+      
+      // Only set Content-Type for JSON data, let browser set it for FormData
+      if (!isFormData) {
+        config.headers['Content-Type'] = 'application/json';
+      }
+      
+      console.log('Redux: Request config:', config);
+      
       const response = await axios.post(
         `${API_BASE_URL}/api/superAdmin/featured-collections`,
         collectionData,
-        {
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
+        config
       );
+      
+      console.log('Redux: Create collection response:', response.data);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Failed to create collection');
+      console.error('Redux: Create collection error:', error);
+      console.error('Redux: Error response:', error.response?.data);
+      
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          error.message || 
+                          'Failed to create collection';
+      
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -64,21 +87,44 @@ export const createFeaturedCollection = createAsyncThunk(
 // Update a featured collection
 export const updateFeaturedCollection = createAsyncThunk(
   'featuredCollections/update',
-  async ({ id, collectionData }, { rejectWithValue }) => {
+  async ({ id, data }, { rejectWithValue }) => {
     try {
+      console.log('Redux: Updating featured collection:', id, 'with data:', data);
+      console.log('Redux: Data type:', data instanceof FormData ? 'FormData' : 'JSON');
+      
+      // Determine if we're sending FormData or JSON
+      const isFormData = data instanceof FormData;
+      
+      const config = {
+        withCredentials: true,
+        headers: {}
+      };
+      
+      // Only set Content-Type for JSON data, let browser set it for FormData
+      if (!isFormData) {
+        config.headers['Content-Type'] = 'application/json';
+      }
+      
+      console.log('Redux: Request config:', config);
+      
       const response = await axios.put(
         `${API_BASE_URL}/api/superAdmin/featured-collections/${id}`,
-        collectionData,
-        {
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
+        data,
+        config
       );
+      
+      console.log('Redux: Update collection response:', response.data);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Failed to update collection');
+      console.error('Redux: Update collection error:', error);
+      console.error('Redux: Error response:', error.response?.data);
+      
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          error.message || 
+                          'Failed to update collection';
+      
+      return rejectWithValue(errorMessage);
     }
   }
 );

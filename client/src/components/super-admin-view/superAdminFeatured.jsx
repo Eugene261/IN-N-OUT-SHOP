@@ -724,6 +724,7 @@ const SuperAdminFeatured = () => {
             <FeaturedCollectionForm 
               initialData={editingCollection} 
               onSubmit={async (formData) => {
+                console.log('=== FORM SUBMISSION START ===');
                 console.log('Form submitted with data:', formData);
                 
                 try {
@@ -763,6 +764,8 @@ const SuperAdminFeatured = () => {
                     console.log('JSON data:', submitData);
                   }
                   
+                  console.log('Dispatching action:', editingCollection ? 'UPDATE' : 'CREATE');
+                  
                   // Dispatch the appropriate action
                   if (editingCollection) {
                     await dispatch(updateFeaturedCollection({ 
@@ -779,13 +782,32 @@ const SuperAdminFeatured = () => {
                   dispatch(fetchFeaturedCollections());
                   setShowCollectionForm(false);
                   setEditingCollection(null);
+                  console.log('=== FORM SUBMISSION SUCCESS ===');
                   
                 } catch (error) {
-                  console.error('Failed to save collection:', error);
-                  toast.error(error.message || 'Failed to save featured collection');
+                  console.error('=== FORM SUBMISSION ERROR ===');
+                  console.error('Error type:', error.constructor.name);
+                  console.error('Error message:', error.message);
+                  console.error('Error object:', error);
+                  
+                  // Try to get more detailed error information
+                  let errorMessage = 'Failed to save featured collection';
+                  if (error.message) {
+                    errorMessage = error.message;
+                  } else if (error.error) {
+                    errorMessage = error.error;
+                  } else if (typeof error === 'string') {
+                    errorMessage = error;
+                  }
+                  
+                  console.error('Final error message:', errorMessage);
+                  console.error('=== END FORM SUBMISSION ERROR ===');
+                  
+                  toast.error(errorMessage);
                 }
               }}
               onCancel={() => {
+                console.log('Cancel button clicked - closing form');
                 setShowCollectionForm(false);
                 setEditingCollection(null);
               }}

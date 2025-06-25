@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 
 // Button component from previous implementation
 const buttonVariants = (options) => {
@@ -37,15 +37,21 @@ const buttonVariants = (options) => {
   return `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${glowClass} ${glowColorClass} ${className}`;
 };
 
-function Button({ children, variant, size, glow, className }) {
+const Button = forwardRef(({ children, variant, size, glow, className, ...props }, ref) => {
   return (
-    <button className={buttonVariants({ variant, size, glow, className })}>
+    <button 
+      ref={ref}
+      className={buttonVariants({ variant, size, glow, className })}
+      {...props}
+    >
       {children}
     </button>
   );
-}
+});
 
-export default function ButtonPreview() {
+Button.displayName = "Button";
+
+function ButtonPreview() {
   const [darkMode, setDarkMode] = useState(false);
   
   return (
@@ -104,5 +110,5 @@ export default function ButtonPreview() {
   );
 }
 
-
+export default ButtonPreview;
 export { Button, buttonVariants };
