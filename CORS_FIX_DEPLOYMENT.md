@@ -60,7 +60,7 @@ git push origin main
 2. Add/Update these variables:
    - `VITE_API_URL` = `https://api.in-nd-out.com`
    - `VITE_APP_URL` = `https://www.in-nd-out.com`
-
+ghshjj
 ### 3. Redeploy Both Projects
 After updating environment variables, trigger a new deployment for both projects:
 1. Go to Vercel Dashboard → Your Project → Deployments
