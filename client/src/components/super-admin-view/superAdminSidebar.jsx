@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import {   LayoutDashboard,   Users,   ShoppingBag,   Package,   Star,   LogOut,   X,  DollarSign,  Crown,  FolderTree,  Video} from 'lucide-react';
+import {   LayoutDashboard,   Users,   ShoppingBag,   Package,   Star,   LogOut,   X,  DollarSign,  Crown,  FolderTree,  Video, CheckCircle, MessageSquare} from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { logoutUser } from '../../store/auth-slice';
 
@@ -31,6 +31,12 @@ const menuItems = [
     icon: <Package className="h-5 w-5" />
   },
   {
+    id: 'product-approval',
+    label: 'Product Approval',
+    path: '/super-admin/product-approval',
+    icon: <CheckCircle className="h-5 w-5" />
+  },
+  {
     id: 'featured',
     label: 'Featured',
     path: '/super-admin/featured',
@@ -47,6 +53,12 @@ const menuItems = [
     label: 'Taxonomy',
     path: '/super-admin/taxonomy',
     icon: <FolderTree className="h-5 w-5" />
+  },
+  {
+    id: 'messaging',
+    label: 'Messages',
+    path: '/super-admin/messaging',
+    icon: <MessageSquare className="h-5 w-5" />
   },
   {
     id: 'vendor-payments',

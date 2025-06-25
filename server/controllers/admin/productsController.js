@@ -2,6 +2,8 @@ const { ImageUploadUtil } = require("../../helpers/cloudinary");
 const Product = require('../../models/Products.js');
 const User = require('../../models/User.js');
 const emailService = require('../../services/emailService.js');
+const { featureFlags } = require('../../utils/featureFlags');
+const cloudinary = require('cloudinary').v2;
 
 const handleImageUpload = async (req, res) => {
     try {
@@ -80,6 +82,26 @@ const addProduct = async(req, res) => {
         const adminId = req.user.id;
         console.log('Admin ID extracted:', adminId);
 
+        // ========================================
+        // PRODUCT APPROVAL INTEGRATION
+        // ========================================
+        
+        // Determine initial approval status based on feature flags
+        let initialApprovalStatus = 'approved'; // Default for backward compatibility
+        let requiresApproval = false;
+        
+        if (featureFlags.isProductApprovalEnabled()) {
+            // Check if this admin should auto-approve
+            if (featureFlags.shouldAutoApprove(adminId)) {
+                initialApprovalStatus = 'approved';
+                console.log('Auto-approving product for trusted admin:', adminId);
+            } else {
+                initialApprovalStatus = 'pending';
+                requiresApproval = true;
+                console.log('Product requires approval for admin:', adminId);
+            }
+        }
+
         const newlyCreatedProducts = new Product({
             image, 
             additionalImages: additionalImages || [],
@@ -95,58 +117,135 @@ const addProduct = async(req, res) => {
             colors: colors || [],
             isBestseller: isBestseller || false,
             isNewArrival: isNewArrival || false,
-            createdBy: adminId
+            createdBy: adminId,
+            
+            // ========================================
+            // APPROVAL SYSTEM FIELDS
+            // ========================================
+            approvalStatus: initialApprovalStatus,
+            submittedAt: new Date(),
+            approvedAt: initialApprovalStatus === 'approved' ? new Date() : null,
+            approvalComments: initialApprovalStatus === 'approved' ? 'Auto-approved' : '',
+            qualityScore: 85 // Default good score
         });
 
-        console.log('Saving product with data:', newlyCreatedProducts);
+        console.log('Saving product with approval status:', initialApprovalStatus);
         const savedProduct = await newlyCreatedProducts.save();
-        console.log('Product saved successfully:', savedProduct);
+        console.log('Product saved successfully:', savedProduct._id);
         
-        // Send notification to SuperAdmins about new product
+        // ========================================
+        // NOTIFICATION LOGIC
+        // ========================================
+        
         try {
-            const superAdmins = await User.find({ role: 'superAdmin' });
             const admin = await User.findById(adminId);
             
-            if (admin && superAdmins.length > 0) {
-                for (const superAdmin of superAdmins) {
-                    await emailService.sendProductAddedNotificationEmail(
-                        superAdmin.email,
-                        {
-                            userName: admin.userName,
-                            email: admin.email,
-                            shopName: admin.shopName,
-                            createdAt: admin.createdAt
-                        },
-                        {
-                            id: savedProduct._id,
-                            title: savedProduct.title,
-                            description: savedProduct.description,
-                            price: savedProduct.price,
-                            category: savedProduct.category,
-                            brand: savedProduct.brand,
-                            totalStock: savedProduct.totalStock,
-                            image: savedProduct.image
-                        }
-                    );
+            if (requiresApproval) {
+                // Send approval request to SuperAdmins
+                const superAdmins = await User.find({ role: 'superAdmin' });
+                
+                if (admin && superAdmins.length > 0) {
+                    for (const superAdmin of superAdmins) {
+                        await emailService.sendProductAddedNotificationEmail(
+                            superAdmin.email,
+                            {
+                                userName: admin.userName,
+                                email: admin.email,
+                                shopName: admin.shopName,
+                                createdAt: admin.createdAt
+                            },
+                            {
+                                id: savedProduct._id,
+                                title: savedProduct.title,
+                                description: savedProduct.description,
+                                price: savedProduct.price,
+                                category: savedProduct.category,
+                                brand: savedProduct.brand,
+                                totalStock: savedProduct.totalStock,
+                                image: savedProduct.image
+                            }
+                        );
+                    }
+                    console.log(`Product approval notifications sent to ${superAdmins.length} SuperAdmins`);
                 }
-                console.log(`Product added notifications sent to ${superAdmins.length} SuperAdmins`);
+                
+                // Send confirmation to admin that product is pending
+                if (admin) {
+                    await emailService.sendEmail({
+                        to: admin.email,
+                        subject: '📋 Product Submitted for Review - ' + savedProduct.title,
+                        html: `
+                            <h2>Product Submitted Successfully!</h2>
+                            <p>Hello ${admin.userName},</p>
+                            <p>Your product "${savedProduct.title}" has been submitted for review.</p>
+                            <p><strong>Status:</strong> Pending Review</p>
+                            <p>You'll receive an email notification once the review is complete.</p>
+                            <p>Thank you for your patience!</p>
+                        `
+                    });
+                }
+                
+            } else {
+                // Product auto-approved - send standard notification if approval system is disabled
+                if (!featureFlags.isProductApprovalEnabled()) {
+                    // Send existing notification logic for backward compatibility
+                    const superAdmins = await User.find({ role: 'superAdmin' });
+                    
+                    if (admin && superAdmins.length > 0) {
+                        for (const superAdmin of superAdmins) {
+                            await emailService.sendProductAddedNotificationEmail(
+                                superAdmin.email,
+                                {
+                                    userName: admin.userName,
+                                    email: admin.email,
+                                    shopName: admin.shopName,
+                                    createdAt: admin.createdAt
+                                },
+                                {
+                                    id: savedProduct._id,
+                                    title: savedProduct.title,
+                                    description: savedProduct.description,
+                                    price: savedProduct.price,
+                                    category: savedProduct.category,
+                                    brand: savedProduct.brand,
+                                    totalStock: savedProduct.totalStock,
+                                    image: savedProduct.image
+                                }
+                            );
+                        }
+                        console.log(`Product added notifications sent to ${superAdmins.length} SuperAdmins`);
+                    }
+                }
             }
         } catch (emailError) {
-            console.error('Failed to send product added notifications:', emailError);
+            console.error('Failed to send notifications:', emailError);
             // Don't fail the product creation if email fails
         }
 
-        res.status(201).json({
+        // ========================================
+        // RESPONSE BASED ON APPROVAL STATUS
+        // ========================================
+        
+        const responseData = {
             success: true,
-            data: savedProduct
-        });
+            data: savedProduct,
+            approvalInfo: {
+                requiresApproval,
+                status: initialApprovalStatus,
+                message: requiresApproval 
+                    ? 'Product submitted for review. You\'ll be notified once approved.' 
+                    : 'Product created and is now live!'
+            }
+        };
+
+        res.status(201).json(responseData);
 
     } catch (error) {
-        console.error('Full error in addProduct:', error);
+        console.log('Error in addProduct:', error);
         res.status(500).json({
             success: false,
-            message: 'An error occurred while adding the product',
-            error: process.env.NODE_ENV === 'development' ? error.message : 'Server error'
+            message: 'An error occurred while creating the product',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 };

@@ -419,7 +419,7 @@ function VideoForm({ initialData, onSubmit, onCancel, isUploading, uploadProgres
               <>
                 <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2 animate-spin" />
                 <span className="hidden sm:inline">
-                  {uploadProgress > 0 ? `Uploading... ${uploadProgress}%` : 'Processing...'}
+                {uploadProgress > 0 ? `Uploading... ${uploadProgress}%` : 'Processing...'}
                 </span>
                 <span className="sm:hidden">
                   {uploadProgress > 0 ? `${uploadProgress}%` : '...'}

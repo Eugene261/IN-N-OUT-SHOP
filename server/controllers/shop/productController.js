@@ -1,5 +1,6 @@
 const Product = require('../../models/Products.js');
 const User = require('../../models/User.js');
+const { featureFlags } = require('../../utils/featureFlags');
 
 const getFilteredProducts = async(req, res) => {
     try {
@@ -9,6 +10,17 @@ const getFilteredProducts = async(req, res) => {
 
         let filters = {};
         let shouldFilterBySubcategory = false;
+
+        // ========================================
+        // PRODUCT APPROVAL INTEGRATION
+        // ========================================
+        
+        // Only show approved products to customers
+        if (featureFlags.isProductApprovalEnabled()) {
+            filters.approvalStatus = 'approved';
+            console.log('Approval system enabled - filtering for approved products only');
+        }
+        // If approval system is disabled, show all products (backward compatibility)
 
         if(category.length){
             // Handle both legacy lowercase categories and new proper case categories
@@ -243,7 +255,19 @@ const getProductDetails = async (req, res) => {
             message : 'Product not found!'
         })
 
-
+        // ========================================
+        // PRODUCT APPROVAL CHECK
+        // ========================================
+        
+        // Check if product should be visible to customers
+        if (featureFlags.isProductApprovalEnabled()) {
+            if (product.approvalStatus !== 'approved') {
+                return res.status(404).json({
+                    success: false,
+                    message: "Product not found!"
+                });
+            }
+        }
 
         // Add cache control headers to prevent browser caching
         res.set({

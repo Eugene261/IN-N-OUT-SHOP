@@ -53,6 +53,13 @@ import TaxonomyManagement from "./pages/superAdmin-view/TaxonomyManagement";
 // Admin vendor payments
 import AdminVendorPaymentsPage from "./pages/admin-view/vendorPayments";
 
+// Product Approval System Components
+import ProductApprovalDashboard from "./components/super-admin-view/ProductApprovalDashboard";
+import ProductApprovalStatus from "./components/admin-view/productApprovalStatus";
+
+// Messaging System Component
+import MessagingDashboard from "./components/common/messaging/MessagingDashboard";
+
 // Import TokenManager component
 import TokenManager from './components/common/TokenManager';
 
@@ -148,6 +155,8 @@ function App() {
             <Route path='featured-products' element={<AdminFeaturedProducts />} />
             <Route path='shipping-settings' element={<AdminShippingSettings />} />
             <Route path='vendor-payments' element={<AdminVendorPaymentsPage />} />
+            <Route path='product-status' element={<ProductApprovalStatus />} />
+            <Route path='messaging' element={<MessagingDashboard />} />
             <Route path='settings' element={<AdminSettingsPage />} />
             <Route path='profile' element={<AdminProfile />} />
           </Route>
@@ -166,6 +175,8 @@ function App() {
                         <Route path='featured' element={<SuperAdminFeaturedPage />} />
             <Route path='videos' element={<VideosPage />} />
             <Route path='taxonomy' element={<TaxonomyManagement />} />
+            <Route path='product-approval' element={<ProductApprovalDashboard />} />
+            <Route path='messaging' element={<MessagingDashboard />} />
             <Route path='vendor-payments' element={<SuperAdminVendorPaymentsPage />} />
             <Route path='profile' element={<SuperAdminProfile />} />
           </Route>

@@ -32,6 +32,13 @@ import adminVendorPaymentsSlice from './admin-vendor-payments-slice.js';
 import adminVendorPaymentSlice from './admin/vendor-payment-slice/vendorPaymentSlice.js';
 import superAdminVendorPaymentsSlice from './super-admin-vendor-payments-slice.js';
 
+// Product approval slices
+import productApprovalSlice from './super-admin/product-approval-slice/index.js';
+import productStatusSlice from './admin/product-status-slice/index.js';
+
+// Messaging slice
+import messagingSlice from './common/messaging-slice/index.js';
+
 const store = configureStore({
     reducer: {
         auth : authReducer,
@@ -66,7 +73,14 @@ const store = configureStore({
         taxonomy: taxonomySlice,
         
         // Shop public reducers
-        shopFeaturedCollections: shopFeaturedCollectionSlice
+        shopFeaturedCollections: shopFeaturedCollectionSlice,
+        
+        // Product approval reducers
+        productApproval: productApprovalSlice,
+        productStatus: productStatusSlice,
+        
+        // Messaging reducer
+        messaging: messagingSlice
     },
     // Add our custom middleware to synchronize product updates
     middleware: (getDefaultMiddleware) => 

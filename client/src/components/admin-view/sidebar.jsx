@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, Star, X, Truck, Settings, DollarSign, User } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Star, X, Truck, Settings, DollarSign, User, CheckCircle, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const menuItems = [
@@ -15,6 +15,12 @@ const menuItems = [
     label: 'Products',
     path: '/admin/products',
     icon: <Package className="h-5 w-5" />
+  },
+  {
+    id: 'product-status',
+    label: 'Product Status',
+    path: '/admin/product-status',
+    icon: <CheckCircle className="h-5 w-5" />
   },
   {
     id: 'orders',
@@ -33,6 +39,12 @@ const menuItems = [
     label: 'Earnings',
     path: '/admin/vendor-payments',
     icon: <DollarSign className="h-5 w-5" />
+  },
+  {
+    id: 'messaging',
+    label: 'Messages',
+    path: '/admin/messaging',
+    icon: <MessageSquare className="h-5 w-5" />
   },
   {
     id: 'profile',

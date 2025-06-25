@@ -57,6 +57,9 @@ const superAdminFeaturedCollectionRouter = require('./routes/superAdmin/featured
 const superAdminRevenueRouter = require('./routes/superAdmin/revenueRoutes.js');
 const superAdminTaxonomyRouter = require('./routes/superAdmin/taxonomyRoutes.js');
 
+// NEW: Product Approval System (Feature-flagged)
+const superAdminProductApprovalRouter = require('./routes/superAdmin/productApprovalRoutes.js');
+
 // Shipping routes
 const shippingRouter = require('./routes/shop/shippingRoutes.js');
 
@@ -166,6 +169,7 @@ app.use('/api/shop/search', shopSearchRouter);
 app.use('/api/shop/review', shopReviewRouter);
 app.use('/api/common/feature', commonFeatureRouter);
 app.use('/api/common', contactRouter);
+app.use('/api/common/messaging', require('./routes/common/messagingRoutes'));
 app.use('/api/shop/wishlist', wishlistRouter);
 app.use('/api/shop/featured-collections', shopFeaturedCollectionRouter);
 
@@ -199,6 +203,7 @@ app.use('/api/superAdmin/revenue', superAdminRevenueRouter);
 app.use('/api/superAdmin/taxonomy', superAdminTaxonomyRouter);
 app.use('/api/superAdmin/videos', superAdminVideoRouter);
 app.use('/api/superAdmin/vendor-payments', require('./routes/superAdmin/vendorPaymentRoutes'));
+app.use('/api/superAdmin/product-approval', superAdminProductApprovalRouter);
 
 // Test route
 app.use('/api/test', testRouter);
@@ -215,6 +220,10 @@ app.use('/api/admin/vendor-payments', require('./routes/admin/vendorPaymentRoute
 // Temporary migration route - REMOVE AFTER MIGRATION
 const migrationRouter = require('./routes/admin/migrationRoutes');
 app.use('/api/admin/migrations', migrationRouter);
+
+// NEW: Feature Flags Health Check
+const { getFeatureFlagsStatus } = require('./utils/featureFlags');
+app.get('/api/feature-flags/status', getFeatureFlagsStatus);
 
 // 404 handler for API routes - Fixed route pattern
 app.use('/api', (req, res, next) => {

@@ -12,7 +12,11 @@
     "dev": "nodemon server.js",
     "populate-taxonomy": "node scripts/populateTaxonomy.js",
     "lint": "eslint . --ext .js",
-    "lint:fix": "eslint . --ext .js --fix"
+    "lint:fix": "eslint . --ext .js --fix",
+    "migrate:product-approval": "node scripts/addProductApprovalFields.js",
+    "migrate:product-approval:rollback": "node scripts/addProductApprovalFields.js --rollback",
+    "migration:check": "node scripts/runMigrations.js",
+    "feature-flags:status": "node -e \"require('./utils/featureFlags').featureFlags.getHealthStatus(); console.log('✅ Feature flags loaded successfully')\""
   },
   "author": "eugene",
   "license": "ISC",
@@ -26,6 +30,7 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-session": "^1.17.3",
+    "express-validator": "^7.2.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.13.2",
     "multer": "^1.4.5-lts.2",
