@@ -8,8 +8,21 @@ const FeaturedCollectionList = ({ onEdit }) => {
   const dispatch = useDispatch();
   const { collections, isLoading, error } = useSelector(state => state.featuredCollections);
   
+  // Debug the Redux state
+  console.log('FeaturedCollectionList: Redux state =>', {
+    collections,
+    isLoading,
+    error,
+    collectionsCount: collections ? collections.length : 'null/undefined'
+  });
+  
   useEffect(() => {
-    dispatch(fetchFeaturedCollections());
+    console.log('FeaturedCollectionList: Fetching collections in useEffect');
+    dispatch(fetchFeaturedCollections()).then((result) => {
+      console.log('FeaturedCollectionList: Fetch result =>', result);
+    }).catch((error) => {
+      console.error('FeaturedCollectionList: Fetch error =>', error);
+    });
   }, [dispatch]);
   
   const handleDelete = (id) => {

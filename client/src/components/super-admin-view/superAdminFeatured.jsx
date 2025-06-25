@@ -82,8 +82,25 @@ const SuperAdminFeatured = () => {
   useEffect(() => {
     dispatch(fetchFeaturedProducts());
     dispatch(getFeatureImages());
-    dispatch(fetchFeaturedCollections());
+    
+    // Fetch featured collections on component mount
+    console.log('SuperAdminFeatured: Fetching featured collections on mount');
+    dispatch(fetchFeaturedCollections()).then((result) => {
+      console.log('SuperAdminFeatured: Fetch collections result:', result);
+    }).catch((error) => {
+      console.error('SuperAdminFeatured: Fetch collections error:', error);
+    });
   }, [dispatch]);
+
+  // Debug featured collections state
+  useEffect(() => {
+    console.log('SuperAdminFeatured: Featured collections state changed:', {
+      collections: featuredCollections,
+      loading: collectionsLoading,
+      error: collectionsError,
+      collectionsLength: featuredCollections ? featuredCollections.length : 'null/undefined'
+    });
+  }, [featuredCollections, collectionsLoading, collectionsError]);
   
   // Refresh product data when needed
   const refreshProductData = () => {
@@ -774,12 +791,16 @@ const SuperAdminFeatured = () => {
                     })).unwrap();
                     toast.success('Featured collection updated successfully!');
                   } else {
-                    await dispatch(createFeaturedCollection(submitData)).unwrap();
+                    const createResult = await dispatch(createFeaturedCollection(submitData)).unwrap();
+                    console.log('Create collection result:', createResult);
                     toast.success('Featured collection created successfully!');
                   }
                   
                   // Refresh the collections list and close form
-                  dispatch(fetchFeaturedCollections());
+                  console.log('Refreshing featured collections list...');
+                  const refreshResult = await dispatch(fetchFeaturedCollections());
+                  console.log('Refresh result:', refreshResult);
+                  
                   setShowCollectionForm(false);
                   setEditingCollection(null);
                   console.log('=== FORM SUBMISSION SUCCESS ===');
