@@ -212,6 +212,10 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/admin/shop', shopRoutes);
 app.use('/api/admin/vendor-payments', require('./routes/admin/vendorPaymentRoutes'));
 
+// Temporary migration route - REMOVE AFTER MIGRATION
+const migrationRouter = require('./routes/admin/migrationRoutes');
+app.use('/api/admin/migrations', migrationRouter);
+
 // 404 handler for API routes - Fixed route pattern
 app.use('/api', (req, res, next) => {
   // Only handle requests that haven't been handled by previous routes

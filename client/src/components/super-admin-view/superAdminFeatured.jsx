@@ -6,8 +6,9 @@ import {
   toggleProductNewArrival 
 } from '../../store/shop/product-slice/index';
 import { fetchFeaturedProducts } from '../../store/super-admin/products-slice/index';
-import { getFeatureImages, deleteFeatureImage, addFeatureImage } from '../../store/common-slice/index';
+import { getFeatureImages, deleteFeatureImage, addFeatureImage, addFeatureMedia } from '../../store/common-slice/index';
 import { createFeaturedCollection, updateFeaturedCollection, fetchFeaturedCollections } from '../../store/superAdmin/featured-collection-slice';
+import { API_BASE_URL } from '@/config/api';
 import { 
   Star, 
   Zap, 
@@ -22,7 +23,10 @@ import {
   FileIcon,
   X,
   Layout,
-  Grid
+  Grid,
+  Video,
+  Play,
+  Edit
 } from 'lucide-react';
 
 // Import the FeaturedCollections components
@@ -52,8 +56,11 @@ const SuperAdminFeatured = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [imageToDelete, setImageToDelete] = useState(null);
   
-  // Image upload states
-  const [imageFile, setImageFile] = useState(null);
+  // Media upload states (enhanced for video support)
+  const [mediaFile, setMediaFile] = useState(null);
+  const [mediaType, setMediaType] = useState('image');
+  const [mediaTitle, setMediaTitle] = useState('');
+  const [mediaDescription, setMediaDescription] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const fileInputRef = useRef(null);
@@ -61,6 +68,14 @@ const SuperAdminFeatured = () => {
   // Featured collections states
   const [showCollectionForm, setShowCollectionForm] = useState(false);
   const [editingCollection, setEditingCollection] = useState(null);
+  
+  // Migration state
+  const [migrationStatus, setMigrationStatus] = useState({
+    isRunning: false,
+    completed: false,
+    error: null,
+    result: null
+  });
   
   useEffect(() => {
     dispatch(fetchFeaturedProducts());
@@ -85,16 +100,18 @@ const SuperAdminFeatured = () => {
     return () => clearTimeout(timer);
   }, [deleteSuccess, deleteError, uploadSuccess]);
   
-  // Handle image file upload
-  useEffect(() => {
-    if (imageFile) {
-      handleUploadImage();
-    }
-  }, [imageFile]);
-  
-  const handleImageFileChange = (event) => {
+  // Handle media file selection
+  const handleMediaFileChange = (event) => {
     const selectedFile = event.target.files?.[0];
-    if (selectedFile) setImageFile(selectedFile);
+    if (selectedFile) {
+      setMediaFile(selectedFile);
+      // Auto-detect media type based on file type
+      if (selectedFile.type.startsWith('video/')) {
+        setMediaType('video');
+      } else if (selectedFile.type.startsWith('image/')) {
+        setMediaType('image');
+      }
+    }
   };
   
   const handleDragOver = (evt) => {
@@ -111,26 +128,51 @@ const SuperAdminFeatured = () => {
     evt.preventDefault();
     setIsDragging(false);
     const droppedFile = evt.dataTransfer.files?.[0];
-    if (droppedFile) setImageFile(droppedFile);
+    if (droppedFile) {
+      setMediaFile(droppedFile);
+      // Auto-detect media type
+      if (droppedFile.type.startsWith('video/')) {
+        setMediaType('video');
+      } else if (droppedFile.type.startsWith('image/')) {
+        setMediaType('image');
+      }
+    }
   };
   
-  const handleRemoveImage = () => {
-    setImageFile(null);
+  const handleRemoveMedia = () => {
+    setMediaFile(null);
+    setMediaTitle('');
+    setMediaDescription('');
+    setMediaType('image');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
   
-  const handleUploadImage = async () => {
+  const handleUploadMedia = async () => {
+    if (!mediaFile) return;
+    
     try {
-      await dispatch(addFeatureImage(imageFile)).unwrap();
+      const mediaData = {
+        file: mediaFile,
+        mediaType: mediaType,
+        title: mediaTitle.trim(),
+        description: mediaDescription.trim()
+      };
+      
+      await dispatch(addFeatureMedia(mediaData)).unwrap();
       setUploadSuccess(true);
-      setImageFile(null);
+      
+      // Reset form
+      setMediaFile(null);
+      setMediaTitle('');
+      setMediaDescription('');
+      setMediaType('image');
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     } catch (error) {
-      console.error('Error uploading feature image:', error);
+      console.error('Error uploading feature media:', error);
     }
   };
   
@@ -160,6 +202,59 @@ const SuperAdminFeatured = () => {
         });
     }
   }
+  
+  // Migration function
+  const handleRunMigration = async () => {
+    setMigrationStatus({ isRunning: true, completed: false, error: null, result: null });
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/migrations/migrate-feature-media`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        credentials: 'include'
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setMigrationStatus({
+          isRunning: false,
+          completed: true,
+          error: null,
+          result: data
+        });
+        // Refresh the feature list
+        dispatch(getFeatureImages());
+      } else {
+        setMigrationStatus({
+          isRunning: false,
+          completed: false,
+          error: data.message || 'Migration failed',
+          result: null
+        });
+      }
+    } catch (error) {
+      setMigrationStatus({
+        isRunning: false,
+        completed: false,
+        error: error.message || 'Migration failed',
+        result: null
+      });
+    }
+  };
+  
+  // Get file type icon
+  const getFileTypeIcon = (file) => {
+    if (file.type.startsWith('video/')) {
+      return <Video className="w-6 h-6 text-blue-600" />;
+    } else if (file.type.startsWith('image/')) {
+      return <Image className="w-6 h-6 text-green-600" />;
+    }
+    return <FileIcon className="w-6 h-6 text-gray-700" />;
+  };
   
   // Animation variants
   const containerVariants = {
@@ -191,7 +286,7 @@ const SuperAdminFeatured = () => {
     >
       <motion.div variants={itemVariants} className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Featured Content Management</h1>
-        <p className="text-gray-600">Manage featured products, collections, and promotional images</p>
+        <p className="text-gray-600">Manage featured products, collections, and promotional images & videos</p>
       </motion.div>
       
       {/* Tab Navigation */}
@@ -202,8 +297,8 @@ const SuperAdminFeatured = () => {
               onClick={() => setActiveTab('featureImages')}
               className={`${activeTab === 'featureImages' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
             >
-              <Image className="w-5 h-5 mr-2" />
-              Feature Images
+              <Video className="w-5 h-5 mr-2" />
+              Hero Media
             </button>
             <button
               onClick={() => setActiveTab('featuredCollections')}
@@ -223,25 +318,93 @@ const SuperAdminFeatured = () => {
         </div>
       </motion.div>
       
-      {/* Feature Images Tab Content */}
+      {/* Feature Media Tab Content */}
       {activeTab === 'featureImages' && (
         <motion.div variants={itemVariants}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
-              <h2 className="text-xl font-bold text-gray-800">Feature Images</h2>
+              <h2 className="text-xl font-bold text-gray-800">Hero Media</h2>
               <div className="ml-2 h-1 w-10 bg-blue-500 rounded-full"></div>
             </div>
+            
+            {/* Migration Button */}
+            <button
+              onClick={handleRunMigration}
+              disabled={migrationStatus.isRunning || migrationStatus.completed}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center ${
+                migrationStatus.completed 
+                  ? 'bg-green-100 text-green-700 cursor-not-allowed' 
+                  : migrationStatus.isRunning 
+                    ? 'bg-blue-100 text-blue-700 cursor-not-allowed'
+                    : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+              }`}
+            >
+              {migrationStatus.isRunning ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Migrating...
+                </>
+              ) : migrationStatus.completed ? (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Migration Complete
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 mr-2" />
+                  Run Migration
+                </>
+              )}
+            </button>
           </div>
           
-          {/* Image Upload Section */}
+          {/* Migration Status Messages */}
+          {migrationStatus.error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 p-4 bg-red-100 border border-red-200 rounded-xl flex items-center gap-3 text-red-700"
+            >
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <span className="text-sm font-medium">Migration failed: {migrationStatus.error}</span>
+            </motion.div>
+          )}
+          
+          {migrationStatus.completed && migrationStatus.result && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 p-4 bg-green-100 border border-green-200 rounded-xl"
+            >
+              <div className="flex items-center gap-3 text-green-700 mb-2">
+                <CheckCircle className="w-5 h-5 flex-shrink-0" />
+                <span className="text-sm font-medium">{migrationStatus.result.message}</span>
+              </div>
+              {migrationStatus.result.migratedCount > 0 && (
+                <div className="text-xs text-green-600 ml-8">
+                  • Migrated: {migrationStatus.result.migratedCount} features
+                  <br />
+                  • Total features: {migrationStatus.result.totalFeaturesWithMediaUrl}
+                </div>
+              )}
+            </motion.div>
+          )}
+          
+          {/* Media Upload Section */}
           <motion.div 
             variants={itemVariants}
             className="mb-6 p-6 bg-white rounded-xl border border-gray-200 shadow-sm"
           >
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
               <UploadCloud className="mr-2 h-5 w-5 text-blue-500" />
-              Upload Feature Image
+              Upload Hero Media
             </h3>
+            
+            <div className="text-sm text-gray-600 mb-4 bg-blue-50 p-3 rounded-lg">
+              <strong>Supported formats:</strong> Images (JPG, PNG, WebP) and Videos (MP4, WebM, MOV)
+              <br />
+              <strong>Recommended:</strong> Images: 1920x1080px, Videos: 1920x1080px or 16:9 aspect ratio
+            </div>
             
             {uploadError && (
               <motion.div
@@ -261,12 +424,12 @@ const SuperAdminFeatured = () => {
                 className="mb-4 p-4 bg-green-100 border border-green-200 rounded-xl flex items-center gap-3 text-green-700"
               >
                 <CheckCircle className="w-5 h-5 flex-shrink-0" />
-                <span className="text-sm font-medium">Image uploaded successfully!</span>
+                <span className="text-sm font-medium">Media uploaded successfully!</span>
               </motion.div>
             )}
             
             {/* Upload Area */}
-            {!imageFile ? (
+            {!mediaFile ? (
               <label 
                 className={`relative block border-2 ${isDragging ? 'border-blue-400 bg-blue-50' : 'border-dashed border-gray-300'} rounded-xl p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors`}
                 onDragOver={handleDragOver}
@@ -276,14 +439,17 @@ const SuperAdminFeatured = () => {
                 <input 
                   type="file" 
                   className="hidden" 
-                  accept="image/*"
-                  onChange={handleImageFileChange}
+                  accept="image/*,video/*"
+                  onChange={handleMediaFileChange}
                   ref={fileInputRef}
                 />
                 <div className="flex flex-col items-center justify-center h-32">
-                  <UploadCloud className="h-12 w-12 text-gray-400 mb-3" />
+                  <div className="flex items-center justify-center space-x-4 mb-3">
+                    <Image className="h-8 w-8 text-gray-400" />
+                    <Video className="h-8 w-8 text-gray-400" />
+                  </div>
                   <p className="text-sm font-medium text-gray-700 mb-1">
-                    {isDragging ? 'Drop image here' : 'Drag and drop image here'}
+                    {isDragging ? 'Drop media here' : 'Drag and drop images or videos here'}
                   </p>
                   <p className="text-xs text-gray-500">or click to browse</p>
                 </div>
@@ -297,7 +463,8 @@ const SuperAdminFeatured = () => {
                 />
               </div>
             ) : (
-              <div className="p-6">
+              <div className="space-y-4">
+                {/* File Preview */}
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -305,13 +472,15 @@ const SuperAdminFeatured = () => {
                 >
                   <div className="flex items-center truncate max-w-[70%]">
                     <div className="bg-gray-100 p-2 rounded-lg mr-3">
-                      <FileIcon className="w-6 h-6 text-gray-700" />
+                      {getFileTypeIcon(mediaFile)}
                     </div>
                     <div className="truncate">
-                      <p className="text-sm font-medium truncate text-gray-900">{imageFile.name}</p>
-                      <p className="text-xs text-gray-500">
-                        {(imageFile.size / (1024 * 1024)).toFixed(2)} MB
-                      </p>
+                      <p className="text-sm font-medium truncate text-gray-900">{mediaFile.name}</p>
+                      <div className="flex items-center space-x-2 text-xs text-gray-500">
+                        <span>{(mediaFile.size / (1024 * 1024)).toFixed(2)} MB</span>
+                        <span>•</span>
+                        <span className="capitalize">{mediaType}</span>
+                      </div>
                     </div>
                   </div>
                   
@@ -319,12 +488,79 @@ const SuperAdminFeatured = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     className="p-2 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors duration-200"
-                    onClick={handleRemoveImage}
+                    onClick={handleRemoveMedia}
                   >
                     <X className="w-4 h-4" />
                     <span className="sr-only">Remove File</span>
                   </motion.button>
                 </motion.div>
+                
+                {/* Media Type Selection */}
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setMediaType('image')}
+                    className={`p-3 border-2 rounded-lg flex items-center justify-center transition-all ${
+                      mediaType === 'image' 
+                        ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                        : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
+                    }`}
+                  >
+                    <Image className="w-5 h-5 mr-2" />
+                    Image
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMediaType('video')}
+                    className={`p-3 border-2 rounded-lg flex items-center justify-center transition-all ${
+                      mediaType === 'video' 
+                        ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                        : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
+                    }`}
+                  >
+                    <Video className="w-5 h-5 mr-2" />
+                    Video
+                  </button>
+                </div>
+                
+                {/* Metadata Fields */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Title (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={mediaTitle}
+                      onChange={(e) => setMediaTitle(e.target.value)}
+                      placeholder="Enter media title..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Description (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={mediaDescription}
+                      onChange={(e) => setMediaDescription(e.target.value)}
+                      placeholder="Enter media description..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+                
+                {/* Upload Button */}
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleUploadMedia}
+                  className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center"
+                >
+                  <UploadCloud className="w-5 h-5 mr-2" />
+                  Upload {mediaType === 'video' ? 'Video' : 'Image'}
+                </motion.button>
               </div>
             )}
           </motion.div>
@@ -347,7 +583,7 @@ const SuperAdminFeatured = () => {
               className="mb-4 p-4 bg-green-100 border border-green-200 rounded-xl flex items-center gap-3 text-green-700"
             >
               <CheckCircle className="w-5 h-5 flex-shrink-0" />
-              <span className="text-sm font-medium">Image deleted successfully!</span>
+              <span className="text-sm font-medium">Media deleted successfully!</span>
             </motion.div>
           )}
           
@@ -361,50 +597,100 @@ const SuperAdminFeatured = () => {
             </div>
           ) : FeatureImageList && FeatureImageList.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {FeatureImageList.map((item, index) => (
-                <motion.div
-                  key={item._id || index}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="relative group border-2 border-gray-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow bg-white"
-                >
-                  {/* Image container */}
-                  <div className="relative bg-gray-50 min-h-[200px] flex items-center justify-center p-2">
-                    <img 
-                      src={item.image} 
-                      alt={`Feature image ${index + 1}`}
-                      className="max-w-full max-h-full w-auto h-auto object-contain" 
-                    />
-                  </div>
-                  
-                  {/* Actions Overlay */}
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                    <button
-                      className="p-2.5 bg-red-100 rounded-lg hover:bg-red-200 transition-colors"
-                      title="Delete Image"
-                      onClick={() => handleDeleteImage(item._id)}
-                      disabled={deleteLoading && deletingId === item._id}
-                    >
-                      {deleteLoading && deletingId === item._id ? (
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity }}
-                          className="w-5 h-5 border-2 border-red-200 border-t-red-600 rounded-full"
-                        />
+              {FeatureImageList.map((item, index) => {
+                const mediaUrl = item.mediaUrl || item.image;
+                const mediaType = item.mediaType || 'image';
+                
+                return (
+                  <motion.div
+                    key={item._id || index}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="relative group border-2 border-gray-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow bg-white"
+                  >
+                    {/* Media container */}
+                    <div className="relative bg-gray-50 min-h-[200px] flex items-center justify-center p-2">
+                      {mediaType === 'video' ? (
+                        <div className="relative w-full h-full">
+                          <video 
+                            src={mediaUrl}
+                            className="max-w-full max-h-full w-auto h-auto object-contain"
+                            muted
+                            loop
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                            <Play className="w-8 h-8 text-white" />
+                          </div>
+                        </div>
                       ) : (
-                        <Trash2 className="w-5 h-5 text-red-600" />
+                        <img 
+                          src={mediaUrl} 
+                          alt={item.title || `Feature media ${index + 1}`}
+                          className="max-w-full max-h-full w-auto h-auto object-contain" 
+                        />
                       )}
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
+                      
+                      {/* Media type indicator */}
+                      <div className="absolute top-2 left-2">
+                        <div className="bg-black/60 text-white px-2 py-1 rounded-full text-xs flex items-center">
+                          {mediaType === 'video' ? (
+                            <Video className="w-3 h-3 mr-1" />
+                          ) : (
+                            <Image className="w-3 h-3 mr-1" />
+                          )}
+                          {mediaType}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Title and description */}
+                    {(item.title || item.description) && (
+                      <div className="p-3 border-t border-gray-100">
+                        {item.title && (
+                          <h4 className="font-medium text-sm text-gray-900 truncate">
+                            {item.title}
+                          </h4>
+                        )}
+                        {item.description && (
+                          <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                            {item.description}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Actions Overlay */}
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                      <button
+                        className="p-2.5 bg-red-100 rounded-lg hover:bg-red-200 transition-colors"
+                        title="Delete Media"
+                        onClick={() => handleDeleteImage(item._id)}
+                        disabled={deleteLoading && deletingId === item._id}
+                      >
+                        {deleteLoading && deletingId === item._id ? (
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity }}
+                            className="w-5 h-5 border-2 border-red-200 border-t-red-600 rounded-full"
+                          />
+                        ) : (
+                          <Trash2 className="w-5 h-5 text-red-600" />
+                        )}
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           ) : (
             <div className="py-12 text-center text-gray-500 space-y-2 bg-white rounded-lg border border-gray-200 shadow-sm">
-              <Image className="h-12 w-12 mx-auto text-gray-300 mb-2" />
-              <p className="font-medium">No feature images uploaded yet</p>
-              <p className="text-sm">Images will appear here once uploaded</p>
+              <div className="flex items-center justify-center space-x-2 mb-4">
+                <Image className="h-12 w-12 text-gray-300" />
+                <Video className="h-12 w-12 text-gray-300" />
+              </div>
+              <p className="font-medium">No hero media uploaded yet</p>
+              <p className="text-sm">Upload images or videos to create an engaging hero section</p>
             </div>
           )}
         </motion.div>

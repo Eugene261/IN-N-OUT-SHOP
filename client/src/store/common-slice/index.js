@@ -18,7 +18,7 @@ export const getFeatureImages = createAsyncThunk(
             const response = await axios.get(`${API_BASE_URL}/api/common/feature/get`);
             return response?.data;
         } catch (error) {
-            return rejectWithValue(error.response?.data || { message: "Failed to fetch feature images" });
+            return rejectWithValue(error.response?.data || { message: "Failed to fetch feature media" });
         }
     }
 );
@@ -60,6 +60,61 @@ export const addFeatureImage = createAsyncThunk(
     }
 );
 
+// New action for uploading media (images or videos) with metadata
+export const addFeatureMedia = createAsyncThunk(
+    'common/addFeatureMedia',  
+    async (mediaData, { rejectWithValue }) => {
+        try {
+            let response;
+            
+            // Check if we're dealing with a File object or media data object
+            if (mediaData instanceof File) {
+                // It's a File object, use FormData with default settings
+                const formData = new FormData();
+                formData.append('my_file', mediaData);
+                
+                response = await axios.post(
+                    `${API_BASE_URL}/api/common/feature/add`, 
+                    formData,
+                    {
+                        headers: {
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    }
+                );
+            } else if (mediaData.file && mediaData.file instanceof File) {
+                // It's a media data object with file and metadata
+                const formData = new FormData();
+                formData.append('my_file', mediaData.file);
+                formData.append('mediaType', mediaData.mediaType || 'image');
+                if (mediaData.title) formData.append('title', mediaData.title);
+                if (mediaData.description) formData.append('description', mediaData.description);
+                
+                response = await axios.post(
+                    `${API_BASE_URL}/api/common/feature/add`, 
+                    formData,
+                    {
+                        headers: {
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    }
+                );
+            } else {
+                // It's a string or object with URL, send as JSON
+                response = await axios.post(
+                    `${API_BASE_URL}/api/common/feature/add`, 
+                    mediaData
+                );
+            }
+            
+            return response?.data;
+        } catch (error) {
+            console.error("Error uploading media:", error);
+            return rejectWithValue(error.response?.data || { message: "Failed to upload feature media" });
+        }
+    }
+);
+
 export const deleteFeatureImage = createAsyncThunk(
     'common/deleteFeatureImage',
     async (imageId, { rejectWithValue }) => {
@@ -68,7 +123,21 @@ export const deleteFeatureImage = createAsyncThunk(
             return { ...response.data, imageId };
         } catch (error) {
             console.error("Error deleting image:", error);
-            return rejectWithValue(error.response?.data || { message: "Failed to delete feature image" });
+            return rejectWithValue(error.response?.data || { message: "Failed to delete feature media" });
+        }
+    }
+);
+
+// New action for updating media positions
+export const updateFeaturePositions = createAsyncThunk(
+    'common/updateFeaturePositions',
+    async (positions, { rejectWithValue }) => {
+        try {
+            const response = await axios.put(`${API_BASE_URL}/api/common/feature/positions`, { positions });
+            return { ...response.data, positions };
+        } catch (error) {
+            console.error("Error updating positions:", error);
+            return rejectWithValue(error.response?.data || { message: "Failed to update positions" });
         }
     }
 );
@@ -82,11 +151,15 @@ const commonSlice = createSlice({
         },
         clearDeleteError: (state) => {
             state.deleteError = null;
+        },
+        reorderFeatureMedia: (state, action) => {
+            // Local reordering for immediate UI feedback
+            state.FeatureImageList = action.payload;
         }
     },
     extraReducers: (builder) => {
         builder
-            // Get Feature Images
+            // Get Feature Images/Media
             .addCase(getFeatureImages.pending, (state) => {
                 state.isLoading = true;
             })
@@ -99,7 +172,7 @@ const commonSlice = createSlice({
                 state.FeatureImageList = [];
             })
             
-            // Add Feature Image
+            // Add Feature Image (backwards compatibility)
             .addCase(addFeatureImage.pending, (state) => {
                 state.uploadLoading = true;
                 state.uploadError = null;
@@ -115,16 +188,32 @@ const commonSlice = createSlice({
                 state.uploadError = action.payload?.message || "An error occurred while uploading the image";
             })
             
-            // Delete Feature Image
+            // Add Feature Media (new)
+            .addCase(addFeatureMedia.pending, (state) => {
+                state.uploadLoading = true;
+                state.uploadError = null;
+            })
+            .addCase(addFeatureMedia.fulfilled, (state, action) => {
+                state.uploadLoading = false;
+                if (action.payload?.data) {
+                    state.FeatureImageList = [...state.FeatureImageList, action.payload.data];
+                }
+            })
+            .addCase(addFeatureMedia.rejected, (state, action) => {
+                state.uploadLoading = false;
+                state.uploadError = action.payload?.message || "An error occurred while uploading the media";
+            })
+            
+            // Delete Feature Image/Media
             .addCase(deleteFeatureImage.pending, (state) => {
                 state.deleteLoading = true;
                 state.deleteError = null;
             })
             .addCase(deleteFeatureImage.fulfilled, (state, action) => {
                 state.deleteLoading = false;
-                // Remove the deleted image from the list immediately
+                // Remove the deleted media from the list immediately
                 state.FeatureImageList = state.FeatureImageList.filter(
-                    image => image._id !== action.payload.imageId
+                    media => media._id !== action.payload.imageId
                 );
                 
                 // If the list is now empty, ensure it's an empty array rather than undefined
@@ -134,10 +223,24 @@ const commonSlice = createSlice({
             })
             .addCase(deleteFeatureImage.rejected, (state, action) => {
                 state.deleteLoading = false;
-                state.deleteError = action.payload?.message || "An error occurred while deleting the image";
+                state.deleteError = action.payload?.message || "An error occurred while deleting the media";
+            })
+            
+            // Update Feature Positions
+            .addCase(updateFeaturePositions.pending, (state) => {
+                state.isLoading = true;
+            })
+            .addCase(updateFeaturePositions.fulfilled, (state, action) => {
+                state.isLoading = false;
+                // Positions are already updated locally via reorderFeatureMedia
+            })
+            .addCase(updateFeaturePositions.rejected, (state, action) => {
+                state.isLoading = false;
+                // Optionally revert local changes on error
+                console.error("Failed to update positions:", action.payload);
             });
     }
 });
 
-export const { clearUploadError, clearDeleteError } = commonSlice.actions;
+export const { clearUploadError, clearDeleteError, reorderFeatureMedia } = commonSlice.actions;
 export default commonSlice.reducer;
