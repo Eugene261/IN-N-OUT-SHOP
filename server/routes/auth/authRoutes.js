@@ -278,21 +278,6 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
   });
 }
 
-// Twitter OAuth temporarily disabled
-router.get('/twitter', (req, res) => {
-  res.status(503).json({
-    success: false,
-    message: 'Twitter OAuth is temporarily disabled'
-  });
-});
-
-router.get('/twitter/callback', (req, res) => {
-  res.status(503).json({
-    success: false,
-    message: 'Twitter OAuth is temporarily disabled'
-  });
-});
-
 // OAuth providers status endpoint
 router.get('/oauth-providers', (req, res) => {
   try {
@@ -308,7 +293,6 @@ router.get('/oauth-providers', (req, res) => {
     const providers = {
       google: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
       facebook: !!(process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET),
-      twitter: false // Temporarily disabled
     };
 
     console.log('✅ OAuth providers calculated:', providers);
@@ -319,7 +303,7 @@ router.get('/oauth-providers', (req, res) => {
       debug: {
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV,
-        hasAnyProvider: !!(providers.google || providers.facebook || providers.twitter)
+        hasAnyProvider: !!(providers.google || providers.facebook)
       }
     };
 
@@ -335,7 +319,6 @@ router.get('/oauth-providers', (req, res) => {
       providers: {
         google: false,
         facebook: false,
-        twitter: false
       }
     });
   }
@@ -359,7 +342,6 @@ router.get('/debug/oauth-urls', (req, res) => {
         NODE_ENV: process.env.NODE_ENV,
         hasGoogleCredentials: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
         hasFacebookCredentials: !!(process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET),
-        twitterDisabled: true
       }
     }
   });
@@ -450,6 +432,39 @@ router.get('/oauth-redirect', (req, res) => {
   
   console.log('Sending OAuth redirect HTML page');
   res.send(html);
+});
+
+// Update the auth-info endpoint to remove Twitter references
+router.get('/auth-info', (req, res) => {
+  const providers = {
+    google: !!process.env.GOOGLE_CLIENT_ID,
+    facebook: !!process.env.FACEBOOK_APP_ID
+  };
+  
+  res.json({
+    success: true,
+    data: {
+      providers,
+      hasAnyProvider: !!(providers.google || providers.facebook)
+    }
+  });
+});
+
+// Update the login-methods endpoint
+router.get('/login-methods', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      oauth: {
+        google: !!process.env.GOOGLE_CLIENT_ID,
+        facebook: !!process.env.FACEBOOK_APP_ID
+      },
+      features: {
+        emailLogin: true,
+        registration: true
+      }
+    }
+  });
 });
 
 module.exports = router;

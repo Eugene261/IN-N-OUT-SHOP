@@ -201,7 +201,4 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
   console.log('Facebook OAuth not configured - missing FACEBOOK_APP_ID or FACEBOOK_APP_SECRET');
 }
 
-// Twitter OAuth temporarily disabled due to OAuth 1.0a complexity in serverless environments
-console.log('Twitter OAuth is temporarily disabled');
-
 module.exports = passport; 

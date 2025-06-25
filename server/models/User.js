@@ -15,7 +15,7 @@ const UserSchema = new mongoose.Schema({
         type : String,
         required : function() {
             // Password is required only if no OAuth provider is used
-            return !this.googleId && !this.facebookId && !this.twitterId;
+            return !this.googleId && !this.facebookId;
         }
     },
     // OAuth provider fields
@@ -29,14 +29,9 @@ const UserSchema = new mongoose.Schema({
         unique: true,
         sparse: true
     },
-    twitterId: {
-        type: String,
-        unique: true,
-        sparse: true
-    },
     provider: {
         type: String,
-        enum: ['local', 'google', 'facebook', 'twitter'],
+        enum: ['local', 'google', 'facebook'],
         default: 'local'
     },
     role : {
@@ -205,6 +200,11 @@ UserSchema.pre('save', function(next) {
     this.updatedAt = Date.now();
     next();
 });
+
+// Add method to check if account is local (not OAuth)
+UserSchema.methods.isLocalAccount = function() {
+  return !this.googleId && !this.facebookId;
+};
 
 const User = mongoose.model('User', UserSchema);
 module.exports = User;
