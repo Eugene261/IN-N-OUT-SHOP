@@ -138,8 +138,13 @@ function EnhancedFeaturedVideos() {
         payload.guestId = getGuestId();
       }
 
-      await dispatch(toggleVideoLike(payload)).unwrap();
-      toast.success('Video liked!', { duration: 1500 });
+      const result = await dispatch(toggleVideoLike(payload)).unwrap();
+      
+      if (result.isLiked) {
+        toast.success('Video liked!', { duration: 1500 });
+      } else {
+        toast.success('Like removed', { duration: 1500 });
+      }
     } catch (error) {
       console.error('Like error:', error);
       toast.error('Failed to update like status');
@@ -158,7 +163,7 @@ function EnhancedFeaturedVideos() {
 
   const scroll = (direction) => {
     if (scrollContainerRef.current) {
-      const scrollAmount = window.innerWidth >= 1024 ? 360 : 320; // Larger scroll for taller cards
+      const scrollAmount = window.innerWidth >= 1024 ? 400 : 320; // Larger scroll for taller cards
       const currentScroll = scrollContainerRef.current.scrollLeft;
       const newScroll = direction === 'left' 
         ? currentScroll - scrollAmount 
@@ -226,7 +231,7 @@ function EnhancedFeaturedVideos() {
               {featuredVideos.map((video, index) => {
                 const videoLike = videoLikes[video._id];
                 const isLiked = videoLike?.isLiked || false;
-                const likeCount = videoLike?.count || video.likeCount || 0;
+                const likeCount = videoLike?.count ?? video.likeCount ?? 0;
                 const isPlaying = playingVideo === video._id;
                 const isLargeDevice = window.innerWidth >= 1024;
 
@@ -241,7 +246,7 @@ function EnhancedFeaturedVideos() {
                   >
                     {/* Video Container - Responsive dimensions */}
                     <div 
-                      className="relative aspect-[3/2] lg:aspect-[4/3] overflow-hidden"
+                      className="relative aspect-[3/4] lg:aspect-[3/4] overflow-hidden"
                     >
                       <video
                         ref={(el) => videoRefs.current[video._id] = el}
@@ -355,7 +360,7 @@ function EnhancedFeaturedVideos() {
                       <div className="flex items-center justify-between text-xs lg:text-sm text-gray-500 mb-2">
                         <div className="flex items-center gap-3 lg:gap-4">
                           <span className="flex items-center gap-1">
-                            <Heart className="h-3 w-3 lg:h-4 lg:w-4" />
+                            <Heart className={`h-3 w-3 lg:h-4 lg:w-4 ${isLiked ? 'text-red-500 fill-current' : ''}`} />
                             {likeCount}
                           </span>
                           <span className="flex items-center gap-1">
@@ -403,7 +408,10 @@ function EnhancedFeaturedVideos() {
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
               className="bg-gray-900 hover:bg-black text-white px-6 py-2.5 rounded-full font-medium shadow-lg hover:shadow-xl transition-all duration-300"
-              onClick={() => navigate('/shop/videos')}
+              onClick={() => {
+                dispatch(fetchFeaturedVideos({ limit: featuredVideos.length + 8 }));
+                toast.success('Loading more reels...', { duration: 1500 });
+              }}
             >
               Load More Reels
             </motion.button>

@@ -198,6 +198,16 @@ const shopVideoSlice = createSlice({
       .addCase(fetchFeaturedVideos.fulfilled, (state, action) => {
         state.isLoading = false;
         state.featuredVideos = action.payload.data;
+        
+        // Initialize like state for each featured video
+        action.payload.data.forEach(video => {
+          if (!state.videoLikes[video._id]) {
+            state.videoLikes[video._id] = {
+              isLiked: false,
+              count: video.likeCount || 0
+            };
+          }
+        });
       })
       .addCase(fetchFeaturedVideos.rejected, (state, action) => {
         state.isLoading = false;
@@ -219,6 +229,16 @@ const shopVideoSlice = createSlice({
         } else {
           state.videos.push(...newVideos);
         }
+        
+        // Initialize like state for each video
+        newVideos.forEach(video => {
+          if (!state.videoLikes[video._id]) {
+            state.videoLikes[video._id] = {
+              isLiked: false,
+              count: video.likeCount || 0
+            };
+          }
+        });
         
         state.pagination = action.payload.pagination || { current: 1, pages: 1, total: 0 };
       })
