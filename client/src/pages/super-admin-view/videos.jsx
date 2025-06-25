@@ -144,35 +144,37 @@ function VideosPage() {
 
   return (
     <motion.div
-      className="p-8"
+      className="p-4 sm:p-6 lg:p-8"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Video className="h-6 w-6" />
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <Video className="h-5 w-5 sm:h-6 sm:w-6" />
             Video Management
           </h1>
-          <p className="text-gray-500">Manage featured vendor reels and video content</p>
+          <p className="text-sm sm:text-base text-gray-500">Manage featured vendor reels and video content</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2 sm:gap-3 self-start sm:self-auto">
           <button 
-            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleRefresh}
             disabled={isLoading}
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
+            <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Refresh</span>
+            <span className="sm:hidden">↻</span>
           </button>
           <button 
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleAddNew}
             disabled={isLoading}
           >
-            <Plus className="h-4 w-4 mr-2" />
-            Upload Video
+            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Upload Video</span>
+            <span className="sm:hidden">Upload</span>
           </button>
         </div>
       </div>

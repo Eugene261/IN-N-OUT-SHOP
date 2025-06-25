@@ -120,22 +120,22 @@ const FeaturedCollectionList = ({ onEdit }) => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Image
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Title
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th scope="col" className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Link
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th scope="col" className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Position
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -149,33 +149,33 @@ const FeaturedCollectionList = ({ onEdit }) => {
                 exit={{ opacity: 0 }}
                 className="hover:bg-gray-50"
               >
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
                   {collection.image ? (
                     <img 
                       src={collection.image} 
                       alt={collection.title} 
-                      className="h-12 w-20 object-cover rounded-md"
+                      className="h-8 w-12 sm:h-12 sm:w-20 object-cover rounded-md"
                     />
                   ) : (
-                    <div className="h-12 w-20 bg-gray-200 rounded-md flex items-center justify-center">
+                    <div className="h-8 w-12 sm:h-12 sm:w-20 bg-gray-200 rounded-md flex items-center justify-center">
                       <span className="text-xs text-gray-500">No image</span>
                     </div>
                   )}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{collection.title}</div>
+                <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
+                  <div className="text-xs sm:text-sm font-medium text-gray-900 truncate max-w-24 sm:max-w-none">{collection.title}</div>
                   {collection.description && (
-                    <div className="text-xs text-gray-500 mt-1 max-w-xs truncate">
+                    <div className="text-xs text-gray-500 mt-1 max-w-24 sm:max-w-xs truncate">
                       {collection.description}
                     </div>
                   )}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-blue-600 hover:underline">
+                <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-blue-600 hover:underline truncate max-w-32">
                     {collection.linkTo}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-gray-900">{collection.position}</span>
                     <div className="flex flex-col">
@@ -194,10 +194,10 @@ const FeaturedCollectionList = ({ onEdit }) => {
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
                   <button
                     onClick={() => handleToggleActive(collection)}
-                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                    className={`inline-flex items-center px-1.5 sm:px-2.5 py-1 rounded-full text-xs font-medium ${
                       collection.isActive 
                         ? 'bg-green-100 text-green-800' 
                         : 'bg-gray-100 text-gray-800'
@@ -205,30 +205,34 @@ const FeaturedCollectionList = ({ onEdit }) => {
                   >
                     {collection.isActive ? (
                       <>
-                        <Eye size={12} className="mr-1" />
-                        Active
+                        <Eye size={10} className="mr-1 sm:block hidden" />
+                        <span className="sm:inline hidden">Active</span>
+                        <span className="sm:hidden">✓</span>
                       </>
                     ) : (
                       <>
-                        <EyeOff size={12} className="mr-1" />
-                        Inactive
+                        <EyeOff size={10} className="mr-1 sm:block hidden" />
+                        <span className="sm:inline hidden">Inactive</span>
+                        <span className="sm:hidden">✗</span>
                       </>
                     )}
                   </button>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex justify-end space-x-2">
+                <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <div className="flex justify-end space-x-1 sm:space-x-2">
                     <button
                       onClick={() => onEdit(collection)}
-                      className="text-blue-600 hover:text-blue-900"
+                      className="text-blue-600 hover:text-blue-900 p-1"
+                      title="Edit"
                     >
-                      <Edit size={16} />
+                      <Edit size={14} />
                     </button>
                     <button
                       onClick={() => handleDelete(collection._id)}
-                      className="text-red-600 hover:text-red-900"
+                      className="text-red-600 hover:text-red-900 p-1"
+                      title="Delete"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </td>

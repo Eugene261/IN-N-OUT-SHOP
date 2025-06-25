@@ -198,7 +198,7 @@ function VideoForm({ initialData, onSubmit, onCancel, isUploading, uploadProgres
         </div>
         
         {/* Category & Status */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div className="grid gap-3">
             <Label>Category</Label>
             <Select
@@ -317,9 +317,9 @@ function VideoForm({ initialData, onSubmit, onCancel, isUploading, uploadProgres
             <Video className="h-4 w-4 inline mr-1" />
             Video File {!initialData && '*'}
           </Label>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
             <div className="flex-1">
-              <div className="relative border border-gray-200 rounded-md p-4">
+              <div className="relative border border-gray-200 rounded-md p-3 sm:p-4">
                 <input
                   id="video"
                   type="file"
@@ -327,15 +327,15 @@ function VideoForm({ initialData, onSubmit, onCancel, isUploading, uploadProgres
                   onChange={handleVideoChange}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
-                <div className="flex items-center justify-center h-16 gap-2 text-gray-500">
-                  <Video className="h-6 w-6" />
-                  <span>Click to upload video (Max 100MB)</span>
+                <div className="flex flex-col sm:flex-row items-center justify-center h-12 sm:h-16 gap-2 text-gray-500">
+                  <Video className="h-5 w-5 sm:h-6 sm:w-6" />
+                  <span className="text-xs sm:text-sm text-center">Click to upload video (Max 100MB)</span>
                 </div>
               </div>
             </div>
             
             {videoPreview && (
-              <div className="w-32 h-20 relative overflow-hidden rounded-md border border-gray-200">
+              <div className="w-full sm:w-32 h-20 relative overflow-hidden rounded-md border border-gray-200 flex-shrink-0">
                 <video 
                   src={videoPreview} 
                   className="w-full h-full object-cover"
@@ -346,7 +346,7 @@ function VideoForm({ initialData, onSubmit, onCancel, isUploading, uploadProgres
             )}
           </div>
           {!initialData && !videoPreview && (
-            <p className="text-sm text-red-500">
+            <p className="text-xs sm:text-sm text-red-500">
               Video file is required for new videos
             </p>
           )}
@@ -358,9 +358,9 @@ function VideoForm({ initialData, onSubmit, onCancel, isUploading, uploadProgres
             <Image className="h-4 w-4 inline mr-1" />
             Custom Thumbnail (Optional)
           </Label>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
             <div className="flex-1">
-              <div className="relative border border-gray-200 rounded-md p-2">
+              <div className="relative border border-gray-200 rounded-md p-2 sm:p-2">
                 <input
                   id="thumbnail"
                   type="file"
@@ -368,15 +368,15 @@ function VideoForm({ initialData, onSubmit, onCancel, isUploading, uploadProgres
                   onChange={handleThumbnailChange}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
-                <div className="flex items-center justify-center h-12 gap-2 text-gray-500">
-                  <Image className="h-5 w-5" />
-                  <span>Upload custom thumbnail</span>
+                <div className="flex flex-col sm:flex-row items-center justify-center h-10 sm:h-12 gap-2 text-gray-500">
+                  <Image className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="text-xs sm:text-sm">Upload custom thumbnail</span>
                 </div>
               </div>
             </div>
             
             {thumbnailPreview && (
-              <div className="w-20 h-20 relative overflow-hidden rounded-md border border-gray-200">
+              <div className="w-20 h-20 relative overflow-hidden rounded-md border border-gray-200 flex-shrink-0 self-start sm:self-auto">
                 <img 
                   src={thumbnailPreview} 
                   alt="Thumbnail preview" 
@@ -385,7 +385,7 @@ function VideoForm({ initialData, onSubmit, onCancel, isUploading, uploadProgres
               </div>
             )}
           </div>
-          <p className="text-sm text-gray-500">
+          <p className="text-xs sm:text-sm text-gray-500">
             If not provided, thumbnail will be auto-generated from video
           </p>
         </div>
@@ -401,10 +401,10 @@ function VideoForm({ initialData, onSubmit, onCancel, isUploading, uploadProgres
         </div>
         
         {/* Form Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t">
+        <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t">
           <button
             type="button"
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed order-2 sm:order-1"
             onClick={onCancel}
             disabled={isUploading}
           >
@@ -412,16 +412,28 @@ function VideoForm({ initialData, onSubmit, onCancel, isUploading, uploadProgres
           </button>
           <button
             type="submit"
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed order-1 sm:order-2"
             disabled={isUploading || (!initialData && !formData.videoFile)}
           >
             {isUploading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {uploadProgress > 0 ? `Uploading... ${uploadProgress}%` : 'Processing...'}
+                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2 animate-spin" />
+                <span className="hidden sm:inline">
+                  {uploadProgress > 0 ? `Uploading... ${uploadProgress}%` : 'Processing...'}
+                </span>
+                <span className="sm:hidden">
+                  {uploadProgress > 0 ? `${uploadProgress}%` : '...'}
+                </span>
               </>
             ) : (
-              initialData ? 'Update Video' : 'Upload Video'
+              <>
+                <span className="hidden sm:inline">
+                  {initialData ? 'Update Video' : 'Upload Video'}
+                </span>
+                <span className="sm:hidden">
+                  {initialData ? 'Update' : 'Upload'}
+                </span>
+              </>
             )}
           </button>
         </div>

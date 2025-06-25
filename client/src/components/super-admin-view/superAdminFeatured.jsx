@@ -301,36 +301,36 @@ const SuperAdminFeatured = () => {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="p-8 max-w-7xl mx-auto"
+      className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto"
     >
-      <motion.div variants={itemVariants} className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Featured Content Management</h1>
-        <p className="text-gray-600">Manage featured products, collections, and promotional images & videos</p>
+      <motion.div variants={itemVariants} className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Featured Content Management</h1>
+        <p className="text-sm sm:text-base text-gray-600">Manage featured products, collections, and promotional images & videos</p>
       </motion.div>
       
       {/* Tab Navigation */}
-      <motion.div variants={itemVariants} className="mb-8">
+      <motion.div variants={itemVariants} className="mb-6 sm:mb-8">
         <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+          <nav className="-mb-px flex space-x-4 sm:space-x-8 overflow-x-auto" aria-label="Tabs">
             <button
               onClick={() => setActiveTab('featureImages')}
-              className={`${activeTab === 'featureImages' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
+              className={`${activeTab === 'featureImages' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center flex-shrink-0`}
             >
-              <Video className="w-5 h-5 mr-2" />
+              <Video className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
               Hero Media
             </button>
             <button
               onClick={() => setActiveTab('featuredCollections')}
-              className={`${activeTab === 'featuredCollections' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
+              className={`${activeTab === 'featuredCollections' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center flex-shrink-0`}
             >
-              <Layout className="w-5 h-5 mr-2" />
+              <Layout className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
               Featured Collections
             </button>
             <button
               onClick={() => setActiveTab('featuredProducts')}
-              className={`${activeTab === 'featuredProducts' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
+              className={`${activeTab === 'featuredProducts' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center flex-shrink-0`}
             >
-              <Star className="w-5 h-5 mr-2" />
+              <Star className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
               Featured Products
             </button>
           </nav>
@@ -340,17 +340,17 @@ const SuperAdminFeatured = () => {
       {/* Feature Media Tab Content */}
       {activeTab === 'featureImages' && (
         <motion.div variants={itemVariants}>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <div className="flex items-center">
-              <h2 className="text-xl font-bold text-gray-800">Hero Media</h2>
-              <div className="ml-2 h-1 w-10 bg-blue-500 rounded-full"></div>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-800">Hero Media</h2>
+              <div className="ml-2 h-1 w-8 sm:w-10 bg-blue-500 rounded-full"></div>
             </div>
             
             {/* Migration Button */}
             <button
               onClick={handleRunMigration}
               disabled={migrationStatus.isRunning || migrationStatus.completed}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center ${
+              className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors flex items-center self-start sm:self-auto ${
                 migrationStatus.completed 
                   ? 'bg-green-100 text-green-700 cursor-not-allowed' 
                   : migrationStatus.isRunning 
@@ -360,18 +360,21 @@ const SuperAdminFeatured = () => {
             >
               {migrationStatus.isRunning ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Migrating...
+                  <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 animate-spin" />
+                  <span className="hidden sm:inline">Migrating...</span>
+                  <span className="sm:hidden">...</span>
                 </>
               ) : migrationStatus.completed ? (
                 <>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Migration Complete
+                  <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Migration Complete</span>
+                  <span className="sm:hidden">Complete</span>
                 </>
               ) : (
                 <>
-                  <Zap className="w-4 h-4 mr-2" />
-                  Run Migration
+                  <Zap className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Run Migration</span>
+                  <span className="sm:hidden">Migrate</span>
                 </>
               )}
             </button>
@@ -412,14 +415,14 @@ const SuperAdminFeatured = () => {
           {/* Media Upload Section */}
           <motion.div 
             variants={itemVariants}
-            className="mb-6 p-6 bg-white rounded-xl border border-gray-200 shadow-sm"
+            className="mb-6 p-4 sm:p-6 bg-white rounded-xl border border-gray-200 shadow-sm"
           >
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <UploadCloud className="mr-2 h-5 w-5 text-blue-500" />
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-4 flex items-center">
+              <UploadCloud className="mr-2 h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
               Upload Hero Media
             </h3>
             
-            <div className="text-sm text-gray-600 mb-4 bg-blue-50 p-3 rounded-lg">
+            <div className="text-xs sm:text-sm text-gray-600 mb-4 bg-blue-50 p-3 rounded-lg">
               <strong>Supported formats:</strong> Images (JPG, PNG, WebP) and Videos (MP4, WebM, MOV)
               <br />
               <strong>Recommended:</strong> Images: 1920x1080px, Videos: 1920x1080px or 16:9 aspect ratio
@@ -450,7 +453,7 @@ const SuperAdminFeatured = () => {
             {/* Upload Area */}
             {!mediaFile ? (
               <label 
-                className={`relative block border-2 ${isDragging ? 'border-blue-400 bg-blue-50' : 'border-dashed border-gray-300'} rounded-xl p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors`}
+                className={`relative block border-2 ${isDragging ? 'border-blue-400 bg-blue-50' : 'border-dashed border-gray-300'} rounded-xl p-4 sm:p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
@@ -462,12 +465,12 @@ const SuperAdminFeatured = () => {
                   onChange={handleMediaFileChange}
                   ref={fileInputRef}
                 />
-                <div className="flex flex-col items-center justify-center h-32">
-                  <div className="flex items-center justify-center space-x-4 mb-3">
-                    <Image className="h-8 w-8 text-gray-400" />
-                    <Video className="h-8 w-8 text-gray-400" />
+                <div className="flex flex-col items-center justify-center h-24 sm:h-32">
+                  <div className="flex items-center justify-center space-x-3 sm:space-x-4 mb-2 sm:mb-3">
+                    <Image className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
+                    <Video className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
                   </div>
-                  <p className="text-sm font-medium text-gray-700 mb-1">
+                  <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     {isDragging ? 'Drop media here' : 'Drag and drop images or videos here'}
                   </p>
                   <p className="text-xs text-gray-500">or click to browse</p>
@@ -487,14 +490,14 @@ const SuperAdminFeatured = () => {
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center justify-between bg-white p-4 rounded-lg shadow-sm border border-gray-200"
+                  className="flex items-center justify-between bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200"
                 >
-                  <div className="flex items-center truncate max-w-[70%]">
-                    <div className="bg-gray-100 p-2 rounded-lg mr-3">
+                  <div className="flex items-center truncate flex-1 min-w-0 mr-3">
+                    <div className="bg-gray-100 p-1.5 sm:p-2 rounded-lg mr-2 sm:mr-3 flex-shrink-0">
                       {getFileTypeIcon(mediaFile)}
                     </div>
-                    <div className="truncate">
-                      <p className="text-sm font-medium truncate text-gray-900">{mediaFile.name}</p>
+                    <div className="truncate min-w-0">
+                      <p className="text-xs sm:text-sm font-medium truncate text-gray-900">{mediaFile.name}</p>
                       <div className="flex items-center space-x-2 text-xs text-gray-500">
                         <span>{(mediaFile.size / (1024 * 1024)).toFixed(2)} MB</span>
                         <span>•</span>
@@ -506,46 +509,46 @@ const SuperAdminFeatured = () => {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="p-2 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors duration-200"
+                    className="p-1.5 sm:p-2 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors duration-200 flex-shrink-0"
                     onClick={handleRemoveMedia}
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3 h-3 sm:w-4 sm:h-4" />
                     <span className="sr-only">Remove File</span>
                   </motion.button>
                 </motion.div>
                 
                 {/* Media Type Selection */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
                   <button
                     type="button"
                     onClick={() => setMediaType('image')}
-                    className={`p-3 border-2 rounded-lg flex items-center justify-center transition-all ${
+                    className={`p-2 sm:p-3 border-2 rounded-lg flex items-center justify-center transition-all text-xs sm:text-sm ${
                       mediaType === 'image' 
                         ? 'border-blue-500 bg-blue-50 text-blue-700' 
                         : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
                     }`}
                   >
-                    <Image className="w-5 h-5 mr-2" />
+                    <Image className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
                     Image
                   </button>
                   <button
                     type="button"
                     onClick={() => setMediaType('video')}
-                    className={`p-3 border-2 rounded-lg flex items-center justify-center transition-all ${
+                    className={`p-2 sm:p-3 border-2 rounded-lg flex items-center justify-center transition-all text-xs sm:text-sm ${
                       mediaType === 'video' 
                         ? 'border-blue-500 bg-blue-50 text-blue-700' 
                         : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
                     }`}
                   >
-                    <Video className="w-5 h-5 mr-2" />
+                    <Video className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
                     Video
                   </button>
                 </div>
                 
                 {/* Metadata Fields */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                       Title (Optional)
                     </label>
                     <input
@@ -553,11 +556,11 @@ const SuperAdminFeatured = () => {
                       value={mediaTitle}
                       onChange={(e) => setMediaTitle(e.target.value)}
                       placeholder="Enter media title..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                       Description (Optional)
                     </label>
                     <input
@@ -565,7 +568,7 @@ const SuperAdminFeatured = () => {
                       value={mediaDescription}
                       onChange={(e) => setMediaDescription(e.target.value)}
                       placeholder="Enter media description..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                 </div>
@@ -575,9 +578,9 @@ const SuperAdminFeatured = () => {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleUploadMedia}
-                  className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center"
+                  className="w-full py-2.5 sm:py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center text-xs sm:text-sm"
                 >
-                  <UploadCloud className="w-5 h-5 mr-2" />
+                  <UploadCloud className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
                   Upload {mediaType === 'video' ? 'Video' : 'Image'}
                 </motion.button>
               </div>
@@ -718,22 +721,23 @@ const SuperAdminFeatured = () => {
       {/* Featured Collections Tab Content */}
       {activeTab === 'featuredCollections' && (
         <motion.div variants={itemVariants}>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <div className="flex items-center">
-              <h2 className="text-xl font-bold text-gray-800">Featured Collections</h2>
-              <div className="ml-2 h-1 w-10 bg-blue-500 rounded-full"></div>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-800">Featured Collections</h2>
+              <div className="ml-2 h-1 w-8 sm:w-10 bg-blue-500 rounded-full"></div>
             </div>
             <button
               onClick={() => {
                 setShowCollectionForm(true);
                 setEditingCollection(null);
               }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+              className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center text-xs sm:text-sm self-start sm:self-auto"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
               </svg>
-              Add New Collection
+              <span className="hidden sm:inline">Add New Collection</span>
+              <span className="sm:hidden">Add</span>
             </button>
           </div>
           
