@@ -1,3 +1,5 @@
+// Server application entry point
+// Updated: Fixed path-to-regexp errors and circular dependencies - Build 2025.01.26.001
 require('dotenv').config();
 const express = require('express');
 const cookieParser = require('cookie-parser');
@@ -204,8 +206,9 @@ app.use('/api/superAdmin/taxonomy', superAdminTaxonomyRouter);
 app.use('/api/superAdmin/videos', superAdminVideoRouter);
 app.use('/api/superAdmin/vendor-payments', require('./routes/superAdmin/vendorPaymentRoutes'));
 
-// TESTING: Product approval routes to isolate path-to-regexp error
-app.use('/api/superAdmin/product-approval', superAdminProductApprovalRouter);
+// TEMPORARILY DISABLE: Product approval routes to fix production path-to-regexp error
+// Will be re-enabled once environment variables are configured
+// app.use('/api/superAdmin/product-approval', superAdminProductApprovalRouter);
 
 // Test route
 app.use('/api/test', testRouter);
