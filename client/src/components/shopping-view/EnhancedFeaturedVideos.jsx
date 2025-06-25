@@ -42,6 +42,7 @@ function EnhancedFeaturedVideos() {
   const [isMaximized, setIsMaximized] = useState(false);
   const [maximizedVideo, setMaximizedVideo] = useState(null);
   const [isMuted, setIsMuted] = useState(true);
+  const [doubleTapTimers, setDoubleTapTimers] = useState({});
   
   const videoRefs = useRef({});
   const maximizedVideoRef = useRef(null);
@@ -54,11 +55,11 @@ function EnhancedFeaturedVideos() {
   useEffect(() => {
     const updateVideosPerSlide = () => {
       if (window.innerWidth >= 1024) {
-        setVideosPerSlide(3);
+        setVideosPerSlide(4); // Show 4 on large screens since cards are smaller
       } else if (window.innerWidth >= 768) {
-        setVideosPerSlide(2);
+        setVideosPerSlide(3); // Show 3 on medium screens
       } else {
-        setVideosPerSlide(1);
+        setVideosPerSlide(2); // Show 2 on small screens
       }
     };
 
@@ -125,7 +126,7 @@ function EnhancedFeaturedVideos() {
   };
 
   const handleLike = async (e, videoId) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     
     try {
       const payload = { videoId };
@@ -144,10 +145,31 @@ function EnhancedFeaturedVideos() {
     }
   };
 
+  // Handle double tap for mobile devices
+  const handleVideoTap = (e, videoId) => {
+    const isMobile = window.innerWidth < 1024; // Consider tablet and mobile as mobile
+    
+    if (!isMobile) return; // Only handle double tap on mobile/tablet
+    
+    e.preventDefault();
+    
+    if (doubleTapTimers[videoId]) {
+      // Second tap - execute like
+      clearTimeout(doubleTapTimers[videoId]);
+      setDoubleTapTimers(prev => ({ ...prev, [videoId]: null }));
+      handleLike(null, videoId);
+    } else {
+      // First tap - set timer
+      const timer = setTimeout(() => {
+        setDoubleTapTimers(prev => ({ ...prev, [videoId]: null }));
+      }, 300); // 300ms window for double tap
+      
+      setDoubleTapTimers(prev => ({ ...prev, [videoId]: timer }));
+    }
+  };
+
   const handleVendorClick = (video) => {
     if (video.vendorId) {
-      // For now, navigate to all products by that vendor
-      // You can create a specific vendor page route later
       navigate(`/shop/listing?vendor=${video.vendorId._id}`);
     } else {
       toast.info('This is general content - no specific vendor');
@@ -174,7 +196,7 @@ function EnhancedFeaturedVideos() {
 
   return (
     <>
-      <section className="py-16 lg:py-20 bg-white relative overflow-hidden">
+      <section className="py-12 lg:py-16 bg-white relative overflow-hidden">
         <div className="container mx-auto px-4 relative z-10">
           {/* Section Header */}
           <motion.div
@@ -182,7 +204,7 @@ function EnhancedFeaturedVideos() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-12 lg:mb-16"
+            className="text-center mb-8 lg:mb-12"
           >
             <div className="flex items-center justify-center mb-4">
               <div className="flex items-center gap-2">
@@ -194,10 +216,10 @@ function EnhancedFeaturedVideos() {
                 </span>
               </div>
             </div>
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-3">
               Featured Vendor Reels
             </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto text-lg leading-relaxed">
+            <p className="text-gray-600 max-w-2xl mx-auto leading-relaxed">
               Discover the latest trends through exclusive videos from our featured vendors and creators
             </p>
           </motion.div>
@@ -228,9 +250,9 @@ function EnhancedFeaturedVideos() {
           )}
 
           {/* Video Grid */}
-          <div className="px-8 lg:px-16">
+          <div className="px-8 lg:px-12">
             <motion.div
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6"
               layout
               transition={{ duration: 0.5, ease: "easeInOut" }}
             >
@@ -239,6 +261,7 @@ function EnhancedFeaturedVideos() {
                 const isLiked = videoLike?.isLiked || false;
                 const likeCount = videoLike?.count || video.likeCount || 0;
                 const isPlaying = playingVideo === video._id;
+                const isLargeDevice = window.innerWidth >= 1024;
 
                 return (
                   <motion.div
@@ -247,11 +270,14 @@ function EnhancedFeaturedVideos() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.6, delay: index * 0.1 }}
-                    whileHover={{ y: -5 }}
-                    className="group relative bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg border border-gray-100 transition-all duration-300"
+                    whileHover={{ y: -3 }}
+                    className="group relative bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md border border-gray-100 transition-all duration-300"
                   >
-                    {/* Video Container - Full card height */}
-                    <div className="relative aspect-[9/16] overflow-hidden">
+                    {/* Video Container - Reduced aspect ratio */}
+                    <div 
+                      className="relative aspect-[3/4] overflow-hidden cursor-pointer"
+                      onClick={(e) => handleVideoTap(e, video._id)}
+                    >
                       <video
                         ref={(el) => videoRefs.current[video._id] = el}
                         src={video.videoUrl}
@@ -263,7 +289,7 @@ function EnhancedFeaturedVideos() {
                         onEnded={() => setPlayingVideo(null)}
                       />
                       
-                      {/* Video Overlay - Only visible on hover or when playing */}
+                      {/* Video Overlay */}
                       <div className={`absolute inset-0 bg-black/20 transition-opacity duration-300 ${
                         isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                       }`} />
@@ -275,8 +301,9 @@ function EnhancedFeaturedVideos() {
                           whileTap={{ scale: 0.9 }}
                           className={`${
                             isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'
-                          } transition-all duration-300 bg-white/90 hover:bg-white rounded-full p-4 shadow-lg`}
-                          onClick={() => {
+                          } transition-all duration-300 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg`}
+                          onClick={(e) => {
+                            e.stopPropagation();
                             const videoRef = videoRefs.current[video._id];
                             if (isPlaying) {
                               handleVideoPause(video._id, videoRef);
@@ -286,16 +313,16 @@ function EnhancedFeaturedVideos() {
                           }}
                         >
                           {isPlaying ? (
-                            <Pause className="h-6 w-6 text-gray-700 fill-current" />
+                            <Pause className="h-4 w-4 text-gray-700 fill-current" />
                           ) : (
-                            <Play className="h-6 w-6 text-gray-700 fill-current ml-0.5" />
+                            <Play className="h-4 w-4 text-gray-700 fill-current ml-0.5" />
                           )}
                         </motion.button>
                       </div>
                       
                       {/* Top Controls */}
-                      <div className="absolute top-3 left-3 right-3 flex items-start justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div className="flex gap-2">
+                      <div className="absolute top-2 left-2 right-2 flex items-start justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="flex gap-1">
                           <div className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-sm">
                             LIVE
                           </div>
@@ -309,67 +336,75 @@ function EnhancedFeaturedVideos() {
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          className="bg-white/90 hover:bg-white rounded-full p-2 shadow-sm transition-all duration-300"
-                          onClick={() => handleMaximize(video)}
+                          className="bg-white/90 hover:bg-white rounded-full p-1.5 shadow-sm transition-all duration-300"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMaximize(video);
+                          }}
                         >
-                          <Maximize2 className="h-4 w-4 text-gray-700" />
+                          <Maximize2 className="h-3 w-3 text-gray-700" />
                         </motion.button>
                       </div>
                       
-                      {/* Bottom Controls */}
-                      <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {formatDuration(video.duration)}
-                            </div>
-                            <div className="bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                              <Eye className="h-3 w-3" />
-                              {formatViews(video.views)}
-                            </div>
-                          </div>
-                          
+                      {/* Like Button - Always visible on large devices, double-tap on mobile */}
+                      <div className="absolute top-2 right-2">
+                        {isLargeDevice ? (
+                          // Visible like button for large devices
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
-                            onClick={(e) => handleLike(e, video._id)}
-                            className={`p-2 rounded-full shadow-sm transition-all duration-300 ${
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLike(e, video._id);
+                            }}
+                            className={`p-2 rounded-full shadow-lg transition-all duration-300 backdrop-blur-sm ${
                               isLiked 
                                 ? 'bg-red-500 text-white scale-110' 
-                                : 'bg-white/90 text-gray-700 hover:bg-white'
+                                : 'bg-white/80 text-gray-700 hover:bg-white'
                             }`}
                           >
                             <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
                           </motion.button>
-                        </div>
+                        ) : (
+                          // Double-tap indicator for mobile - only shown when tapped
+                          <div className="text-xs text-white bg-black/50 px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                            Double tap ❤️
+                          </div>
+                        )}
                       </div>
-                    </div>
-
-                    {/* Video Info - Compact overlay at bottom */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                      <h3 className="font-semibold text-white mb-1 text-sm leading-tight line-clamp-1">
-                        {video.title}
-                      </h3>
                       
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center text-xs text-gray-300">
-                          <span className="flex items-center gap-1 mr-3">
-                            <Heart className="h-3 w-3" />
-                            {likeCount}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Eye className="h-3 w-3" />
-                            {formatViews(video.views)}
-                          </span>
+                      {/* Video Info - Single location at bottom */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+                        <h3 className="font-semibold text-white mb-1 text-xs leading-tight line-clamp-1">
+                          {video.title}
+                        </h3>
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center text-xs text-gray-300 gap-3">
+                            <span className="flex items-center gap-1">
+                              <Heart className="h-3 w-3" />
+                              {likeCount}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Eye className="h-3 w-3" />
+                              {formatViews(video.views)}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {formatDuration(video.duration)}
+                            </span>
+                          </div>
                         </div>
                         
                         {video.vendorId && (
                           <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="text-xs text-white/90 hover:text-white flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full backdrop-blur-sm"
-                            onClick={() => handleVendorClick(video)}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="text-xs text-white/90 hover:text-white flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full backdrop-blur-sm mt-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleVendorClick(video);
+                            }}
                           >
                             <User className="h-3 w-3" />
                             {video.vendorId.shopName || video.vendorId.userName}
@@ -386,7 +421,7 @@ function EnhancedFeaturedVideos() {
 
           {/* Slide Indicators */}
           {maxSlides > 1 && (
-            <div className="flex justify-center mt-8 space-x-2">
+            <div className="flex justify-center mt-6 space-x-2">
               {Array.from({ length: maxSlides }, (_, index) => (
                 <motion.button
                   key={index}
@@ -409,12 +444,12 @@ function EnhancedFeaturedVideos() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="text-center mt-12"
+            className="text-center mt-8"
           >
             <motion.button
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
-              className="bg-gray-900 hover:bg-black text-white px-8 py-3 rounded-full font-medium shadow-lg hover:shadow-xl transition-all duration-300"
+              className="bg-gray-900 hover:bg-black text-white px-6 py-2.5 rounded-full font-medium shadow-lg hover:shadow-xl transition-all duration-300"
               onClick={() => navigate('/shop/videos')}
             >
               Load More Reels
