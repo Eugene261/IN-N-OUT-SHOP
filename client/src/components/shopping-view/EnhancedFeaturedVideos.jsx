@@ -42,7 +42,6 @@ function EnhancedFeaturedVideos() {
   const [isMaximized, setIsMaximized] = useState(false);
   const [maximizedVideo, setMaximizedVideo] = useState(null);
   const [isMuted, setIsMuted] = useState(true);
-  const [doubleTapTimers, setDoubleTapTimers] = useState({});
   
   const videoRefs = useRef({});
   const maximizedVideoRef = useRef(null);
@@ -147,28 +146,7 @@ function EnhancedFeaturedVideos() {
     }
   };
 
-  // Handle double tap for mobile devices
-  const handleVideoTap = (e, videoId) => {
-    const isMobile = window.innerWidth < 1024; // Consider tablet and mobile as mobile
-    
-    if (!isMobile) return; // Only handle double tap on mobile/tablet
-    
-    e.preventDefault();
-    
-    if (doubleTapTimers[videoId]) {
-      // Second tap - execute like
-      clearTimeout(doubleTapTimers[videoId]);
-      setDoubleTapTimers(prev => ({ ...prev, [videoId]: null }));
-      handleLike(null, videoId);
-    } else {
-      // First tap - set timer
-      const timer = setTimeout(() => {
-        setDoubleTapTimers(prev => ({ ...prev, [videoId]: null }));
-      }, 300); // 300ms window for double tap
-      
-      setDoubleTapTimers(prev => ({ ...prev, [videoId]: timer }));
-    }
-  };
+
 
   const handleVendorClick = (video) => {
     if (video.vendorId) {
@@ -180,7 +158,7 @@ function EnhancedFeaturedVideos() {
 
   const scroll = (direction) => {
     if (scrollContainerRef.current) {
-      const scrollAmount = window.innerWidth >= 1024 ? 360 : 300; // Larger scroll for larger cards
+      const scrollAmount = window.innerWidth >= 1024 ? 360 : 320; // Larger scroll for taller cards
       const currentScroll = scrollContainerRef.current.scrollLeft;
       const newScroll = direction === 'left' 
         ? currentScroll - scrollAmount 
@@ -263,8 +241,7 @@ function EnhancedFeaturedVideos() {
                   >
                     {/* Video Container - Responsive dimensions */}
                     <div 
-                      className="relative aspect-[4/3] lg:aspect-[5/4] overflow-hidden cursor-pointer"
-                      onClick={(e) => handleVideoTap(e, video._id)}
+                      className="relative aspect-[3/2] lg:aspect-[4/3] overflow-hidden"
                     >
                       <video
                         ref={(el) => videoRefs.current[video._id] = el}
@@ -308,8 +285,10 @@ function EnhancedFeaturedVideos() {
                         </motion.button>
                       </div>
                       
-                      {/* Top Controls */}
-                      <div className="absolute top-2 left-2 right-2 flex items-start justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      {/* Top Controls - Always visible on mobile, hover on desktop */}
+                      <div className={`absolute top-2 left-2 right-2 flex items-start justify-between transition-opacity duration-300 ${
+                        isLargeDevice ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'
+                      }`}>
                         <div className="flex gap-1">
                           <div className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full shadow-sm">
                             LIVE
@@ -317,24 +296,22 @@ function EnhancedFeaturedVideos() {
                         </div>
                         
                         <div className="flex gap-1">
-                          {/* Like Button - Always visible on large devices */}
-                          {isLargeDevice && (
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleLike(e, video._id);
-                              }}
-                              className={`p-1.5 rounded-full shadow-lg transition-all duration-300 backdrop-blur-sm ${
-                                isLiked 
-                                  ? 'bg-red-500 text-white scale-110' 
-                                  : 'bg-white/80 text-gray-700 hover:bg-white'
-                              }`}
-                            >
-                              <Heart className={`h-3 w-3 ${isLiked ? 'fill-current' : ''}`} />
-                            </motion.button>
-                          )}
+                          {/* Like Button - Always visible on all devices */}
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLike(e, video._id);
+                            }}
+                            className={`p-1.5 rounded-full shadow-lg transition-all duration-300 backdrop-blur-sm ${
+                              isLiked 
+                                ? 'bg-red-500 text-white scale-110' 
+                                : 'bg-white/80 text-gray-700 hover:bg-white'
+                            }`}
+                          >
+                            <Heart className={`h-3 w-3 lg:h-4 lg:w-4 ${isLiked ? 'fill-current' : ''}`} />
+                          </motion.button>
                           
                           {/* Mute/Unmute Button on each card */}
                           <motion.button
@@ -347,9 +324,9 @@ function EnhancedFeaturedVideos() {
                             }}
                           >
                             {isMuted ? (
-                              <VolumeX className="h-3 w-3 text-gray-700" />
+                              <VolumeX className="h-3 w-3 lg:h-4 lg:w-4 text-gray-700" />
                             ) : (
-                              <Volume2 className="h-3 w-3 text-gray-700" />
+                              <Volume2 className="h-3 w-3 lg:h-4 lg:w-4 text-gray-700" />
                             )}
                           </motion.button>
                           
@@ -363,17 +340,10 @@ function EnhancedFeaturedVideos() {
                               handleMaximize(video);
                             }}
                           >
-                            <Maximize2 className="h-3 w-3 text-gray-700" />
+                            <Maximize2 className="h-3 w-3 lg:h-4 lg:w-4 text-gray-700" />
                           </motion.button>
                         </div>
                       </div>
-                      
-                      {/* Double-tap indicator for mobile */}
-                      {!isLargeDevice && (
-                        <div className="absolute top-2 right-2 text-xs text-white bg-black/50 px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                          Double tap ❤️
-                        </div>
-                      )}
                     </div>
 
                     {/* Video Info - Responsive design */}
