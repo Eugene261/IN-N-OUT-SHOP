@@ -284,7 +284,7 @@ function EnhancedFeaturedVideos() {
                   >
                     {/* Video Container - Responsive dimensions */}
                     <div 
-                      className="relative aspect-[5/3] lg:aspect-[3/2] overflow-hidden cursor-pointer"
+                      className="relative aspect-[16/9] lg:aspect-[4/3] overflow-hidden cursor-pointer"
                       onClick={(e) => handleVideoTap(e, video._id)}
                     >
                       <video
