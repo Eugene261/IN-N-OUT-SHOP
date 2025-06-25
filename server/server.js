@@ -206,9 +206,9 @@ app.use('/api/superAdmin/taxonomy', superAdminTaxonomyRouter);
 app.use('/api/superAdmin/videos', superAdminVideoRouter);
 app.use('/api/superAdmin/vendor-payments', require('./routes/superAdmin/vendorPaymentRoutes'));
 
-// TEMPORARILY DISABLE: Product approval routes to fix production path-to-regexp error
-// Will be re-enabled once environment variables are configured
-// app.use('/api/superAdmin/product-approval', superAdminProductApprovalRouter);
+// RESTORED: Product approval routes - Environment variables are now configured in Vercel
+// Features are disabled by default for safety (PRODUCT_APPROVAL_ENABLED=false)
+app.use('/api/superAdmin/product-approval', superAdminProductApprovalRouter);
 
 // Test route
 app.use('/api/test', testRouter);
