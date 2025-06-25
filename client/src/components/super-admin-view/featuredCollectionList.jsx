@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { Edit, Trash2, Eye, EyeOff, ArrowUp, ArrowDown } from 'lucide-react';
@@ -16,22 +16,16 @@ const FeaturedCollectionList = ({ onEdit }) => {
     collectionsCount: collections ? collections.length : 'null/undefined'
   });
   
-  useEffect(() => {
-    console.log('FeaturedCollectionList: Fetching collections in useEffect');
-    dispatch(fetchFeaturedCollections()).then((result) => {
-      console.log('FeaturedCollectionList: Fetch result =>', result);
-    }).catch((error) => {
-      console.error('FeaturedCollectionList: Fetch error =>', error);
-    });
-  }, [dispatch]);
+  // Removed redundant useEffect - parent component handles fetching
+  // This was causing infinite loading loops
   
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this collection?')) {
       dispatch(deleteFeaturedCollection(id))
         .unwrap()
         .then(() => {
-          // Refresh the list after deletion
-          dispatch(fetchFeaturedCollections());
+          // Redux state will automatically update, no need to fetch again
+          console.log('Collection deleted successfully');
         })
         .catch(error => {
           console.error('Failed to delete collection:', error);
@@ -49,8 +43,8 @@ const FeaturedCollectionList = ({ onEdit }) => {
     }))
       .unwrap()
       .then(() => {
-        // Refresh the list after update
-        dispatch(fetchFeaturedCollections());
+        // Redux state will automatically update, no need to fetch again
+        console.log('Collection status updated successfully');
       })
       .catch(error => {
         console.error('Failed to update collection:', error);
@@ -71,8 +65,8 @@ const FeaturedCollectionList = ({ onEdit }) => {
     }))
       .unwrap()
       .then(() => {
-        // Refresh the list after update
-        dispatch(fetchFeaturedCollections());
+        // Redux state will automatically update, no need to fetch again
+        console.log('Collection position updated successfully');
       })
       .catch(error => {
         console.error('Failed to update collection position:', error);
@@ -117,6 +111,8 @@ const FeaturedCollectionList = ({ onEdit }) => {
   
   // Sort collections by position
   const sortedCollections = [...collections].sort((a, b) => a.position - b.position);
+  
+  console.log('FeaturedCollectionList: Rendering table with collections:', sortedCollections);
   
   return (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden">
