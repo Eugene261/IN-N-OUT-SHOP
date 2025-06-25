@@ -258,10 +258,12 @@ function VideoForm({ initialData, onSubmit, onCancel, isUploading, uploadProgres
             name="vendorId"
             value={formData.vendorId}
             onChange={handleChange}
-            placeholder="Enter vendor user ID"
+            placeholder="Enter valid MongoDB ObjectId (e.g., 507f1f77bcf86cd799439011) or leave empty"
           />
           <p className="text-sm text-gray-500">
-            Link this video to a specific vendor (leave empty for general content)
+            Link this video to a specific vendor by entering their MongoDB ObjectId. Leave empty for general content.
+            <br />
+            <span className="text-amber-600">⚠️ Must be a valid 24-character ObjectId format</span>
           </p>
         </div>
         

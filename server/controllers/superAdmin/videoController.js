@@ -214,6 +214,19 @@ const createVideo = async (req, res) => {
       }
     }
     
+    // Validate and process vendorId
+    let processedVendorId = null;
+    if (vendorId && vendorId.trim() !== '') {
+      // Check if it's a valid ObjectId
+      const mongoose = require('mongoose');
+      if (mongoose.Types.ObjectId.isValid(vendorId.trim())) {
+        processedVendorId = vendorId.trim();
+      } else {
+        console.log('Invalid vendorId provided:', vendorId, '- setting to null');
+        processedVendorId = null;
+      }
+    }
+    
     console.log('Parsed data:', {
       title,
       category: category || 'showcase',
@@ -221,6 +234,7 @@ const createVideo = async (req, res) => {
       status: status || 'draft',
       isFeatured: isFeatured === 'true' || isFeatured === true,
       priority: parseInt(priority) || 0,
+      processedVendorId,
       uploadedBy: req.user.id
     });
     
@@ -234,7 +248,7 @@ const createVideo = async (req, res) => {
       fileSize,
       category: category || 'showcase',
       tags: parsedTags,
-      vendorId: vendorId || null,
+      vendorId: processedVendorId,
       status: status || 'draft',
       isFeatured: isFeatured === 'true' || isFeatured === true,
       priority: parseInt(priority) || 0,
