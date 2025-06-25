@@ -299,7 +299,7 @@ function EnhancedFeaturedVideos() {
                         ref={(el) => videoRefs.current[video._id] = el}
                         src={video.videoUrl}
                         poster={video.thumbnailUrl}
-                        className="w-full h-full object-contain bg-black"
+                        className="w-full h-full object-cover"
                         loop
                         playsInline
                         muted={isMuted}
