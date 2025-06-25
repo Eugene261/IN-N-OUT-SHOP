@@ -207,7 +207,7 @@ function EnhancedFeaturedVideos() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="flex items-center justify-between mb-6"
+            className="mb-6"
           >
             <div>
               <h2 className="text-xl lg:text-2xl font-bold text-gray-900">
@@ -217,27 +217,6 @@ function EnhancedFeaturedVideos() {
                 Discover the latest trends from our vendors
               </p>
             </div>
-            
-            {/* Global Mute/Unmute Button */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={toggleMute}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm transition-all duration-300 ${
-                isMuted 
-                  ? 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200' 
-                  : 'bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100'
-              }`}
-            >
-              {isMuted ? (
-                <VolumeX className="h-4 w-4" />
-              ) : (
-                <Volume2 className="h-4 w-4" />
-              )}
-              <span className="hidden sm:inline">
-                {isMuted ? 'Enable Sound' : 'Mute Sound'}
-              </span>
-            </motion.button>
           </motion.div>
 
           {/* Navigation Arrows */}
@@ -284,7 +263,7 @@ function EnhancedFeaturedVideos() {
                   >
                     {/* Video Container - Responsive dimensions */}
                     <div 
-                      className="relative aspect-[16/9] lg:aspect-[4/3] overflow-hidden cursor-pointer"
+                      className="relative aspect-[4/3] lg:aspect-[5/4] overflow-hidden cursor-pointer"
                       onClick={(e) => handleVideoTap(e, video._id)}
                     >
                       <video
@@ -357,10 +336,28 @@ function EnhancedFeaturedVideos() {
                             </motion.button>
                           )}
                           
+                          {/* Mute/Unmute Button on each card */}
                           <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className="bg-white/90 hover:bg-white rounded-full p-1 shadow-sm transition-all duration-300"
+                            className="bg-white/90 hover:bg-white rounded-full p-1.5 shadow-sm transition-all duration-300"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleMute();
+                            }}
+                          >
+                            {isMuted ? (
+                              <VolumeX className="h-3 w-3 text-gray-700" />
+                            ) : (
+                              <Volume2 className="h-3 w-3 text-gray-700" />
+                            )}
+                          </motion.button>
+                          
+                          {/* Expand Button - Now visible on all devices */}
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="bg-white/90 hover:bg-white rounded-full p-1.5 shadow-sm transition-all duration-300"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleMaximize(video);
