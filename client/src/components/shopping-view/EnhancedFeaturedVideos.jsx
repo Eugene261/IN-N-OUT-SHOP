@@ -194,58 +194,56 @@ function EnhancedFeaturedVideos() {
           >
             {/* Background Decoration */}
             <div className="absolute inset-0 flex items-center justify-center opacity-5">
-              <Sparkles className="h-32 w-32 text-blue-500" />
+              <Sparkles className="h-32 w-32 text-black" />
             </div>
             
             <div className="relative z-10">
               {/* Badge */}
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-full px-4 py-2 mb-4"
-              >
-                <Sparkles className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-700">Trending Now</span>
-              </motion.div>
+                             <motion.div 
+                 initial={{ opacity: 0, scale: 0.8 }}
+                 whileInView={{ opacity: 1, scale: 1 }}
+                 viewport={{ once: true }}
+                 transition={{ duration: 0.5, delay: 0.2 }}
+                 className="inline-flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-full px-4 py-2 mb-4"
+               >
+                 <Sparkles className="h-4 w-4 text-gray-700" />
+                 <span className="text-sm font-medium text-black">Trending Now</span>
+               </motion.div>
               
               {/* Main Title */}
-              <motion.h2 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.3 }}
-                className="text-2xl lg:text-4xl font-bold text-gray-900 mb-4"
-              >
-                <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  Featured Vendor Reels
-                </span>
-              </motion.h2>
+                             <motion.h2 
+                 initial={{ opacity: 0, y: 20 }}
+                 whileInView={{ opacity: 1, y: 0 }}
+                 viewport={{ once: true }}
+                 transition={{ duration: 0.6, delay: 0.3 }}
+                 className="text-2xl lg:text-4xl font-bold text-black mb-4"
+               >
+                 Featured Vendor Reels
+               </motion.h2>
               
               {/* Description */}
-              <motion.p 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-                className="text-gray-600 text-base lg:text-lg max-w-2xl mx-auto leading-relaxed"
-              >
-                Explore amazing content from our top vendors and discover the latest trends that are shaping the market
-              </motion.p>
+                             <motion.p 
+                 initial={{ opacity: 0, y: 20 }}
+                 whileInView={{ opacity: 1, y: 0 }}
+                 viewport={{ once: true }}
+                 transition={{ duration: 0.6, delay: 0.4 }}
+                 className="text-black text-base lg:text-lg max-w-2xl mx-auto leading-relaxed"
+               >
+                 Explore amazing content from our top vendors and discover the latest trends that are shaping the market
+               </motion.p>
               
               {/* Decorative Elements */}
-              <motion.div 
-                initial={{ opacity: 0, scale: 0 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-                className="flex items-center justify-center gap-2 mt-6"
-              >
-                <div className="h-1 w-8 bg-gradient-to-r from-blue-500 to-transparent rounded-full"></div>
-                <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-                <div className="h-1 w-8 bg-gradient-to-l from-purple-500 to-transparent rounded-full"></div>
-              </motion.div>
+                             <motion.div 
+                 initial={{ opacity: 0, scale: 0 }}
+                 whileInView={{ opacity: 1, scale: 1 }}
+                 viewport={{ once: true }}
+                 transition={{ duration: 0.5, delay: 0.5 }}
+                 className="flex items-center justify-center gap-2 mt-6"
+               >
+                 <div className="h-1 w-8 bg-gradient-to-r from-black to-transparent rounded-full"></div>
+                 <div className="h-2 w-2 bg-black rounded-full"></div>
+                 <div className="h-1 w-8 bg-gradient-to-l from-black to-transparent rounded-full"></div>
+               </motion.div>
             </div>
           </motion.div>
 
@@ -342,7 +340,7 @@ function EnhancedFeaturedVideos() {
                         isLargeDevice ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'
                       }`}>
                         <div className="flex gap-1">
-                          <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-sm">
+                          <div className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-sm">
                             FEATURED
                           </div>
                         </div>
@@ -454,7 +452,7 @@ function EnhancedFeaturedVideos() {
             <motion.button
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
-              className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2"
+              className="bg-black hover:bg-gray-900 text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2"
               onClick={() => {
                 dispatch(fetchFeaturedVideos({ limit: featuredVideos.length + 8 }));
                 toast.success('Loading more reels...', { duration: 1500 });
