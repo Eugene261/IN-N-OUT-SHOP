@@ -75,6 +75,25 @@ const testRouter = require('./routes/testRoute.js');
 const adminRoutes = require('./routes/admin/adminRoutes');
 const shopRoutes = require('./routes/admin/shopRoutes');
 
+// Shipping diagnostic routes
+const shippingDiagnosticRouter = require('./routes/shop-view/shippingDiagnosticRoutes.js');
+
+// AdminId diagnostic routes
+const adminIdDiagnosticRouter = require('./routes/shop-view/adminIdDiagnosticRoutes.js');
+
+// Messaging routes
+const messagingRouter = require('./routes/common/messagingRoutes');
+
+// Vendor payment routes
+const adminVendorPaymentRouter = require('./routes/admin/vendorPaymentRoutes');
+const superAdminVendorPaymentRouter = require('./routes/superAdmin/vendorPaymentRoutes');
+
+// Migration routes
+const migrationRouter = require('./routes/admin/migrationRoutes');
+
+// Health routes
+const healthRouter = require('./routes/health');
+
 const app = express()
 const PORT = process.env.PORT || 5000;
 
@@ -171,7 +190,7 @@ app.use('/api/shop/search', shopSearchRouter);
 app.use('/api/shop/review', shopReviewRouter);
 app.use('/api/common/feature', commonFeatureRouter);
 app.use('/api/common', contactRouter);
-app.use('/api/common/messaging', require('./routes/common/messagingRoutes'));
+app.use('/api/common/messaging', messagingRouter);
 app.use('/api/shop/wishlist', wishlistRouter);
 app.use('/api/shop/featured-collections', shopFeaturedCollectionRouter);
 
@@ -182,11 +201,9 @@ app.use('/api/shop/videos', shopVideoRouter);
 app.use('/api/shop/shipping', shippingRouter);
 
 // Shipping diagnostic routes
-const shippingDiagnosticRouter = require('./routes/shop-view/shippingDiagnosticRoutes.js');
 app.use('/api/shop/shipping-diagnostic', shippingDiagnosticRouter);
 
 // AdminId diagnostic routes
-const adminIdDiagnosticRouter = require('./routes/shop-view/adminIdDiagnosticRoutes.js');
 app.use('/api/shop/admin-id-diagnostic', adminIdDiagnosticRouter);
 
 // User routes
@@ -204,7 +221,7 @@ app.use('/api/superAdmin/featured-collections', superAdminFeaturedCollectionRout
 app.use('/api/superAdmin/revenue', superAdminRevenueRouter);
 app.use('/api/superAdmin/taxonomy', superAdminTaxonomyRouter);
 app.use('/api/superAdmin/videos', superAdminVideoRouter);
-app.use('/api/superAdmin/vendor-payments', require('./routes/superAdmin/vendorPaymentRoutes'));
+app.use('/api/superAdmin/vendor-payments', superAdminVendorPaymentRouter);
 
 // RESTORED: Product approval routes - Environment variables are now configured in Vercel
 // Features are disabled by default for safety (PRODUCT_APPROVAL_ENABLED=false)
@@ -214,16 +231,14 @@ app.use('/api/superAdmin/product-approval', superAdminProductApprovalRouter);
 app.use('/api/test', testRouter);
 
 // Health check routes
-const healthRouter = require('./routes/health');
 app.use('/api/health', healthRouter);
 
 // Admin routes
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/shop', shopRoutes);
-app.use('/api/admin/vendor-payments', require('./routes/admin/vendorPaymentRoutes'));
+app.use('/api/admin/vendor-payments', adminVendorPaymentRouter);
 
 // Temporary migration route - REMOVE AFTER MIGRATION
-const migrationRouter = require('./routes/admin/migrationRoutes');
 app.use('/api/admin/migrations', migrationRouter);
 
 // TESTING: Feature flags endpoint only

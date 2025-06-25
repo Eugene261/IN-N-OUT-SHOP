@@ -18,13 +18,13 @@ router.use((req, res, next) => {
   next();
 });
 
-// All messaging endpoints return "disabled" response for now
-router.all('/*', (req, res) => {
-  res.status(503).json({
-    success: false,
-    message: 'Messaging system is temporarily disabled',
-    code: 'MESSAGING_DISABLED'
-  });
-});
+// COMMENTED OUT: This router.all pattern might be causing path-to-regexp errors in production
+// router.all('/*', (req, res) => {
+//   res.status(503).json({
+//     success: false,
+//     message: 'Messaging system is temporarily disabled',
+//     code: 'MESSAGING_DISABLED'
+//   });
+// });
 
 module.exports = router; 
