@@ -204,8 +204,8 @@ app.use('/api/superAdmin/taxonomy', superAdminTaxonomyRouter);
 app.use('/api/superAdmin/videos', superAdminVideoRouter);
 app.use('/api/superAdmin/vendor-payments', require('./routes/superAdmin/vendorPaymentRoutes'));
 
-// TEMPORARILY COMMENTED OUT: Product approval routes to isolate path-to-regexp error
-// app.use('/api/superAdmin/product-approval', superAdminProductApprovalRouter);
+// TESTING: Product approval routes to isolate path-to-regexp error
+app.use('/api/superAdmin/product-approval', superAdminProductApprovalRouter);
 
 // Test route
 app.use('/api/test', testRouter);
@@ -223,14 +223,12 @@ app.use('/api/admin/vendor-payments', require('./routes/admin/vendorPaymentRoute
 const migrationRouter = require('./routes/admin/migrationRoutes');
 app.use('/api/admin/migrations', migrationRouter);
 
-// TEMPORARILY COMMENTED OUT: Feature flags endpoint to isolate path-to-regexp error
-// NEW: Feature Flags Health Check
-// const { getFeatureFlagsStatus } = require('./utils/featureFlags');
-// app.get('/api/feature-flags/status', getFeatureFlagsStatus);
+// TESTING: Feature flags endpoint only
+const { getFeatureFlagsStatus } = require('./utils/featureFlags');
+app.get('/api/feature-flags/status', getFeatureFlagsStatus);
 
-// TEMPORARILY COMMENTED OUT: API 404 handler to isolate path-to-regexp error
-// This might be causing the "Missing parameter name" error
-// 404 handler for API routes - Fixed route pattern
+// COMMENTED OUT: API 404 handler causes path-to-regexp error with '/api' pattern
+// The '/api' pattern conflicts with existing route patterns
 // app.use('/api', (req, res, next) => {
 //   // Only handle requests that haven't been handled by previous routes
 //   if (!res.headersSent) {

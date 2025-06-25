@@ -1,15 +1,14 @@
 const Product = require('../../models/Products');
 const User = require('../../models/User');
 const emailService = require('../../services/emailService');
-const { featureFlags } = require('../../utils/featureFlags');
 
 /**
  * Get all pending products for SuperAdmin review
  */
 const getPendingProducts = async (req, res) => {
   try {
-    // Feature flag check
-    if (!featureFlags.isProductApprovalEnabled()) {
+    // Feature flag check - Using injected feature flags instead of direct import
+    if (!req.featureFlags || !req.featureFlags.isProductApprovalEnabled()) {
       return res.status(503).json({
         success: false,
         message: 'Product approval system is currently disabled',
@@ -69,7 +68,7 @@ const getPendingProducts = async (req, res) => {
 const getAllProductsWithStatus = async (req, res) => {
   try {
     // Feature flag check
-    if (!featureFlags.isProductApprovalEnabled()) {
+    if (!req.featureFlags || !req.featureFlags.isProductApprovalEnabled()) {
       return res.status(503).json({
         success: false,
         message: 'Product approval system is currently disabled',
@@ -156,7 +155,7 @@ const getAllProductsWithStatus = async (req, res) => {
 const approveProduct = async (req, res) => {
   try {
     // Feature flag check
-    if (!featureFlags.isProductApprovalEnabled()) {
+    if (!req.featureFlags || !req.featureFlags.isProductApprovalEnabled()) {
       return res.status(503).json({
         success: false,
         message: 'Product approval system is currently disabled',
@@ -291,7 +290,7 @@ const approveProduct = async (req, res) => {
 const rejectProduct = async (req, res) => {
   try {
     // Feature flag check
-    if (!featureFlags.isProductApprovalEnabled()) {
+    if (!req.featureFlags || !req.featureFlags.isProductApprovalEnabled()) {
       return res.status(503).json({
         success: false,
         message: 'Product approval system is currently disabled',
@@ -431,7 +430,7 @@ const rejectProduct = async (req, res) => {
 const getApprovalStats = async (req, res) => {
   try {
     // Feature flag check
-    if (!featureFlags.isProductApprovalEnabled()) {
+    if (!req.featureFlags || !req.featureFlags.isProductApprovalEnabled()) {
       return res.status(503).json({
         success: false,
         message: 'Product approval system is currently disabled',

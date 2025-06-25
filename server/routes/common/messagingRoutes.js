@@ -19,7 +19,7 @@ router.use((req, res, next) => {
 });
 
 // All messaging endpoints return "disabled" response for now
-router.all('*', (req, res) => {
+router.all('/*', (req, res) => {
   res.status(503).json({
     success: false,
     message: 'Messaging system is temporarily disabled',
