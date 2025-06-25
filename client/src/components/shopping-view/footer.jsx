@@ -31,13 +31,13 @@ const Footer = () => {
         className="flex justify-between items-center w-full py-5 text-left lg:hidden"
         onClick={() => toggleAccordion(sectionKey)}
       >
-        <h3 className="text-lg font-semibold text-white tracking-wide">
+        <h3 className="text-lg font-semibold text-gray-900 tracking-wide">
           {title}
         </h3>
         {activeAccordion === sectionKey ? (
-          <ChevronUp className="h-5 w-5 text-gray-400" />
+          <ChevronUp className="h-5 w-5 text-gray-600" />
         ) : (
-          <ChevronDown className="h-5 w-5 text-gray-400" />
+          <ChevronDown className="h-5 w-5 text-gray-600" />
         )}
       </button>
       
@@ -45,7 +45,7 @@ const Footer = () => {
       <div className="hidden lg:block">
         <div className="flex items-center gap-3 mb-8">
           <div className="h-6 w-1.5 bg-gradient-to-b from-blue-400 to-purple-500 rounded-full"></div>
-          <h3 className="text-lg font-semibold text-white tracking-wide uppercase letter-spacing-wider">
+          <h3 className="text-lg font-semibold text-gray-900 tracking-wide uppercase letter-spacing-wider">
             {title}
           </h3>
         </div>
@@ -60,18 +60,14 @@ const Footer = () => {
 
   return (
     <motion.footer 
-      className="bg-gradient-to-br from-gray-900 via-gray-800 to-black text-gray-300 pt-24 pb-8 relative overflow-hidden"
+      className="bg-white text-gray-600 pt-24 pb-8 relative overflow-hidden border-t border-gray-100"
       style={{ y }}
     >
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
-        <div className="absolute -top-32 -left-32 w-64 h-64 rounded-full bg-gradient-to-br from-blue-600/10 to-purple-600/5 blur-3xl"></div>
-        <div className="absolute top-1/4 -right-32 w-80 h-80 rounded-full bg-gradient-to-br from-purple-600/8 to-pink-600/5 blur-3xl"></div>
-        <div className="absolute bottom-1/3 left-1/3 w-48 h-48 rounded-full bg-gradient-to-br from-indigo-600/10 to-blue-600/5 blur-3xl"></div>
-        
-        {/* Grid pattern overlay */}
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDMpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
+        <div className="absolute -top-32 -left-32 w-64 h-64 rounded-full bg-gradient-to-br from-blue-50/50 to-purple-50/30 blur-3xl"></div>
+        <div className="absolute top-1/4 -right-32 w-80 h-80 rounded-full bg-gradient-to-br from-purple-50/40 to-pink-50/30 blur-3xl"></div>
+        <div className="absolute bottom-1/3 left-1/3 w-48 h-48 rounded-full bg-gradient-to-br from-indigo-50/50 to-blue-50/30 blur-3xl"></div>
       </div>
 
       <div className="container mx-auto px-6 lg:px-12 relative z-10">
@@ -87,19 +83,19 @@ const Footer = () => {
         >
           {/* Newsletter section */}
           <FooterSection title="Stay Connected" sectionKey="newsletter">
-            <p className="text-gray-400 mb-6 text-sm leading-relaxed">
+            <p className="text-gray-600 mb-6 text-sm leading-relaxed">
               Be the first to hear about new products, exclusive events, and online offers.
             </p>
-            <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 p-4 rounded-2xl border border-blue-800/20 mb-8 backdrop-blur-sm">
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-2xl border border-blue-200 mb-8">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-1.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full">
                   <Heart className="h-3.5 w-3.5 text-white" />
                 </div>
-                <p className="font-medium text-sm text-white">
+                <p className="font-medium text-sm text-gray-800">
                   Special Offer
                 </p>
               </div>
-              <p className="text-xs text-gray-300 leading-relaxed">
+              <p className="text-xs text-gray-600 leading-relaxed">
                 Sign up and get 10% off your first order.
               </p>
             </div>
@@ -108,10 +104,10 @@ const Footer = () => {
                 <input 
                   type="email"
                   placeholder="Enter your email address"
-                  className="w-full px-4 py-4 bg-gray-800/50 border border-gray-700/50 rounded-2xl
-                  text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 
-                  focus:border-blue-500/50 transition-all duration-300 backdrop-blur-sm
-                  group-hover:border-gray-600/50"
+                  className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl
+                  text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 
+                  focus:border-blue-500/50 transition-all duration-300
+                  group-hover:border-gray-300"
                   required
                 />
                 <button 
@@ -157,9 +153,9 @@ const Footer = () => {
                       }
                       navigate(item.path);
                     }}
-                    className="text-gray-400 hover:text-white transition-all duration-300 
-                    flex items-center gap-3 text-sm py-3 px-2 hover:bg-gray-800/30 
-                    rounded-xl group w-full text-left backdrop-blur-sm border-l-2 border-transparent
+                    className="text-gray-600 hover:text-gray-900 transition-all duration-300 
+                    flex items-center gap-3 text-sm py-3 px-2 hover:bg-gray-50 
+                    rounded-xl group w-full text-left border-l-2 border-transparent
                     hover:border-blue-500/50"
                   >
                     <div className="h-1.5 w-1.5 bg-gray-600 rounded-full group-hover:bg-blue-400 
@@ -187,9 +183,9 @@ const Footer = () => {
                 >
                   <Link 
                     to={item.path} 
-                    className="text-gray-400 hover:text-white transition-all duration-300 
-                    flex items-center gap-3 text-sm py-3 px-2 hover:bg-gray-800/30 
-                    rounded-xl group backdrop-blur-sm border-l-2 border-transparent
+                    className="text-gray-600 hover:text-gray-900 transition-all duration-300 
+                    flex items-center gap-3 text-sm py-3 px-2 hover:bg-gray-50 
+                    rounded-xl group border-l-2 border-transparent
                     hover:border-purple-500/50"
                   >
                     <div className="h-1.5 w-1.5 bg-gray-600 rounded-full group-hover:bg-purple-400 
@@ -235,13 +231,13 @@ const Footer = () => {
                   whileHover={{ y: -2 }}
                   transition={{ type: 'spring', stiffness: 300 }}
                 >
-                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-800/30 
-                  border border-gray-700/30 hover:border-gray-600/50 transition-all duration-300
-                  backdrop-blur-sm hover:bg-gray-800/50">
+                  <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 
+                  border border-gray-200 hover:border-gray-300 transition-all duration-300
+                  hover:bg-gray-100">
                     <div className={`p-2.5 rounded-xl bg-gradient-to-r ${item.gradient} shadow-lg`}>
                       <item.icon className="h-4 w-4 text-white" />
                     </div>
-                    <span className="text-sm font-medium text-gray-300 group-hover:text-white 
+                    <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 
                     transition-colors duration-300">{item.text}</span>
                   </div>
                 </motion.div>
@@ -257,7 +253,7 @@ const Footer = () => {
           animate={{ scaleX: 1 }}
           transition={{ duration: 1.5, ease: "circOut" }}
         >
-          <div className="h-px bg-gradient-to-r from-transparent via-gray-600/50 to-transparent"></div>
+          <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
           w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full shadow-lg"></div>
         </motion.div>
@@ -279,8 +275,8 @@ const Footer = () => {
               rounded-2xl blur opacity-20 animate-pulse"></div>
             </div>
             <div className="text-left">
-              <p className="text-white font-semibold text-lg tracking-wide">IN-N-OUT</p>
-              <p className="text-gray-400 text-sm">© {new Date().getFullYear()} All rights reserved</p>
+              <p className="text-gray-900 font-semibold text-lg tracking-wide">IN-N-OUT</p>
+              <p className="text-gray-600 text-sm">© {new Date().getFullYear()} All rights reserved</p>
             </div>
           </motion.div>
           
@@ -298,9 +294,9 @@ const Footer = () => {
               <Link 
                 key={i}
                 to={item.path} 
-                className="text-gray-400 hover:text-white transition-all duration-300 
-                px-4 py-2.5 rounded-xl hover:bg-gray-800/40 text-sm font-medium
-                border border-transparent hover:border-gray-700/50 backdrop-blur-sm"
+                className="text-gray-600 hover:text-gray-900 transition-all duration-300 
+                px-4 py-2.5 rounded-xl hover:bg-gray-50 text-sm font-medium
+                border border-transparent hover:border-gray-200"
               >
                 {item.name}
               </Link>
