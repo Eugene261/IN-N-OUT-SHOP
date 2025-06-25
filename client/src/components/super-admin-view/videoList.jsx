@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Edit, Trash2, Star, StarOff, Play, Eye, Calendar, User, Tag, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -300,38 +299,35 @@ function VideoList({
                         
                         {/* Actions */}
                         <div className="flex items-center gap-2 ml-4">
-                          <Button
-                            variant="ghost"
-                            size="icon"
+                          <button
+                            className={`p-2 rounded-md hover:bg-gray-100 transition-colors ${
+                              video.isFeatured ? "text-yellow-600 hover:text-yellow-700" : "text-gray-600 hover:text-gray-700"
+                            }`}
                             onClick={() => onToggleFeatured(video._id)}
                             title={video.isFeatured ? "Remove from featured" : "Add to featured"}
-                            className={video.isFeatured ? "text-yellow-600 hover:text-yellow-700" : ""}
                           >
                             {video.isFeatured ? (
                               <Star className="h-4 w-4 fill-current" />
                             ) : (
                               <StarOff className="h-4 w-4" />
                             )}
-                          </Button>
+                          </button>
                           
-                          <Button
-                            variant="ghost"
-                            size="icon"
+                          <button
+                            className="p-2 rounded-md hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-700"
                             onClick={() => onEdit(video)}
                             title="Edit video"
                           >
                             <Edit className="h-4 w-4" />
-                          </Button>
+                          </button>
                           
-                          <Button
-                            variant="ghost"
-                            size="icon"
+                          <button
+                            className="p-2 rounded-md hover:bg-red-50 transition-colors text-red-500 hover:text-red-600"
                             onClick={() => onDelete(video._id)}
-                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
                             title="Delete video"
                           >
                             <Trash2 className="h-4 w-4" />
-                          </Button>
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -355,15 +351,14 @@ function VideoList({
               </div>
               
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
+                <button
+                  className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={() => onPageChange(pagination.current - 1)}
                   disabled={pagination.current <= 1}
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="h-4 w-4 mr-1" />
                   Previous
-                </Button>
+                </button>
                 
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
@@ -379,28 +374,29 @@ function VideoList({
                     }
                     
                     return (
-                      <Button
+                      <button
                         key={pageNum}
-                        variant={pageNum === pagination.current ? "default" : "outline"}
-                        size="sm"
+                        className={`w-8 h-8 text-sm font-medium rounded-md border transition-colors ${
+                          pageNum === pagination.current 
+                            ? 'bg-blue-600 text-white border-blue-600' 
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        }`}
                         onClick={() => onPageChange(pageNum)}
-                        className="w-8 h-8 p-0"
                       >
                         {pageNum}
-                      </Button>
+                      </button>
                     );
                   })}
                 </div>
                 
-                <Button
-                  variant="outline"
-                  size="sm"
+                <button
+                  className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={() => onPageChange(pagination.current + 1)}
                   disabled={pagination.current >= pagination.pages}
                 >
                   Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </button>
               </div>
             </div>
           </CardContent>
