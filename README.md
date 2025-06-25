@@ -1,4 +1,6 @@
-# IN-N-OUT E-Commerce Platform
+# IN-N-OUT SHOP - E-commerce Platform
+
+<!-- Last updated: 2025-01-27 - Feature flags fix deployed -->
 
 A modern, full-stack e-commerce platform built with the MERN stack (MongoDB, Express, React, Node.js).
 
