@@ -31,8 +31,8 @@ import {
 } from 'lucide-react';
 
 // Import the FeaturedCollections components
-import FeaturedCollectionList from '../superAdmin-view/featuredCollectionList';
-import FeaturedCollectionForm from '../superAdmin-view/featuredCollectionForm';
+import FeaturedCollectionList from './featuredCollectionList';
+import FeaturedCollectionForm from './featuredCollectionForm';
 
 const SuperAdminFeatured = () => {
   const dispatch = useDispatch();
@@ -868,12 +868,17 @@ const SuperAdminFeatured = () => {
                 
                 return featuredCollections && featuredCollections.length > 0;
               })() ? (
-                <FeaturedCollectionList 
-                  onEdit={(collection) => {
-                    setEditingCollection(collection);
-                    setShowCollectionForm(true);
-                  }}
-                />
+                (() => {
+                  console.log('SuperAdminFeatured: Rendering FeaturedCollectionList component');
+                  return (
+                    <FeaturedCollectionList 
+                      onEdit={(collection) => {
+                        setEditingCollection(collection);
+                        setShowCollectionForm(true);
+                      }}
+                    />
+                  );
+                })()
               ) : (
                 <div className="py-12 text-center text-gray-500 space-y-2 bg-white rounded-lg border border-gray-200 shadow-sm">
                   <Layout className="h-12 w-12 mx-auto text-gray-300 mb-2" />
