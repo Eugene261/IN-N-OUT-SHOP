@@ -57,8 +57,11 @@ const getFeaturedCollectionById = async (req, res) => {
  */
 const createFeaturedCollection = async (req, res) => {
   try {
+    console.log('Create Featured Collection - Request body:', req.body);
+    console.log('Create Featured Collection - Request file:', req.file ? 'File present' : 'No file');
+    
     const { title, description, linkTo, position, isActive } = req.body;
-    let imageUrl = req.body.imageUrl || ''; // Get image URL if provided directly
+    let imageUrl = req.body.imageUrl || req.body.image || ''; // Accept both imageUrl and image fields
     
     // Validate required fields
     if (!title) {
@@ -71,6 +74,7 @@ const createFeaturedCollection = async (req, res) => {
     // Handle image upload if file is provided
     if (req.file) {
       try {
+        console.log('Uploading file to Cloudinary...');
         // Convert buffer to base64 for Cloudinary
         const base64Image = req.file.buffer.toString('base64');
         const dataURI = `data:${req.file.mimetype};base64,${base64Image}`;
@@ -78,6 +82,7 @@ const createFeaturedCollection = async (req, res) => {
         // Upload to Cloudinary
         const uploadResult = await ImageUploadUtil(dataURI);
         imageUrl = uploadResult.secure_url;
+        console.log('Image uploaded successfully:', imageUrl);
       } catch (uploadError) {
         console.error('Error uploading image:', uploadError);
         return res.status(400).json({
@@ -89,14 +94,14 @@ const createFeaturedCollection = async (req, res) => {
     
     // Check if we have an image URL after potential upload
     if (!imageUrl) {
+      console.log('No image URL provided');
       return res.status(400).json({
         success: false,
         message: 'Image is required'
       });
     }
     
-    // Create new featured collection
-    const newCollection = new FeaturedCollection({
+    console.log('Creating featured collection with data:', {
       title,
       description,
       image: imageUrl,
@@ -105,7 +110,29 @@ const createFeaturedCollection = async (req, res) => {
       isActive: isActive !== undefined ? isActive : true
     });
     
+    // Parse isActive properly (handle string 'true'/'false' from FormData)
+    let parsedIsActive = true;
+    if (isActive !== undefined) {
+      if (typeof isActive === 'string') {
+        parsedIsActive = isActive === 'true';
+      } else {
+        parsedIsActive = Boolean(isActive);
+      }
+    }
+    
+    // Create new featured collection
+    const newCollection = new FeaturedCollection({
+      title,
+      description: description || '',
+      image: imageUrl,
+      linkTo: linkTo || '/shop',
+      position: parseInt(position) || 0,
+      isActive: parsedIsActive
+    });
+    
     await newCollection.save();
+    
+    console.log('Featured collection created successfully:', newCollection._id);
     
     res.status(201).json({
       success: true,
@@ -116,7 +143,8 @@ const createFeaturedCollection = async (req, res) => {
     console.error('Error creating featured collection:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to create featured collection'
+      message: 'Failed to create featured collection',
+      error: error.message
     });
   }
 };
@@ -126,8 +154,12 @@ const createFeaturedCollection = async (req, res) => {
  */
 const updateFeaturedCollection = async (req, res) => {
   try {
+    console.log('Update Featured Collection - Request body:', req.body);
+    console.log('Update Featured Collection - Request file:', req.file ? 'File present' : 'No file');
+    
     const { id } = req.params;
-    const { title, description, imageUrl, linkTo, position, isActive } = req.body;
+    const { title, description, linkTo, position, isActive } = req.body;
+    let imageUrl = req.body.imageUrl || req.body.image || ''; // Accept both imageUrl and image fields
     
     // Find the collection to update
     const collection = await FeaturedCollection.findById(id);
@@ -143,6 +175,7 @@ const updateFeaturedCollection = async (req, res) => {
     let imageToUse = null;
     if (req.file) {
       try {
+        console.log('Uploading new file to Cloudinary...');
         // Convert buffer to base64 for Cloudinary
         const base64Image = req.file.buffer.toString('base64');
         const dataURI = `data:${req.file.mimetype};base64,${base64Image}`;
@@ -150,6 +183,7 @@ const updateFeaturedCollection = async (req, res) => {
         // Upload to Cloudinary
         const uploadResult = await ImageUploadUtil(dataURI);
         imageToUse = uploadResult.secure_url;
+        console.log('New image uploaded successfully:', imageToUse);
       } catch (uploadError) {
         console.error('Error uploading image:', uploadError);
         return res.status(400).json({
@@ -160,6 +194,26 @@ const updateFeaturedCollection = async (req, res) => {
     } else if (imageUrl) {
       // If imageUrl is provided in the body, use it
       imageToUse = imageUrl;
+      console.log('Using existing image URL:', imageToUse);
+    }
+    
+    console.log('Updating collection with data:', {
+      title,
+      description,
+      imageToUse,
+      linkTo,
+      position,
+      isActive
+    });
+    
+    // Parse isActive properly (handle string 'true'/'false' from FormData)
+    let parsedIsActive;
+    if (isActive !== undefined) {
+      if (typeof isActive === 'string') {
+        parsedIsActive = isActive === 'true';
+      } else {
+        parsedIsActive = Boolean(isActive);
+      }
     }
     
     // Update fields
@@ -167,12 +221,14 @@ const updateFeaturedCollection = async (req, res) => {
     if (description !== undefined) collection.description = description;
     if (imageToUse) collection.image = imageToUse;
     if (linkTo) collection.linkTo = linkTo;
-    if (position !== undefined) collection.position = position;
-    if (isActive !== undefined) collection.isActive = isActive;
+    if (position !== undefined) collection.position = parseInt(position);
+    if (isActive !== undefined) collection.isActive = parsedIsActive;
     
     collection.updatedAt = Date.now();
     
     await collection.save();
+    
+    console.log('Featured collection updated successfully:', collection._id);
     
     res.status(200).json({
       success: true,
@@ -183,7 +239,8 @@ const updateFeaturedCollection = async (req, res) => {
     console.error('Error updating featured collection:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to update featured collection'
+      message: 'Failed to update featured collection',
+      error: error.message
     });
   }
 };

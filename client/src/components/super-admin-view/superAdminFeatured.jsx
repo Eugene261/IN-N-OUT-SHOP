@@ -38,6 +38,7 @@ const SuperAdminFeatured = () => {
   const dispatch = useDispatch();
   const { featuredProducts, isLoading: productsLoading } = useSelector((state) => state.superAdminProducts);
   const { FeatureImageList, deleteLoading, deleteError, uploadLoading, uploadError, isLoading: imagesLoading } = useSelector(state => state.commonFeature);
+  const { collections: featuredCollections, isLoading: collectionsLoading, error: collectionsError } = useSelector(state => state.featuredCollections);
   
   // Tab state
   const [activeTab, setActiveTab] = useState('featureImages');
@@ -730,18 +731,25 @@ const SuperAdminFeatured = () => {
                   
                   // If there's a new image file, use FormData for multipart upload
                   if (formData.imageFile) {
+                    console.log('Creating FormData with new image file');
                     submitData = new FormData();
                     submitData.append('title', formData.title);
-                    submitData.append('description', formData.description);
+                    submitData.append('description', formData.description || '');
                     submitData.append('linkTo', formData.linkTo);
-                    submitData.append('position', formData.position);
-                    submitData.append('isActive', formData.isActive);
+                    submitData.append('position', formData.position.toString());
+                    submitData.append('isActive', formData.isActive.toString());
                     submitData.append('image', formData.imageFile);
+                    
+                    console.log('FormData contents:');
+                    for (let [key, value] of submitData.entries()) {
+                      console.log(`${key}:`, value);
+                    }
                   } else {
+                    console.log('Creating JSON data with existing image');
                     // If no new image file, use JSON data
                     submitData = {
                       title: formData.title,
-                      description: formData.description,
+                      description: formData.description || '',
                       linkTo: formData.linkTo,
                       position: parseInt(formData.position),
                       isActive: formData.isActive
@@ -751,6 +759,8 @@ const SuperAdminFeatured = () => {
                     if (formData.image) {
                       submitData.image = formData.image;
                     }
+                    
+                    console.log('JSON data:', submitData);
                   }
                   
                   // Dispatch the appropriate action
@@ -782,12 +792,52 @@ const SuperAdminFeatured = () => {
               isUploading={false}
             />
           ) : (
-            <FeaturedCollectionList 
-              onEdit={(collection) => {
-                setEditingCollection(collection);
-                setShowCollectionForm(true);
-              }}
-            />
+            <div>
+              {/* Collections Error Display */}
+              {collectionsError && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-4 p-4 bg-red-100 border border-red-200 rounded-xl flex items-center gap-3 text-red-700"
+                >
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <span className="text-sm font-medium">Error loading collections: {collectionsError}</span>
+                </motion.div>
+              )}
+              
+              {/* Collections Loading State */}
+              {collectionsLoading ? (
+                <div className="flex justify-center items-center py-12 bg-white rounded-lg border border-gray-200 shadow-sm">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                    className="w-8 h-8 border-2 border-blue-200 border-t-blue-600 rounded-full"
+                  />
+                </div>
+              ) : featuredCollections && featuredCollections.length > 0 ? (
+                <FeaturedCollectionList 
+                  onEdit={(collection) => {
+                    setEditingCollection(collection);
+                    setShowCollectionForm(true);
+                  }}
+                />
+              ) : (
+                <div className="py-12 text-center text-gray-500 space-y-2 bg-white rounded-lg border border-gray-200 shadow-sm">
+                  <Layout className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+                  <p className="font-medium">No featured collections yet</p>
+                  <p className="text-sm">Create your first collection to get started</p>
+                  <button
+                    onClick={() => {
+                      setShowCollectionForm(true);
+                      setEditingCollection(null);
+                    }}
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Create First Collection
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </motion.div>
       )}
