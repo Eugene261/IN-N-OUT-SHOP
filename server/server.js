@@ -116,35 +116,90 @@ process.on('uncaughtException', (error) => {
 // Initialize database connection
 connectDB();
 
-// CORS Configuration
-app.use(
-    cors({
-        origin: [
+// CORS Configuration - Updated to fix production CORS issues
+const corsOptions = {
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        const allowedOrigins = [
             'http://localhost:3000',
             'http://localhost:5173',
-            process.env.CLIENT_URL,
             'https://in-n-out-shop-a81n.vercel.app',
-            // Production domains
             'https://in-nd-out.com',
             'https://www.in-nd-out.com',
-            // API domain for debugging
             'https://api.in-nd-out.com'
-        ].filter(Boolean), // Remove any undefined values
-        methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH', 'OPTIONS'],
-        allowedHeaders: [
-            "Content-Type",
-            "Authorization",
-            "Cache-Control",
-            "Expires",
-            "Pragma",
-            "Cookie",
-            "X-Requested-With",
-            "Accept"
-        ],
-        credentials: true,
-        optionsSuccessStatus: 200 // For legacy browser support
-    })
-);
+        ];
+        
+        // Add CLIENT_URL if it exists
+        if (process.env.CLIENT_URL) {
+            allowedOrigins.push(process.env.CLIENT_URL);
+        }
+        
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            console.log(`✅ CORS: Allowing origin: ${origin}`);
+            callback(null, true);
+        } else {
+            console.log(`❌ CORS: Blocking origin: ${origin}`);
+            console.log('Allowed origins:', allowedOrigins);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH', 'OPTIONS'],
+    allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'Cache-Control',
+        'Expires',
+        'Pragma',
+        'Cookie',
+        'X-Requested-With',
+        'Accept',
+        'Origin',
+        'X-Requested-With',
+        'Accept-Language',
+        'Accept-Encoding'
+    ],
+    credentials: true,
+    optionsSuccessStatus: 200,
+    preflightContinue: false
+};
+
+app.use(cors(corsOptions));
+
+// Add explicit OPTIONS handler for preflight requests
+app.options('*', cors(corsOptions));
+
+// Additional CORS headers middleware as fallback
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    const allowedOrigins = [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'https://in-n-out-shop-a81n.vercel.app',
+        'https://in-nd-out.com',
+        'https://www.in-nd-out.com',
+        'https://api.in-nd-out.com'
+    ];
+    
+    if (process.env.CLIENT_URL) {
+        allowedOrigins.push(process.env.CLIENT_URL);
+    }
+    
+    if (allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+    }
+    
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma, Expires, Cookie');
+    
+    if (req.method === 'OPTIONS') {
+        res.sendStatus(200);
+    } else {
+        next();
+    }
+});
 
 app.use(cookieParser());
 app.use(express.json({ limit: '10mb' })); // Increase JSON payload limit
