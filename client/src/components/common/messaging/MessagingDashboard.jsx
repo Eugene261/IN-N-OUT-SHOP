@@ -43,7 +43,7 @@ const MessagingDashboard = () => {
 
   const fetchConversations = async () => {
     try {
-      const response = await axios.get('/api/common/messaging/conversations', {
+      const response = await axios.get(`${process.env.REACT_APP_API_URL || ''}/api/common/messaging/conversations`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -62,7 +62,7 @@ const MessagingDashboard = () => {
 
   const fetchAvailableUsers = async () => {
     try {
-      const response = await axios.get('/api/common/messaging/users/available', {
+      const response = await axios.get(`${process.env.REACT_APP_API_URL || ''}/api/common/messaging/users/available`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -78,7 +78,7 @@ const MessagingDashboard = () => {
 
   const fetchMessages = async (conversationId) => {
     try {
-      const response = await axios.get(`/api/common/messaging/conversations/${conversationId}/messages`, {
+      const response = await axios.get(`${process.env.REACT_APP_API_URL || ''}/api/common/messaging/conversations/${conversationId}/messages`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -95,7 +95,7 @@ const MessagingDashboard = () => {
 
   const startNewConversation = async (recipientId, recipientName) => {
     try {
-      const response = await axios.post('/api/common/messaging/conversations/direct', {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL || ''}/api/common/messaging/conversations/direct`, {
         recipientId,
         title: `Chat with ${recipientName}`
       }, {
@@ -114,7 +114,7 @@ const MessagingDashboard = () => {
       }
     } catch (error) {
       console.error('Error starting conversation:', error);
-      toast.error('Failed to start conversation');
+      toast.error(error.response?.data?.message || 'Failed to start conversation');
     }
   };
 
@@ -125,7 +125,7 @@ const MessagingDashboard = () => {
       setSendingMessage(true);
       
       const response = await axios.post(
-        `/api/common/messaging/conversations/${activeConversation._id}/messages/text`,
+        `${process.env.REACT_APP_API_URL || ''}/api/common/messaging/conversations/${activeConversation._id}/messages/text`,
         { content: newMessage.trim() },
         {
           headers: {
@@ -158,7 +158,7 @@ const MessagingDashboard = () => {
 
   const markConversationAsRead = async (conversationId) => {
     try {
-      await axios.post(`/api/common/messaging/conversations/${conversationId}/read`, {}, {
+      await axios.post(`${process.env.REACT_APP_API_URL || ''}/api/common/messaging/conversations/${conversationId}/read`, {}, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -213,7 +213,7 @@ const MessagingDashboard = () => {
       {/* Conversations Sidebar */}
       <div className={`${
         showConversations ? 'flex' : 'hidden'
-      } lg:flex lg:w-1/3 w-full bg-white border-r border-gray-200 flex-col`}>
+      } lg:flex lg:w-1/3 w-full bg-white border-r border-gray-200 flex-col relative`}>
         {/* Header */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between mb-4">
@@ -423,61 +423,52 @@ const MessagingDashboard = () => {
         )}
       </div>
 
-      {/* New Chat Modal */}
+      {/* New Chat Dropdown */}
       <AnimatePresence>
         {showNewChatModal && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-            onClick={() => setShowNewChatModal(false)}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute top-16 left-4 right-4 lg:left-4 lg:right-auto lg:w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50"
           >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-4 lg:p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-base lg:text-lg font-semibold text-gray-900">Start New Conversation</h2>
-                  <button
-                    onClick={() => setShowNewChatModal(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="w-5 h-5 lg:w-6 lg:h-6" />
-                  </button>
-                </div>
-
-                <div className="space-y-2 lg:space-y-3">
-                  {availableUsers.map((availableUser) => (
-                    <div
-                      key={availableUser._id}
-                      onClick={() => startNewConversation(availableUser._id, availableUser.userName)}
-                      className="flex items-center space-x-3 p-2 lg:p-3 hover:bg-gray-50 rounded-lg cursor-pointer"
-                    >
-                      <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                        <User className="w-4 h-4 lg:w-6 lg:h-6 text-gray-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm lg:text-base font-medium text-gray-900">{availableUser.userName}</p>
-                        <p className="text-xs lg:text-sm text-gray-500">
-                          {availableUser.role === 'superAdmin' ? 'Super Admin' : 'Admin'}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {availableUsers.length === 0 && (
-                  <p className="text-center text-gray-500 py-4 text-sm lg:text-base">
-                    No users available for messaging
-                  </p>
-                )}
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base lg:text-lg font-semibold text-gray-900">Start New Conversation</h2>
+                <button
+                  onClick={() => setShowNewChatModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-            </motion.div>
+
+              <div className="space-y-2">
+                {availableUsers.map((availableUser) => (
+                  <div
+                    key={availableUser._id}
+                    onClick={() => startNewConversation(availableUser._id, availableUser.userName)}
+                    className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
+                  >
+                    <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                      <User className="w-4 h-4 text-gray-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{availableUser.userName}</p>
+                      <p className="text-xs text-gray-500">
+                        {availableUser.role === 'superAdmin' ? 'Super Admin' : 'Admin'}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {availableUsers.length === 0 && (
+                <p className="text-center text-gray-500 py-4 text-sm">
+                  No users available for messaging
+                </p>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
