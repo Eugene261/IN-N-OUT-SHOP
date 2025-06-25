@@ -302,7 +302,17 @@ const productApprovalSlice = createSlice({
     // Check feature flags
     builder
       .addCase(checkFeatureFlags.fulfilled, (state, action) => {
-        state.featureFlags = action.payload;
+        // Map API response to expected Redux state structure
+        state.featureFlags = {
+          productApproval: {
+            enabled: action.payload.productApproval?.enabled || false,
+            superAdminInterface: action.payload.productApproval?.enabled || false,
+            newProductsOnly: false
+          },
+          messaging: {
+            enabled: action.payload.messaging?.enabled || false
+          }
+        };
       });
   }
 });

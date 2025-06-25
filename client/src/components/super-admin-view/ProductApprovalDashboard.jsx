@@ -71,13 +71,27 @@ const ProductApprovalDashboard = () => {
   const [approvalComments, setApprovalComments] = useState('');
 
   useEffect(() => {
-    dispatch(checkFeatureFlags());
-    fetchData();
+    const loadFeatureFlagsAndData = async () => {
+      try {
+        // First, load feature flags
+        await dispatch(checkFeatureFlags()).unwrap();
+        // Then load data
+        fetchData();
+      } catch (error) {
+        console.error('Error loading feature flags:', error);
+        toast.error('Failed to load feature flags');
+      }
+    };
+    
+    loadFeatureFlagsAndData();
   }, [dispatch]);
 
   useEffect(() => {
-    fetchData();
-  }, [activeTab, currentPage, dispatch]);
+    // Only fetch data if feature flags are already loaded
+    if (featureFlags.productApproval.enabled) {
+      fetchData();
+    }
+  }, [activeTab, currentPage, dispatch, featureFlags.productApproval.enabled]);
 
   const fetchData = async () => {
     try {
