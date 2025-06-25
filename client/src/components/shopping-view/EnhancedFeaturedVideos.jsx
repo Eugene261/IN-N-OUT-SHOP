@@ -209,18 +209,13 @@ function EnhancedFeaturedVideos() {
             transition={{ duration: 0.6 }}
             className="flex items-center justify-between mb-6"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
-                <Play className="h-4 w-4 text-white fill-current" />
-              </div>
-              <div>
-                <h2 className="text-xl lg:text-2xl font-bold text-gray-900">
-                  Featured Vendor Reels
-                </h2>
-                <p className="text-gray-600 text-sm">
-                  Discover the latest trends from our vendors
-                </p>
-              </div>
+            <div>
+              <h2 className="text-xl lg:text-2xl font-bold text-gray-900">
+                Featured Vendor Reels
+              </h2>
+              <p className="text-gray-600 text-sm">
+                Discover the latest trends from our vendors
+              </p>
             </div>
             
             {/* Global Mute/Unmute Button */}
@@ -289,7 +284,7 @@ function EnhancedFeaturedVideos() {
                   >
                     {/* Video Container - Responsive dimensions */}
                     <div 
-                      className="relative aspect-[3/2] lg:aspect-[16/10] overflow-hidden cursor-pointer"
+                      className="relative aspect-[5/3] lg:aspect-[3/2] overflow-hidden cursor-pointer"
                       onClick={(e) => handleVideoTap(e, video._id)}
                     >
                       <video
