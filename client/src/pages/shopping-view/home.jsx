@@ -370,6 +370,8 @@ function ShoppingHome() {
                 {/* <ValueProposition /> */}
 
         <BestSeller />
+
+        <EnhancedFeaturedVideos />
   
         {/* Featured Products */}
         <motion.section 
@@ -447,7 +449,7 @@ function ShoppingHome() {
   
         <FeaturedCollection />
 
-        <EnhancedFeaturedVideos />
+        
 
         <FeaturedSection />
 

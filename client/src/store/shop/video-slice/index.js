@@ -71,9 +71,10 @@ export const fetchVideoById = createAsyncThunk(
 // Toggle video like (supports both authenticated and guest users)
 export const toggleVideoLike = createAsyncThunk(
   'shopVideos/toggleLike',
-  async ({ videoId, guestId }, { rejectWithValue }) => {
+  async ({ videoId, userId, guestId }, { rejectWithValue }) => {
     try {
       const payload = {};
+      if (userId) payload.userId = userId;
       if (guestId) payload.guestId = guestId;
 
       const response = await axios.post(

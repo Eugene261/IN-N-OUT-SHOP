@@ -16,7 +16,9 @@ import {
   Minimize2, 
   X, 
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -125,6 +127,24 @@ function EnhancedFeaturedVideos() {
     }
   };
 
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+    
+    // Update all video refs
+    Object.values(videoRefs.current).forEach(ref => {
+      if (ref) {
+        ref.muted = !isMuted;
+      }
+    });
+    
+    // Update maximized video ref
+    if (maximizedVideoRef.current) {
+      maximizedVideoRef.current.muted = !isMuted;
+    }
+    
+    toast.success(isMuted ? 'Sound enabled' : 'Sound muted', { duration: 1000 });
+  };
+
   const handleLike = async (e, videoId) => {
     if (e) e.stopPropagation();
     
@@ -222,6 +242,29 @@ function EnhancedFeaturedVideos() {
             <p className="text-gray-600 max-w-2xl mx-auto leading-relaxed">
               Discover the latest trends through exclusive videos from our featured vendors and creators
             </p>
+            
+            {/* Global Mute/Unmute Button */}
+            <div className="flex justify-center mt-4">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={toggleMute}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 ${
+                  isMuted 
+                    ? 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200' 
+                    : 'bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100'
+                }`}
+              >
+                {isMuted ? (
+                  <VolumeX className="h-4 w-4" />
+                ) : (
+                  <Volume2 className="h-4 w-4" />
+                )}
+                <span className="text-sm font-medium">
+                  {isMuted ? 'Enable Sound' : 'Mute Sound'}
+                </span>
+              </motion.button>
+            </div>
           </motion.div>
 
           {/* Navigation Arrows */}
@@ -333,45 +376,63 @@ function EnhancedFeaturedVideos() {
                           )}
                         </div>
                         
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="bg-white/90 hover:bg-white rounded-full p-1.5 shadow-sm transition-all duration-300"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMaximize(video);
-                          }}
-                        >
-                          <Maximize2 className="h-3 w-3 text-gray-700" />
-                        </motion.button>
-                      </div>
-                      
-                      {/* Like Button - Always visible on large devices, double-tap on mobile */}
-                      <div className="absolute top-2 right-2">
-                        {isLargeDevice ? (
-                          // Visible like button for large devices
+                        <div className="flex gap-1">
+                          {/* Like Button - Always visible on large devices */}
+                          {isLargeDevice && (
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleLike(e, video._id);
+                              }}
+                              className={`p-1.5 rounded-full shadow-lg transition-all duration-300 backdrop-blur-sm ${
+                                isLiked 
+                                  ? 'bg-red-500 text-white scale-110' 
+                                  : 'bg-white/80 text-gray-700 hover:bg-white'
+                              }`}
+                            >
+                              <Heart className={`h-3 w-3 ${isLiked ? 'fill-current' : ''}`} />
+                            </motion.button>
+                          )}
+                          
+                          {/* Mute/Unmute Button for individual video */}
                           <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="bg-white/90 hover:bg-white rounded-full p-1.5 shadow-sm transition-all duration-300"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleLike(e, video._id);
+                              toggleMute();
                             }}
-                            className={`p-2 rounded-full shadow-lg transition-all duration-300 backdrop-blur-sm ${
-                              isLiked 
-                                ? 'bg-red-500 text-white scale-110' 
-                                : 'bg-white/80 text-gray-700 hover:bg-white'
-                            }`}
                           >
-                            <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
+                            {isMuted ? (
+                              <VolumeX className="h-3 w-3 text-gray-700" />
+                            ) : (
+                              <Volume2 className="h-3 w-3 text-gray-700" />
+                            )}
                           </motion.button>
-                        ) : (
-                          // Double-tap indicator for mobile - only shown when tapped
-                          <div className="text-xs text-white bg-black/50 px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                            Double tap ❤️
-                          </div>
-                        )}
+                          
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="bg-white/90 hover:bg-white rounded-full p-1.5 shadow-sm transition-all duration-300"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMaximize(video);
+                            }}
+                          >
+                            <Maximize2 className="h-3 w-3 text-gray-700" />
+                          </motion.button>
+                        </div>
                       </div>
+                      
+                      {/* Double-tap indicator for mobile */}
+                      {!isLargeDevice && (
+                        <div className="absolute top-2 right-2 text-xs text-white bg-black/50 px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                          Double tap ❤️
+                        </div>
+                      )}
                       
                       {/* Video Info - Single location at bottom */}
                       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
