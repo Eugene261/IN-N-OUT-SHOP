@@ -57,6 +57,7 @@ function VideosPage() {
   }, [dispatch, filters]);
 
   const handleAddNew = () => {
+    console.log('Upload Video button clicked!');
     setEditingVideo(null);
     setShowForm(true);
   };
@@ -157,22 +158,22 @@ function VideosPage() {
           <p className="text-gray-500">Manage featured vendor reels and video content</p>
         </div>
         <div className="flex gap-3">
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <button 
+            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleRefresh}
             disabled={isLoading}
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
-          </Button>
-          <Button 
+          </button>
+          <button 
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleAddNew}
             disabled={isLoading}
           >
             <Plus className="h-4 w-4 mr-2" />
             Upload Video
-          </Button>
+          </button>
         </div>
       </div>
 

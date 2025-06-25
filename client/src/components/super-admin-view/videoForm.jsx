@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Upload, Video, Image, Tag, User } from 'lucide-react';
@@ -374,16 +373,17 @@ function VideoForm({ initialData, onSubmit, onCancel, isUploading, uploadProgres
         
         {/* Form Actions */}
         <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button
+          <button
             type="button"
-            variant="outline"
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={onCancel}
             disabled={isUploading}
           >
             Cancel
-          </Button>
-          <Button
+          </button>
+          <button
             type="submit"
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isUploading || (!initialData && !formData.videoFile)}
           >
             {isUploading ? (
@@ -394,7 +394,7 @@ function VideoForm({ initialData, onSubmit, onCancel, isUploading, uploadProgres
             ) : (
               initialData ? 'Update Video' : 'Upload Video'
             )}
-          </Button>
+          </button>
         </div>
       </div>
     </motion.form>
