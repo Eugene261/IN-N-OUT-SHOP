@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchVendorsAndAdmins } from '@/store/superAdmin/video-slice/index.js';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,7 +30,7 @@ function VideoForm({ initialData, onSubmit, onCancel, isUploading, uploadProgres
     description: '',
     category: 'showcase',
     tags: '',
-    vendorId: '',
+    vendorId: 'general',
     status: 'draft',
     isFeatured: false,
     priority: 0,
@@ -39,6 +41,9 @@ function VideoForm({ initialData, onSubmit, onCancel, isUploading, uploadProgres
   const [videoPreview, setVideoPreview] = useState('');
   const [thumbnailPreview, setThumbnailPreview] = useState('');
   
+  const dispatch = useDispatch();
+  const { vendorsAndAdmins } = useSelector(state => state.superAdminVideos);
+  
   useEffect(() => {
     if (initialData) {
       setFormData({
@@ -46,7 +51,7 @@ function VideoForm({ initialData, onSubmit, onCancel, isUploading, uploadProgres
         description: initialData.description || '',
         category: initialData.category || 'showcase',
         tags: initialData.tags ? initialData.tags.join(', ') : '',
-        vendorId: initialData.vendorId || '',
+        vendorId: initialData.vendorId || 'general',
         status: initialData.status || 'draft',
         isFeatured: initialData.isFeatured || false,
         priority: initialData.priority || 0,
@@ -58,6 +63,10 @@ function VideoForm({ initialData, onSubmit, onCancel, isUploading, uploadProgres
       setThumbnailPreview(initialData.thumbnailUrl || '');
     }
   }, [initialData]);
+  
+  useEffect(() => {
+    dispatch(fetchVendorsAndAdmins());
+  }, [dispatch]);
   
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -247,23 +256,41 @@ function VideoForm({ initialData, onSubmit, onCancel, isUploading, uploadProgres
           </p>
         </div>
         
-        {/* Vendor ID */}
+        {/* Vendor Assignment */}
         <div className="grid gap-3">
           <Label htmlFor="vendorId">
             <User className="h-4 w-4 inline mr-1" />
-            Vendor ID (Optional)
+            Vendor Assignment (Optional)
           </Label>
-          <Input
-            id="vendorId"
-            name="vendorId"
+          <Select
             value={formData.vendorId}
-            onChange={handleChange}
-            placeholder="Enter valid MongoDB ObjectId (e.g., 507f1f77bcf86cd799439011) or leave empty"
-          />
+            onValueChange={(value) => handleSelectChange('vendorId', value === 'general' ? '' : value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select vendor or leave as general content" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="general">
+                🌐 General Content (No specific vendor)
+              </SelectItem>
+              {vendorsAndAdmins.map(vendor => (
+                <SelectItem key={vendor.id} value={vendor.id}>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-1 rounded text-xs ${
+                      vendor.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                    }`}>
+                      {vendor.role}
+                    </span>
+                    <span>{vendor.userName}</span>
+                    {vendor.shopName && <span className="text-gray-500">({vendor.shopName})</span>}
+                    {vendor.location && <span className="text-gray-400 text-xs">- {vendor.location}</span>}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <p className="text-sm text-gray-500">
-            Link this video to a specific vendor by entering their MongoDB ObjectId. Leave empty for general content.
-            <br />
-            <span className="text-amber-600">⚠️ Must be a valid 24-character ObjectId format</span>
+            Link this video to a specific vendor/admin or leave as general content for the platform.
           </p>
         </div>
         

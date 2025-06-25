@@ -9,7 +9,8 @@ const {
   updateVideo,
   deleteVideo,
   toggleVideoFeatured,
-  updateVideoPriorities
+  updateVideoPriorities,
+  getVendorsAndAdmins
 } = require('../../controllers/superAdmin/videoController.js');
 
 // Configure multer for memory storage with larger limits for videos
@@ -47,6 +48,7 @@ router.use(isSuperAdmin);
 
 // Video management routes
 router.get('/', getAllVideos);
+router.get('/vendors-and-admins', getVendorsAndAdmins);
 router.get('/:id', getVideoById);
 router.post('/', upload.fields([
   { name: 'video', maxCount: 1 },

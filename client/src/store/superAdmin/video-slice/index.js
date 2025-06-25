@@ -17,6 +17,7 @@ const getAuthConfig = (isFormData = false) => {
 const initialState = {
   videos: [],
   currentVideo: null,
+  vendorsAndAdmins: [],
   isLoading: false,
   uploadProgress: 0,
   error: null,
@@ -156,6 +157,22 @@ export const updateVideoPriorities = createAsyncThunk(
   }
 );
 
+// Fetch vendors and admins for dropdown
+export const fetchVendorsAndAdmins = createAsyncThunk(
+  'superAdminVideos/fetchVendorsAndAdmins',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/superAdmin/videos/vendors-and-admins`,
+        getAuthConfig()
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to fetch vendors and admins');
+    }
+  }
+);
+
 // Create the slice
 const superAdminVideoSlice = createSlice({
   name: 'superAdminVideos',
@@ -280,16 +297,27 @@ const superAdminVideoSlice = createSlice({
       })
       
       // Update priorities
-      .addCase(updateVideoPriorities.fulfilled, (state, action) => {
-        // Update priorities in local state
-        action.payload.priorities.forEach(({ id, priority }) => {
-          const video = state.videos.find((v) => v._id === id);
-          if (video) {
-            video.priority = priority;
-          }
-        });
-        // Sort videos by priority
-        state.videos.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+      .addCase(updateVideoPriorities.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(updateVideoPriorities.fulfilled, (state) => {
+        state.isLoading = false;
+      })
+      .addCase(updateVideoPriorities.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+      
+      // Fetch vendors and admins
+      .addCase(fetchVendorsAndAdmins.pending, (state) => {
+        state.error = null;
+      })
+      .addCase(fetchVendorsAndAdmins.fulfilled, (state, action) => {
+        state.vendorsAndAdmins = action.payload.data;
+      })
+      .addCase(fetchVendorsAndAdmins.rejected, (state, action) => {
+        state.error = action.payload;
       });
   }
 });

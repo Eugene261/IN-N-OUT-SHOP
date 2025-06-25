@@ -1,5 +1,6 @@
 const Video = require('../../models/Video');
 const Product = require('../../models/Products');
+const User = require('../../models/User');
 const { ImageUploadUtil } = require("../../helpers/cloudinary");
 
 /**
@@ -506,6 +507,44 @@ const updateVideoPriorities = async (req, res) => {
   }
 };
 
+/**
+ * Get vendors and admins for video assignment dropdown
+ */
+const getVendorsAndAdmins = async (req, res) => {
+  try {
+    // Fetch users with admin or vendor roles
+    const users = await User.find(
+      { 
+        role: { $in: ['admin', 'vendor'] },
+        isActive: true 
+      },
+      'userName email shopName role baseRegion baseCity'
+    ).sort({ role: 1, userName: 1 }).lean();
+    
+    // Format users for dropdown
+    const formattedUsers = users.map(user => ({
+      id: user._id,
+      label: `${user.userName} ${user.shopName ? `(${user.shopName})` : ''} - ${user.role}`,
+      userName: user.userName,
+      shopName: user.shopName,
+      role: user.role,
+      email: user.email,
+      location: user.baseRegion && user.baseCity ? `${user.baseCity}, ${user.baseRegion}` : ''
+    }));
+    
+    res.status(200).json({
+      success: true,
+      data: formattedUsers
+    });
+  } catch (error) {
+    console.error('Error fetching vendors and admins:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch vendors and admins'
+    });
+  }
+};
+
 module.exports = {
   getAllVideos,
   getVideoById,
@@ -513,5 +552,6 @@ module.exports = {
   updateVideo,
   deleteVideo,
   toggleVideoFeatured,
-  updateVideoPriorities
+  updateVideoPriorities,
+  getVendorsAndAdmins
 }; 
