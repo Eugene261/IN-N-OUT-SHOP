@@ -82,6 +82,11 @@ const getVideoById = async (req, res) => {
  */
 const createVideo = async (req, res) => {
   try {
+    console.log('=== CREATE VIDEO DEBUG START ===');
+    console.log('req.body:', req.body);
+    console.log('req.files:', req.files);
+    console.log('req.user:', req.user ? { id: req.user.id, role: req.user.role } : 'No user');
+    
     const { 
       title, 
       description, 
@@ -96,18 +101,33 @@ const createVideo = async (req, res) => {
     
     // Validate required fields
     if (!title) {
+      console.log('ERROR: Title is missing');
       return res.status(400).json({
         success: false,
         message: 'Title is required'
       });
     }
     
-    if (!req.files || !req.files.video) {
+    console.log('Title validation passed:', title);
+    
+    // Check files
+    if (!req.files) {
+      console.log('ERROR: No files in request');
+      return res.status(400).json({
+        success: false,
+        message: 'No files uploaded'
+      });
+    }
+    
+    if (!req.files.video) {
+      console.log('ERROR: No video file in request', Object.keys(req.files));
       return res.status(400).json({
         success: false,
         message: 'Video file is required'
       });
     }
+    
+    console.log('Files validation passed, video files count:', req.files.video.length);
     
     let videoUrl = '';
     let thumbnailUrl = '';
@@ -116,35 +136,54 @@ const createVideo = async (req, res) => {
     
     // Handle video upload
     try {
+      console.log('Starting video upload...');
       const videoFile = req.files.video[0];
+      console.log('Video file info:', {
+        originalname: videoFile.originalname,
+        mimetype: videoFile.mimetype,
+        size: videoFile.size
+      });
+      
       const base64Video = videoFile.buffer.toString('base64');
       const videoDataURI = `data:${videoFile.mimetype};base64,${base64Video}`;
       
+      console.log('Video converted to base64, length:', base64Video.length);
+      
       // Upload video to Cloudinary
+      console.log('Uploading to Cloudinary...');
       const videoUploadResult = await ImageUploadUtil(videoDataURI);
+      console.log('Cloudinary upload result:', {
+        secure_url: videoUploadResult.secure_url,
+        duration: videoUploadResult.duration,
+        resource_type: videoUploadResult.resource_type
+      });
+      
       videoUrl = videoUploadResult.secure_url;
       duration = videoUploadResult.duration || 0;
       fileSize = videoFile.size;
       
       // Generate thumbnail from video
       thumbnailUrl = videoUploadResult.secure_url.replace(/\.(mp4|mov|avi|mkv)$/, '.jpg');
+      console.log('Generated thumbnail URL:', thumbnailUrl);
     } catch (uploadError) {
       console.error('Error uploading video:', uploadError);
       return res.status(400).json({
         success: false,
-        message: 'Failed to upload video'
+        message: 'Failed to upload video: ' + uploadError.message
       });
     }
     
     // Handle custom thumbnail upload if provided
     if (req.files && req.files.thumbnail) {
       try {
+        console.log('Uploading custom thumbnail...');
         const thumbnailFile = req.files.thumbnail[0];
         const base64Thumbnail = thumbnailFile.buffer.toString('base64');
         const thumbnailDataURI = `data:${thumbnailFile.mimetype};base64,${base64Thumbnail}`;
         
         const thumbnailUploadResult = await ImageUploadUtil(thumbnailDataURI);
         thumbnailUrl = thumbnailUploadResult.secure_url;
+        console.log('Custom thumbnail uploaded:', thumbnailUrl);
       } catch (thumbnailError) {
         console.error('Error uploading thumbnail:', thumbnailError);
         // Continue with auto-generated thumbnail
@@ -175,6 +214,16 @@ const createVideo = async (req, res) => {
       }
     }
     
+    console.log('Parsed data:', {
+      title,
+      category: category || 'showcase',
+      parsedTags,
+      status: status || 'draft',
+      isFeatured: isFeatured === 'true' || isFeatured === true,
+      priority: parseInt(priority) || 0,
+      uploadedBy: req.user.id
+    });
+    
     // Create new video
     const newVideo = new Video({
       title,
@@ -193,7 +242,9 @@ const createVideo = async (req, res) => {
       uploadedBy: req.user.id
     });
     
+    console.log('About to save video to database...');
     await newVideo.save();
+    console.log('Video saved successfully, ID:', newVideo._id);
     
     // Populate the saved video
     const populatedVideo = await Video.findById(newVideo._id)
@@ -201,16 +252,21 @@ const createVideo = async (req, res) => {
       .populate('vendorId', 'userName shopName')
       .populate('taggedProducts.productId', 'title price salePrice image');
     
+    console.log('=== CREATE VIDEO DEBUG END ===');
+    
     res.status(201).json({
       success: true,
       message: 'Video created successfully',
       data: populatedVideo
     });
   } catch (error) {
+    console.error('=== CREATE VIDEO ERROR ===');
     console.error('Error creating video:', error);
+    console.error('Stack trace:', error.stack);
+    console.error('=== CREATE VIDEO ERROR END ===');
     res.status(500).json({
       success: false,
-      message: 'Failed to create video'
+      message: 'Failed to create video: ' + error.message
     });
   }
 };
