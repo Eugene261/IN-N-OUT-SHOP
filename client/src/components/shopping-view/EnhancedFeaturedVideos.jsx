@@ -252,7 +252,7 @@ function EnhancedFeaturedVideos() {
                         ref={(el) => videoRefs.current[video._id] = el}
                         src={video.videoUrl}
                         poster={video.thumbnailUrl}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain bg-black"
                         loop
                         playsInline
                         muted={isMuted}
@@ -462,7 +462,7 @@ function EnhancedFeaturedVideos() {
                 ref={maximizedVideoRef}
                 src={maximizedVideo.videoUrl}
                 poster={maximizedVideo.thumbnailUrl}
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain bg-black"
                 controls
                 autoPlay
                 muted={isMuted}
