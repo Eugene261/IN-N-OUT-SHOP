@@ -232,8 +232,8 @@ function VideoList({
                     
                     {/* Video Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className="font-medium text-gray-900 truncate">
                               {video.title}
@@ -248,60 +248,41 @@ function VideoList({
                               {video.description}
                             </p>
                           )}
-                          
-                          <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
-                            <span className="flex items-center gap-1">
-                              <Eye className="h-3 w-3" />
-                              {video.views || 0} views
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
+                        <span className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          {video.views || 0} views
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {formatDate(video.createdAt)}
+                        </span>
+                        <span>{formatFileSize(video.fileSize)}</span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(video.status)}
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                            {video.category}
+                          </span>
+                          {video.priority > 0 && (
+                            <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded">
+                              Priority: {video.priority}
                             </span>
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              {formatDate(video.createdAt)}
-                            </span>
-                            <span>{formatFileSize(video.fileSize)}</span>
-                          </div>
-                          
-                          <div className="flex items-center gap-2 mb-2">
-                            {getStatusBadge(video.status)}
-                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
-                              {video.category}
-                            </span>
-                            {video.priority > 0 && (
-                              <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded">
-                                Priority: {video.priority}
-                              </span>
-                            )}
-                          </div>
-                          
-                          {video.tags && video.tags.length > 0 && (
-                            <div className="flex items-center gap-1 mb-2">
-                              <Tag className="h-3 w-3 text-gray-400" />
-                              <div className="flex flex-wrap gap-1">
-                                {video.tags.slice(0, 3).map(tag => (
-                                  <span key={tag} className="text-xs bg-gray-100 text-gray-600 px-1 py-0.5 rounded">
-                                    {tag}
-                                  </span>
-                                ))}
-                                {video.tags.length > 3 && (
-                                  <span className="text-xs text-gray-400">+{video.tags.length - 3} more</span>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {video.uploadedBy && (
-                            <div className="flex items-center gap-1 text-xs text-gray-500">
-                              <User className="h-3 w-3" />
-                              <span>By {video.uploadedBy.userName}</span>
-                            </div>
                           )}
                         </div>
                         
-                        {/* Actions */}
-                        <div className="flex items-center gap-2 ml-4">
+                        {/* Action Buttons - Now positioned better */}
+                        <div className="flex items-center gap-1">
                           <button
-                            className={`p-2 rounded-md hover:bg-gray-100 transition-colors ${
-                              video.isFeatured ? "text-yellow-600 hover:text-yellow-700" : "text-gray-600 hover:text-gray-700"
+                            className={`p-1.5 rounded-md transition-all duration-200 ${
+                              video.isFeatured 
+                                ? "text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50" 
+                                : "text-gray-400 hover:text-yellow-600 hover:bg-yellow-50"
                             }`}
                             onClick={() => onToggleFeatured(video._id)}
                             title={video.isFeatured ? "Remove from featured" : "Add to featured"}
@@ -314,7 +295,7 @@ function VideoList({
                           </button>
                           
                           <button
-                            className="p-2 rounded-md hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-700"
+                            className="p-1.5 rounded-md transition-all duration-200 text-gray-400 hover:text-blue-600 hover:bg-blue-50"
                             onClick={() => onEdit(video)}
                             title="Edit video"
                           >
@@ -322,7 +303,7 @@ function VideoList({
                           </button>
                           
                           <button
-                            className="p-2 rounded-md hover:bg-red-50 transition-colors text-red-500 hover:text-red-600"
+                            className="p-1.5 rounded-md transition-all duration-200 text-gray-400 hover:text-red-600 hover:bg-red-50"
                             onClick={() => onDelete(video._id)}
                             title="Delete video"
                           >
@@ -330,6 +311,29 @@ function VideoList({
                           </button>
                         </div>
                       </div>
+                      
+                      {video.tags && video.tags.length > 0 && (
+                        <div className="flex items-center gap-1 mt-2">
+                          <Tag className="h-3 w-3 text-gray-400" />
+                          <div className="flex flex-wrap gap-1">
+                            {video.tags.slice(0, 3).map(tag => (
+                              <span key={tag} className="text-xs bg-gray-100 text-gray-600 px-1 py-0.5 rounded">
+                                {tag}
+                              </span>
+                            ))}
+                            {video.tags.length > 3 && (
+                              <span className="text-xs text-gray-400">+{video.tags.length - 3} more</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {video.uploadedBy && (
+                        <div className="flex items-center gap-1 text-xs text-gray-500 mt-2">
+                          <User className="h-3 w-3" />
+                          <span>By {video.uploadedBy.userName}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </motion.div>

@@ -974,10 +974,11 @@ const SuperAdminFeatured = () => {
                     (filteredProducts || featuredProducts).map((product) => (
                       <div 
                         key={product._id} 
-                        className={`flex items-center justify-between p-4 border-2 rounded-lg hover:bg-gray-50 transition-colors ${product.isBestseller || product.isNewArrival ? 'border-blue-200 bg-blue-50' : 'border-gray-200'}`}
+                        className={`group flex items-center justify-between p-4 border-2 rounded-xl hover:bg-gray-50 transition-all duration-200 ${product.isBestseller || product.isNewArrival ? 'border-blue-200 bg-blue-50' : 'border-gray-200'}`}
                       >
-                        <div className="flex items-center space-x-4 flex-1">
-                          <div className="h-20 w-20 bg-gray-100 rounded-md overflow-hidden flex-shrink-0 border border-gray-200 shadow-sm">
+                        <div className="flex items-center space-x-4 flex-1 min-w-0">
+                          {/* Product Image */}
+                          <div className="h-16 w-16 sm:h-20 sm:w-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border border-gray-200 shadow-sm">
                             {product.images && product.images.length > 0 ? (
                               <img 
                                 src={product.images[0]} 
@@ -994,25 +995,35 @@ const SuperAdminFeatured = () => {
                               <Box className="h-full w-full p-3 text-gray-400" />
                             )}
                           </div>
+                          
+                          {/* Product Info */}
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center">
-                              <p className="text-base font-medium text-gray-900">{product.title || product.name || 'Product Name'}</p>
-                              {product.isBestseller && (
-                                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                                  <Star className="w-3 h-3 mr-1" /> Bestseller
-                                </span>
-                              )}
-                              {product.isNewArrival && (
-                                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                                  <Zap className="w-3 h-3 mr-1" /> New
-                                </span>
-                              )}
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                              <h3 className="text-base font-semibold text-gray-900 truncate">{product.title || product.name || 'Product Name'}</h3>
+                              <div className="flex gap-2">
+                                {product.isBestseller && (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                                    <Star className="w-3 h-3 mr-1" /> Bestseller
+                                  </span>
+                                )}
+                                {product.isNewArrival && (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                                    <Zap className="w-3 h-3 mr-1" /> New
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            <p className="text-sm text-gray-500 mt-1">${product.price ? product.price.toFixed(2) : '0.00'}</p>
+                            <p className="text-sm font-medium text-green-600 mt-1">${product.price ? product.price.toFixed(2) : '0.00'}</p>
+                            <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                              <span>SKU: {product.sku || 'N/A'}</span>
+                              <span>•</span>
+                              <span>Stock: {product.totalStock || 0}</span>
+                            </div>
                           </div>
                         </div>
                         
-                        <div className="flex space-x-3">
+                        {/* Action Buttons */}
+                        <div className="flex flex-col sm:flex-row gap-2 ml-4">
                           {/* Bestseller Toggle */}
                           <button
                             onClick={() => {
@@ -1027,9 +1038,7 @@ const SuperAdminFeatured = () => {
                               dispatch(toggleProductBestseller(product._id))
                                 .unwrap()
                                 .then(() => {
-                                  // Refresh product data to update UI
                                   refreshProductData();
-                                  
                                   setUpdateStatus({
                                     loading: false,
                                     error: null,
@@ -1037,8 +1046,6 @@ const SuperAdminFeatured = () => {
                                     productId: product._id,
                                     type: 'bestseller'
                                   });
-                                  
-                                  // Clear success message after 3 seconds
                                   setTimeout(() => {
                                     setUpdateStatus(prev => ({
                                       ...prev,
@@ -1057,19 +1064,24 @@ const SuperAdminFeatured = () => {
                                 });
                             }}
                             disabled={updateStatus.loading && updateStatus.productId === product._id && updateStatus.type === 'bestseller'}
-                            className={`px-3 py-2 rounded-lg ${product.isBestseller ? 'bg-yellow-100 text-yellow-700 border border-yellow-300 font-medium' : 'bg-gray-100 text-gray-600 hover:bg-yellow-50'} transition-colors flex items-center space-x-1`}
+                            className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 flex items-center justify-center gap-1 min-w-[100px] ${
+                              product.isBestseller 
+                                ? 'bg-yellow-100 text-yellow-700 border border-yellow-300 shadow-sm' 
+                                : 'bg-white text-gray-600 border border-gray-300 hover:bg-yellow-50 hover:border-yellow-300 hover:text-yellow-700'
+                            }`}
                             title={product.isBestseller ? 'Remove from bestsellers' : 'Add to bestsellers'}
                           >
                             {updateStatus.loading && updateStatus.productId === product._id && updateStatus.type === 'bestseller' ? (
                               <motion.div
                                 animate={{ rotate: 360 }}
                                 transition={{ duration: 1, repeat: Infinity }}
-                                className="w-5 h-5 border-2 border-yellow-200 border-t-yellow-600 rounded-full"
+                                className="w-4 h-4 border-2 border-yellow-200 border-t-yellow-600 rounded-full"
                               />
                             ) : (
                               <>
-                                <Star className="w-5 h-5" />
-                                <span className="text-xs font-medium hidden sm:inline">Bestseller</span>
+                                <Star className="w-4 h-4" />
+                                <span className="hidden sm:inline">Bestseller</span>
+                                <span className="sm:hidden">Best</span>
                               </>
                             )}
                           </button>
@@ -1088,9 +1100,7 @@ const SuperAdminFeatured = () => {
                               dispatch(toggleProductNewArrival(product._id))
                                 .unwrap()
                                 .then(() => {
-                                  // Refresh product data to update UI
                                   refreshProductData();
-                                  
                                   setUpdateStatus({
                                     loading: false,
                                     error: null,
@@ -1098,8 +1108,6 @@ const SuperAdminFeatured = () => {
                                     productId: product._id,
                                     type: 'newArrival'
                                   });
-                                  
-                                  // Clear success message after 3 seconds
                                   setTimeout(() => {
                                     setUpdateStatus(prev => ({
                                       ...prev,
@@ -1118,19 +1126,24 @@ const SuperAdminFeatured = () => {
                                 });
                             }}
                             disabled={updateStatus.loading && updateStatus.productId === product._id && updateStatus.type === 'newArrival'}
-                            className={`px-3 py-2 rounded-lg ${product.isNewArrival ? 'bg-blue-100 text-blue-700 border border-blue-300 font-medium' : 'bg-gray-100 text-gray-600 hover:bg-blue-50'} transition-colors flex items-center space-x-1`}
+                            className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 flex items-center justify-center gap-1 min-w-[100px] ${
+                              product.isNewArrival 
+                                ? 'bg-blue-100 text-blue-700 border border-blue-300 shadow-sm' 
+                                : 'bg-white text-gray-600 border border-gray-300 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700'
+                            }`}
                             title={product.isNewArrival ? 'Remove from new arrivals' : 'Add to new arrivals'}
                           >
                             {updateStatus.loading && updateStatus.productId === product._id && updateStatus.type === 'newArrival' ? (
                               <motion.div
                                 animate={{ rotate: 360 }}
                                 transition={{ duration: 1, repeat: Infinity }}
-                                className="w-5 h-5 border-2 border-blue-200 border-t-blue-600 rounded-full"
+                                className="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full"
                               />
                             ) : (
                               <>
-                                <Zap className="w-5 h-5" />
-                                <span className="text-xs font-medium hidden sm:inline">New Arrival</span>
+                                <Zap className="w-4 h-4" />
+                                <span className="hidden sm:inline">New</span>
+                                <span className="sm:hidden">New</span>
                               </>
                             )}
                           </button>

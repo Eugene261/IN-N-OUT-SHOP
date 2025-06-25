@@ -34,7 +34,7 @@ const SuperAdminLayout = () => {
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+          className="fixed inset-0 z-40 lg:hidden transition-opacity duration-300"
           onClick={closeSidebar}
         />
       )}
@@ -42,9 +42,10 @@ const SuperAdminLayout = () => {
       {/* Mobile sidebar */}
       <div 
         ref={sidebarRef}
-        className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 shadow-2xl transform transition-transform duration-300 ease-in-out lg:hidden ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
+        style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}
       >
         <SuperAdminSidebar 
           onItemClick={closeSidebar} 
@@ -62,17 +63,17 @@ const SuperAdminLayout = () => {
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile header */}
-        <header className="bg-white border-b border-gray-200 lg:hidden flex-shrink-0">
+        <header className="bg-white border-b border-gray-200 lg:hidden flex-shrink-0 shadow-sm">
           <div className="px-4 py-3 flex items-center justify-between">
             <button
               onClick={toggleSidebar}
-              className="p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 transition-colors"
+              className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 transition-all duration-200"
             >
               <Menu className="h-6 w-6" />
               <span className="sr-only">Open sidebar</span>
             </button>
             <div className="text-lg font-semibold text-blue-600">SuperAdmin</div>
-            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium flex-shrink-0">
+            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium flex-shrink-0 shadow-sm">
               {user?.userName?.charAt(0).toUpperCase() || 'S'}
             </div>
           </div>

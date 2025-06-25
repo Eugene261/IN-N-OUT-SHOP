@@ -92,24 +92,24 @@ const FeaturedCollectionForm = ({ initialData, onSubmit, onCancel }) => {
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white p-6 rounded-lg shadow-md mb-6"
+      className="bg-white p-4 sm:p-6 rounded-xl shadow-lg mb-6 border border-gray-200"
     >
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-semibold text-gray-800">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 mb-6">
+        <h3 className="text-lg sm:text-xl font-semibold text-gray-800">
           {initialData ? 'Edit Collection' : 'Add New Collection'}
         </h3>
         <button 
           onClick={onCancel}
-          className="text-gray-500 hover:text-gray-700"
+          className="self-start sm:self-auto p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <X size={20} />
         </button>
       </div>
       
-      <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
               Title <span className="text-red-500">*</span>
             </label>
             <input
@@ -117,13 +117,14 @@ const FeaturedCollectionForm = ({ initialData, onSubmit, onCancel }) => {
               name="title"
               value={formData.title}
               onChange={handleChange}
-              className={`w-full p-2 border rounded-md ${errors.title ? 'border-red-500' : 'border-gray-300'}`}
+              className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${errors.title ? 'border-red-500' : 'border-gray-300'}`}
+              placeholder="Enter collection title"
             />
             {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
               Link To <span className="text-red-500">*</span>
             </label>
             <input
@@ -132,14 +133,14 @@ const FeaturedCollectionForm = ({ initialData, onSubmit, onCancel }) => {
               value={formData.linkTo}
               onChange={handleChange}
               placeholder="e.g., /category/summer-collection"
-              className={`w-full p-2 border rounded-md ${errors.linkTo ? 'border-red-500' : 'border-gray-300'}`}
+              className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${errors.linkTo ? 'border-red-500' : 'border-gray-300'}`}
             />
             {errors.linkTo && <p className="text-red-500 text-xs mt-1">{errors.linkTo}</p>}
           </div>
         </div>
         
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
             Description
           </label>
           <textarea
@@ -147,13 +148,14 @@ const FeaturedCollectionForm = ({ initialData, onSubmit, onCancel }) => {
             value={formData.description}
             onChange={handleChange}
             rows="3"
-            className="w-full p-2 border border-gray-300 rounded-md"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
+            placeholder="Optional description for this collection..."
           ></textarea>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
               Position
             </label>
             <input
@@ -162,37 +164,39 @@ const FeaturedCollectionForm = ({ initialData, onSubmit, onCancel }) => {
               value={formData.position}
               onChange={handleChange}
               min="0"
-              className="w-full p-2 border border-gray-300 rounded-md"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             />
-            <p className="text-xs text-gray-500 mt-1">Lower numbers appear first</p>
+            <p className="text-xs text-gray-500">Lower numbers appear first</p>
           </div>
           
-          <div className="flex items-center mt-8">
-            <input
-              type="checkbox"
-              name="isActive"
-              checked={formData.isActive}
-              onChange={handleChange}
-              className="h-4 w-4 text-blue-600 rounded"
-            />
-            <label className="ml-2 text-sm text-gray-700">
-              Active (visible to customers)
-            </label>
+          <div className="flex items-start pt-2">
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+              <input
+                type="checkbox"
+                name="isActive"
+                checked={formData.isActive}
+                onChange={handleChange}
+                className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+              />
+              <label className="text-sm font-medium text-gray-700">
+                Active (visible to customers)
+              </label>
+            </div>
           </div>
         </div>
         
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+        <div className="space-y-4">
+          <label className="block text-sm font-medium text-gray-700">
             Collection Image <span className="text-red-500">*</span>
           </label>
           
-          <div className="flex items-start">
+          <div className="flex flex-col sm:flex-row sm:items-start gap-4">
             {imagePreview && (
-              <div className="relative mr-4 mb-4">
+              <div className="relative flex-shrink-0">
                 <img 
                   src={imagePreview} 
                   alt="Preview" 
-                  className="w-32 h-32 object-cover rounded-md border border-gray-300"
+                  className="w-32 h-32 object-cover rounded-lg border border-gray-300 shadow-sm"
                 />
                 <button
                   type="button"
@@ -204,7 +208,7 @@ const FeaturedCollectionForm = ({ initialData, onSubmit, onCancel }) => {
                       imageFile: null
                     });
                   }}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition-colors shadow-md"
                 >
                   <X size={14} />
                 </button>
@@ -213,14 +217,14 @@ const FeaturedCollectionForm = ({ initialData, onSubmit, onCancel }) => {
             
             <div className={`flex-1 ${errors.image ? 'border-red-500' : ''}`}>
               <label 
-                className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-md cursor-pointer hover:bg-gray-50"
+                className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
               >
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <div className="flex flex-col items-center justify-center py-6">
                   <Upload size={24} className="text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 text-center">
                     <span className="font-medium">Click to upload</span> or drag and drop
                   </p>
-                  <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
+                  <p className="text-xs text-gray-500 text-center">PNG, JPG, GIF up to 5MB</p>
                 </div>
                 <input 
                   type="file" 
@@ -229,24 +233,24 @@ const FeaturedCollectionForm = ({ initialData, onSubmit, onCancel }) => {
                   onChange={handleImageChange}
                 />
               </label>
-              {errors.image && <p className="text-red-500 text-xs mt-1">{errors.image}</p>}
+              {errors.image && <p className="text-red-500 text-xs mt-2">{errors.image}</p>}
             </div>
           </div>
         </div>
         
-        <div className="flex justify-end space-x-3">
+        <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200">
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+            className="w-full sm:w-auto px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
+            className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center font-medium"
           >
-            <Check size={18} className="mr-1" />
+            <Check size={18} className="mr-2" />
             {initialData ? 'Update Collection' : 'Create Collection'}
           </button>
         </div>

@@ -32,7 +32,7 @@ function AdminLayout() {
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+          className="fixed inset-0 z-40 lg:hidden transition-opacity duration-300"
           onClick={closeSidebar}
         />
       )}
@@ -40,9 +40,10 @@ function AdminLayout() {
       {/* Mobile sidebar */}
       <div 
         ref={sidebarRef}
-        className={`fixed inset-y-0 left-0 z-50 w-64 sm:w-72 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:hidden ${
-          sidebarOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full'
+        className={`fixed inset-y-0 left-0 z-50 w-64 sm:w-72 bg-white border-r border-gray-200 shadow-2xl transform transition-transform duration-300 ease-in-out lg:hidden ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
+        style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}
       >
         <AdminSidebar 
           onItemClick={closeSidebar} 
