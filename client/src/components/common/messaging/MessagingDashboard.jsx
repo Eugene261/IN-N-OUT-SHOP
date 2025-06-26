@@ -43,7 +43,7 @@ const MessagingDashboard = () => {
 
   const fetchConversations = async () => {
     try {
-      const response = await axios.get(`${process.env.REACT_APP_API_URL || ''}/api/common/messaging/conversations`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/common/messaging/conversations`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -62,7 +62,7 @@ const MessagingDashboard = () => {
 
   const fetchAvailableUsers = async () => {
     try {
-      const response = await axios.get(`${process.env.REACT_APP_API_URL || ''}/api/common/messaging/users/available`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/common/messaging/users/available`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -78,7 +78,7 @@ const MessagingDashboard = () => {
 
   const fetchMessages = async (conversationId) => {
     try {
-      const response = await axios.get(`${process.env.REACT_APP_API_URL || ''}/api/common/messaging/conversations/${conversationId}/messages`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/common/messaging/conversations/${conversationId}/messages`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -95,7 +95,7 @@ const MessagingDashboard = () => {
 
   const startNewConversation = async (recipientId, recipientName) => {
     try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL || ''}/api/common/messaging/conversations/direct`, {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/common/messaging/conversations/direct`, {
         recipientId,
         title: `Chat with ${recipientName}`
       }, {
@@ -125,7 +125,7 @@ const MessagingDashboard = () => {
       setSendingMessage(true);
       
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL || ''}/api/common/messaging/conversations/${activeConversation._id}/messages/text`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/common/messaging/conversations/${activeConversation._id}/messages/text`,
         { content: newMessage.trim() },
         {
           headers: {
@@ -158,7 +158,7 @@ const MessagingDashboard = () => {
 
   const markConversationAsRead = async (conversationId) => {
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL || ''}/api/common/messaging/conversations/${conversationId}/read`, {}, {
+      await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/common/messaging/conversations/${conversationId}/read`, {}, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
