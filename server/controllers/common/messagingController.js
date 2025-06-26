@@ -1,10 +1,18 @@
 const Conversation = require('../../models/Conversation');
 const Message = require('../../models/Message');
 const User = require('../../models/User');
-const cloudinary = require('../../helpers/cloudinary');
+const cloudinary = require('cloudinary').v2;
+const { ImageUploadUtil } = require('../../helpers/cloudinary');
 const asyncHandler = require('../../utils/asyncHandler');
 const multer = require('multer');
 const path = require('path');
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dq80s3m4e',
+  api_key: process.env.CLOUDINARY_API_KEY || '993987412169513',
+  api_secret: process.env.CLOUDINARY_API_SECRET || 'o2DDXYmE8eUDN1L4qWFv1eSQE9s'
+});
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
@@ -319,6 +327,13 @@ const sendMediaMessage = asyncHandler(async (req, res) => {
     fileNames: req.files?.map(f => f.originalname)
   });
 
+  // Test Cloudinary configuration
+  console.log('🔍 Cloudinary config check:', {
+    cloud_name: cloudinary.config().cloud_name,
+    api_key: cloudinary.config().api_key ? '***set***' : 'missing',
+    api_secret: cloudinary.config().api_secret ? '***set***' : 'missing'
+  });
+
   // Verify conversation exists and user is participant
   const conversation = await Conversation.findById(conversationId);
   if (!conversation || !conversation.isParticipant(userId)) {
@@ -349,44 +364,49 @@ const sendMediaMessage = asyncHandler(async (req, res) => {
       let uploadResult;
       let messageType;
 
-      // Determine message type based on file mime type
+      // Create data URI for upload
+      const dataURI = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+      console.log('🔍 Created dataURI for upload, length:', dataURI.length);
+      
+      // Determine message type and upload options based on file mime type
       if (file.mimetype.startsWith('image/')) {
+        console.log('🔍 Uploading image using ImageUploadUtil...');
         messageType = 'image';
-        uploadResult = await cloudinary.uploader.upload(
-          `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
-          {
-            folder: 'messaging/images',
-            resource_type: 'image'
-          }
-        );
+        uploadResult = await ImageUploadUtil(dataURI);
       } else if (file.mimetype.startsWith('audio/')) {
+        console.log('🔍 Uploading audio using cloudinary.uploader.upload...');
         messageType = 'audio';
-        uploadResult = await cloudinary.uploader.upload(
-          `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
-          {
-            folder: 'messaging/audio',
-            resource_type: 'video' // Cloudinary uses 'video' for audio files
-          }
-        );
+        
+        // Verify cloudinary.uploader exists
+        if (!cloudinary.uploader || typeof cloudinary.uploader.upload !== 'function') {
+          throw new Error('Cloudinary uploader not properly initialized');
+        }
+        
+        uploadResult = await cloudinary.uploader.upload(dataURI, {
+          folder: 'messaging/audio',
+          resource_type: 'video' // Cloudinary uses 'video' for audio files
+        });
       } else if (file.mimetype.startsWith('video/')) {
+        console.log('🔍 Uploading video using cloudinary.uploader.upload...');
         messageType = 'video';
-        uploadResult = await cloudinary.uploader.upload(
-          `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
-          {
-            folder: 'messaging/videos',
-            resource_type: 'video'
-          }
-        );
+        uploadResult = await cloudinary.uploader.upload(dataURI, {
+          folder: 'messaging/videos',
+          resource_type: 'video'
+        });
       } else {
+        console.log('🔍 Uploading file using cloudinary.uploader.upload...');
         messageType = 'file';
-        uploadResult = await cloudinary.uploader.upload(
-          `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
-          {
-            folder: 'messaging/files',
-            resource_type: 'raw'
-          }
-        );
+        uploadResult = await cloudinary.uploader.upload(dataURI, {
+          folder: 'messaging/files',
+          resource_type: 'raw'
+        });
       }
+
+      console.log('🔍 Upload successful:', {
+        public_id: uploadResult.public_id,
+        secure_url: uploadResult.secure_url,
+        resource_type: uploadResult.resource_type
+      });
 
       const attachment = {
         fileName: uploadResult.public_id,
