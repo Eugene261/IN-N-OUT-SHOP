@@ -44,9 +44,14 @@ apiClient.interceptors.response.use(
   },
   (error) => {
     const url = error.config?.url;
-    const status = error.response?.status;
+    const status = error.response?.status || null;
     
     console.error('❌ API Response Error:', url, status, error.response?.data);
+    
+    if (!error.response) {
+      console.error('🔌 Network error - no response received');
+      return Promise.reject(error);
+    }
     
     if (error.code === 'ECONNABORTED') {
       console.error('⏱️ Request timeout - server may be slow');
@@ -54,22 +59,19 @@ apiClient.interceptors.response.use(
       console.error('🔍 API endpoint not found:', url);
     } else if (status === 401) {
       console.error('🚫 Unauthorized - clearing auth data');
-      // Handle token expiration
-      const isTokenExpired = error.response?.data?.tokenExpired;
+      const responseData = error.response?.data || {};
+      const isTokenExpired = responseData.tokenExpired;
       if (isTokenExpired) {
         console.log('🕒 Token expired - redirecting to login');
-        // Clear auth data and redirect to login
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         
-        // Redirect to login page
         if (window.location.pathname !== '/auth/login') {
           window.location.href = '/auth/login';
         }
       } else {
         console.log('🔑 Invalid token - redirecting to login');
-        // Also clear for other 401 errors
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
@@ -78,7 +80,7 @@ apiClient.interceptors.response.use(
           window.location.href = '/auth/login';
         }
       }
-    } else if (status >= 500) {
+    } else if (status && status >= 500) {
       console.error('🔥 Server error:', status);
     }
     return Promise.reject(error);

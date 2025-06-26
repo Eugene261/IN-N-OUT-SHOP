@@ -24,18 +24,20 @@ export const handleApiError = (error, options = {}) => {
   let errorMessage = 'An unexpected error occurred';
   let statusCode = null;
   
-  if (error.response) {
+  // SAFER PROPERTY ACCESS: Check error.response exists before accessing status
+  if (error.response && typeof error.response === 'object') {
     // Server responded with an error status code
-    statusCode = error.response.status;
+    statusCode = error.response.status || null;
     
     // Try to get error message from response data
-    if (error.response.data) {
-      if (typeof error.response.data === 'string') {
-        errorMessage = error.response.data;
-      } else if (error.response.data.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.response.data.error) {
-        errorMessage = error.response.data.error;
+    const responseData = error.response.data;
+    if (responseData) {
+      if (typeof responseData === 'string') {
+        errorMessage = responseData;
+      } else if (responseData.message) {
+        errorMessage = responseData.message;
+      } else if (responseData.error) {
+        errorMessage = responseData.error;
       }
     }
     
