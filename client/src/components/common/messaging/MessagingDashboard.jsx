@@ -278,7 +278,7 @@ const MessagingDashboard = () => {
     const isMessagingDisabled = initError === 'MESSAGING_DISABLED';
     
     return (
-      <div className="h-full bg-gray-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md">
           {isMessagingDisabled ? (
             <>
@@ -316,7 +316,7 @@ const MessagingDashboard = () => {
   // Show loading state
   if (loading && conversations.length === 0 && !hasInitialized) {
     return (
-      <div className="h-full bg-gray-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading messaging...</p>
@@ -326,7 +326,7 @@ const MessagingDashboard = () => {
   }
 
   return (
-    <div className="h-full bg-gray-50 flex">
+    <div className="absolute inset-0 bg-gray-50 flex">
       {/* Conversations Sidebar */}
       <div className={`${
         showConversations ? 'flex' : 'hidden'
@@ -666,7 +666,7 @@ const MessagingDashboard = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black bg-opacity-50 z-40"
+              className="fixed inset-0 bg-white bg-opacity-80 backdrop-blur-sm z-40"
               onClick={() => dispatch(setShowNewChatModal(false))}
             />
             
