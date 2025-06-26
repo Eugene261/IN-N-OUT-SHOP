@@ -322,24 +322,7 @@ const messagingSlice = createSlice({
         state.conversations = action.payload?.conversations || [];
         state.totalUnread = action.payload?.totalUnread || 0;
         
-        // Debug logging for unread count calculation
-        console.log('🔍 Redux: fetchConversations.fulfilled', {
-          payloadTotalUnread: action.payload?.totalUnread,
-          conversationsCount: action.payload?.conversations?.length || 0,
-          conversations: action.payload?.conversations?.map(conv => ({
-            id: conv._id,
-            title: conv.title,
-            unreadCounts: conv.unreadCounts,
-            lastMessage: conv.lastMessage,
-            participants: conv.participants?.map(p => ({
-              userId: p.user?._id || p.user,
-              userName: p.user?.userName,
-              role: p.user?.role || p.role
-            }))
-          })) || [],
-          fullPayload: action.payload,
-          finalTotalUnread: state.totalUnread
-        });
+        // Conversations and unread counts loaded successfully
       })
       .addCase(fetchConversations.rejected, (state, action) => {
         state.loading = false;

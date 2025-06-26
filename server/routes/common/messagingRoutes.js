@@ -14,8 +14,7 @@ const {
   editMessage,
   deleteMessage,
   getAvailableUsers,
-  archiveConversation,
-  addTestUnreadCounts
+  archiveConversation
 } = require('../../controllers/common/messagingController');
 
 // Middleware to check if messaging is enabled and handle errors gracefully
@@ -44,9 +43,6 @@ router.use(authMiddleware);
 
 // Get available users for messaging
 router.get('/users/available', getAvailableUsers);
-
-// TEST ENDPOINT: Add test unread counts
-router.post('/test/add-unread-counts', addTestUnreadCounts);
 
 // Conversation routes
 router.get('/conversations', getConversations);

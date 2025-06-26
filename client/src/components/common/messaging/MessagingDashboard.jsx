@@ -406,16 +406,7 @@ const MessagingDashboard = () => {
                 const isActive = activeConversation?._id === conversation._id;
                 const hasUnread = unreadCount > 0;
 
-                // Debug logging for unread counts
-                console.log('🔍 Conversation debug:', {
-                  conversationId: conversation._id,
-                  otherUserName: otherUser?.userName,
-                  unreadCounts: conversation?.unreadCounts,
-                  currentUserId: user?.id,
-                  unreadCount,
-                  hasUnread,
-                  totalUnread: totalUnread
-                });
+                // Unread highlighting and badge system working! 🎯
                 
                 return (
                   <motion.div

@@ -64,17 +64,7 @@ const getConversations = asyncHandler(async (req, res) => {
         return unreadUserId === userId.toString();
       });
       
-      const unreadCount = userUnread ? userUnread.count : 0;
-      console.log('🔍 Conversation unread calc:', {
-        conversationId: conv._id,
-        userId,
-        unreadCounts: conv.unreadCounts,
-        foundUserUnread: !!userUnread,
-        unreadCount,
-        runningSum: sum + unreadCount
-      });
-      
-      return sum + unreadCount;
+      return sum + (userUnread ? userUnread.count : 0);
     }, 0);
 
     console.log('🔍 Total unread count:', totalUnread);
@@ -645,52 +635,7 @@ const archiveConversation = asyncHandler(async (req, res) => {
   });
 });
 
-// TEST ENDPOINT: Add test unread counts
-const addTestUnreadCounts = asyncHandler(async (req, res) => {
-  console.log('🧪 Adding test unread counts to conversations...');
-  
-  try {
-    // Find all conversations
-    const conversations = await Conversation.find({})
-      .populate('participants.user', 'userName email role');
-    
-    console.log(`Found ${conversations.length} conversations`);
-    
-    for (const conversation of conversations) {
-      console.log(`\n📝 Processing conversation: ${conversation.title}`);
-      
-      // Add test unread counts for each participant (random 1-3)
-      conversation.unreadCounts = conversation.participants.map(participant => ({
-        user: participant.user._id,
-        count: Math.floor(Math.random() * 3) + 1 // Random count between 1-3
-      }));
-      
-      await conversation.save();
-      
-      console.log('✅ Added unread counts:', conversation.unreadCounts.map(uc => ({
-        userId: uc.user,
-        count: uc.count
-      })));
-    }
-    
-    res.status(200).json({
-      success: true,
-      message: `Added test unread counts to ${conversations.length} conversations`,
-      data: conversations.map(conv => ({
-        id: conv._id,
-        title: conv.title,
-        unreadCounts: conv.unreadCounts
-      }))
-    });
-  } catch (error) {
-    console.error('❌ Error adding test unread counts:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to add test unread counts',
-      error: error.message
-    });
-  }
-});
+
 
 module.exports = {
   // Multer middleware
@@ -707,6 +652,5 @@ module.exports = {
   editMessage,
   deleteMessage,
   getAvailableUsers,
-  archiveConversation,
-  addTestUnreadCounts // TEST ENDPOINT
+  archiveConversation
 }; 
