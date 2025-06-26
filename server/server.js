@@ -81,8 +81,8 @@ const shippingDiagnosticRouter = require('./routes/shop-view/shippingDiagnosticR
 // AdminId diagnostic routes
 const adminIdDiagnosticRouter = require('./routes/shop-view/adminIdDiagnosticRoutes.js');
 
-// Messaging routes
-const messagingRouter = require('./routes/common/messagingRoutes');
+// Messaging routes - TEMPORARILY DISABLED due to handler crashes
+// const messagingRouter = require('./routes/common/messagingRoutes');
 
 // Vendor payment routes
 const adminVendorPaymentRouter = require('./routes/admin/vendorPaymentRoutes');
@@ -245,7 +245,7 @@ app.use('/api/shop/search', shopSearchRouter);
 app.use('/api/shop/review', shopReviewRouter);
 app.use('/api/common/feature', commonFeatureRouter);
 app.use('/api/common', contactRouter);
-app.use('/api/common/messaging', messagingRouter);
+// app.use('/api/common/messaging', messagingRouter); // DISABLED - messaging routes causing crashes
 app.use('/api/shop/wishlist', wishlistRouter);
 app.use('/api/shop/featured-collections', shopFeaturedCollectionRouter);
 
