@@ -4,7 +4,7 @@ import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
 const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [totalDuration, setTotalDuration] = useState(duration);
+  const [totalDuration, setTotalDuration] = useState(duration || 0);
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
   const audioRef = useRef(null);
@@ -14,7 +14,11 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
     if (!audio) return;
 
     const updateTime = () => setCurrentTime(audio.currentTime);
-    const updateDuration = () => setTotalDuration(audio.duration);
+    const updateDuration = () => {
+      if (audio.duration && isFinite(audio.duration)) {
+        setTotalDuration(audio.duration);
+      }
+    };
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
     const handleEnded = () => {
@@ -80,13 +84,13 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
   };
 
   const formatTime = (seconds) => {
-    if (!seconds || isNaN(seconds)) return '0:00';
+    if (!seconds || isNaN(seconds) || !isFinite(seconds)) return '0:00';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const progress = totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0;
+  const progress = (totalDuration > 0 && isFinite(totalDuration)) ? (currentTime / totalDuration) * 100 : 0;
 
   if (hasError) {
     return (

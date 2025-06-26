@@ -172,6 +172,36 @@ const MessagingDashboard = () => {
     }
   }, [activeConversation, dispatch, hasInitialized]);
 
+  // Auto-refresh messages and conversations
+  useEffect(() => {
+    if (!hasInitialized) return;
+
+    const refreshData = async () => {
+      try {
+        // Refresh conversations to get latest messages and unread counts
+        await dispatch(fetchConversations()).unwrap();
+        
+        // Refresh current conversation messages if active
+        if (activeConversation) {
+          await dispatch(fetchMessages({ conversationId: activeConversation._id })).unwrap();
+        }
+      } catch (error) {
+        console.error('Auto-refresh failed:', error);
+        // Don't show toast for auto-refresh errors to avoid spam
+      }
+    };
+
+    // Initial refresh
+    refreshData();
+
+    // Set up polling interval for real-time updates
+    const interval = setInterval(refreshData, 5000); // Poll every 5 seconds
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [dispatch, hasInitialized, activeConversation]);
+
   useEffect(() => {
     // Show error notifications
     if (error) {
