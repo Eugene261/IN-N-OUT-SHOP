@@ -330,8 +330,14 @@ const messagingSlice = createSlice({
             id: conv._id,
             title: conv.title,
             unreadCounts: conv.unreadCounts,
-            lastMessage: conv.lastMessage
+            lastMessage: conv.lastMessage,
+            participants: conv.participants?.map(p => ({
+              userId: p.user?._id || p.user,
+              userName: p.user?.userName,
+              role: p.user?.role || p.role
+            }))
           })) || [],
+          fullPayload: action.payload,
           finalTotalUnread: state.totalUnread
         });
       })
