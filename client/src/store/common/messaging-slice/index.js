@@ -7,7 +7,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 // Async thunks for API calls
 export const fetchConversations = createAsyncThunk(
   'messaging/fetchConversations',
-  async ({ status = '', type = '' }, { rejectWithValue }) => {
+  async ({ status = '', type = '' } = {}, { rejectWithValue }) => {
     try {
       let url = `${API_URL}/api/common/messaging/conversations`;
       const params = new URLSearchParams();

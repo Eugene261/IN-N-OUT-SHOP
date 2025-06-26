@@ -77,7 +77,7 @@ const MessagingDashboard = () => {
         console.log('🔄 Initializing messaging system...');
         
         // SAFER ERROR HANDLING: Wrap individual dispatches to handle errors properly
-        const conversationsPromise = dispatch(fetchConversations()).unwrap().catch(err => {
+        const conversationsPromise = dispatch(fetchConversations({})).unwrap().catch(err => {
           console.error('❌ Failed to fetch conversations:', err);
           console.log('🔍 Error type:', typeof err);
           console.log('🔍 Error details:', JSON.stringify(err, null, 2));
