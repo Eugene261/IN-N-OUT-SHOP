@@ -145,7 +145,10 @@ ConversationSchema.virtual('participantCount').get(function() {
 
 // Methods
 ConversationSchema.methods.addParticipant = function(userId, role) {
-  const existingParticipant = this.participants.find(p => p.user.toString() === userId.toString());
+  const existingParticipant = this.participants.find(p => {
+    const participantUserId = p.user._id ? p.user._id.toString() : p.user.toString();
+    return participantUserId === userId.toString();
+  });
   
   if (!existingParticipant) {
     this.participants.push({
@@ -165,8 +168,14 @@ ConversationSchema.methods.addParticipant = function(userId, role) {
 };
 
 ConversationSchema.methods.removeParticipant = function(userId) {
-  this.participants = this.participants.filter(p => p.user.toString() !== userId.toString());
-  this.unreadCounts = this.unreadCounts.filter(u => u.user.toString() !== userId.toString());
+  this.participants = this.participants.filter(p => {
+    const participantUserId = p.user._id ? p.user._id.toString() : p.user.toString();
+    return participantUserId !== userId.toString();
+  });
+  this.unreadCounts = this.unreadCounts.filter(u => {
+    const unreadUserId = u.user._id ? u.user._id.toString() : u.user.toString();
+    return unreadUserId !== userId.toString();
+  });
   return this.save();
 };
 
@@ -181,7 +190,9 @@ ConversationSchema.methods.updateLastMessage = function(message) {
   
   // Update unread counts for all participants except sender
   this.unreadCounts.forEach(unread => {
-    if (unread.user.toString() !== message.sender.toString()) {
+    const unreadUserId = unread.user._id ? unread.user._id.toString() : unread.user.toString();
+    const senderId = message.sender._id ? message.sender._id.toString() : message.sender.toString();
+    if (unreadUserId !== senderId) {
       unread.count += 1;
     }
   });
@@ -190,7 +201,10 @@ ConversationSchema.methods.updateLastMessage = function(message) {
 };
 
 ConversationSchema.methods.markAsRead = function(userId) {
-  const unreadEntry = this.unreadCounts.find(u => u.user.toString() === userId.toString());
+  const unreadEntry = this.unreadCounts.find(u => {
+    const unreadUserId = u.user._id ? u.user._id.toString() : u.user.toString();
+    return unreadUserId === userId.toString();
+  });
   if (unreadEntry) {
     unreadEntry.count = 0;
   }
@@ -198,11 +212,18 @@ ConversationSchema.methods.markAsRead = function(userId) {
 };
 
 ConversationSchema.methods.isParticipant = function(userId) {
-  return this.participants.some(p => p.user.toString() === userId.toString());
+  return this.participants.some(p => {
+    // Handle both populated and non-populated user references
+    const participantUserId = p.user._id ? p.user._id.toString() : p.user.toString();
+    return participantUserId === userId.toString();
+  });
 };
 
 ConversationSchema.methods.getParticipantRole = function(userId) {
-  const participant = this.participants.find(p => p.user.toString() === userId.toString());
+  const participant = this.participants.find(p => {
+    const participantUserId = p.user._id ? p.user._id.toString() : p.user.toString();
+    return participantUserId === userId.toString();
+  });
   return participant ? participant.role : null;
 };
 
@@ -255,7 +276,7 @@ ConversationSchema.pre('save', function(next) {
   const seenUsers = new Set();
   
   this.participants.forEach(participant => {
-    const userId = participant.user.toString();
+    const userId = participant.user._id ? participant.user._id.toString() : participant.user.toString();
     if (!seenUsers.has(userId)) {
       uniqueParticipants.push(participant);
       seenUsers.add(userId);
