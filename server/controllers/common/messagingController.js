@@ -17,7 +17,7 @@ const upload = multer({
     // Allow images, audio, video, and documents
     const allowedMimes = [
       'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-      'audio/mpeg', 'audio/wav', 'audio/mp3', 'audio/ogg',
+      'audio/mpeg', 'audio/wav', 'audio/mp3', 'audio/ogg', 'audio/webm',
       'video/mp4', 'video/webm', 'video/quicktime',
       'application/pdf', 'application/msword', 
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

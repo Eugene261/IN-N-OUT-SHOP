@@ -16,7 +16,7 @@ import {
   Mic
 } from 'lucide-react';
 import FileUploadModal from './FileUploadModal';
-import VoiceRecorder from './VoiceRecorder';
+import InlineVoiceRecorder from './InlineVoiceRecorder';
 import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 import {
@@ -72,7 +72,7 @@ const MessagingDashboard = () => {
   const [hasInitialized, setHasInitialized] = useState(false);
   const [initError, setInitError] = useState(null);
   const [showFileUpload, setShowFileUpload] = useState(false);
-  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
+  const [showInlineRecorder, setShowInlineRecorder] = useState(false);
 
   useEffect(() => {
     // Initialize data with error handling
@@ -270,6 +270,7 @@ const MessagingDashboard = () => {
         limit: 50 
       }));
     }
+    setShowInlineRecorder(false);
     toast.success('Voice message sent!');
   };
 
@@ -625,58 +626,67 @@ const MessagingDashboard = () => {
               )}
             </div>
 
-            {/* Message Input */}
-            <div className="bg-white p-4 lg:p-6 border-t border-gray-200">
-              <div className="flex items-end space-x-3">
-                {/* File Upload Button */}
-                <button 
-                  onClick={() => setShowFileUpload(true)}
-                  className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors" 
-                  title="Attach file"
-                >
-                  <Paperclip className="w-5 h-5" />
-                </button>
-                
-                {/* Voice Recording Button */}
-                <button 
-                  onClick={() => setShowVoiceRecorder(true)}
-                  className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors" 
-                  title="Record voice message"
-                >
-                  <Mic className="w-5 h-5" />
-                </button>
-                
-                <div className="flex-1 relative">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Type your message here..."
-                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 text-sm lg:text-base placeholder-gray-500 resize-none"
-                      disabled={sendingMessage}
-                    />
-                    {sendingMessage && (
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
-                      </div>
-                    )}
+            {/* Message Input or Voice Recorder */}
+            {showInlineRecorder ? (
+              <InlineVoiceRecorder
+                isVisible={showInlineRecorder}
+                onClose={() => setShowInlineRecorder(false)}
+                onSendAudio={handleAudioSent}
+                conversationId={activeConversation?._id}
+              />
+            ) : (
+              <div className="bg-white p-4 lg:p-6 border-t border-gray-200">
+                <div className="flex items-end space-x-3">
+                  {/* File Upload Button */}
+                  <button 
+                    onClick={() => setShowFileUpload(true)}
+                    className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors" 
+                    title="Attach file"
+                  >
+                    <Paperclip className="w-5 h-5" />
+                  </button>
+                  
+                  {/* Voice Recording Button */}
+                  <button 
+                    onClick={() => setShowInlineRecorder(true)}
+                    className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors" 
+                    title="Record voice message"
+                  >
+                    <Mic className="w-5 h-5" />
+                  </button>
+                  
+                  <div className="flex-1 relative">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder="Type your message here..."
+                        className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 text-sm lg:text-base placeholder-gray-500 resize-none"
+                        disabled={sendingMessage}
+                      />
+                      {sendingMessage && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-1 px-2">
+                      Press Enter to send • Shift + Enter for new line
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-400 mt-1 px-2">
-                    Press Enter to send • Shift + Enter for new line
-                  </div>
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={!newMessage.trim() || sendingMessage}
+                    className="p-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md disabled:hover:shadow-sm"
+                    title="Send message"
+                  >
+                    <Send className="w-5 h-5" />
+                  </button>
                 </div>
-                <button
-                  onClick={handleSendMessage}
-                  disabled={!newMessage.trim() || sendingMessage}
-                  className="p-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md disabled:hover:shadow-sm"
-                  title="Send message"
-                >
-                  <Send className="w-5 h-5" />
-                </button>
               </div>
-            </div>
+            )}
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
@@ -789,13 +799,7 @@ const MessagingDashboard = () => {
         conversationId={activeConversation?._id}
       />
 
-      {/* Voice Recorder Modal */}
-      <VoiceRecorder
-        isOpen={showVoiceRecorder}
-        onClose={() => setShowVoiceRecorder(false)}
-        onSendAudio={handleAudioSent}
-        conversationId={activeConversation?._id}
-      />
+
     </div>
   );
 };
