@@ -12,167 +12,119 @@ import {
   Paperclip,
   X
 } from 'lucide-react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'sonner';
-import axios from 'axios';
+import {
+  fetchConversations,
+  fetchMessages,
+  sendMessage,
+  fetchAvailableUsers,
+  createConversation,
+  markAsRead,
+  setActiveConversation,
+  setSearchTerm,
+  setShowNewChatModal,
+  clearError,
+  selectConversations,
+  selectActiveConversation,
+  selectMessages,
+  selectTotalUnread,
+  selectAvailableUsers,
+  selectLoading,
+  selectMessagesLoading,
+  selectSendingMessage,
+  selectError,
+  selectSearchTerm,
+  selectShowNewChatModal,
+  selectFilteredConversations
+} from '../../../store/common/messaging-slice';
 
 const MessagingDashboard = () => {
+  const dispatch = useDispatch();
   const { user } = useSelector(state => state.auth);
-  const [conversations, setConversations] = useState([]);
-  const [activeConversation, setActiveConversation] = useState(null);
-  const [messages, setMessages] = useState([]);
+  
+  // Redux selectors
+  const conversations = useSelector(selectConversations);
+  const activeConversation = useSelector(selectActiveConversation);
+  const totalUnread = useSelector(selectTotalUnread);
+  const availableUsers = useSelector(selectAvailableUsers);
+  const loading = useSelector(selectLoading);
+  const messagesLoading = useSelector(selectMessagesLoading);
+  const sendingMessage = useSelector(selectSendingMessage);
+  const error = useSelector(selectError);
+  const searchTerm = useSelector(selectSearchTerm);
+  const showNewChatModal = useSelector(selectShowNewChatModal);
+  const filteredConversations = useSelector(selectFilteredConversations);
+  
+  // Get messages for active conversation
+  const messages = useSelector(state => 
+    activeConversation ? selectMessages(activeConversation._id)(state) : []
+  );
+
+  // Local UI state
   const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [sendingMessage, setSendingMessage] = useState(false);
-  const [availableUsers, setAvailableUsers] = useState([]);
-  const [showNewChatModal, setShowNewChatModal] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const [showConversations, setShowConversations] = useState(true); // Mobile: toggle between conversations and chat
 
   useEffect(() => {
-    fetchConversations();
-    fetchAvailableUsers();
-  }, []);
+    // Initialize data
+    dispatch(fetchConversations());
+    dispatch(fetchAvailableUsers());
+  }, [dispatch]);
 
   useEffect(() => {
     if (activeConversation) {
-      fetchMessages(activeConversation._id);
-      markConversationAsRead(activeConversation._id);
+      dispatch(fetchMessages({ conversationId: activeConversation._id }));
+      dispatch(markAsRead({ conversationId: activeConversation._id }));
     }
-  }, [activeConversation]);
+  }, [activeConversation, dispatch]);
 
-  const fetchConversations = async () => {
+  useEffect(() => {
+    // Show error notifications
+    if (error) {
+      toast.error(error);
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
+
+  const handleStartNewConversation = async (recipientId, recipientName) => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/common/messaging/conversations`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (response.data.success) {
-        setConversations(response.data.data.conversations);
-      }
+      const result = await dispatch(createConversation({ 
+        recipientId, 
+        title: `Chat with ${recipientName}` 
+      })).unwrap();
+      
+      setShowConversations(false); // Switch to chat view on mobile
+      toast.success(`Started conversation with ${recipientName}`);
     } catch (error) {
-      console.error('Error fetching conversations:', error);
-      toast.error('Failed to load conversations');
-    } finally {
-      setLoading(false);
+      toast.error(error.message || 'Failed to start conversation');
     }
   };
 
-  const fetchAvailableUsers = async () => {
-    try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/common/messaging/users/available`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (response.data.success) {
-        setAvailableUsers(response.data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching available users:', error);
-    }
-  };
-
-  const fetchMessages = async (conversationId) => {
-    try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/common/messaging/conversations/${conversationId}/messages`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (response.data.success) {
-        setMessages(response.data.data.messages);
-      }
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-      toast.error('Failed to load messages');
-    }
-  };
-
-  const startNewConversation = async (recipientId, recipientName) => {
-    try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/common/messaging/conversations/direct`, {
-        recipientId,
-        title: `Chat with ${recipientName}`
-      }, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (response.data.success) {
-        const newConversation = response.data.data;
-        setConversations(prev => [newConversation, ...prev]);
-        setActiveConversation(newConversation);
-        setShowNewChatModal(false);
-        setShowConversations(false); // Switch to chat view on mobile
-        toast.success(`Started conversation with ${recipientName}`);
-      }
-    } catch (error) {
-      console.error('Error starting conversation:', error);
-      toast.error(error.response?.data?.message || 'Failed to start conversation');
-    }
-  };
-
-  const sendMessage = async () => {
+  const handleSendMessage = async () => {
     if (!newMessage.trim() || !activeConversation || sendingMessage) return;
 
     try {
-      setSendingMessage(true);
+      await dispatch(sendMessage({
+        conversationId: activeConversation._id,
+        content: newMessage.trim()
+      })).unwrap();
       
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/common/messaging/conversations/${activeConversation._id}/messages/text`,
-        { content: newMessage.trim() },
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
-
-      if (response.data.success) {
-        const newMsg = response.data.data;
-        setMessages(prev => [...prev, newMsg]);
-        setNewMessage('');
-        
-        // Update conversation last message
-        setConversations(prev => 
-          prev.map(conv => 
-            conv._id === activeConversation._id 
-              ? { ...conv, lastMessage: { content: newMsg.content, sentAt: newMsg.createdAt, sender: newMsg.sender } }
-              : conv
-          )
-        );
-      }
+      setNewMessage('');
     } catch (error) {
-      console.error('Error sending message:', error);
-      toast.error('Failed to send message');
-    } finally {
-      setSendingMessage(false);
-    }
-  };
-
-  const markConversationAsRead = async (conversationId) => {
-    try {
-      await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/common/messaging/conversations/${conversationId}/read`, {}, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-    } catch (error) {
-      console.error('Error marking as read:', error);
+      toast.error(error.message || 'Failed to send message');
     }
   };
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      handleSendMessage();
     }
+  };
+
+  const handleConversationSelect = (conversation) => {
+    dispatch(setActiveConversation(conversation));
+    setShowConversations(false); // Switch to chat view on mobile
   };
 
   const formatTime = (dateString) => {
@@ -194,13 +146,7 @@ const MessagingDashboard = () => {
     return conversation.participants.find(p => p.user._id !== user.id)?.user;
   };
 
-  const filteredConversations = conversations.filter(conv => {
-    const otherUser = getOtherParticipant(conv);
-    return otherUser?.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           conv.title.toLowerCase().includes(searchTerm.toLowerCase());
-  });
-
-  if (loading) {
+  if (loading && conversations.length === 0) {
     return (
       <div className="h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -217,9 +163,16 @@ const MessagingDashboard = () => {
         {/* Header */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-lg lg:text-xl font-semibold text-gray-900">Messages</h1>
+            <div className="flex items-center space-x-2">
+              <h1 className="text-lg lg:text-xl font-semibold text-gray-900">Messages</h1>
+              {totalUnread > 0 && (
+                <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                  {totalUnread > 99 ? '99+' : totalUnread}
+                </span>
+              )}
+            </div>
             <button
-              onClick={() => setShowNewChatModal(true)}
+              onClick={() => dispatch(setShowNewChatModal(true))}
               className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700"
             >
               <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
@@ -233,7 +186,7 @@ const MessagingDashboard = () => {
               type="text"
               placeholder="Search conversations..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => dispatch(setSearchTerm(e.target.value))}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -259,21 +212,25 @@ const MessagingDashboard = () => {
                     className={`p-3 lg:p-4 cursor-pointer hover:bg-gray-50 ${
                       activeConversation?._id === conversation._id ? 'bg-blue-50 border-r-2 border-blue-600' : ''
                     }`}
-                    onClick={() => {
-                      setActiveConversation(conversation);
-                      setShowConversations(false); // Switch to chat view on mobile
-                    }}
+                    onClick={() => handleConversationSelect(conversation)}
                   >
                     <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0">
+                      <div className="flex-shrink-0 relative">
                         <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gray-300 rounded-full flex items-center justify-center">
                           <User className="w-4 h-4 lg:w-6 lg:h-6 text-gray-600" />
                         </div>
+                        {unreadCount > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
+                            {unreadCount > 9 ? '9+' : unreadCount}
+                          </span>
+                        )}
                       </div>
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-gray-900 truncate">
+                          <p className={`text-sm font-medium truncate ${
+                            unreadCount > 0 ? 'text-gray-900 font-semibold' : 'text-gray-900'
+                          }`}>
                             {otherUser?.userName || 'Unknown User'}
                           </p>
                           <div className="flex items-center space-x-1 lg:space-x-2">
@@ -282,15 +239,12 @@ const MessagingDashboard = () => {
                                 {formatTime(conversation.lastMessage.sentAt)}
                               </span>
                             )}
-                            {unreadCount > 0 && (
-                              <span className="bg-blue-600 text-white text-xs rounded-full px-1.5 py-0.5 lg:px-2 lg:py-1 min-w-[16px] lg:min-w-[20px] text-center">
-                                {unreadCount}
-                              </span>
-                            )}
                           </div>
                         </div>
                         
-                        <p className="text-xs lg:text-sm text-gray-600 truncate mt-1">
+                        <p className={`text-xs lg:text-sm truncate mt-1 ${
+                          unreadCount > 0 ? 'text-gray-900 font-medium' : 'text-gray-600'
+                        }`}>
                           {conversation.lastMessage?.content || 'No messages yet'}
                         </p>
                         
@@ -354,35 +308,46 @@ const MessagingDashboard = () => {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-3 lg:space-y-4">
-              {messages.map((message) => (
-                <motion.div
-                  key={message._id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${message.sender._id === user.id ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div className={`max-w-xs lg:max-w-md px-3 lg:px-4 py-2 rounded-lg ${
-                    message.sender._id === user.id
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-900'
-                  }`}>
-                    <p className="text-sm">{message.content}</p>
-                    <div className={`flex items-center justify-end mt-1 space-x-1 ${
-                      message.sender._id === user.id ? 'text-blue-100' : 'text-gray-500'
+              {messagesLoading && messages.length === 0 ? (
+                <div className="flex justify-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="text-center text-gray-500 py-8">
+                  <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p>No messages yet. Start the conversation!</p>
+                </div>
+              ) : (
+                messages.map((message) => (
+                  <motion.div
+                    key={message._id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`flex ${message.sender._id === user.id ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div className={`max-w-xs lg:max-w-md px-3 lg:px-4 py-2 rounded-lg ${
+                      message.sender._id === user.id
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 text-gray-900'
                     }`}>
-                      <span className="text-xs">
-                        {new Date(message.createdAt).toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
-                      </span>
-                      {message.sender._id === user.id && (
-                        <CheckCircle className="w-3 h-3" />
-                      )}
+                      <p className="text-sm">{message.content}</p>
+                      <div className={`flex items-center justify-end mt-1 space-x-1 ${
+                        message.sender._id === user.id ? 'text-blue-100' : 'text-gray-500'
+                      }`}>
+                        <span className="text-xs">
+                          {new Date(message.createdAt).toLocaleTimeString([], { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </span>
+                        {message.sender._id === user.id && (
+                          <CheckCircle className="w-3 h-3" />
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                ))
+              )}
             </div>
 
             {/* Message Input */}
@@ -403,7 +368,7 @@ const MessagingDashboard = () => {
                   />
                 </div>
                 <button
-                  onClick={sendMessage}
+                  onClick={handleSendMessage}
                   disabled={!newMessage.trim() || sendingMessage}
                   className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -423,7 +388,7 @@ const MessagingDashboard = () => {
         )}
       </div>
 
-      {/* New Chat Dropdown */}
+      {/* New Chat Modal */}
       <AnimatePresence>
         {showNewChatModal && (
           <motion.div
@@ -436,7 +401,7 @@ const MessagingDashboard = () => {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-base lg:text-lg font-semibold text-gray-900">Start New Conversation</h2>
                 <button
-                  onClick={() => setShowNewChatModal(false)}
+                  onClick={() => dispatch(setShowNewChatModal(false))}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <X className="w-5 h-5" />
@@ -447,7 +412,7 @@ const MessagingDashboard = () => {
                 {availableUsers.map((availableUser) => (
                   <div
                     key={availableUser._id}
-                    onClick={() => startNewConversation(availableUser._id, availableUser.userName)}
+                    onClick={() => handleStartNewConversation(availableUser._id, availableUser.userName)}
                     className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
                   >
                     <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">

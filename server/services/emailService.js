@@ -497,6 +497,29 @@ class EmailService {
             background: #ffffff;
           }
           
+          /* Message preview styles */
+          .message-preview {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-left: 4px solid #3b82f6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+          }
+          .message-header {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 10px;
+            font-weight: 500;
+          }
+          .message-content {
+            font-size: 16px;
+            color: #495057;
+            font-style: italic;
+            line-height: 1.5;
+            padding: 10px 0;
+          }
+          
           /* Component styles */
           .notification-header h2 {
             color: #2c3e50;
@@ -1639,44 +1662,125 @@ class EmailService {
 
   // Newsletter subscription confirmation
   async sendNewsletterSubscriptionEmail(email, userName) {
-    const htmlContent = this.getModernEmailTemplate({
-      title: 'Newsletter Subscription',
-      headerColor: '#6f42c1',
-      icon: '📬',
-      content: `
-        <div class="notification-header">
-          <h2>📬 Welcome to our Newsletter!</h2>
-          <p>Hi ${userName}, thank you for subscribing to IN-N-OUT Store updates!</p>
-        </div>
-        
-        <div class="newsletter-benefits">
-          <h3>🎁 What you'll receive:</h3>
-          <ul>
-            <li>🛍️ Exclusive deals and early access to sales</li>
-            <li>📦 New product announcements</li>
-            <li>💡 Shopping tips and product recommendations</li>
-            <li>🎉 Special member-only promotions</li>
-            <li>📊 Weekly trending products</li>
-          </ul>
-        </div>
-        
-        <div class="message-box">
-          <h3>📧 Email Preferences</h3>
-          <p>You can update your email preferences or unsubscribe at any time using the links in our emails.</p>
-        </div>
-        
-        <div style="text-align: center;">
-          <a href="${process.env.CLIENT_URL}/shop" class="button">Start Shopping</a>
-          <a href="${process.env.CLIENT_URL}/newsletter/preferences" class="button secondary">Email Preferences</a>
-        </div>
-      `
-    });
+    try {
+      const html = this.getModernEmailTemplate({
+        title: 'Newsletter Subscription',
+        headerColor: '#10b981',
+        icon: '📬',
+        content: `
+          <h2>Thank you for subscribing!</h2>
+          <p>Hi ${userName || 'there'},</p>
+          <p>You've successfully subscribed to the IN-N-OUT Store newsletter! 🎉</p>
+          
+          <div class="info-box">
+            <h3>What to expect:</h3>
+            <ul>
+              <li>🏷️ Exclusive deals and early access to sales</li>
+              <li>📦 New product announcements</li>
+              <li>💡 Style tips and product recommendations</li>
+              <li>🎁 Special birthday offers</li>
+            </ul>
+          </div>
+          
+          <p>We'll send you our newsletter weekly with the best deals and latest trends.</p>
+          
+          <div class="footer-note">
+            <p>Don't want to receive these emails? You can <a href="${process.env.CLIENT_URL}/unsubscribe">unsubscribe at any time</a>.</p>
+          </div>
+        `
+      });
 
-    return await this.sendEmail({
-      to: email,
-      subject: '📬 Welcome to IN-N-OUT Store Newsletter!',
-      html: htmlContent
-    });
+      await this.sendEmail({
+        to: email,
+        subject: '📬 Welcome to IN-N-OUT Store Newsletter!',
+        html,
+        emailType: 'welcome',
+        headers: {
+          'X-Email-Category': 'newsletter-subscription',
+          'X-Sender-Type': 'marketing'
+        }
+      });
+
+      console.log(`Newsletter subscription confirmation sent to: ${email}`);
+    } catch (error) {
+      console.error('Error sending newsletter subscription email:', error);
+      throw error;
+    }
+  }
+
+  // NEW: Send message notification email
+  async sendMessageNotificationEmail(recipientEmail, recipientName, senderName, senderRole, messageContent, conversationId) {
+    try {
+      // Truncate message content for email preview
+      const truncatedContent = messageContent.length > 100 
+        ? messageContent.substring(0, 100) + '...' 
+        : messageContent;
+
+      const senderTitle = senderRole === 'superAdmin' ? 'Super Admin' : 'Admin';
+      const clientUrl = process.env.CLIENT_URL || 'https://www.in-nd-out.com';
+      const messageUrl = `${clientUrl}/${senderRole === 'superAdmin' ? 'admin' : 'super-admin'}/messaging`;
+
+      const html = this.getModernEmailTemplate({
+        title: 'New Message Received',
+        headerColor: '#3b82f6',
+        icon: '💬',
+        content: `
+          <h2>You have a new message!</h2>
+          <p>Hi ${recipientName},</p>
+          <p>You've received a new message from <strong>${senderName}</strong> (${senderTitle}).</p>
+          
+          <div class="message-preview">
+            <div class="message-header">
+              <strong>From:</strong> ${senderName} (${senderTitle})
+            </div>
+            <div class="message-content">
+              "${truncatedContent}"
+            </div>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${messageUrl}" 
+               style="display: inline-block; background: #3b82f6; color: white; padding: 14px 30px; 
+                      text-decoration: none; border-radius: 8px; font-weight: 600; 
+                      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+              View Message
+            </a>
+          </div>
+          
+          <div class="info-box">
+            <h3>💡 Quick Actions:</h3>
+            <ul>
+              <li>Click "View Message" to read the full message and reply</li>
+              <li>Log into your admin dashboard to access all conversations</li>
+              <li>Reply directly through the messaging system</li>
+            </ul>
+          </div>
+          
+          <div class="footer-note">
+            <p><strong>Note:</strong> This is an automated notification. Please do not reply to this email directly. 
+            Use the messaging system in your admin dashboard to respond.</p>
+          </div>
+        `
+      });
+
+      await this.sendEmail({
+        to: recipientEmail,
+        subject: `💬 New message from ${senderName} - IN-N-OUT Store`,
+        html,
+        emailType: 'system_notification',
+        headers: {
+          'X-Email-Category': 'message-notification',
+          'X-Sender-Type': 'notification',
+          'X-Priority': '2',
+          'Importance': 'High'
+        }
+      });
+
+      console.log(`Message notification email sent to: ${recipientEmail}`);
+    } catch (error) {
+      console.error('Error sending message notification email:', error);
+      throw error;
+    }
   }
 
   // Order delivery confirmation

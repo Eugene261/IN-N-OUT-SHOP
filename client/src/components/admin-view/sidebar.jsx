@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Package, ShoppingCart, Star, X, Truck, Settings, DollarSign, User, CheckCircle, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
+import NotificationBadge from '../ui/notification-badge';
 
 const menuItems = [
   {
@@ -44,7 +45,8 @@ const menuItems = [
     id: 'messaging',
     label: 'Messages',
     path: '/admin/messaging',
-    icon: <MessageSquare className="h-5 w-5" />
+    icon: <MessageSquare className="h-5 w-5" />,
+    hasNotification: true
   },
   {
     id: 'profile',
@@ -171,6 +173,11 @@ function AdminSidebar({ onItemClick, onClose }) {
                 </div>
                 
                 <span className="ml-3 font-medium">{item.label}</span>
+                
+                {/* Notification badge for messaging */}
+                {item.hasNotification && (
+                  <NotificationBadge className="ml-auto mr-2" />
+                )}
                 
                 {isActive && (
                   <motion.div 

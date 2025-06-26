@@ -194,7 +194,8 @@ const sendTextMessage = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
   // Verify conversation exists and user is participant
-  const conversation = await Conversation.findById(conversationId);
+  const conversation = await Conversation.findById(conversationId)
+    .populate('participants.user', 'userName email role profilePicture');
   if (!conversation || !conversation.isParticipant(userId)) {
     return res.status(403).json({
       success: false,
@@ -221,6 +222,34 @@ const sendTextMessage = asyncHandler(async (req, res) => {
     .populate('sender', 'userName email role profilePicture')
     .populate('replyTo', 'content messageType sender')
     .populate('mentions', 'userName email role');
+
+  // Send email notifications to other participants
+  try {
+    const EmailService = require('../../services/emailService');
+    const emailService = new EmailService();
+    
+    const sender = populatedMessage.sender;
+    const otherParticipants = conversation.participants.filter(
+      p => p.user._id.toString() !== userId
+    );
+
+    for (const participant of otherParticipants) {
+      const recipient = participant.user;
+      
+      // Send email notification
+      await emailService.sendMessageNotificationEmail(
+        recipient.email,
+        recipient.userName,
+        sender.userName,
+        sender.role,
+        content.trim(),
+        conversationId
+      );
+    }
+  } catch (emailError) {
+    console.error('Failed to send email notification for message:', emailError);
+    // Don't fail the message sending if email fails
+  }
 
   res.status(201).json({
     success: true,

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import {   LayoutDashboard,   Users,   ShoppingBag,   Package,   Star,   LogOut,   X,  DollarSign,  Crown,  FolderTree,  Video, CheckCircle, MessageSquare} from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { logoutUser } from '../../store/auth-slice';
+import NotificationBadge from '../ui/notification-badge';
 
 const menuItems = [
   {
@@ -58,7 +59,8 @@ const menuItems = [
     id: 'messaging',
     label: 'Messages',
     path: '/super-admin/messaging',
-    icon: <MessageSquare className="h-5 w-5" />
+    icon: <MessageSquare className="h-5 w-5" />,
+    hasNotification: true
   },
   {
     id: 'vendor-payments',
@@ -251,6 +253,11 @@ function SuperAdminSidebar({ onItemClick, onClose }) {
                 </div>
                 
                 <span className="ml-3 font-medium">{item.label}</span>
+                
+                {/* Notification badge for messaging */}
+                {item.hasNotification && (
+                  <NotificationBadge className="ml-auto mr-2" />
+                )}
                 
                 {isActive && (
                   <motion.div 
