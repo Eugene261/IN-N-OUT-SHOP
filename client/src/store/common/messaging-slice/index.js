@@ -1,4 +1,4 @@
-// CACHE BUST v2.0 - Fixed all status access errors
+// CACHE BUST v4.0 - FINAL FIX: Complete elimination of action.error access to prevent ALL status errors
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
@@ -308,7 +308,13 @@ const messagingSlice = createSlice({
       })
       .addCase(fetchConversations.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || action.error?.message || 'Failed to fetch conversations';
+        // SAFER ERROR ACCESS: Completely avoid action.error to prevent status access errors
+        const payload = action.payload;
+        if (payload && typeof payload === 'object' && payload.message) {
+          state.error = payload.message;
+        } else {
+          state.error = 'Failed to fetch conversations';
+        }
       });
     
     // Fetch messages
@@ -340,7 +346,13 @@ const messagingSlice = createSlice({
       })
       .addCase(fetchMessages.rejected, (state, action) => {
         state.messagesLoading = false;
-        state.error = action.payload?.message || action.error?.message || 'Failed to fetch messages';
+        // SAFER ERROR ACCESS: Completely avoid action.error to prevent status access errors
+        const payload = action.payload;
+        if (payload && typeof payload === 'object' && payload.message) {
+          state.error = payload.message;
+        } else {
+          state.error = 'Failed to fetch messages';
+        }
       });
     
     // Send message
@@ -381,7 +393,13 @@ const messagingSlice = createSlice({
       })
       .addCase(sendMessage.rejected, (state, action) => {
         state.sendingMessage = false;
-        state.error = action.payload?.message || action.error?.message || 'Failed to send message';
+        // SAFER ERROR ACCESS: Completely avoid action.error to prevent status access errors
+        const payload = action.payload;
+        if (payload && typeof payload === 'object' && payload.message) {
+          state.error = payload.message;
+        } else {
+          state.error = 'Failed to send message';
+        }
       });
     
     // Create conversation
@@ -407,7 +425,13 @@ const messagingSlice = createSlice({
       })
       .addCase(createConversation.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || action.error?.message || 'Failed to create conversation';
+        // SAFER ERROR ACCESS: Completely avoid action.error to prevent status access errors
+        const payload = action.payload;
+        if (payload && typeof payload === 'object' && payload.message) {
+          state.error = payload.message;
+        } else {
+          state.error = 'Failed to create conversation';
+        }
       });
     
     // Mark as read
@@ -429,7 +453,13 @@ const messagingSlice = createSlice({
         }
       })
       .addCase(markAsRead.rejected, (state, action) => {
-        console.warn('Failed to mark as read:', action.payload?.message || action.error?.message);
+        // SAFER ERROR ACCESS: Completely avoid action.error to prevent status access errors
+        const payload = action.payload;
+        let errorMessage = 'Failed to mark as read';
+        if (payload && typeof payload === 'object' && payload.message) {
+          errorMessage = payload.message;
+        }
+        console.warn('Failed to mark as read:', errorMessage);
       });
     
     // Fetch available users
@@ -438,7 +468,13 @@ const messagingSlice = createSlice({
         state.availableUsers = action.payload || [];
       })
       .addCase(fetchAvailableUsers.rejected, (state, action) => {
-        console.warn('Failed to fetch available users:', action.payload?.message || action.error?.message);
+        // SAFER ERROR ACCESS: Completely avoid action.error to prevent status access errors
+        const payload = action.payload;
+        let errorMessage = 'Failed to fetch available users';
+        if (payload && typeof payload === 'object' && payload.message) {
+          errorMessage = payload.message;
+        }
+        console.warn('Failed to fetch available users:', errorMessage);
         state.availableUsers = [];
       });
     
@@ -450,7 +486,13 @@ const messagingSlice = createSlice({
         }
       })
       .addCase(getConversationDetails.rejected, (state, action) => {
-        console.warn('Failed to get conversation details:', action.payload?.message || action.error?.message);
+        // SAFER ERROR ACCESS: Completely avoid action.error to prevent status access errors
+        const payload = action.payload;
+        let errorMessage = 'Failed to get conversation details';
+        if (payload && typeof payload === 'object' && payload.message) {
+          errorMessage = payload.message;
+        }
+        console.warn('Failed to get conversation details:', errorMessage);
       });
   }
 });
