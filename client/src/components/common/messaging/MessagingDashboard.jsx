@@ -82,8 +82,10 @@ const MessagingDashboard = () => {
           console.log('🔍 Error type:', typeof err);
           console.log('🔍 Error details:', JSON.stringify(err, null, 2));
           
-          // Safely check if messaging is disabled (503 error with specific code)
-          if (err && typeof err === 'object' && err.status === 503 && err.code === 'MESSAGING_DISABLED') {
+          // Ultra-safe check if messaging is disabled (503 error with specific code)  
+          if (err && typeof err === 'object' && 
+              err.hasOwnProperty('status') && typeof err.status === 'number' && err.status === 503 && 
+              err.hasOwnProperty('code') && typeof err.code === 'string' && err.code === 'MESSAGING_DISABLED') {
             console.log('🚫 Messaging system is disabled');
             throw new Error('MESSAGING_DISABLED');
           }
@@ -98,8 +100,10 @@ const MessagingDashboard = () => {
           console.log('🔍 Users error type:', typeof err);
           console.log('🔍 Users error details:', JSON.stringify(err, null, 2));
           
-          // Safely check if messaging is disabled (503 error with specific code)
-          if (err && typeof err === 'object' && err.status === 503 && err.code === 'MESSAGING_DISABLED') {
+          // Ultra-safe check if messaging is disabled (503 error with specific code)
+          if (err && typeof err === 'object' && 
+              err.hasOwnProperty('status') && typeof err.status === 'number' && err.status === 503 && 
+              err.hasOwnProperty('code') && typeof err.code === 'string' && err.code === 'MESSAGING_DISABLED') {
             console.log('🚫 Messaging system is disabled');
             throw new Error('MESSAGING_DISABLED');
           }
@@ -205,16 +209,27 @@ const MessagingDashboard = () => {
       
       setNewMessage('');
     } catch (error) {
-      console.error('Failed to send message:', error);
+      console.error('❌ Failed to send message:', error);
+      console.log('🔍 Send message error details:', JSON.stringify(error, null, 2));
+      console.log('🔍 Active conversation:', activeConversation);
+      console.log('🔍 User:', user);
+      
       // SAFER ERROR MESSAGE EXTRACTION
       let errorMessage = 'Failed to send message';
-      if (error && typeof error === 'object') {
+      
+      // Check for specific 403 error
+      if (error?.response?.status === 403) {
+        errorMessage = 'Access denied to this conversation. You may not be a participant in this conversation.';
+        console.log('🔍 403 Error - Conversation ID:', activeConversation?._id);
+        console.log('🔍 403 Error - User ID:', user?.id);
+      } else if (error && typeof error === 'object') {
         if (error.message) {
           errorMessage = error.message;
         } else if (error.response && error.response.data && error.response.data.message) {
           errorMessage = error.response.data.message;
         }
       }
+      
       toast.error(errorMessage);
     }
   };

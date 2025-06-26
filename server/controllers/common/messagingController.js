@@ -193,10 +193,29 @@ const sendTextMessage = asyncHandler(async (req, res) => {
   const { content, replyTo, mentions, priority } = req.body;
   const userId = req.user.id;
 
+  console.log('🔍 Send message attempt:', {
+    conversationId,
+    userId,
+    userRole: req.user.role,
+    userName: req.user.userName
+  });
+
   // Verify conversation exists and user is participant
   const conversation = await Conversation.findById(conversationId)
     .populate('participants.user', 'userName email role profilePicture');
+  
+  console.log('🔍 Conversation found:', !!conversation);
+  if (conversation) {
+    console.log('🔍 Conversation participants:', conversation.participants.map(p => ({
+      userId: p.user._id.toString(),
+      userName: p.user.userName,
+      role: p.user.role
+    })));
+    console.log('🔍 Is participant check:', conversation.isParticipant(userId));
+  }
+  
   if (!conversation || !conversation.isParticipant(userId)) {
+    console.log('❌ Access denied - conversation not found or user not participant');
     return res.status(403).json({
       success: false,
       message: 'Access denied to this conversation'
