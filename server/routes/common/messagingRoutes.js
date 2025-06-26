@@ -3,6 +3,7 @@ const router = express.Router();
 const { featureFlags } = require('../../utils/featureFlags');
 const authMiddleware = require('../../Middleware/auth');
 const {
+  uploadFiles,
   getConversations,
   getOrCreateDirectConversation,
   getConversationDetails,
@@ -13,24 +14,56 @@ const {
   editMessage,
   deleteMessage,
   getAvailableUsers,
-  archiveConversation,
-  uploadFiles
+  archiveConversation
 } = require('../../controllers/common/messagingController');
 
-// Middleware to check if messaging is enabled
+// Middleware to check if messaging is enabled and handle errors gracefully
 router.use((req, res, next) => {
-  if (!featureFlags.isMessagingEnabled()) {
+  try {
+    if (!featureFlags.isMessagingEnabled()) {
+      return res.status(503).json({
+        success: false,
+        message: 'Messaging system is temporarily disabled',
+        code: 'MESSAGING_DISABLED'
+      });
+    }
+    next();
+  } catch (error) {
+    console.error('Messaging feature flag check failed:', error);
     return res.status(503).json({
       success: false,
-      message: 'Messaging system is temporarily disabled',
-      code: 'MESSAGING_DISABLED'
+      message: 'Messaging system is temporarily unavailable',
+      code: 'MESSAGING_ERROR'
     });
   }
-  next();
 });
 
 // Apply auth middleware to all routes
 router.use(authMiddleware);
+
+// Validate that all required handlers exist
+const requiredHandlers = {
+  getAvailableUsers,
+  getConversations, 
+  getOrCreateDirectConversation,
+  getConversationDetails,
+  markAsRead,
+  archiveConversation,
+  getMessages,
+  sendTextMessage,
+  sendMediaMessage,
+  editMessage,
+  deleteMessage,
+  uploadFiles
+};
+
+for (const [name, handler] of Object.entries(requiredHandlers)) {
+  if (!handler) {
+    console.error(`❌ Messaging handler '${name}' is undefined - messaging routes disabled`);
+    module.exports = router; // Return empty router
+    return;
+  }
+}
 
 // Get available users for messaging
 router.get('/users/available', getAvailableUsers);
