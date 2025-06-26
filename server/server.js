@@ -1,5 +1,4 @@
 // Server application entry point
-// Updated: Fixed path-to-regexp errors and circular dependencies - Build 2025.01.26.001
 require('dotenv').config();
 const express = require('express');
 const cookieParser = require('cookie-parser');
@@ -81,8 +80,8 @@ const shippingDiagnosticRouter = require('./routes/shop-view/shippingDiagnosticR
 // AdminId diagnostic routes
 const adminIdDiagnosticRouter = require('./routes/shop-view/adminIdDiagnosticRoutes.js');
 
-// Messaging routes - TEMPORARILY DISABLED due to handler crashes
-// const messagingRouter = require('./routes/common/messagingRoutes');
+// Messaging routes
+const messagingRouter = require('./routes/common/messagingRoutes');
 
 // Vendor payment routes
 const adminVendorPaymentRouter = require('./routes/admin/vendorPaymentRoutes');
@@ -245,7 +244,7 @@ app.use('/api/shop/search', shopSearchRouter);
 app.use('/api/shop/review', shopReviewRouter);
 app.use('/api/common/feature', commonFeatureRouter);
 app.use('/api/common', contactRouter);
-// app.use('/api/common/messaging', messagingRouter); // DISABLED - messaging routes causing crashes
+app.use('/api/common/messaging', messagingRouter);
 app.use('/api/shop/wishlist', wishlistRouter);
 app.use('/api/shop/featured-collections', shopFeaturedCollectionRouter);
 
@@ -296,24 +295,23 @@ app.use('/api/admin/vendor-payments', adminVendorPaymentRouter);
 // Temporary migration route - REMOVE AFTER MIGRATION
 app.use('/api/admin/migrations', migrationRouter);
 
-// TESTING: Feature flags endpoint only
+// Feature flags endpoint
 const { getFeatureFlagsStatus } = require('./utils/featureFlags');
 app.get('/api/feature-flags/status', getFeatureFlagsStatus);
 
-// COMMENTED OUT: API 404 handler causes path-to-regexp error with '/api' pattern
-// The '/api' pattern conflicts with existing route patterns
-// app.use('/api', (req, res, next) => {
-//   // Only handle requests that haven't been handled by previous routes
-//   if (!res.headersSent) {
-//     res.status(404).json({
-//       success: false,
-//       message: `API endpoint ${req.originalUrl} not found`,
-//       timestamp: new Date().toISOString()
-//     });
-//   } else {
-//     next();
-//   }
-// });
+// API 404 handler
+app.use('/api', (req, res, next) => {
+  // Only handle requests that haven't been handled by previous routes
+  if (!res.headersSent) {
+    res.status(404).json({
+      success: false,
+      message: `API endpoint ${req.originalUrl} not found`,
+      timestamp: new Date().toISOString()
+    });
+  } else {
+    next();
+  }
+});
 
 // Global Error Handling Middleware
 app.use((error, req, res, next) => {

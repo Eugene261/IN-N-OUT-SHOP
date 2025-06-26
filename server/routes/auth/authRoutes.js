@@ -23,16 +23,6 @@ router.get('/check-auth', authMiddleware, (req, res) => {
     });
 });
 
-// Add a simple test endpoint that doesn't require auth
-router.get('/test', (req, res) => {
-    console.log('Test endpoint hit');
-    res.status(200).json({
-        success: true,
-        message: 'Auth routes working',
-        timestamp: new Date().toISOString()
-    });
-});
-
 // Test email endpoint (for development/testing)
 router.post('/test-email', authRateLimiter, async (req, res) => {
     const { email, type = 'test' } = req.body;
@@ -59,7 +49,7 @@ router.post('/test-email', authRateLimiter, async (req, res) => {
                 result = await emailService.sendWelcomeEmail(email, 'Test User');
                 break;
             case 'reset':
-                const testResetUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/auth/reset-password/test-token`;
+                const testResetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/reset-password/test-token`;
                 result = await emailService.sendPasswordResetEmail(email, testResetUrl, 'Test User');
                 break;
             default:
@@ -110,7 +100,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   );
 
   router.get('/google/callback', 
-    passport.authenticate('google', { failureRedirect: `/api/auth/oauth-redirect?error=oauth_failed` }),
+    passport.authenticate('google', { failureRedirect: `/api/auth/oauth-redirect` }),
     async (req, res) => {
       console.log('🚀 Google OAuth callback started');
       console.log('User from passport:', req.user ? 'Present' : 'Missing');
@@ -225,7 +215,7 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
   );
 
   router.get('/facebook/callback',
-    passport.authenticate('facebook', { failureRedirect: `/api/auth/oauth-redirect?error=oauth_failed` }),
+    passport.authenticate('facebook', { failureRedirect: `/api/auth/oauth-redirect` }),
     async (req, res) => {
       try {
         // Generate JWT token for the authenticated user
