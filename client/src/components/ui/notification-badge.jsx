@@ -8,6 +8,14 @@ const NotificationBadge = ({ className = "", showZero = false }) => {
   // Ensure unreadCount is a valid number
   const validUnreadCount = typeof unreadCount === 'number' && !isNaN(unreadCount) ? unreadCount : 0;
 
+  // Debug logging
+  console.log('🔔 NotificationBadge render:', { 
+    unreadCount, 
+    validUnreadCount, 
+    showZero, 
+    willShow: showZero || validUnreadCount > 0 
+  });
+
   if (!showZero && validUnreadCount === 0) {
     return null;
   }

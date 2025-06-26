@@ -251,14 +251,22 @@ const MessagingDashboard = () => {
       const date = new Date(dateString);
       const now = new Date();
       const diffTime = Math.abs(now - date);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const diffMinutes = Math.floor(diffTime / (1000 * 60));
+      const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-      if (diffDays === 1) {
+      if (diffMinutes < 1) {
+        return 'Just now';
+      } else if (diffMinutes < 60) {
+        return `${diffMinutes}m ago`;
+      } else if (diffHours < 24) {
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      } else if (diffDays === 1) {
+        return `Yesterday ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
       } else if (diffDays < 7) {
-        return date.toLocaleDateString([], { weekday: 'short' });
+        return `${date.toLocaleDateString([], { weekday: 'short' })} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
       } else {
-        return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+        return date.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
       }
     } catch (err) {
       return 'Invalid date';
@@ -396,6 +404,18 @@ const MessagingDashboard = () => {
                 const otherUser = getOtherParticipant(conversation);
                 const unreadCount = conversation?.unreadCounts?.find(u => u.user === user?.id)?.count || 0;
                 const isActive = activeConversation?._id === conversation._id;
+                const hasUnread = unreadCount > 0;
+
+                // Debug logging for unread counts
+                console.log('🔍 Conversation debug:', {
+                  conversationId: conversation._id,
+                  otherUserName: otherUser?.userName,
+                  unreadCounts: conversation?.unreadCounts,
+                  currentUserId: user?.id,
+                  unreadCount,
+                  hasUnread,
+                  totalUnread: totalUnread
+                });
                 
                 return (
                   <motion.div
@@ -405,7 +425,9 @@ const MessagingDashboard = () => {
                     className={`mb-2 p-3 lg:p-4 cursor-pointer rounded-xl transition-all duration-200 ${
                       isActive 
                         ? 'bg-blue-600 text-white shadow-lg' 
-                        : 'bg-white hover:bg-gray-50 hover:shadow-sm'
+                        : hasUnread
+                          ? 'bg-blue-50 border-2 border-blue-200 hover:bg-blue-100 shadow-sm'
+                          : 'bg-white hover:bg-gray-50 hover:shadow-sm'
                     }`}
                     onClick={() => handleConversationSelect(conversation)}
                   >
@@ -425,14 +447,16 @@ const MessagingDashboard = () => {
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
-                          <p className={`font-semibold truncate ${
-                            isActive ? 'text-white' : 'text-gray-900'
+                          <p className={`truncate ${
+                            hasUnread && !isActive ? 'font-bold text-blue-900' : 
+                            isActive ? 'font-semibold text-white' : 'font-semibold text-gray-900'
                           }`}>
                             {otherUser?.userName || 'Unknown User'}
                           </p>
                           <div className="flex items-center space-x-2">
                             {conversation?.lastMessage?.sentAt && (
-                              <span className={`text-xs ${
+                              <span className={`text-xs whitespace-nowrap ${
+                                hasUnread && !isActive ? 'font-semibold text-blue-700' :
                                 isActive ? 'text-blue-100' : 'text-gray-500'
                               }`}>
                                 {formatTime(conversation.lastMessage.sentAt)}
@@ -442,6 +466,7 @@ const MessagingDashboard = () => {
                         </div>
                         
                         <p className={`text-sm truncate mb-2 ${
+                          hasUnread && !isActive ? 'font-semibold text-blue-800' :
                           isActive ? 'text-blue-100' : 'text-gray-600'
                         }`}>
                           {conversation?.lastMessage?.content || 'Start a conversation...'}
@@ -564,15 +589,15 @@ const MessagingDashboard = () => {
                         </div>
                       </div>
                       <div className={`text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-end pb-1 ${isOwn ? 'mr-2' : 'ml-2'}`}>
-                        <div className="flex items-center space-x-1">
+                        <div className="flex flex-col items-end space-y-1">
                           <span>
-                            {message?.createdAt ? new Date(message.createdAt).toLocaleTimeString([], { 
-                              hour: '2-digit', 
-                              minute: '2-digit' 
-                            }) : ''}
+                            {message?.createdAt ? formatTime(message.createdAt) : ''}
                           </span>
                           {isOwn && (
-                            <CheckCircle className="w-3 h-3 text-blue-500" />
+                            <div className="flex items-center space-x-1">
+                              <CheckCircle className="w-3 h-3 text-blue-500" />
+                              <span className="text-xs">Sent</span>
+                            </div>
                           )}
                         </div>
                       </div>
