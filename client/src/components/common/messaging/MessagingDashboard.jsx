@@ -74,15 +74,19 @@ const MessagingDashboard = () => {
     const initializeMessaging = async () => {
       try {
         setInitError(null);
+        console.log('🔄 Initializing messaging system...');
+        
         // SAFER ERROR HANDLING: Wrap individual dispatches to handle errors properly
         const conversationsPromise = dispatch(fetchConversations()).unwrap().catch(err => {
           console.error('Failed to fetch conversations:', err);
           
-          // Check if messaging is disabled (503 error with specific code)
-          if (err?.status === 503 && err?.code === 'MESSAGING_DISABLED') {
+          // Safely check if messaging is disabled (503 error with specific code)
+          if (err && typeof err === 'object' && err.status === 503 && err.code === 'MESSAGING_DISABLED') {
+            console.log('🚫 Messaging system is disabled');
             throw new Error('MESSAGING_DISABLED');
           }
           
+          console.log('⚠️ Conversations fetch failed, returning empty result');
           // Return empty result for other errors
           return { conversations: [], totalUnread: 0 };
         });
@@ -90,16 +94,19 @@ const MessagingDashboard = () => {
         const usersPromise = dispatch(fetchAvailableUsers()).unwrap().catch(err => {
           console.error('Failed to fetch available users:', err);
           
-          // Check if messaging is disabled (503 error with specific code)
-          if (err?.status === 503 && err?.code === 'MESSAGING_DISABLED') {
+          // Safely check if messaging is disabled (503 error with specific code)
+          if (err && typeof err === 'object' && err.status === 503 && err.code === 'MESSAGING_DISABLED') {
+            console.log('🚫 Messaging system is disabled');
             throw new Error('MESSAGING_DISABLED');
           }
           
+          console.log('⚠️ Users fetch failed, returning empty array');
           // Return empty array for other errors
           return [];
         });
         
-        await Promise.all([conversationsPromise, usersPromise]);
+        const [conversationsResult, usersResult] = await Promise.all([conversationsPromise, usersPromise]);
+        console.log('✅ Messaging initialization complete:', { conversationsResult, usersResult });
         setHasInitialized(true);
       } catch (err) {
         console.error('❌ Failed to initialize messaging:', err);
@@ -110,8 +117,13 @@ const MessagingDashboard = () => {
             errorMessage = err.message;
           } else if (err.response && err.response.data && err.response.data.message) {
             errorMessage = err.response.data.message;
+          } else if (typeof err === 'string') {
+            errorMessage = err;
           }
+        } else if (typeof err === 'string') {
+          errorMessage = err;
         }
+        console.log('🔍 Setting init error:', errorMessage);
         setInitError(errorMessage);
         setHasInitialized(true); // Still mark as initialized to show error state
       }
