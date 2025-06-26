@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 
+
+
 const VoiceRecorder = ({ 
   isOpen, 
   onClose, 
@@ -143,6 +145,9 @@ const VoiceRecorder = ({
       setIsPlaying(!isPlaying);
     }
   };
+
+
+  
 
   const deleteRecording = () => {
     if (audioUrl) {

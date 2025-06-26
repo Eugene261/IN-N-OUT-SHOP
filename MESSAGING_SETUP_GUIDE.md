@@ -10,7 +10,7 @@ The messaging system allows communication between admins and super admins with r
 ✅ **Responsive design** - Works on mobile and desktop
 ✅ **Message persistence** - Messages are stored in MongoDB
 ✅ **User role-based messaging** - Admins can message super admins and vice versa
-
+ 
 ## Required Environment Variables
 
 ### Server (.env)
