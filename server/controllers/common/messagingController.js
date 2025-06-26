@@ -58,8 +58,23 @@ const getConversations = asyncHandler(async (req, res) => {
 
     // Calculate total unread count
     const totalUnread = conversations.reduce((sum, conv) => {
-      const userUnread = conv.unreadCounts.find(u => u.user.toString() === userId);
-      return sum + (userUnread ? userUnread.count : 0);
+      const userUnread = conv.unreadCounts.find(u => {
+        // Handle both populated and non-populated user references
+        const unreadUserId = u.user._id ? u.user._id.toString() : u.user.toString();
+        return unreadUserId === userId.toString();
+      });
+      
+      const unreadCount = userUnread ? userUnread.count : 0;
+      console.log('🔍 Conversation unread calc:', {
+        conversationId: conv._id,
+        userId,
+        unreadCounts: conv.unreadCounts,
+        foundUserUnread: !!userUnread,
+        unreadCount,
+        runningSum: sum + unreadCount
+      });
+      
+      return sum + unreadCount;
     }, 0);
 
     console.log('🔍 Total unread count:', totalUnread);

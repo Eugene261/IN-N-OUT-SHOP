@@ -321,6 +321,19 @@ const messagingSlice = createSlice({
         state.loading = false;
         state.conversations = action.payload?.conversations || [];
         state.totalUnread = action.payload?.totalUnread || 0;
+        
+        // Debug logging for unread count calculation
+        console.log('🔍 Redux: fetchConversations.fulfilled', {
+          payloadTotalUnread: action.payload?.totalUnread,
+          conversationsCount: action.payload?.conversations?.length || 0,
+          conversations: action.payload?.conversations?.map(conv => ({
+            id: conv._id,
+            title: conv.title,
+            unreadCounts: conv.unreadCounts,
+            lastMessage: conv.lastMessage
+          })) || [],
+          finalTotalUnread: state.totalUnread
+        });
       })
       .addCase(fetchConversations.rejected, (state, action) => {
         state.loading = false;
