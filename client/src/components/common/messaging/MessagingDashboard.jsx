@@ -78,7 +78,9 @@ const MessagingDashboard = () => {
         
         // SAFER ERROR HANDLING: Wrap individual dispatches to handle errors properly
         const conversationsPromise = dispatch(fetchConversations()).unwrap().catch(err => {
-          console.error('Failed to fetch conversations:', err);
+          console.error('❌ Failed to fetch conversations:', err);
+          console.log('🔍 Error type:', typeof err);
+          console.log('🔍 Error details:', JSON.stringify(err, null, 2));
           
           // Safely check if messaging is disabled (503 error with specific code)
           if (err && typeof err === 'object' && err.status === 503 && err.code === 'MESSAGING_DISABLED') {
@@ -92,7 +94,9 @@ const MessagingDashboard = () => {
         });
         
         const usersPromise = dispatch(fetchAvailableUsers()).unwrap().catch(err => {
-          console.error('Failed to fetch available users:', err);
+          console.error('❌ Failed to fetch available users:', err);
+          console.log('🔍 Users error type:', typeof err);
+          console.log('🔍 Users error details:', JSON.stringify(err, null, 2));
           
           // Safely check if messaging is disabled (503 error with specific code)
           if (err && typeof err === 'object' && err.status === 503 && err.code === 'MESSAGING_DISABLED') {
@@ -106,7 +110,11 @@ const MessagingDashboard = () => {
         });
         
         const [conversationsResult, usersResult] = await Promise.all([conversationsPromise, usersPromise]);
-        console.log('✅ Messaging initialization complete:', { conversationsResult, usersResult });
+        console.log('✅ Messaging initialization complete');
+        console.log('🔍 Conversations result:', conversationsResult);
+        console.log('🔍 Users result:', usersResult);
+        console.log('🔍 Conversations type:', typeof conversationsResult);
+        console.log('🔍 Users type:', typeof usersResult);
         setHasInitialized(true);
       } catch (err) {
         console.error('❌ Failed to initialize messaging:', err);
