@@ -310,9 +310,16 @@ const ProductApprovalStatus = () => {
                             {product.title}
                           </h3>
                           
-                          <p className="text-sm text-gray-500 mb-3 line-clamp-2 sm:line-clamp-none">
-                            {product.description?.substring(0, 120)}...
-                          </p>
+                          <div className="text-sm text-gray-500 mb-3 overflow-hidden relative max-h-12 sm:max-h-none">
+                            <div 
+                              className="prose prose-sm prose-gray max-w-none [&>p]:mb-1 [&>strong]:font-semibold [&>em]:italic"
+                              dangerouslySetInnerHTML={{ 
+                                __html: product.description?.substring(0, 120) + '...' || 'No description available' 
+                              }} 
+                            />
+                            {/* Fade effect for mobile overflow */}
+                            <div className="absolute bottom-0 right-0 bg-gradient-to-l from-white via-white to-transparent w-8 h-6 sm:hidden pointer-events-none"></div>
+                          </div>
                           
                           <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-1 sm:space-y-0 mb-3">
                             <span className="text-sm text-gray-600">

@@ -64,10 +64,20 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
       if (isPlaying) {
         audioRef.current.pause();
       } else {
+        // Add mobile-specific handling
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+          // Ensure audio context is unlocked on mobile
+          await audioRef.current.load();
+        }
         await audioRef.current.play();
       }
     } catch (error) {
       console.error('Audio playback error:', error);
+      // More specific error handling for mobile
+      if (error.name === 'NotAllowedError' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        console.log('Audio blocked on mobile - user interaction required');
+      }
       setHasError(true);
     }
   };
@@ -107,9 +117,17 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
 
   return (
     <div className={`flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg w-full max-w-xs sm:max-w-sm ${className}`}>
-      {/* Hidden audio element */}
-      <audio ref={audioRef} preload="metadata">
-        <source src={audioUrl} />
+      {/* Hidden audio element with mobile optimizations */}
+      <audio 
+        ref={audioRef} 
+        preload="metadata"
+        crossOrigin="anonymous"
+        playsInline
+        controls={false}
+      >
+        <source src={audioUrl} type="audio/mpeg" />
+        <source src={audioUrl} type="audio/wav" />
+        <source src={audioUrl} type="audio/ogg" />
         Your browser does not support the audio element.
       </audio>
 

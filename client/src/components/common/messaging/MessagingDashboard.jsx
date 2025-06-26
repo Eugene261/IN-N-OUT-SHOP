@@ -674,7 +674,16 @@ const MessagingDashboard = () => {
                                 alt={message.attachments[0].originalName || 'Image'}
                                 className="max-w-full h-auto rounded-lg cursor-pointer"
                                 style={{ maxHeight: '250px', minHeight: '100px' }}
-                                onClick={() => window.open(message.attachments[0].fileUrl, '_blank')}
+                                onClick={() => {
+                                  const isMobile = window.innerWidth <= 768;
+                                  if (isMobile) {
+                                    // On mobile, open in same tab for better UX
+                                    window.location.href = message.attachments[0].fileUrl;
+                                  } else {
+                                    // On desktop, open in new tab
+                                    window.open(message.attachments[0].fileUrl, '_blank');
+                                  }
+                                }}
                               />
                               {message?.content && (
                                 <p className="text-sm mt-2">{message.content}</p>
