@@ -321,15 +321,6 @@ const messagingSlice = createSlice({
         state.loading = false;
         state.conversations = action.payload?.conversations || [];
         state.totalUnread = action.payload?.totalUnread || 0;
-        
-        // Debug: Log the totalUnread count
-        console.log('🔔 Messaging slice: Conversations loaded successfully!', {
-          conversationsCount: state.conversations.length,
-          totalUnread: state.totalUnread,
-          payload: action.payload
-        });
-        
-        // Conversations and unread counts loaded successfully
       })
       .addCase(fetchConversations.rejected, (state, action) => {
         state.loading = false;
@@ -542,14 +533,7 @@ export const {
 export const selectConversations = (state) => state.messaging.conversations;
 export const selectActiveConversation = (state) => state.messaging.activeConversation;
 export const selectMessages = (conversationId) => (state) => state.messaging.messages[conversationId] || [];
-export const selectTotalUnread = (state) => {
-  const totalUnread = state.messaging.totalUnread;
-  console.log('🔍 selectTotalUnread called:', { 
-    totalUnread, 
-    messagingState: state.messaging 
-  });
-  return totalUnread;
-};
+export const selectTotalUnread = (state) => state.messaging.totalUnread;
 export const selectAvailableUsers = (state) => state.messaging.availableUsers;
 export const selectLoading = (state) => state.messaging.loading;
 export const selectMessagesLoading = (state) => state.messaging.messagesLoading;
