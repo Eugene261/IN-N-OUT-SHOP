@@ -152,5 +152,5 @@ const SoundNotifications = () => {
   return null; // This component doesn't render anything
 };
 
-export default SoundNotifications; 
+export default SoundNotifications;  
 
