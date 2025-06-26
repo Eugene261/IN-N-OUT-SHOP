@@ -131,10 +131,26 @@ function App() {
   useEffect(() => {
     // Only fetch messaging data for authenticated admin/superAdmin users
     if (isAuthenticated && user && (user.role === 'admin' || user.role === 'superAdmin') && !isLoading) {
+      console.log('🎯 App: Initializing messaging for notification badges...', { 
+        user: user.userName, 
+        role: user.role 
+      });
+      
       // Initialize messaging for notification badges
-      dispatch(fetchConversations({})).catch((error) => {
-        console.warn('Failed to fetch conversations for badges:', error);
-        // Don't throw error - just log it since badges are not critical
+      dispatch(fetchConversations({}))
+        .then((result) => {
+          console.log('✅ App: Messaging initialized successfully for badges:', result);
+        })
+        .catch((error) => {
+          console.warn('❌ App: Failed to fetch conversations for badges:', error);
+          // Don't throw error - just log it since badges are not critical
+        });
+    } else {
+      console.log('🔍 App: Skipping messaging initialization:', {
+        isAuthenticated,
+        hasUser: !!user,
+        userRole: user?.role,
+        isLoading
       });
     }
   }, [isAuthenticated, user, isLoading, dispatch]);
