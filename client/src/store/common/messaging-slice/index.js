@@ -1,3 +1,4 @@
+// CACHE BUST v2.0 - Fixed all status access errors
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
@@ -214,7 +215,10 @@ const messagingSlice = createSlice({
     
     // Real-time updates
     addRealTimeMessage: (state, action) => {
-      const { conversationId, message } = action.payload;
+      const payload = action.payload || {};
+      const { conversationId, message } = payload;
+      
+      if (!conversationId || !message) return;
       
       if (state.messages[conversationId]) {
         state.messages[conversationId].push(message);
@@ -246,9 +250,11 @@ const messagingSlice = createSlice({
     },
     
     updateMessageStatus: (state, action) => {
-      const { conversationId, messageId, status } = action.payload;
+      // Safe destructuring with fallbacks
+      const payload = action.payload || {};
+      const { conversationId, messageId, status } = payload;
       
-      if (state.messages[conversationId]) {
+      if (conversationId && messageId && status && state.messages[conversationId]) {
         const messageIndex = state.messages[conversationId].findIndex(m => m._id === messageId);
         if (messageIndex !== -1) {
           state.messages[conversationId][messageIndex].status = status;
@@ -257,7 +263,10 @@ const messagingSlice = createSlice({
     },
     
     setTypingUser: (state, action) => {
-      const { conversationId, userId, isTyping } = action.payload;
+      const payload = action.payload || {};
+      const { conversationId, userId, isTyping } = payload;
+      
+      if (!conversationId || !userId) return;
       
       if (!state.typingUsers[conversationId]) {
         state.typingUsers[conversationId] = [];
