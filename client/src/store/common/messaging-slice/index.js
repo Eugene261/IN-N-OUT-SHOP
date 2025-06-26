@@ -24,7 +24,14 @@ export const fetchConversations = createAsyncThunk(
       return response.data.data;
     } catch (error) {
       console.error('❌ Conversations fetch error:', error);
-      return rejectWithValue(error.response?.data || { message: 'Failed to fetch conversations' });
+      // Return the full error object so we can check status and code
+      const errorData = {
+        message: error.response?.data?.message || 'Failed to fetch conversations',
+        code: error.response?.data?.code,
+        status: error.response?.status,
+        response: error.response
+      };
+      return rejectWithValue(errorData);
     }
   }
 );
@@ -124,7 +131,14 @@ export const fetchAvailableUsers = createAsyncThunk(
       return response.data.data;
     } catch (error) {
       console.error('❌ Available users fetch error:', error);
-      return rejectWithValue(error.response?.data || { message: 'Failed to fetch available users' });
+      // Return the full error object so we can check status and code
+      const errorData = {
+        message: error.response?.data?.message || 'Failed to fetch available users',
+        code: error.response?.data?.code,
+        status: error.response?.status,
+        response: error.response
+      };
+      return rejectWithValue(errorData);
     }
   }
 );

@@ -77,13 +77,25 @@ const MessagingDashboard = () => {
         // SAFER ERROR HANDLING: Wrap individual dispatches to handle errors properly
         const conversationsPromise = dispatch(fetchConversations()).unwrap().catch(err => {
           console.error('Failed to fetch conversations:', err);
-          // Return empty result instead of throwing
+          
+          // Check if messaging is disabled (503 error with specific code)
+          if (err?.status === 503 && err?.code === 'MESSAGING_DISABLED') {
+            throw new Error('MESSAGING_DISABLED');
+          }
+          
+          // Return empty result for other errors
           return { conversations: [], totalUnread: 0 };
         });
         
         const usersPromise = dispatch(fetchAvailableUsers()).unwrap().catch(err => {
           console.error('Failed to fetch available users:', err);
-          // Return empty array instead of throwing
+          
+          // Check if messaging is disabled (503 error with specific code)
+          if (err?.status === 503 && err?.code === 'MESSAGING_DISABLED') {
+            throw new Error('MESSAGING_DISABLED');
+          }
+          
+          // Return empty array for other errors
           return [];
         });
         
@@ -228,21 +240,39 @@ const MessagingDashboard = () => {
 
   // Show initialization error
   if (initError) {
+    const isMessagingDisabled = initError === 'MESSAGING_DISABLED';
+    
     return (
       <div className="h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center max-w-md">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Messaging Unavailable</h3>
-          <p className="text-gray-600 mb-4">{initError}</p>
-          <button
-            onClick={() => {
-              setHasInitialized(false);
-              setInitError(null);
-            }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Try Again
-          </button>
+          {isMessagingDisabled ? (
+            <>
+              <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Messaging System Disabled</h3>
+              <p className="text-gray-600 mb-4">
+                The messaging system is currently disabled for maintenance and security purposes. 
+                Please contact your administrator if you need access to messaging features.
+              </p>
+              <div className="text-sm text-gray-500 bg-gray-100 p-3 rounded-lg">
+                <strong>For Administrators:</strong> To enable messaging, set <code>MESSAGING_SYSTEM_ENABLED=true</code> and <code>ENABLE_NEW_FEATURES=true</code> in your environment variables.
+              </div>
+            </>
+          ) : (
+            <>
+              <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Messaging Unavailable</h3>
+              <p className="text-gray-600 mb-4">{initError}</p>
+              <button
+                onClick={() => {
+                  setHasInitialized(false);
+                  setInitError(null);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Try Again
+              </button>
+            </>
+          )}
         </div>
       </div>
     );
