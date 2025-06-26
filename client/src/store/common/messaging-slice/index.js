@@ -28,11 +28,17 @@ export const fetchConversations = createAsyncThunk(
       return response.data.data;
     } catch (error) {
       console.error('❌ Conversations fetch error:', error);
-      console.error('❌ Error response:', error.response?.data);
-      console.error('❌ Error status:', error.response?.status);
-      console.error('❌ Error headers:', error.response?.headers);
+      if (error.response) {
+        console.error('❌ Error response:', error.response.data);
+        console.error('❌ Error status:', error.response.status);
+        console.error('❌ Error headers:', error.response.headers);
+      } else if (error.request) {
+        console.error('❌ No response received:', error.request);
+      } else {
+        console.error('❌ Error setting up request:', error.message);
+      }
       
-      const errorData = error.response?.data || { message: 'Failed to fetch conversations' };
+      const errorData = error.response?.data || { message: error.message || 'Failed to fetch conversations' };
       console.error('❌ Rejecting with value:', errorData);
       return rejectWithValue(errorData);
     }
@@ -136,10 +142,16 @@ export const fetchAvailableUsers = createAsyncThunk(
       return response.data.data;
     } catch (error) {
       console.error('❌ Available users fetch error:', error);
-      console.error('❌ Error response:', error.response?.data);
-      console.error('❌ Error status:', error.response?.status);
+      if (error.response) {
+        console.error('❌ Error response:', error.response.data);
+        console.error('❌ Error status:', error.response.status);
+      } else if (error.request) {
+        console.error('❌ No response received:', error.request);
+      } else {
+        console.error('❌ Error setting up request:', error.message);
+      }
       
-      const errorData = error.response?.data || { message: 'Failed to fetch available users' };
+      const errorData = error.response?.data || { message: error.message || 'Failed to fetch available users' };
       console.error('❌ Rejecting with value:', errorData);
       return rejectWithValue(errorData);
     }
