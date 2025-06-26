@@ -311,6 +311,14 @@ const sendMediaMessage = asyncHandler(async (req, res) => {
   const { content, replyTo, mentions, priority } = req.body;
   const userId = req.user.id;
 
+  console.log('🔍 sendMediaMessage called:', {
+    conversationId,
+    userId,
+    filesCount: req.files?.length,
+    fileTypes: req.files?.map(f => f.mimetype),
+    fileNames: req.files?.map(f => f.originalname)
+  });
+
   // Verify conversation exists and user is participant
   const conversation = await Conversation.findById(conversationId);
   if (!conversation || !conversation.isParticipant(userId)) {
@@ -331,6 +339,12 @@ const sendMediaMessage = asyncHandler(async (req, res) => {
 
   // Process each uploaded file
   for (const file of req.files) {
+    console.log('🔍 Processing file:', {
+      name: file.originalname,
+      type: file.mimetype,
+      size: file.size
+    });
+    
     try {
       let uploadResult;
       let messageType;
@@ -389,10 +403,14 @@ const sendMediaMessage = asyncHandler(async (req, res) => {
 
       attachments.push(attachment);
     } catch (error) {
-      console.error('File upload error:', error);
+      console.error('❌ File upload error details:', {
+        fileName: file.originalname,
+        error: error.message,
+        stack: error.stack
+      });
       return res.status(500).json({
         success: false,
-        message: `Failed to upload ${file.originalname}`
+        message: `Failed to upload ${file.originalname}: ${error.message}`
       });
     }
   }

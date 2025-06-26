@@ -15,7 +15,7 @@ import {
   AlertCircle,
   Mic
 } from 'lucide-react';
-import FileUploadModal from './FileUploadModal';
+import InlineAttachmentMenu from './InlineAttachmentMenu';
 import InlineVoiceRecorder from './InlineVoiceRecorder';
 import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'sonner';
@@ -71,7 +71,7 @@ const MessagingDashboard = () => {
   const [showConversations, setShowConversations] = useState(true); // Mobile: toggle between conversations and chat
   const [hasInitialized, setHasInitialized] = useState(false);
   const [initError, setInitError] = useState(null);
-  const [showFileUpload, setShowFileUpload] = useState(false);
+  const [showInlineAttachment, setShowInlineAttachment] = useState(false);
   const [showInlineRecorder, setShowInlineRecorder] = useState(false);
 
   useEffect(() => {
@@ -259,6 +259,7 @@ const MessagingDashboard = () => {
         limit: 50 
       }));
     }
+    setShowInlineAttachment(false);
     toast.success('Files sent successfully!');
   };
 
@@ -626,7 +627,7 @@ const MessagingDashboard = () => {
               )}
             </div>
 
-            {/* Message Input or Voice Recorder */}
+            {/* Message Input, Voice Recorder, or Attachment Menu */}
             {showInlineRecorder ? (
               <InlineVoiceRecorder
                 isVisible={showInlineRecorder}
@@ -634,12 +635,19 @@ const MessagingDashboard = () => {
                 onSendAudio={handleAudioSent}
                 conversationId={activeConversation?._id}
               />
+            ) : showInlineAttachment ? (
+              <InlineAttachmentMenu
+                isVisible={showInlineAttachment}
+                onClose={() => setShowInlineAttachment(false)}
+                onSendFiles={handleFileUpload}
+                conversationId={activeConversation?._id}
+              />
             ) : (
               <div className="bg-white p-4 lg:p-6 border-t border-gray-200">
                 <div className="flex items-end space-x-3">
                   {/* File Upload Button */}
                   <button 
-                    onClick={() => setShowFileUpload(true)}
+                    onClick={() => setShowInlineAttachment(true)}
                     className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors" 
                     title="Attach file"
                   >
@@ -791,13 +799,7 @@ const MessagingDashboard = () => {
         )}
       </AnimatePresence>
 
-      {/* File Upload Modal */}
-      <FileUploadModal
-        isOpen={showFileUpload}
-        onClose={() => setShowFileUpload(false)}
-        onSendFiles={handleFileUpload}
-        conversationId={activeConversation?._id}
-      />
+
 
 
     </div>
