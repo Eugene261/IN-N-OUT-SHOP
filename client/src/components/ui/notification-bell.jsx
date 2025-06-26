@@ -24,7 +24,9 @@ const NotificationBell = ({ className = "" }) => {
     conversationsCount: conversations.length,
     user: user?.userName,
     userRole: user?.role,
-    messagingError
+    messagingError,
+    hasToken: !!localStorage.getItem('token'),
+    tokenPreview: localStorage.getItem('token')?.substring(0, 20) + '...'
   });
 
   // Click outside to close dropdown
@@ -42,21 +44,59 @@ const NotificationBell = ({ className = "" }) => {
 
   // Initial fetch and real-time polling for updates
   useEffect(() => {
-    if (!user || (user.role !== 'admin' && user.role !== 'superAdmin')) return;
+    if (!user || (user.role !== 'admin' && user.role !== 'superAdmin')) {
+      console.log('🔔 NotificationBell: User not valid for messaging', { user: user?.userName, role: user?.role });
+      return;
+    }
 
-    const pollForUpdates = () => {
-      dispatch(fetchConversations()).catch(error => {
-        console.log('Notification bell fetch failed:', error);
-      });
+    // Check if we have a valid token
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.log('🔔 NotificationBell: No auth token found');
+      return;
+    }
+
+    let authErrorCount = 0;
+    const MAX_AUTH_ERRORS = 3;
+
+    const pollForUpdates = async () => {
+      try {
+        await dispatch(fetchConversations()).unwrap();
+        authErrorCount = 0; // Reset on success
+        console.log('🔔 NotificationBell: Successfully fetched conversations');
+      } catch (error) {
+        console.log('🔔 NotificationBell fetch failed:', error);
+        
+        // If it's an auth error, increment counter
+        if (error?.response?.status === 401 || error?.message?.includes('Unauthorized')) {
+          authErrorCount++;
+          console.log(`🔔 NotificationBell: Auth error #${authErrorCount}/${MAX_AUTH_ERRORS}`);
+          
+          // Stop polling after too many auth errors to prevent spam
+          if (authErrorCount >= MAX_AUTH_ERRORS) {
+            console.log('🔔 NotificationBell: Too many auth errors, stopping polling');
+            return 'stop';
+          }
+        }
+      }
+      return 'continue';
     };
 
     // Initial fetch
-    pollForUpdates();
+    pollForUpdates().then(result => {
+      if (result === 'stop') return;
 
-    // Poll every 5 seconds for real-time updates
-    const interval = setInterval(pollForUpdates, 5000);
-    
-    return () => clearInterval(interval);
+      // Only start polling if initial fetch succeeded or wasn't an auth error
+      const interval = setInterval(async () => {
+        const result = await pollForUpdates();
+        if (result === 'stop') {
+          clearInterval(interval);
+        }
+      }, 10000); // Reduced to 10 seconds to be less aggressive
+      
+      return () => clearInterval(interval);
+    });
+
   }, [dispatch, user]);
 
   // Convert conversations to notifications
@@ -82,7 +122,10 @@ const NotificationBell = ({ className = "" }) => {
           convId: conv._id,
           userUnread: userUnread?.count || 0,
           hasUnread,
-          lastMessage: conv.lastMessage?.content?.substring(0, 20)
+          lastMessage: conv.lastMessage?.content?.substring(0, 20),
+          participants: conv.participants?.map(p => ({ id: p.user._id, name: p.user.userName })),
+          unreadCounts: conv.unreadCounts,
+          updatedAt: conv.updatedAt
         });
         
         return hasUnread;
