@@ -82,6 +82,25 @@ const SuperAdminLayout = () => {
             </div>
           </div>
         </header>
+
+        {/* Desktop header */}
+        <header className="hidden lg:block bg-white border-b border-gray-200 flex-shrink-0 shadow-sm">
+          <div className="px-6 py-4 flex items-center justify-between">
+            <div className="text-2xl font-bold text-gray-900">Super Admin Dashboard</div>
+            <div className="flex items-center gap-4">
+              <NotificationBell />
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <div className="text-sm font-medium text-gray-900">{user?.userName || 'Super Admin'}</div>
+                  <div className="text-xs text-gray-500">{user?.email}</div>
+                </div>
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium flex-shrink-0 shadow-sm">
+                  {user?.userName?.charAt(0).toUpperCase() || 'S'}
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
         
         {/* Main content area */}
         <main className="flex-1 overflow-auto bg-gray-50 min-h-0">

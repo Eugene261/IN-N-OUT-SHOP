@@ -12,8 +12,11 @@ import {
   MoreVertical,
   Paperclip,
   X,
-  AlertCircle
+  AlertCircle,
+  Mic
 } from 'lucide-react';
+import FileUploadModal from './FileUploadModal';
+import VoiceRecorder from './VoiceRecorder';
 import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 import {
@@ -68,6 +71,8 @@ const MessagingDashboard = () => {
   const [showConversations, setShowConversations] = useState(true); // Mobile: toggle between conversations and chat
   const [hasInitialized, setHasInitialized] = useState(false);
   const [initError, setInitError] = useState(null);
+  const [showFileUpload, setShowFileUpload] = useState(false);
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
 
   useEffect(() => {
     // Initialize data with error handling
@@ -244,6 +249,28 @@ const MessagingDashboard = () => {
   const handleConversationSelect = (conversation) => {
     dispatch(setActiveConversation(conversation));
     setShowConversations(false); // Switch to chat view on mobile
+  };
+
+  const handleFileUpload = (message) => {
+    // File was uploaded successfully, refresh messages
+    if (activeConversation) {
+      dispatch(fetchMessages({ 
+        conversationId: activeConversation._id,
+        limit: 50 
+      }));
+    }
+    toast.success('Files sent successfully!');
+  };
+
+  const handleAudioSent = (message) => {
+    // Audio was sent successfully, refresh messages
+    if (activeConversation) {
+      dispatch(fetchMessages({ 
+        conversationId: activeConversation._id,
+        limit: 50 
+      }));
+    }
+    toast.success('Voice message sent!');
   };
 
   const formatTime = (dateString) => {
@@ -600,10 +627,25 @@ const MessagingDashboard = () => {
 
             {/* Message Input */}
             <div className="bg-white p-4 lg:p-6 border-t border-gray-200">
-              <div className="flex items-end space-x-4">
-                <button className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors hidden lg:block" title="Attach file">
+              <div className="flex items-end space-x-3">
+                {/* File Upload Button */}
+                <button 
+                  onClick={() => setShowFileUpload(true)}
+                  className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors" 
+                  title="Attach file"
+                >
                   <Paperclip className="w-5 h-5" />
                 </button>
+                
+                {/* Voice Recording Button */}
+                <button 
+                  onClick={() => setShowVoiceRecorder(true)}
+                  className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors" 
+                  title="Record voice message"
+                >
+                  <Mic className="w-5 h-5" />
+                </button>
+                
                 <div className="flex-1 relative">
                   <div className="relative">
                     <input
@@ -738,6 +780,22 @@ const MessagingDashboard = () => {
           </>
         )}
       </AnimatePresence>
+
+      {/* File Upload Modal */}
+      <FileUploadModal
+        isOpen={showFileUpload}
+        onClose={() => setShowFileUpload(false)}
+        onSendFiles={handleFileUpload}
+        conversationId={activeConversation?._id}
+      />
+
+      {/* Voice Recorder Modal */}
+      <VoiceRecorder
+        isOpen={showVoiceRecorder}
+        onClose={() => setShowVoiceRecorder(false)}
+        onSendAudio={handleAudioSent}
+        conversationId={activeConversation?._id}
+      />
     </div>
   );
 };

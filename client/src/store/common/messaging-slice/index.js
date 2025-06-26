@@ -76,6 +76,27 @@ export const sendMessage = createAsyncThunk(
   }
 );
 
+export const sendMediaMessage = createAsyncThunk(
+  'messaging/sendMediaMessage',
+  async ({ conversationId, formData }, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        `${API_URL}/api/common/messaging/conversations/${conversationId}/messages/media`,
+        formData,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+      return { conversationId, message: response.data.data };
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { message: 'Failed to send media message' });
+    }
+  }
+);
+
 export const createConversation = createAsyncThunk(
   'messaging/createConversation',
   async ({ recipientId, title }, { rejectWithValue }) => {
@@ -415,6 +436,48 @@ const messagingSlice = createSlice({
           state.error = payload.message;
         } else {
           state.error = 'Failed to send message';
+        }
+      });
+
+    // Send media message
+    builder
+      .addCase(sendMediaMessage.pending, (state) => {
+        state.sendingMessage = true;
+        state.error = null;
+      })
+      .addCase(sendMediaMessage.fulfilled, (state, action) => {
+        state.sendingMessage = false;
+        const { conversationId, message } = action.payload || {};
+        
+        // Add message to conversation
+        if (conversationId && message && state.messages[conversationId]) {
+          state.messages[conversationId].push(message);
+        }
+        
+        // Update conversation last message
+        if (conversationId && message) {
+          const convIndex = state.conversations.findIndex(c => c._id === conversationId);
+          if (convIndex !== -1) {
+            state.conversations[convIndex].lastMessage = {
+              content: message.content || '📎 Media message',
+              sentAt: message.createdAt,
+              sender: message.sender,
+              messageType: message.messageType
+            };
+            
+            // Move to top
+            const conversation = state.conversations.splice(convIndex, 1)[0];
+            state.conversations.unshift(conversation);
+          }
+        }
+      })
+      .addCase(sendMediaMessage.rejected, (state, action) => {
+        state.sendingMessage = false;
+        const payload = action.payload;
+        if (payload && typeof payload === 'object' && payload.message) {
+          state.error = payload.message;
+        } else {
+          state.error = 'Failed to send media message';
         }
       });
     
