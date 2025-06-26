@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import axios from 'axios';
 import { 
   CheckCircle, 
   XCircle, 
@@ -42,16 +43,18 @@ const ProductApprovalStatus = () => {
     try {
       setLoading(true);
       
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      
       // Check if feature is enabled
-      const featureCheck = await axios.get('/api/feature-flags/status');
+      const featureCheck = await axios.get(`${API_URL}/api/feature-flags/status`);
       if (!featureCheck.data.data.productApproval.enabled) {
         // If disabled, don't show approval status
         return;
       }
 
       const endpoint = activeFilter === 'all' 
-        ? '/api/admin/products/my-products?includeApprovalStatus=true'
-        : `/api/admin/products/my-products?includeApprovalStatus=true&approvalStatus=${activeFilter}`;
+        ? `${API_URL}/api/admin/products/my-products?includeApprovalStatus=true`
+        : `${API_URL}/api/admin/products/my-products?includeApprovalStatus=true&approvalStatus=${activeFilter}`;
 
       const response = await axios.get(endpoint, {
         headers: {
