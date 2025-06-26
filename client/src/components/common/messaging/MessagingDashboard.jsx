@@ -278,7 +278,7 @@ const MessagingDashboard = () => {
     const isMessagingDisabled = initError === 'MESSAGING_DISABLED';
     
     return (
-      <div className="h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="h-full bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md">
           {isMessagingDisabled ? (
             <>
@@ -316,7 +316,7 @@ const MessagingDashboard = () => {
   // Show loading state
   if (loading && conversations.length === 0 && !hasInitialized) {
     return (
-      <div className="h-screen bg-gray-50 flex items-center justify-center">
+      <div className="h-full bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading messaging...</p>
@@ -326,7 +326,7 @@ const MessagingDashboard = () => {
   }
 
   return (
-    <div className="h-screen bg-gray-50 flex">
+    <div className="h-full bg-gray-50 flex">
       {/* Conversations Sidebar */}
       <div className={`${
         showConversations ? 'flex' : 'hidden'
@@ -621,7 +621,7 @@ const MessagingDashboard = () => {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center p-8 bg-gradient-to-br from-gray-50 to-blue-50">
+          <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
             <div className="text-center max-w-md">
               <div className="relative mb-8">
                 <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
@@ -675,7 +675,7 @@ const MessagingDashboard = () => {
               initial={{ opacity: 0, scale: 0.95, y: -20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -20 }}
-              className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 m-4"
+              className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-200 z-50"
             >
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
