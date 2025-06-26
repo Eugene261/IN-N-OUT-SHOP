@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import InlineAttachmentMenu from './InlineAttachmentMenu';
 import InlineVoiceRecorder from './InlineVoiceRecorder';
+import VoiceMessagePlayer from './VoiceMessagePlayer';
 import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 import {
@@ -519,11 +520,11 @@ const MessagingDashboard = () => {
       {/* Chat Area */}
       <div className={`${
         showConversations ? 'hidden' : 'flex'
-      } lg:flex flex-1 flex-col bg-gray-50`}>
+      } lg:flex flex-1 flex-col bg-gray-50 h-full`}>
         {activeConversation ? (
           <>
-            {/* Chat Header */}
-            <div className="bg-white p-4 lg:p-6 border-b border-gray-200 shadow-sm">
+            {/* Chat Header - Fixed */}
+            <div className="flex-shrink-0 bg-white p-4 lg:p-6 border-b border-gray-200 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   {/* Back button for mobile */}
@@ -565,8 +566,8 @@ const MessagingDashboard = () => {
               </div>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4">
+            {/* Messages - Scrollable */}
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 lg:p-6 space-y-4">
               {messagesLoading && messages?.length === 0 ? (
                 <div className="flex justify-center py-8">
                   <div className="flex items-center space-x-2 text-blue-600">
@@ -600,12 +601,55 @@ const MessagingDashboard = () => {
                             <User className="w-4 h-4 text-white" />
                           </div>
                         )}
-                        <div className={`px-4 py-3 rounded-2xl shadow-sm ${
+                        <div className={`rounded-2xl shadow-sm ${
                           isOwn
                             ? 'bg-blue-600 text-white rounded-br-lg'
                             : 'bg-white text-gray-900 border border-gray-200 rounded-bl-lg'
                         }`}>
-                          <p className="text-sm leading-relaxed">{message?.content || ''}</p>
+                          {/* Render different message types */}
+                          {message?.messageType === 'audio' && message?.attachments?.length > 0 ? (
+                            <div className="p-2">
+                              <VoiceMessagePlayer
+                                audioUrl={message.attachments[0].fileUrl}
+                                duration={message.attachments[0].duration}
+                                className={isOwn ? 'voice-message-own' : 'voice-message-other'}
+                              />
+                              {message?.content && message.content !== '🎤 Voice message' && (
+                                <p className="text-xs mt-2 opacity-75">{message.content}</p>
+                              )}
+                            </div>
+                          ) : message?.messageType === 'image' && message?.attachments?.length > 0 ? (
+                            <div className="p-2">
+                              <img
+                                src={message.attachments[0].fileUrl}
+                                alt={message.attachments[0].originalName || 'Image'}
+                                className="max-w-full h-auto rounded-lg"
+                                style={{ maxHeight: '300px' }}
+                              />
+                              {message?.content && (
+                                <p className="text-sm mt-2">{message.content}</p>
+                              )}
+                            </div>
+                          ) : message?.messageType === 'file' && message?.attachments?.length > 0 ? (
+                            <div className="p-3">
+                              <a
+                                href={message.attachments[0].fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center space-x-2 text-blue-500 hover:text-blue-700 transition-colors"
+                              >
+                                <Paperclip className="w-4 h-4" />
+                                <span className="text-sm">{message.attachments[0].originalName}</span>
+                              </a>
+                              {message?.content && (
+                                <p className="text-sm mt-2">{message.content}</p>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="px-4 py-3">
+                              <p className="text-sm leading-relaxed">{message?.content || ''}</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className={`text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-end pb-1 ${isOwn ? 'mr-2' : 'ml-2'}`}>
@@ -627,74 +671,76 @@ const MessagingDashboard = () => {
               )}
             </div>
 
-            {/* Message Input, Voice Recorder, or Attachment Menu */}
-            {showInlineRecorder ? (
-              <InlineVoiceRecorder
-                isVisible={showInlineRecorder}
-                onClose={() => setShowInlineRecorder(false)}
-                onSendAudio={handleAudioSent}
-                conversationId={activeConversation?._id}
-              />
-            ) : showInlineAttachment ? (
-              <InlineAttachmentMenu
-                isVisible={showInlineAttachment}
-                onClose={() => setShowInlineAttachment(false)}
-                onSendFiles={handleFileUpload}
-                conversationId={activeConversation?._id}
-              />
-            ) : (
-              <div className="bg-white p-4 lg:p-6 border-t border-gray-200">
-                <div className="flex items-end space-x-3">
-                  {/* File Upload Button */}
-                  <button 
-                    onClick={() => setShowInlineAttachment(true)}
-                    className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors" 
-                    title="Attach file"
-                  >
-                    <Paperclip className="w-5 h-5" />
-                  </button>
-                  
-                  {/* Voice Recording Button */}
-                  <button 
-                    onClick={() => setShowInlineRecorder(true)}
-                    className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors" 
-                    title="Record voice message"
-                  >
-                    <Mic className="w-5 h-5" />
-                  </button>
-                  
-                  <div className="flex-1 relative">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        placeholder="Type your message here..."
-                        className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 text-sm lg:text-base placeholder-gray-500 resize-none"
-                        disabled={sendingMessage}
-                      />
-                      {sendingMessage && (
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
-                        </div>
-                      )}
+            {/* Message Input, Voice Recorder, or Attachment Menu - Fixed */}
+            <div className="flex-shrink-0">
+              {showInlineRecorder ? (
+                <InlineVoiceRecorder
+                  isVisible={showInlineRecorder}
+                  onClose={() => setShowInlineRecorder(false)}
+                  onSendAudio={handleAudioSent}
+                  conversationId={activeConversation?._id}
+                />
+              ) : showInlineAttachment ? (
+                <InlineAttachmentMenu
+                  isVisible={showInlineAttachment}
+                  onClose={() => setShowInlineAttachment(false)}
+                  onSendFiles={handleFileUpload}
+                  conversationId={activeConversation?._id}
+                />
+              ) : (
+                <div className="bg-white p-4 lg:p-6 border-t border-gray-200">
+                  <div className="flex items-end space-x-3">
+                    {/* File Upload Button */}
+                    <button 
+                      onClick={() => setShowInlineAttachment(true)}
+                      className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors" 
+                      title="Attach file"
+                    >
+                      <Paperclip className="w-5 h-5" />
+                    </button>
+                    
+                    {/* Voice Recording Button */}
+                    <button 
+                      onClick={() => setShowInlineRecorder(true)}
+                      className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors" 
+                      title="Record voice message"
+                    >
+                      <Mic className="w-5 h-5" />
+                    </button>
+                    
+                    <div className="flex-1 relative">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={newMessage}
+                          onChange={(e) => setNewMessage(e.target.value)}
+                          onKeyPress={handleKeyPress}
+                          placeholder="Type your message here..."
+                          className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 text-sm lg:text-base placeholder-gray-500 resize-none"
+                          disabled={sendingMessage}
+                        />
+                        {sendingMessage && (
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-400 mt-1 px-2">
+                        Press Enter to send • Shift + Enter for new line
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-400 mt-1 px-2">
-                      Press Enter to send • Shift + Enter for new line
-                    </div>
+                    <button
+                      onClick={handleSendMessage}
+                      disabled={!newMessage.trim() || sendingMessage}
+                      className="p-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md disabled:hover:shadow-sm"
+                      title="Send message"
+                    >
+                      <Send className="w-5 h-5" />
+                    </button>
                   </div>
-                  <button
-                    onClick={handleSendMessage}
-                    disabled={!newMessage.trim() || sendingMessage}
-                    className="p-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md disabled:hover:shadow-sm"
-                    title="Send message"
-                  >
-                    <Send className="w-5 h-5" />
-                  </button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
