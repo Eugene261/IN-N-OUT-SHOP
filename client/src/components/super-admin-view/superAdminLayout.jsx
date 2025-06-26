@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import SuperAdminSidebar from './superAdminSidebar';
 import { Menu } from 'lucide-react';
+import NotificationBell from '../ui/notification-bell';
 
 const SuperAdminLayout = () => {
   const { user } = useSelector(state => state.auth);
@@ -73,8 +74,11 @@ const SuperAdminLayout = () => {
               <span className="sr-only">Open sidebar</span>
             </button>
             <div className="text-lg font-semibold text-blue-600">SuperAdmin</div>
-            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium flex-shrink-0 shadow-sm">
-              {user?.userName?.charAt(0).toUpperCase() || 'S'}
+            <div className="flex items-center gap-3">
+              <NotificationBell />
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium flex-shrink-0 shadow-sm">
+                {user?.userName?.charAt(0).toUpperCase() || 'S'}
+              </div>
             </div>
           </div>
         </header>

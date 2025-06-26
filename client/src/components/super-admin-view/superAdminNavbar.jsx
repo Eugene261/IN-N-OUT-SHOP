@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { logoutUser } from '@/store/auth-slice';
+import NotificationBell from '../ui/notification-bell';
 
 const SuperAdminNavbar = () => {
   const location = useLocation();
@@ -92,6 +93,9 @@ const SuperAdminNavbar = () => {
           
           {/* User Menu and Mobile Menu Button */}
           <div className="flex items-center">
+            {/* Notification Bell */}
+            <NotificationBell className="mr-3" />
+            
             {/* User Menu */}
             <div className="ml-3 relative">
               <div>

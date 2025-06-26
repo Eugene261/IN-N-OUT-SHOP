@@ -4,6 +4,7 @@ import { AlignJustify, LogOut, User, Settings, Shield, Crown, ChevronDown } from
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import { logoutUser } from '@/store/auth-slice';
+import NotificationBell from '../ui/notification-bell';
 
 function AdminHeader({ onMenuToggle }) {
   const dispatch = useDispatch();
@@ -104,8 +105,13 @@ function AdminHeader({ onMenuToggle }) {
           </h1>
         </div>
         
-        {/* Right side: Profile Dropdown */}
-        <div className="relative" ref={dropdownRef}>
+        {/* Right side: Notification Bell and Profile Dropdown */}
+        <div className="flex items-center gap-3">
+          {/* Notification Bell */}
+          <NotificationBell />
+          
+          {/* Profile Dropdown */}
+          <div className="relative" ref={dropdownRef}>
           <motion.button
             onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
             className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg bg-white text-gray-700 border border-gray-200
@@ -233,6 +239,7 @@ function AdminHeader({ onMenuToggle }) {
               </motion.div>
             )}
           </AnimatePresence>
+          </div>
         </div>
       </div>
     </header>
