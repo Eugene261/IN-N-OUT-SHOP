@@ -124,7 +124,7 @@ const NotificationBell = ({ className = "" }) => {
     };
   }, [dispatch]);
 
-  // Convert conversations to notifications
+  // Convert conversations to notifications - FIXED: Remove circular dependency
   useEffect(() => {
     console.log('🔔 NotificationBell: Processing conversations', {
       conversationsCount: conversations.length,
@@ -132,8 +132,9 @@ const NotificationBell = ({ className = "" }) => {
       userId: user?.id
     });
 
-    if (!conversations.length) {
-      console.log('🔔 NotificationBell: No conversations found');
+    if (!conversations.length || !user?.id) {
+      console.log('🔔 NotificationBell: No conversations or user found');
+      setNotifications([]);
       return;
     }
 
@@ -173,17 +174,20 @@ const NotificationBell = ({ className = "" }) => {
       })
       .sort((a, b) => new Date(b.time) - new Date(a.time));
 
-    console.log('🔔 NotificationBell: Final notifications', {
+    console.log('🔔 NotificationBell: Processed notifications:', {
       notificationsCount: notificationList.length,
-      previousCount: notifications.length,
       notifications: notificationList.map(n => ({
         title: n.title,
         count: n.count
       }))
     });
 
-    // Check for new notifications
-    if (notificationList.length > notifications.length) {
+    // Check for new notifications - Use a more reliable method
+    const currentNotificationIds = new Set(notifications.map(n => n.id));
+    const newNotificationIds = new Set(notificationList.map(n => n.id));
+    const hasNewNotifications = notificationList.some(n => !currentNotificationIds.has(n.id));
+    
+    if (hasNewNotifications && notifications.length > 0) {
       setHasNewNotification(true);
       // Play notification sound (optional)
       playNotificationSound();
@@ -191,7 +195,7 @@ const NotificationBell = ({ className = "" }) => {
     }
 
     setNotifications(notificationList);
-  }, [conversations, user, notifications.length]);
+  }, [conversations, user?.id]); // FIXED: Remove notifications.length dependency
 
   // Play notification sound
   const playNotificationSound = () => {
@@ -296,7 +300,7 @@ const NotificationBell = ({ className = "" }) => {
         </AnimatePresence>
       </motion.button>
 
-      {/* Notification Dropdown */}
+      {/* Notification Dropdown - MOBILE RESPONSIVE */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -305,7 +309,7 @@ const NotificationBell = ({ className = "" }) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-hidden"
+            className="absolute right-0 mt-2 w-80 sm:w-96 max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-hidden"
           >
             {/* Header */}
             <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">

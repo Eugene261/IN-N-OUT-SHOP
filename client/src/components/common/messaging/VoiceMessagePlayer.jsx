@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, AlertCircle } from 'lucide-react';
 
 const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -7,7 +7,12 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
   const [totalDuration, setTotalDuration] = useState(duration || 0);
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isInitialized, setIsInitialized] = useState(false);
   const audioRef = useRef(null);
+
+  // Mobile detection
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -19,21 +24,80 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
         setTotalDuration(audio.duration);
       }
     };
-    const handlePlay = () => setIsPlaying(true);
+    const handlePlay = () => {
+      setIsPlaying(true);
+      setIsLoading(false);
+    };
     const handlePause = () => setIsPlaying(false);
     const handleEnded = () => {
       setIsPlaying(false);
       setCurrentTime(0);
     };
-    const handleLoadStart = () => setIsLoading(true);
+    const handleLoadStart = () => {
+      if (!isInitialized) {
+        setIsLoading(true);
+      }
+    };
     const handleCanPlay = () => {
       setIsLoading(false);
       setHasError(false);
+      setErrorMessage('');
+      setIsInitialized(true);
     };
-    const handleError = () => {
+    const handleError = (e) => {
+      console.error('Audio error:', e);
       setIsLoading(false);
       setHasError(true);
       setIsPlaying(false);
+      
+      // More specific error messages
+      const error = e.target?.error;
+      if (error) {
+        switch (error.code) {
+          case error.MEDIA_ERR_ABORTED:
+            setErrorMessage('Audio loading was aborted');
+            break;
+          case error.MEDIA_ERR_NETWORK:
+            setErrorMessage('Network error loading audio');
+            break;
+          case error.MEDIA_ERR_DECODE:
+            setErrorMessage('Audio format not supported');
+            break;
+          case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+            setErrorMessage('Audio source not supported');
+            break;
+          default:
+            setErrorMessage('Unable to play audio');
+        }
+      } else {
+        setErrorMessage('Unable to play audio');
+      }
+    };
+
+    // Mobile-specific event handlers
+    const handleWaiting = () => {
+      if (isMobile) {
+        setIsLoading(true);
+      }
+    };
+
+    const handleCanPlayThrough = () => {
+      setIsLoading(false);
+      setIsInitialized(true);
+    };
+
+    const handleSuspend = () => {
+      // Handle network suspend events on mobile
+      if (isMobile && isPlaying) {
+        setIsLoading(true);
+      }
+    };
+
+    const handleStalled = () => {
+      // Handle stalled loading on mobile
+      if (isMobile) {
+        setIsLoading(true);
+      }
     };
 
     audio.addEventListener('timeupdate', updateTime);
@@ -43,7 +107,11 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('loadstart', handleLoadStart);
     audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('canplaythrough', handleCanPlayThrough);
     audio.addEventListener('error', handleError);
+    audio.addEventListener('waiting', handleWaiting);
+    audio.addEventListener('suspend', handleSuspend);
+    audio.addEventListener('stalled', handleStalled);
 
     return () => {
       audio.removeEventListener('timeupdate', updateTime);
@@ -53,37 +121,118 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('loadstart', handleLoadStart);
       audio.removeEventListener('canplay', handleCanPlay);
+      audio.removeEventListener('canplaythrough', handleCanPlayThrough);
       audio.removeEventListener('error', handleError);
+      audio.removeEventListener('waiting', handleWaiting);
+      audio.removeEventListener('suspend', handleSuspend);
+      audio.removeEventListener('stalled', handleStalled);
     };
-  }, []);
+  }, [isMobile, isInitialized]);
+
+  // Initialize audio on first user interaction for mobile
+  const initializeAudio = async () => {
+    if (!audioRef.current || isInitialized) return true;
+
+    try {
+      setIsLoading(true);
+      
+      // For mobile, we need to load the audio first
+      if (isMobile) {
+        await new Promise((resolve, reject) => {
+          const audio = audioRef.current;
+          const timeout = setTimeout(() => {
+            reject(new Error('Audio loading timeout'));
+          }, 10000); // 10 second timeout
+
+          const onLoad = () => {
+            clearTimeout(timeout);
+            audio.removeEventListener('canplay', onLoad);
+            audio.removeEventListener('error', onError);
+            resolve();
+          };
+
+          const onError = (e) => {
+            clearTimeout(timeout);
+            audio.removeEventListener('canplay', onLoad);
+            audio.removeEventListener('error', onError);
+            reject(e);
+          };
+
+          audio.addEventListener('canplay', onLoad);
+          audio.addEventListener('error', onError);
+          audio.load();
+        });
+      }
+
+      setIsInitialized(true);
+      setIsLoading(false);
+      return true;
+    } catch (error) {
+      console.error('Audio initialization failed:', error);
+      setIsLoading(false);
+      setHasError(true);
+      setErrorMessage('Failed to load audio');
+      return false;
+    }
+  };
 
   const togglePlayPause = async () => {
     if (!audioRef.current) return;
 
     try {
+      // Initialize audio on first interaction
+      if (!isInitialized) {
+        const initialized = await initializeAudio();
+        if (!initialized) return;
+      }
+
       if (isPlaying) {
         audioRef.current.pause();
       } else {
-        // Add mobile-specific handling
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        setIsLoading(true);
+        
+        // Mobile-specific handling
         if (isMobile) {
-          // Ensure audio context is unlocked on mobile
-          await audioRef.current.load();
+          // Ensure audio is ready before playing
+          if (audioRef.current.readyState < 2) {
+            await new Promise((resolve, reject) => {
+              const timeout = setTimeout(() => {
+                reject(new Error('Audio not ready timeout'));
+              }, 5000);
+
+              const onReady = () => {
+                clearTimeout(timeout);
+                audioRef.current.removeEventListener('canplay', onReady);
+                resolve();
+              };
+
+              audioRef.current.addEventListener('canplay', onReady);
+            });
+          }
         }
+
         await audioRef.current.play();
       }
     } catch (error) {
       console.error('Audio playback error:', error);
-      // More specific error handling for mobile
-      if (error.name === 'NotAllowedError' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        console.log('Audio blocked on mobile - user interaction required');
-      }
+      setIsLoading(false);
       setHasError(true);
+      
+      // Handle specific mobile errors
+      if (error.name === 'NotAllowedError') {
+        setErrorMessage('Audio playback blocked. Please try again.');
+      } else if (error.name === 'NotSupportedError') {
+        setErrorMessage('Audio format not supported on this device');
+      } else if (error.message.includes('timeout')) {
+        setErrorMessage('Audio loading timeout. Check your connection.');
+      } else {
+        setErrorMessage('Unable to play audio');
+      }
     }
   };
 
   const handleSeek = (e) => {
-    if (!audioRef.current || !totalDuration) return;
+    if (!audioRef.current || !totalDuration || !isInitialized) return;
     
     const rect = e.currentTarget.getBoundingClientRect();
     // Handle both mouse and touch events
@@ -93,8 +242,12 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
     const clickX = clientX - rect.left;
     const newTime = (clickX / rect.width) * totalDuration;
     
-    audioRef.current.currentTime = Math.max(0, Math.min(newTime, totalDuration));
-    setCurrentTime(newTime);
+    try {
+      audioRef.current.currentTime = Math.max(0, Math.min(newTime, totalDuration));
+      setCurrentTime(newTime);
+    } catch (error) {
+      console.error('Seek error:', error);
+    }
   };
 
   const formatTime = (seconds) => {
@@ -109,8 +262,23 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
   if (hasError) {
     return (
       <div className={`flex items-center space-x-3 p-3 bg-red-50 border border-red-200 rounded-lg ${className}`}>
-        <VolumeX className="w-5 h-5 text-red-500" />
-        <span className="text-red-600 text-sm">Unable to play audio</span>
+        <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <span className="text-red-600 text-sm block">{errorMessage}</span>
+          <button
+            onClick={() => {
+              setHasError(false);
+              setErrorMessage('');
+              setIsInitialized(false);
+              if (audioRef.current) {
+                audioRef.current.load();
+              }
+            }}
+            className="text-red-500 hover:text-red-700 text-xs underline mt-1"
+          >
+            Try again
+          </button>
+        </div>
       </div>
     );
   }
@@ -120,11 +288,13 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
       {/* Hidden audio element with mobile optimizations */}
       <audio 
         ref={audioRef} 
-        preload="metadata"
+        preload={isMobile ? "none" : "metadata"}
         crossOrigin="anonymous"
         playsInline
         controls={false}
+        muted={false}
       >
+        <source src={audioUrl} type="audio/webm" />
         <source src={audioUrl} type="audio/mpeg" />
         <source src={audioUrl} type="audio/wav" />
         <source src={audioUrl} type="audio/ogg" />
@@ -135,7 +305,8 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
       <button
         onClick={togglePlayPause}
         disabled={isLoading}
-        className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 disabled:bg-gray-400 text-white rounded-full flex items-center justify-center transition-colors touch-manipulation"
+        className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 disabled:bg-gray-400 text-white rounded-full flex items-center justify-center transition-colors touch-manipulation focus:outline-none focus:ring-2 focus:ring-blue-300"
+        aria-label={isPlaying ? 'Pause audio' : 'Play audio'}
       >
         {isLoading ? (
           <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-2 border-white border-t-transparent" />
@@ -154,6 +325,11 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
           onClick={handleSeek}
           onTouchStart={handleSeek}
           onTouchMove={handleSeek}
+          role="slider"
+          aria-label="Audio progress"
+          aria-valuemin="0"
+          aria-valuemax={totalDuration}
+          aria-valuenow={currentTime}
         >
           <div 
             className="h-full bg-blue-500 rounded-full transition-all duration-100"
@@ -168,8 +344,14 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
         </div>
       </div>
 
-      {/* Volume Icon - Hidden on very small screens */}
-      <Volume2 className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0 hidden xs:block" />
+      {/* Status Icon - Show loading state or volume */}
+      <div className="flex-shrink-0 w-4 h-4 sm:w-4 sm:h-4 flex items-center justify-center">
+        {isLoading ? (
+          <div className="animate-spin rounded-full h-3 w-3 border border-gray-400 border-t-transparent" />
+        ) : (
+          <Volume2 className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 hidden xs:block" />
+        )}
+      </div>
     </div>
   );
 };
