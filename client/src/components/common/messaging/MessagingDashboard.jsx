@@ -73,14 +73,39 @@ const MessagingDashboard = () => {
     const initializeMessaging = async () => {
       try {
         setInitError(null);
-        await Promise.all([
-          dispatch(fetchConversations()).unwrap(),
-          dispatch(fetchAvailableUsers()).unwrap()
-        ]);
+        console.log('🚀 Initializing messaging system...');
+        
+        // Try to fetch conversations first
+        console.log('📞 Fetching conversations...');
+        const conversationsResult = await dispatch(fetchConversations()).unwrap();
+        console.log('✅ Conversations fetched:', conversationsResult);
+        
+        // Then fetch available users
+        console.log('👥 Fetching available users...');
+        const usersResult = await dispatch(fetchAvailableUsers()).unwrap();
+        console.log('✅ Available users fetched:', usersResult);
+        
         setHasInitialized(true);
+        console.log('✅ Messaging initialization completed successfully');
       } catch (err) {
-        console.error('Failed to initialize messaging:', err);
-        setInitError(err?.message || 'Failed to load messaging data');
+        console.error('❌ Failed to initialize messaging:', err);
+        console.error('Error details:', JSON.stringify(err, null, 2));
+        console.error('Error message:', err?.message);
+        console.error('Error response:', err?.response?.data);
+        
+        // Better error message extraction
+        let errorMessage = 'Failed to load messaging data';
+        if (err?.message) {
+          errorMessage = err.message;
+        } else if (err?.response?.data?.message) {
+          errorMessage = err.response.data.message;
+        } else if (typeof err === 'string') {
+          errorMessage = err;
+        } else if (err?.code) {
+          errorMessage = `${err.code}: ${err.message || 'Unknown error'}`;
+        }
+        
+        setInitError(errorMessage);
         setHasInitialized(true); // Still mark as initialized to show error state
       }
     };
