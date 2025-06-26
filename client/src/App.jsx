@@ -1,6 +1,11 @@
 // App.jsx
 import { Routes, Route } from "react-router-dom";
-import AuthLayout from "./components/auth/Layout";import AuthLogin from "./pages/auth/login";import AuthRegister from "./pages/auth/register";import ForgotPassword from "./pages/auth/forgot-password";import ResetPassword from "./pages/auth/reset-password";import OAuthSuccess from "./pages/auth/oauth-success";
+import AuthLayout from "./components/auth/Layout";
+import AuthLogin from "./pages/auth/login";
+import AuthRegister from "./pages/auth/register";
+import ForgotPassword from "./pages/auth/forgot-password";
+import ResetPassword from "./pages/auth/reset-password";
+import OAuthSuccess from "./pages/auth/oauth-success";
 import AdminLayout from "./components/admin-view/layout";
 import AdminProducts from "./pages/admin-view/products";
 import AdminDashboard from "./pages/admin-view/dashboard";
@@ -25,10 +30,18 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { checkAuth, setLoading } from "./store/auth-slice";
+import { fetchConversations } from "./store/common/messaging-slice";
 import ShoppingLoader from "./components/common/ShoppingLoader";
 // PayPal import removed
 import OrderConfirmationPage from "./pages/shopping-view/orderConfirmation";
-import SearchProducts from "./components/shopping-view/search";import WishlistPage from "./pages/shopping-view/wishlist";import TermsOfService from "./pages/shopping-view/termsOfService";import PrivacyPolicy from "./pages/shopping-view/privacyPolicy";import CookiePolicy from "./pages/shopping-view/cookiePolicy";import ProductDetailsPage from "./pages/shopping-view/productDetailsPage";import ShippingPage from "./pages/shopping-view/shipping";import ShopsDirectory from "./pages/shopping-view/shops";
+import SearchProducts from "./components/shopping-view/search";
+import WishlistPage from "./pages/shopping-view/wishlist";
+import TermsOfService from "./pages/shopping-view/termsOfService";
+import PrivacyPolicy from "./pages/shopping-view/privacyPolicy";
+import CookiePolicy from "./pages/shopping-view/cookiePolicy";
+import ProductDetailsPage from "./pages/shopping-view/productDetailsPage";
+import ShippingPage from "./pages/shopping-view/shipping";
+import ShopsDirectory from "./pages/shopping-view/shops";
 
 // Import new pages
 import ContactUs from "./pages/ContactUs";
@@ -113,6 +126,19 @@ function App() {
   useEffect(() => {
     console.log('App loading state changed:', { isLoading, isAuthenticated, user: !!user });
   }, [isLoading, isAuthenticated, user]);
+
+  // Global messaging initialization - fetch unread counts for notification badges
+  useEffect(() => {
+    // Only fetch messaging data for authenticated admin/superAdmin users
+    if (isAuthenticated && user && (user.role === 'admin' || user.role === 'superAdmin') && !isLoading) {
+      console.log('App: Initializing messaging for notification badges...');
+      // Fetch conversations to populate totalUnread count for badges
+      dispatch(fetchConversations({})).catch((error) => {
+        console.warn('App: Failed to fetch conversations for badges:', error);
+        // Don't throw error - just log it since badges are not critical
+      });
+    }
+  }, [isAuthenticated, user, isLoading, dispatch]);
 
   if(isLoading) {
     console.log('App: Showing loading screen');
