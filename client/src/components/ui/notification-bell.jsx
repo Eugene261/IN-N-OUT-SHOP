@@ -15,8 +15,17 @@ const NotificationBell = ({ className = "" }) => {
   
   // Redux selectors
   const unreadCount = useSelector(selectTotalUnread) || 0;
-  const conversations = useSelector(state => state.messaging.conversations);
+  const conversations = useSelector(state => state.messaging?.conversations || []);
   const { user } = useSelector(state => state.auth);
+  const messagingError = useSelector(state => state.messaging?.error);
+  
+  console.log('🔔 NotificationBell Redux State:', {
+    unreadCount,
+    conversationsCount: conversations.length,
+    user: user?.userName,
+    userRole: user?.role,
+    messagingError
+  });
 
   // Click outside to close dropdown
   useEffect(() => {
@@ -31,29 +40,52 @@ const NotificationBell = ({ className = "" }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Real-time polling for updates
+  // Initial fetch and real-time polling for updates
   useEffect(() => {
     if (!user || (user.role !== 'admin' && user.role !== 'superAdmin')) return;
 
     const pollForUpdates = () => {
-      dispatch(fetchConversations({}));
+      dispatch(fetchConversations()).catch(error => {
+        console.log('Notification bell fetch failed:', error);
+      });
     };
 
-    // Poll every 30 seconds for new messages
-    const interval = setInterval(pollForUpdates, 30000);
+    // Initial fetch
+    pollForUpdates();
+
+    // Poll every 5 seconds for real-time updates
+    const interval = setInterval(pollForUpdates, 5000);
     
     return () => clearInterval(interval);
   }, [dispatch, user]);
 
   // Convert conversations to notifications
   useEffect(() => {
-    if (!conversations.length) return;
+    console.log('🔔 NotificationBell: Processing conversations', {
+      conversationsCount: conversations.length,
+      user: user?.userName,
+      userId: user?.id
+    });
+
+    if (!conversations.length) {
+      console.log('🔔 NotificationBell: No conversations found');
+      return;
+    }
 
     const notificationList = conversations
       .filter(conv => {
         // Find unread count for current user
         const userUnread = conv.unreadCounts?.find(u => u.user === user?.id);
-        return userUnread && userUnread.count > 0;
+        const hasUnread = userUnread && userUnread.count > 0;
+        
+        console.log('🔔 Conversation filter:', {
+          convId: conv._id,
+          userUnread: userUnread?.count || 0,
+          hasUnread,
+          lastMessage: conv.lastMessage?.content?.substring(0, 20)
+        });
+        
+        return hasUnread;
       })
       .map(conv => {
         const otherParticipant = conv.participants.find(p => p.user._id !== user?.id);
@@ -73,11 +105,21 @@ const NotificationBell = ({ className = "" }) => {
       })
       .sort((a, b) => new Date(b.time) - new Date(a.time));
 
+    console.log('🔔 NotificationBell: Final notifications', {
+      notificationsCount: notificationList.length,
+      previousCount: notifications.length,
+      notifications: notificationList.map(n => ({
+        title: n.title,
+        count: n.count
+      }))
+    });
+
     // Check for new notifications
     if (notificationList.length > notifications.length) {
       setHasNewNotification(true);
       // Play notification sound (optional)
       playNotificationSound();
+      console.log('🔔 NotificationBell: New notification detected!');
     }
 
     setNotifications(notificationList);

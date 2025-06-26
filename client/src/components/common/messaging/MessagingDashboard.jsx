@@ -18,6 +18,7 @@ import {
 import InlineAttachmentMenu from './InlineAttachmentMenu';
 import InlineVoiceRecorder from './InlineVoiceRecorder';
 import VoiceMessagePlayer from './VoiceMessagePlayer';
+import SoundNotifications from './SoundNotifications';
 import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 import {
@@ -244,6 +245,11 @@ const MessagingDashboard = () => {
       })).unwrap();
       
       setNewMessage('');
+      
+      // Play send sound
+      if (window.playMessageSentSound) {
+        window.playMessageSentSound();
+      }
     } catch (error) {
       console.error('❌ Failed to send message:', error);
       console.log('🔍 Send message error details:', JSON.stringify(error, null, 2));
@@ -292,6 +298,11 @@ const MessagingDashboard = () => {
     }
     setShowInlineAttachment(false);
     toast.success('Files sent successfully!');
+    
+    // Play send sound
+    if (window.playMessageSentSound) {
+      window.playMessageSentSound();
+    }
   };
 
   const handleAudioSent = (message) => {
@@ -304,6 +315,11 @@ const MessagingDashboard = () => {
     }
     setShowInlineRecorder(false);
     toast.success('Voice message sent!');
+    
+    // Play send sound
+    if (window.playMessageSentSound) {
+      window.playMessageSentSound();
+    }
   };
 
   const formatTime = (dateString) => {
@@ -395,6 +411,9 @@ const MessagingDashboard = () => {
 
   return (
     <div className="h-full w-full bg-gray-50 flex">
+      {/* Sound Notifications */}
+      <SoundNotifications />
+      
       {/* Conversations Sidebar */}
       <div className={`${
         showConversations ? 'flex' : 'hidden'
