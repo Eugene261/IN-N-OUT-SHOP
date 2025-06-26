@@ -76,10 +76,14 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
     if (!audioRef.current || !totalDuration) return;
     
     const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
+    // Handle both mouse and touch events
+    const clientX = e.clientX || (e.touches && e.touches[0]?.clientX) || (e.changedTouches && e.changedTouches[0]?.clientX);
+    if (!clientX) return;
+    
+    const clickX = clientX - rect.left;
     const newTime = (clickX / rect.width) * totalDuration;
     
-    audioRef.current.currentTime = newTime;
+    audioRef.current.currentTime = Math.max(0, Math.min(newTime, totalDuration));
     setCurrentTime(newTime);
   };
 
@@ -102,7 +106,7 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
   }
 
   return (
-    <div className={`flex items-center space-x-3 p-3 bg-gray-50 rounded-lg min-w-[200px] ${className}`}>
+    <div className={`flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg w-full max-w-xs sm:max-w-sm ${className}`}>
       {/* Hidden audio element */}
       <audio ref={audioRef} preload="metadata">
         <source src={audioUrl} />
@@ -113,14 +117,14 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
       <button
         onClick={togglePlayPause}
         disabled={isLoading}
-        className="flex-shrink-0 w-10 h-10 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-full flex items-center justify-center transition-colors"
+        className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 disabled:bg-gray-400 text-white rounded-full flex items-center justify-center transition-colors touch-manipulation"
       >
         {isLoading ? (
-          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+          <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-2 border-white border-t-transparent" />
         ) : isPlaying ? (
-          <Pause className="w-4 h-4" />
+          <Pause className="w-4 h-4 sm:w-5 sm:h-5" />
         ) : (
-          <Play className="w-4 h-4 ml-0.5" />
+          <Play className="w-4 h-4 sm:w-5 sm:h-5 ml-0.5" />
         )}
       </button>
 
@@ -128,8 +132,10 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
       <div className="flex-1 min-w-0">
         {/* Progress Bar */}
         <div 
-          className="w-full h-2 bg-gray-200 rounded-full cursor-pointer mb-1"
+          className="w-full h-3 sm:h-2 bg-gray-200 rounded-full cursor-pointer mb-1 touch-manipulation"
           onClick={handleSeek}
+          onTouchStart={handleSeek}
+          onTouchMove={handleSeek}
         >
           <div 
             className="h-full bg-blue-500 rounded-full transition-all duration-100"
@@ -138,14 +144,14 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
         </div>
         
         {/* Time Display */}
-        <div className="flex items-center justify-between text-xs text-gray-600">
-          <span>{formatTime(currentTime)}</span>
-          <span>{formatTime(totalDuration)}</span>
+        <div className="flex items-center justify-between text-xs sm:text-xs text-gray-600">
+          <span className="font-mono">{formatTime(currentTime)}</span>
+          <span className="font-mono">{formatTime(totalDuration)}</span>
         </div>
       </div>
 
-      {/* Volume Icon */}
-      <Volume2 className="w-4 h-4 text-gray-500 flex-shrink-0" />
+      {/* Volume Icon - Hidden on very small screens */}
+      <Volume2 className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0 hidden xs:block" />
     </div>
   );
 };

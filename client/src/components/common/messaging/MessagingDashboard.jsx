@@ -644,7 +644,7 @@ const MessagingDashboard = () => {
                       animate={{ opacity: 1, y: 0 }}
                       className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}
                     >
-                      <div className={`flex items-end space-x-2 max-w-xs lg:max-w-md ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                      <div className={`flex items-end space-x-2 max-w-[85%] sm:max-w-xs lg:max-w-md ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}`}>
                         {!isOwn && (
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center ${showAvatar ? 'bg-gradient-to-br from-gray-400 to-gray-600' : 'invisible'}`}>
                             <User className="w-4 h-4 text-white" />
@@ -672,8 +672,9 @@ const MessagingDashboard = () => {
                               <img
                                 src={message.attachments[0].fileUrl}
                                 alt={message.attachments[0].originalName || 'Image'}
-                                className="max-w-full h-auto rounded-lg"
-                                style={{ maxHeight: '300px' }}
+                                className="max-w-full h-auto rounded-lg cursor-pointer"
+                                style={{ maxHeight: '250px', minHeight: '100px' }}
+                                onClick={() => window.open(message.attachments[0].fileUrl, '_blank')}
                               />
                               {message?.content && (
                                 <p className="text-sm mt-2">{message.content}</p>
@@ -683,12 +684,18 @@ const MessagingDashboard = () => {
                             <div className="p-3">
                               <a
                                 href={message.attachments[0].fileUrl}
+                                download={message.attachments[0].originalName}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center space-x-2 text-blue-500 hover:text-blue-700 transition-colors"
+                                className="flex items-center space-x-3 text-blue-500 hover:text-blue-700 active:text-blue-800 transition-colors min-h-[44px] touch-manipulation"
                               >
-                                <Paperclip className="w-4 h-4" />
-                                <span className="text-sm">{message.attachments[0].originalName}</span>
+                                <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                  <Paperclip className="w-4 h-4" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">{message.attachments[0].originalName}</p>
+                                  <p className="text-xs text-gray-500">Tap to download</p>
+                                </div>
                               </a>
                               {message?.content && (
                                 <p className="text-sm mt-2">{message.content}</p>
@@ -737,12 +744,12 @@ const MessagingDashboard = () => {
                   conversationId={activeConversation?._id}
                 />
               ) : (
-                <div className="bg-white p-4 lg:p-6 border-t border-gray-200">
-                  <div className="flex items-end space-x-3">
+                <div className="bg-white p-3 sm:p-4 lg:p-6 border-t border-gray-200 safe-area-inset-bottom">
+                  <div className="flex items-end space-x-2 sm:space-x-3">
                     {/* File Upload Button */}
                     <button 
                       onClick={() => setShowInlineAttachment(true)}
-                      className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors" 
+                      className="flex-shrink-0 p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors touch-manipulation" 
                       title="Attach file"
                     >
                       <Paperclip className="w-5 h-5" />
@@ -751,7 +758,7 @@ const MessagingDashboard = () => {
                     {/* Voice Recording Button */}
                     <button 
                       onClick={() => setShowInlineRecorder(true)}
-                      className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors" 
+                      className="flex-shrink-0 p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors touch-manipulation" 
                       title="Record voice message"
                     >
                       <Mic className="w-5 h-5" />
@@ -765,7 +772,7 @@ const MessagingDashboard = () => {
                           onChange={(e) => setNewMessage(e.target.value)}
                           onKeyPress={handleKeyPress}
                           placeholder="Type your message here..."
-                          className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 text-sm lg:text-base placeholder-gray-500 resize-none"
+                          className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 text-base placeholder-gray-500 resize-none touch-manipulation"
                           disabled={sendingMessage}
                         />
                         {sendingMessage && (
@@ -774,14 +781,14 @@ const MessagingDashboard = () => {
                           </div>
                         )}
                       </div>
-                      <div className="text-xs text-gray-400 mt-1 px-2">
+                      <div className="text-xs text-gray-400 mt-1 px-2 hidden sm:block">
                         Press Enter to send • Shift + Enter for new line
                       </div>
                     </div>
                     <button
                       onClick={handleSendMessage}
                       disabled={!newMessage.trim() || sendingMessage}
-                      className="p-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md disabled:hover:shadow-sm"
+                      className="flex-shrink-0 p-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md disabled:hover:shadow-sm touch-manipulation"
                       title="Send message"
                     >
                       <Send className="w-5 h-5" />
