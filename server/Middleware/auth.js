@@ -79,7 +79,7 @@ const verifyToken = (req, res, next) => {
         if (authHeader.startsWith('Bearer ')) {
             token = authHeader.substring(7);
             console.log('Using token from Authorization header');
-        }
+        } 
     }
 
     if (!token) {
