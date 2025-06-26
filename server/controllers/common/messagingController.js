@@ -34,29 +34,53 @@ const upload = multer({
 
 // Get all conversations for a user
 const getConversations = asyncHandler(async (req, res) => {
+  console.log('🔍 getConversations called');
   const { status, type } = req.query;
   const userId = req.user.id;
-
-  const conversations = await Conversation.findByParticipant(userId, {
-    status,
-    type,
-    limit: parseInt(req.query.limit) || 50
+  
+  console.log('🔍 Request details:', {
+    userId,
+    userRole: req.user.role,
+    userName: req.user.userName,
+    queryParams: { status, type, limit: req.query.limit }
   });
 
-  // Calculate total unread count
-  const totalUnread = conversations.reduce((sum, conv) => {
-    const userUnread = conv.unreadCounts.find(u => u.user.toString() === userId);
-    return sum + (userUnread ? userUnread.count : 0);
-  }, 0);
+  try {
+    console.log('🔍 Calling Conversation.findByParticipant...');
+    const conversations = await Conversation.findByParticipant(userId, {
+      status,
+      type,
+      limit: parseInt(req.query.limit) || 50
+    });
 
-  res.status(200).json({
-    success: true,
-    data: {
+    console.log('🔍 Conversations found:', conversations.length);
+    console.log('🔍 Raw conversations:', JSON.stringify(conversations, null, 2));
+
+    // Calculate total unread count
+    const totalUnread = conversations.reduce((sum, conv) => {
+      const userUnread = conv.unreadCounts.find(u => u.user.toString() === userId);
+      return sum + (userUnread ? userUnread.count : 0);
+    }, 0);
+
+    console.log('🔍 Total unread count:', totalUnread);
+
+    const responseData = {
       conversations,
       totalUnread,
       count: conversations.length
-    }
-  });
+    };
+
+    console.log('🔍 Sending response:', JSON.stringify(responseData, null, 2));
+
+    res.status(200).json({
+      success: true,
+      data: responseData
+    });
+  } catch (error) {
+    console.error('❌ Error in getConversations:', error);
+    console.error('❌ Error stack:', error.stack);
+    throw error; // Re-throw to let asyncHandler handle it
+  }
 });
 
 // Get or create a direct conversation
