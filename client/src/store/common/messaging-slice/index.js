@@ -14,33 +14,16 @@ export const fetchConversations = createAsyncThunk(
       if (type) params.append('type', type);
       if (params.toString()) url += `?${params.toString()}`;
 
-      console.log('🔄 Fetching conversations from:', url);
-      const token = localStorage.getItem('token');
-      console.log('🔑 Using token:', token ? `${token.substring(0, 20)}...` : 'No token found');
-
       const response = await axios.get(url, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
       
-      console.log('✅ Conversations response:', response.data);
       return response.data.data;
     } catch (error) {
       console.error('❌ Conversations fetch error:', error);
-      if (error.response) {
-        console.error('❌ Error response:', error.response.data);
-        console.error('❌ Error status:', error.response.status);
-        console.error('❌ Error headers:', error.response.headers);
-      } else if (error.request) {
-        console.error('❌ No response received:', error.request);
-      } else {
-        console.error('❌ Error setting up request:', error.message);
-      }
-      
-      const errorData = error.response?.data || { message: error.message || 'Failed to fetch conversations' };
-      console.error('❌ Rejecting with value:', errorData);
-      return rejectWithValue(errorData);
+      return rejectWithValue(error.response?.data || { message: 'Failed to fetch conversations' });
     }
   }
 );
@@ -128,32 +111,19 @@ export const fetchAvailableUsers = createAsyncThunk(
   'messaging/fetchAvailableUsers',
   async (_, { rejectWithValue }) => {
     try {
-      const url = `${API_URL}/api/common/messaging/users/available`;
-      console.log('🔄 Fetching available users from:', url);
-      const token = localStorage.getItem('token');
-      
-      const response = await axios.get(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+      const response = await axios.get(
+        `${API_URL}/api/common/messaging/users/available`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
         }
-      });
+      );
       
-      console.log('✅ Available users response:', response.data);
       return response.data.data;
     } catch (error) {
       console.error('❌ Available users fetch error:', error);
-      if (error.response) {
-        console.error('❌ Error response:', error.response.data);
-        console.error('❌ Error status:', error.response.status);
-      } else if (error.request) {
-        console.error('❌ No response received:', error.request);
-      } else {
-        console.error('❌ Error setting up request:', error.message);
-      }
-      
-      const errorData = error.response?.data || { message: error.message || 'Failed to fetch available users' };
-      console.error('❌ Rejecting with value:', errorData);
-      return rejectWithValue(errorData);
+      return rejectWithValue(error.response?.data || { message: 'Failed to fetch available users' });
     }
   }
 );
