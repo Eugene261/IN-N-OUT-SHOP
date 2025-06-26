@@ -5,7 +5,8 @@ const {
     addProduct, 
     editProduct, 
     deleteProduct, 
-    fetchAllProducts
+    fetchAllProducts,
+    fetchMyProductsWithStatus
 } = require('../../controllers/admin/productsController.js');
 const { authMiddleware } = require('../../controllers/authController.js');
 
@@ -20,6 +21,7 @@ router.post('/add', authMiddleware,  addProduct);
 router.put('/edit/:id', authMiddleware,  editProduct);
 router.delete('/delete/:id', authMiddleware,  deleteProduct);
 router.get('/get', authMiddleware,  fetchAllProducts);
+router.get('/my-products', authMiddleware,  fetchMyProductsWithStatus);
 
 
 

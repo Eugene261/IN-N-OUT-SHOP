@@ -307,6 +307,54 @@ const fetchAllProducts = async (req, res) => {
     }
 };
 
+// Fetch admin's products with approval status information
+const fetchMyProductsWithStatus = async (req, res) => {
+    try {
+        // Get the admin ID from the authenticated user
+        const adminId = req.user._id || req.user.id;
+        console.log('Fetching products with approval status for admin ID:', adminId);
+        
+        // Check if approval status should be included
+        const includeApprovalStatus = req.query.includeApprovalStatus === 'true';
+        const approvalStatusFilter = req.query.approvalStatus;
+        
+        // Build query
+        let query = { createdBy: adminId };
+        
+        // Add approval status filter if specified
+        if (approvalStatusFilter && approvalStatusFilter !== 'all') {
+            query.approvalStatus = approvalStatusFilter;
+        }
+        
+        // Find products with or without approval status
+        let products;
+        if (includeApprovalStatus) {
+            // Include all approval status fields
+            products = await Product.find(query)
+                .select('+approvalStatus +approvalComments +approvedBy +submittedAt +approvedAt +rejectedAt')
+                .populate('approvedBy', 'userName email')
+                .sort({ submittedAt: -1 });
+        } else {
+            // Regular product fetch
+            products = await Product.find(query);
+        }
+        
+        console.log(`Found ${products.length} products for admin ID: ${adminId}`);
+        
+        res.status(200).json({
+            success: true,
+            data: products
+        });
+
+    } catch (error) {
+        console.log('Error in fetchMyProductsWithStatus:', error);
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred while fetching products'
+        });
+    }
+};
+
 // Edit a product
 const editProduct = async (req, res) => {
     try {
@@ -635,6 +683,7 @@ module.exports = {
     handleImageUpload,
     addProduct,
     fetchAllProducts,
+    fetchMyProductsWithStatus,
     editProduct,
     deleteProduct,
     toggleProductBestseller,
