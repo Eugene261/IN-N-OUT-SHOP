@@ -1,6 +1,9 @@
+require('dotenv').config();
 const mongoose = require('mongoose');
 const Conversation = require('../models/Conversation');
 const User = require('../models/User');
+
+console.log('🔗 Connecting to MongoDB:', process.env.MONGODB_URI ? 'Using MONGODB_URI' : 'Using localhost');
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/ecommerce', {
