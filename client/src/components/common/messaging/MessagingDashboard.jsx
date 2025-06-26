@@ -411,8 +411,8 @@ const MessagingDashboard = () => {
           </div>
         </div>
 
-        {/* Conversations List */}
-        <div className="flex-1 overflow-y-auto bg-gray-50">
+        {/* Conversations List - Scrollable */}
+        <div className="flex-1 min-h-0 overflow-y-auto bg-gray-50">
           {filteredConversations?.length === 0 ? (
             <div className="p-8 text-center">
               <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
