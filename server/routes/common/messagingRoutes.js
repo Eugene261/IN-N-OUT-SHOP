@@ -41,45 +41,13 @@ router.use((req, res, next) => {
 // Apply auth middleware to all routes
 router.use(authMiddleware);
 
-// Validate that all required handlers exist
-const requiredHandlers = {
-  getAvailableUsers,
-  getConversations, 
-  getOrCreateDirectConversation,
-  getConversationDetails,
-  markAsRead,
-  archiveConversation,
-  getMessages,
-  sendTextMessage,
-  sendMediaMessage,
-  editMessage,
-  deleteMessage,
-  uploadFiles
-};
+// EMERGENCY DISABLE: Messaging routes are causing server crashes
+// Since messaging is disabled by default (MESSAGING_SYSTEM_ENABLED=false),
+// we're temporarily disabling all routes to prevent server crashes
+console.log('🚨 Messaging routes temporarily disabled to prevent server crashes');
+console.log('   Messaging system is disabled by default via feature flags anyway');
 
-for (const [name, handler] of Object.entries(requiredHandlers)) {
-  if (!handler) {
-    console.error(`❌ Messaging handler '${name}' is undefined - messaging routes disabled`);
-    module.exports = router; // Return empty router
-    return;
-  }
-}
-
-// Get available users for messaging
-router.get('/users/available', getAvailableUsers);
-
-// Conversation routes
-router.get('/conversations', getConversations);
-router.post('/conversations/direct', getOrCreateDirectConversation);
-router.get('/conversations/:conversationId', getConversationDetails);
-router.post('/conversations/:conversationId/read', markAsRead);
-router.post('/conversations/:conversationId/archive', archiveConversation);
-
-// Message routes
-router.get('/conversations/:conversationId/messages', getMessages);
-router.post('/conversations/:conversationId/messages/text', sendTextMessage);
-router.post('/conversations/:conversationId/messages/media', uploadFiles, sendMediaMessage);
-router.put('/messages/:messageId', editMessage);
-router.delete('/messages/:messageId', deleteMessage);
+// Return early with empty routes - messaging will return 503 via the middleware above
+// This prevents any undefined handler errors while keeping the feature flag system intact
 
 module.exports = router; 
