@@ -82,7 +82,7 @@ curl -H "Origin: https://www.in-nd-out.com" \
      -H "Access-Control-Request-Method: GET" \
      -H "Access-Control-Request-Headers: Content-Type,Authorization" \
      -X OPTIONS \
-     https://api.in-nd-out.com/api/auth/check-auth
+     https://api.in-nd-out.com/api/auth/check-auth 
 ```
 
 ### 2. Browser Console Verification
