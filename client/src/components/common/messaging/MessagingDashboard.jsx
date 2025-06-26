@@ -10,7 +10,8 @@ import {
   CheckCircle,
   MoreVertical,
   Paperclip,
-  X
+  X,
+  AlertCircle
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'sonner';
@@ -64,19 +65,45 @@ const MessagingDashboard = () => {
   // Local UI state
   const [newMessage, setNewMessage] = useState('');
   const [showConversations, setShowConversations] = useState(true); // Mobile: toggle between conversations and chat
+  const [hasInitialized, setHasInitialized] = useState(false);
+  const [initError, setInitError] = useState(null);
 
   useEffect(() => {
-    // Initialize data
-    dispatch(fetchConversations());
-    dispatch(fetchAvailableUsers());
-  }, [dispatch]);
+    // Initialize data with error handling
+    const initializeMessaging = async () => {
+      try {
+        setInitError(null);
+        await Promise.all([
+          dispatch(fetchConversations()).unwrap(),
+          dispatch(fetchAvailableUsers()).unwrap()
+        ]);
+        setHasInitialized(true);
+      } catch (err) {
+        console.error('Failed to initialize messaging:', err);
+        setInitError(err?.message || 'Failed to load messaging data');
+        setHasInitialized(true); // Still mark as initialized to show error state
+      }
+    };
 
-  useEffect(() => {
-    if (activeConversation) {
-      dispatch(fetchMessages({ conversationId: activeConversation._id }));
-      dispatch(markAsRead({ conversationId: activeConversation._id }));
+    if (!hasInitialized) {
+      initializeMessaging();
     }
-  }, [activeConversation, dispatch]);
+  }, [dispatch, hasInitialized]);
+
+  useEffect(() => {
+    if (activeConversation && hasInitialized) {
+      const loadMessages = async () => {
+        try {
+          await dispatch(fetchMessages({ conversationId: activeConversation._id })).unwrap();
+          dispatch(markAsRead({ conversationId: activeConversation._id }));
+        } catch (err) {
+          console.error('Failed to load messages:', err);
+          toast.error('Failed to load messages');
+        }
+      };
+      loadMessages();
+    }
+  }, [activeConversation, dispatch, hasInitialized]);
 
   useEffect(() => {
     // Show error notifications
@@ -88,7 +115,7 @@ const MessagingDashboard = () => {
 
   const handleStartNewConversation = async (recipientId, recipientName) => {
     try {
-      const result = await dispatch(createConversation({ 
+      await dispatch(createConversation({ 
         recipientId, 
         title: `Chat with ${recipientName}` 
       })).unwrap();
@@ -96,7 +123,8 @@ const MessagingDashboard = () => {
       setShowConversations(false); // Switch to chat view on mobile
       toast.success(`Started conversation with ${recipientName}`);
     } catch (error) {
-      toast.error(error.message || 'Failed to start conversation');
+      console.error('Failed to start conversation:', error);
+      toast.error(error?.message || 'Failed to start conversation');
     }
   };
 
@@ -111,7 +139,8 @@ const MessagingDashboard = () => {
       
       setNewMessage('');
     } catch (error) {
-      toast.error(error.message || 'Failed to send message');
+      console.error('Failed to send message:', error);
+      toast.error(error?.message || 'Failed to send message');
     }
   };
 
@@ -128,28 +157,62 @@ const MessagingDashboard = () => {
   };
 
   const formatTime = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffTime = Math.abs(now - date);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 1) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else if (diffDays < 7) {
-      return date.toLocaleDateString([], { weekday: 'short' });
-    } else {
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      if (diffDays === 1) {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      } else if (diffDays < 7) {
+        return date.toLocaleDateString([], { weekday: 'short' });
+      } else {
+        return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      }
+    } catch (err) {
+      return 'Invalid date';
     }
   };
 
   const getOtherParticipant = (conversation) => {
-    return conversation.participants.find(p => p.user._id !== user.id)?.user;
+    try {
+      return conversation?.participants?.find(p => p?.user?._id !== user?.id)?.user;
+    } catch (err) {
+      return null;
+    }
   };
 
-  if (loading && conversations.length === 0) {
+  // Show initialization error
+  if (initError) {
+    return (
+      <div className="h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Messaging Unavailable</h3>
+          <p className="text-gray-600 mb-4">{initError}</p>
+          <button
+            onClick={() => {
+              setHasInitialized(false);
+              setInitError(null);
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state
+  if (loading && conversations.length === 0 && !hasInitialized) {
     return (
       <div className="h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading messaging...</p>
+        </div>
       </div>
     );
   }
@@ -174,6 +237,7 @@ const MessagingDashboard = () => {
             <button
               onClick={() => dispatch(setShowNewChatModal(true))}
               className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700"
+              disabled={!availableUsers?.length}
             >
               <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
             </button>
@@ -194,15 +258,15 @@ const MessagingDashboard = () => {
 
         {/* Conversations List */}
         <div className="flex-1 overflow-y-auto">
-          {filteredConversations.length === 0 ? (
+          {filteredConversations?.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
-              {conversations.length === 0 ? 'No conversations yet' : 'No conversations match your search'}
+              {conversations?.length === 0 ? 'No conversations yet' : 'No conversations match your search'}
             </div>
           ) : (
             <div className="divide-y divide-gray-200">
-              {filteredConversations.map((conversation) => {
+              {filteredConversations?.map((conversation) => {
                 const otherUser = getOtherParticipant(conversation);
-                const unreadCount = conversation.unreadCounts?.find(u => u.user === user.id)?.count || 0;
+                const unreadCount = conversation?.unreadCounts?.find(u => u.user === user?.id)?.count || 0;
                 
                 return (
                   <motion.div
@@ -234,7 +298,7 @@ const MessagingDashboard = () => {
                             {otherUser?.userName || 'Unknown User'}
                           </p>
                           <div className="flex items-center space-x-1 lg:space-x-2">
-                            {conversation.lastMessage?.sentAt && (
+                            {conversation?.lastMessage?.sentAt && (
                               <span className="text-xs text-gray-500">
                                 {formatTime(conversation.lastMessage.sentAt)}
                               </span>
@@ -245,7 +309,7 @@ const MessagingDashboard = () => {
                         <p className={`text-xs lg:text-sm truncate mt-1 ${
                           unreadCount > 0 ? 'text-gray-900 font-medium' : 'text-gray-600'
                         }`}>
-                          {conversation.lastMessage?.content || 'No messages yet'}
+                          {conversation?.lastMessage?.content || 'No messages yet'}
                         </p>
                         
                         <div className="flex items-center mt-1">
@@ -308,39 +372,39 @@ const MessagingDashboard = () => {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-3 lg:space-y-4">
-              {messagesLoading && messages.length === 0 ? (
+              {messagesLoading && messages?.length === 0 ? (
                 <div className="flex justify-center">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                 </div>
-              ) : messages.length === 0 ? (
+              ) : messages?.length === 0 ? (
                 <div className="text-center text-gray-500 py-8">
                   <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                   <p>No messages yet. Start the conversation!</p>
                 </div>
               ) : (
-                messages.map((message) => (
+                messages?.map((message) => (
                   <motion.div
                     key={message._id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={`flex ${message.sender._id === user.id ? 'justify-end' : 'justify-start'}`}
+                    className={`flex ${message?.sender?._id === user?.id ? 'justify-end' : 'justify-start'}`}
                   >
                     <div className={`max-w-xs lg:max-w-md px-3 lg:px-4 py-2 rounded-lg ${
-                      message.sender._id === user.id
+                      message?.sender?._id === user?.id
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-200 text-gray-900'
                     }`}>
-                      <p className="text-sm">{message.content}</p>
+                      <p className="text-sm">{message?.content || ''}</p>
                       <div className={`flex items-center justify-end mt-1 space-x-1 ${
-                        message.sender._id === user.id ? 'text-blue-100' : 'text-gray-500'
+                        message?.sender?._id === user?.id ? 'text-blue-100' : 'text-gray-500'
                       }`}>
                         <span className="text-xs">
-                          {new Date(message.createdAt).toLocaleTimeString([], { 
+                          {message?.createdAt ? new Date(message.createdAt).toLocaleTimeString([], { 
                             hour: '2-digit', 
                             minute: '2-digit' 
-                          })}
+                          }) : ''}
                         </span>
-                        {message.sender._id === user.id && (
+                        {message?.sender?._id === user?.id && (
                           <CheckCircle className="w-3 h-3" />
                         )}
                       </div>
@@ -409,7 +473,7 @@ const MessagingDashboard = () => {
               </div>
 
               <div className="space-y-2">
-                {availableUsers.map((availableUser) => (
+                {availableUsers?.map((availableUser) => (
                   <div
                     key={availableUser._id}
                     onClick={() => handleStartNewConversation(availableUser._id, availableUser.userName)}
@@ -428,7 +492,7 @@ const MessagingDashboard = () => {
                 ))}
               </div>
 
-              {availableUsers.length === 0 && (
+              {(!availableUsers || availableUsers.length === 0) && (
                 <p className="text-center text-gray-500 py-4 text-sm">
                   No users available for messaging
                 </p>

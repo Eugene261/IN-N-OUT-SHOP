@@ -290,12 +290,12 @@ const messagingSlice = createSlice({
       })
       .addCase(fetchConversations.fulfilled, (state, action) => {
         state.loading = false;
-        state.conversations = action.payload.conversations;
-        state.totalUnread = action.payload.totalUnread;
+        state.conversations = action.payload?.conversations || [];
+        state.totalUnread = action.payload?.totalUnread || 0;
       })
       .addCase(fetchConversations.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload.message;
+        state.error = action.payload?.message || action.error?.message || 'Failed to fetch conversations';
       });
     
     // Fetch messages
@@ -306,24 +306,28 @@ const messagingSlice = createSlice({
       })
       .addCase(fetchMessages.fulfilled, (state, action) => {
         state.messagesLoading = false;
-        const { conversationId, messages, pagination } = action.payload;
+        const { conversationId, messages, pagination } = action.payload || {};
         
-        if (pagination.currentPage === 1) {
-          // New conversation or refresh
-          state.messages[conversationId] = messages;
-        } else {
-          // Loading more messages (prepend older messages)
-          state.messages[conversationId] = [
-            ...messages,
-            ...(state.messages[conversationId] || [])
-          ];
+        if (conversationId && messages) {
+          if (pagination?.currentPage === 1) {
+            // New conversation or refresh
+            state.messages[conversationId] = messages;
+          } else {
+            // Loading more messages (prepend older messages)
+            state.messages[conversationId] = [
+              ...messages,
+              ...(state.messages[conversationId] || [])
+            ];
+          }
+          
+          if (pagination) {
+            state.messagePagination[conversationId] = pagination;
+          }
         }
-        
-        state.messagePagination[conversationId] = pagination;
       })
       .addCase(fetchMessages.rejected, (state, action) => {
         state.messagesLoading = false;
-        state.error = action.payload.message;
+        state.error = action.payload?.message || action.error?.message || 'Failed to fetch messages';
       });
     
     // Send message
@@ -334,26 +338,28 @@ const messagingSlice = createSlice({
       })
       .addCase(sendMessage.fulfilled, (state, action) => {
         state.sendingMessage = false;
-        const { conversationId, message } = action.payload;
+        const { conversationId, message } = action.payload || {};
         
         // Add message to conversation
-        if (state.messages[conversationId]) {
+        if (conversationId && message && state.messages[conversationId]) {
           state.messages[conversationId].push(message);
         }
         
         // Update conversation last message
-        const convIndex = state.conversations.findIndex(c => c._id === conversationId);
-        if (convIndex !== -1) {
-          state.conversations[convIndex].lastMessage = {
-            content: message.content,
-            sentAt: message.createdAt,
-            sender: message.sender,
-            messageType: message.messageType
-          };
-          
-          // Move to top
-          const conversation = state.conversations.splice(convIndex, 1)[0];
-          state.conversations.unshift(conversation);
+        if (conversationId && message) {
+          const convIndex = state.conversations.findIndex(c => c._id === conversationId);
+          if (convIndex !== -1) {
+            state.conversations[convIndex].lastMessage = {
+              content: message.content,
+              sentAt: message.createdAt,
+              sender: message.sender,
+              messageType: message.messageType
+            };
+            
+            // Move to top
+            const conversation = state.conversations.splice(convIndex, 1)[0];
+            state.conversations.unshift(conversation);
+          }
         }
         
         // Clear new message
@@ -362,7 +368,7 @@ const messagingSlice = createSlice({
       })
       .addCase(sendMessage.rejected, (state, action) => {
         state.sendingMessage = false;
-        state.error = action.payload.message;
+        state.error = action.payload?.message || action.error?.message || 'Failed to send message';
       });
     
     // Create conversation
@@ -375,47 +381,63 @@ const messagingSlice = createSlice({
         state.loading = false;
         const newConversation = action.payload;
         
-        // Add to top of conversations list
-        state.conversations.unshift(newConversation);
-        
-        // Set as active
-        state.activeConversation = newConversation;
-        
-        // Close modal
-        state.showNewChatModal = false;
+        if (newConversation) {
+          // Add to top of conversations list
+          state.conversations.unshift(newConversation);
+          
+          // Set as active
+          state.activeConversation = newConversation;
+          
+          // Close modal
+          state.showNewChatModal = false;
+        }
       })
       .addCase(createConversation.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload.message;
+        state.error = action.payload?.message || action.error?.message || 'Failed to create conversation';
       });
     
     // Mark as read
     builder
       .addCase(markAsRead.fulfilled, (state, action) => {
-        const { conversationId } = action.payload;
+        const { conversationId } = action.payload || {};
         
-        // Update conversation unread count
-        const convIndex = state.conversations.findIndex(c => c._id === conversationId);
-        if (convIndex !== -1) {
-          const conversation = state.conversations[convIndex];
-          const userUnread = conversation.unreadCounts?.find(u => u.user !== conversation.lastMessage?.sender?._id);
-          if (userUnread) {
-            state.totalUnread -= userUnread.count;
-            userUnread.count = 0;
+        if (conversationId) {
+          // Update conversation unread count
+          const convIndex = state.conversations.findIndex(c => c._id === conversationId);
+          if (convIndex !== -1) {
+            const conversation = state.conversations[convIndex];
+            const userUnread = conversation.unreadCounts?.find(u => u.user !== conversation.lastMessage?.sender?._id);
+            if (userUnread && userUnread.count > 0) {
+              state.totalUnread -= userUnread.count;
+              userUnread.count = 0;
+            }
           }
         }
+      })
+      .addCase(markAsRead.rejected, (state, action) => {
+        console.warn('Failed to mark as read:', action.payload?.message || action.error?.message);
       });
     
     // Fetch available users
     builder
       .addCase(fetchAvailableUsers.fulfilled, (state, action) => {
-        state.availableUsers = action.payload;
+        state.availableUsers = action.payload || [];
+      })
+      .addCase(fetchAvailableUsers.rejected, (state, action) => {
+        console.warn('Failed to fetch available users:', action.payload?.message || action.error?.message);
+        state.availableUsers = [];
       });
     
     // Get conversation details
     builder
       .addCase(getConversationDetails.fulfilled, (state, action) => {
-        state.activeConversation = action.payload;
+        if (action.payload) {
+          state.activeConversation = action.payload;
+        }
+      })
+      .addCase(getConversationDetails.rejected, (state, action) => {
+        console.warn('Failed to get conversation details:', action.payload?.message || action.error?.message);
       });
   }
 });

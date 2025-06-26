@@ -3,9 +3,12 @@ import { useSelector } from 'react-redux';
 import { selectTotalUnread } from '../../store/common/messaging-slice';
 
 const NotificationBadge = ({ className = "", showZero = false }) => {
-  const unreadCount = useSelector(selectTotalUnread);
+  const unreadCount = useSelector(selectTotalUnread) || 0;
 
-  if (!showZero && unreadCount === 0) {
+  // Ensure unreadCount is a valid number
+  const validUnreadCount = typeof unreadCount === 'number' && !isNaN(unreadCount) ? unreadCount : 0;
+
+  if (!showZero && validUnreadCount === 0) {
     return null;
   }
 
@@ -16,9 +19,9 @@ const NotificationBadge = ({ className = "", showZero = false }) => {
         text-xs font-medium text-white bg-red-500 rounded-full 
         ${className}
       `}
-      aria-label={`${unreadCount} unread messages`}
+      aria-label={`${validUnreadCount} unread messages`}
     >
-      {unreadCount > 99 ? '99+' : unreadCount}
+      {validUnreadCount > 99 ? '99+' : validUnreadCount}
     </span>
   );
 };
