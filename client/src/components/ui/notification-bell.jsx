@@ -86,18 +86,43 @@ const NotificationBell = ({ className = "" }) => {
     pollForUpdates().then(result => {
       if (result === 'stop') return;
 
-      // Only start polling if initial fetch succeeded or wasn't an auth error
+      // Polling interval
       const interval = setInterval(async () => {
         const result = await pollForUpdates();
         if (result === 'stop') {
           clearInterval(interval);
         }
-      }, 10000); // Reduced to 10 seconds to be less aggressive
+      }, 10000); // Poll every 10 seconds
       
       return () => clearInterval(interval);
     });
 
   }, [dispatch, user]);
+
+  // Listen for real-time message events to immediately update notifications
+  useEffect(() => {
+    const handleNewMessage = (event) => {
+      console.log('🔔 NotificationBell: New message received, refreshing conversations');
+      dispatch(fetchConversations());
+    };
+
+    const handleStorageChange = (event) => {
+      // Listen for localStorage changes from other tabs
+      if (event.key === 'new_message_notification') {
+        console.log('🔔 NotificationBell: Cross-tab message notification, refreshing');
+        dispatch(fetchConversations());
+      }
+    };
+
+    // Listen for custom events
+    window.addEventListener('new_message', handleNewMessage);
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('new_message', handleNewMessage);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [dispatch]);
 
   // Convert conversations to notifications
   useEffect(() => {

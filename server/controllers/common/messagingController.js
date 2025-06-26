@@ -62,7 +62,20 @@ const getConversations = asyncHandler(async (req, res) => {
     });
 
     console.log('🔍 Conversations found:', conversations.length);
-    console.log('🔍 Raw conversations:', JSON.stringify(conversations, null, 2));
+    
+    if (conversations.length > 0) {
+      console.log('🔍 First conversation sample:', JSON.stringify({
+        id: conversations[0]._id,
+        title: conversations[0].title,
+        lastMessage: conversations[0].lastMessage,
+        unreadCounts: conversations[0].unreadCounts,
+        participants: conversations[0].participants?.map(p => ({
+          userId: p.user?._id || p.user,
+          userName: p.user?.userName,
+          role: p.user?.role || p.role
+        }))
+      }, null, 2));
+    }
 
     // Calculate total unread count
     const totalUnread = conversations.reduce((sum, conv) => {
@@ -273,6 +286,9 @@ const sendTextMessage = asyncHandler(async (req, res) => {
     { replyTo, mentions, priority }
   );
 
+  // Update conversation lastMessage
+  await conversation.updateLastMessage(message);
+
   // Populate the message
   const populatedMessage = await Message.findById(message._id)
     .populate('sender', 'userName email role profilePicture')
@@ -430,6 +446,9 @@ const sendMediaMessage = asyncHandler(async (req, res) => {
     attachments,
     { content, replyTo, mentions, priority }
   );
+
+  // Update conversation lastMessage  
+  await conversation.updateLastMessage(message);
 
   // Populate the message
   const populatedMessage = await Message.findById(message._id)

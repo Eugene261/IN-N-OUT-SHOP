@@ -246,6 +246,15 @@ const MessagingDashboard = () => {
       
       setNewMessage('');
       
+      // Trigger notification update events for real-time updates
+      window.dispatchEvent(new CustomEvent('new_message', { 
+        detail: { conversationId: activeConversation._id } 
+      }));
+      
+      // Cross-tab notification using localStorage
+      localStorage.setItem('new_message_notification', Date.now().toString());
+      setTimeout(() => localStorage.removeItem('new_message_notification'), 1000);
+      
       // Play send sound
       if (window.playMessageSentSound) {
         window.playMessageSentSound();
@@ -299,6 +308,13 @@ const MessagingDashboard = () => {
     setShowInlineAttachment(false);
     toast.success('Files sent successfully!');
     
+    // Trigger notification update events
+    window.dispatchEvent(new CustomEvent('new_message', { 
+      detail: { conversationId: activeConversation._id } 
+    }));
+    localStorage.setItem('new_message_notification', Date.now().toString());
+    setTimeout(() => localStorage.removeItem('new_message_notification'), 1000);
+    
     // Play send sound
     if (window.playMessageSentSound) {
       window.playMessageSentSound();
@@ -315,6 +331,13 @@ const MessagingDashboard = () => {
     }
     setShowInlineRecorder(false);
     toast.success('Voice message sent!');
+    
+    // Trigger notification update events
+    window.dispatchEvent(new CustomEvent('new_message', { 
+      detail: { conversationId: activeConversation._id } 
+    }));
+    localStorage.setItem('new_message_notification', Date.now().toString());
+    setTimeout(() => localStorage.removeItem('new_message_notification'), 1000);
     
     // Play send sound
     if (window.playMessageSentSound) {

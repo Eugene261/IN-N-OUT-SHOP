@@ -244,10 +244,11 @@ ConversationSchema.statics.findByParticipant = function(userId, options = {}) {
   
   return this.find(query)
     .populate('participants.user', 'userName email role profilePicture')
-    .populate('lastMessage.sender', 'userName email role')
-    .populate('lastMessage.messageId')
+    .populate('lastMessage.sender', 'userName email role profilePicture')
+    .populate('unreadCounts.user', 'userName email role')
     .sort({ 'lastMessage.sentAt': -1, updatedAt: -1 })
-    .limit(options.limit || 50);
+    .limit(options.limit || 50)
+    .lean(); // Use lean() for better performance and cleaner data structure
 };
 
 ConversationSchema.statics.createDirectConversation = async function(participants, title, options = {}) {
