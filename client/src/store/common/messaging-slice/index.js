@@ -24,12 +24,13 @@ export const fetchConversations = createAsyncThunk(
       return response.data.data;
     } catch (error) {
       console.error('❌ Conversations fetch error:', error);
-      // Return the full error object so we can check status and code
+      // Safely handle all types of errors - network, HTTP, etc.
       const errorData = {
-        message: error.response?.data?.message || 'Failed to fetch conversations',
-        code: error.response?.data?.code,
-        status: error.response?.status,
-        response: error.response
+        message: (error?.response?.data?.message) || (error?.message) || 'Failed to fetch conversations',
+        code: error?.response?.data?.code || null,
+        status: error?.response?.status || null,
+        response: error?.response || null,
+        name: error?.name || 'UnknownError'
       };
       return rejectWithValue(errorData);
     }
@@ -131,12 +132,13 @@ export const fetchAvailableUsers = createAsyncThunk(
       return response.data.data;
     } catch (error) {
       console.error('❌ Available users fetch error:', error);
-      // Return the full error object so we can check status and code
+      // Safely handle all types of errors - network, HTTP, etc.
       const errorData = {
-        message: error.response?.data?.message || 'Failed to fetch available users',
-        code: error.response?.data?.code,
-        status: error.response?.status,
-        response: error.response
+        message: (error?.response?.data?.message) || (error?.message) || 'Failed to fetch available users',
+        code: error?.response?.data?.code || null,
+        status: error?.response?.status || null,
+        response: error?.response || null,
+        name: error?.name || 'UnknownError'
       };
       return rejectWithValue(errorData);
     }
