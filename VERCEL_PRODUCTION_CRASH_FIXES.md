@@ -34,11 +34,27 @@ import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 **Status**: ✅ Fixed and committed
 
+### 3. **Messaging Routes Handler Error (SERVER CRASH)**
+**Problem**: The messaging routes had an "argument handler is required" error caused by incorrect import order and missing validation.
+
+**Impact**: Server crashes immediately on startup with `TypeError: argument handler is required` in production.
+
+**Fix**: 
+- Reordered imports in `messagingRoutes.js` to ensure `uploadFiles` middleware is imported correctly
+- Added validation to ensure all route handlers exist before defining routes
+- Added graceful error handling for feature flag checks
+
+**Files Updated**:
+- `server/routes/common/messagingRoutes.js` (import order and validation)
+
+**Status**: ✅ Fixed and committed
+
 ## Deployment Checklist
 
 ### Pre-Deployment
 - [x] Remove conflicting `react-query` dependency
 - [x] Fix environment variable usage in MessagingDashboard
+- [x] Fix messaging routes handler validation
 - [x] Test local build (`npm run build`)
 - [x] Verify no compilation errors
 - [x] Commit changes to git
@@ -85,8 +101,21 @@ If issues persist:
 3. Consider reverting to previous working commit
 4. Check if cache needs to be cleared
 
+## Important Notes
+
+### Feature Flags
+- Messaging system is **disabled by default** in production via feature flags
+- Environment variables `MESSAGING_SYSTEM_ENABLED=false` and `ENABLE_NEW_FEATURES=false` keep it disabled
+- This prevents messaging-related issues from affecting core functionality
+
+### Server Stability  
+- Added robust error handling for feature-flagged routes
+- Routes gracefully handle missing handlers instead of crashing
+- Server can start successfully even if individual features have issues
+
 ## Contact Information
 If you encounter issues after deployment, check:
 1. Vercel dashboard for deployment status
 2. Browser developer tools for console errors
-3. Network tab for failed API requests 
+3. Network tab for failed API requests
+4. Feature flag status via `/api/feature-flags/status` endpoint 
