@@ -1,3 +1,4 @@
+// CACHE BUST v3.0 - Critical error handling fixes for status access errors
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -73,14 +74,33 @@ const MessagingDashboard = () => {
     const initializeMessaging = async () => {
       try {
         setInitError(null);
-        await Promise.all([
-          dispatch(fetchConversations()).unwrap(),
-          dispatch(fetchAvailableUsers()).unwrap()
-        ]);
+        // SAFER ERROR HANDLING: Wrap individual dispatches to handle errors properly
+        const conversationsPromise = dispatch(fetchConversations()).unwrap().catch(err => {
+          console.error('Failed to fetch conversations:', err);
+          // Return empty result instead of throwing
+          return { conversations: [], totalUnread: 0 };
+        });
+        
+        const usersPromise = dispatch(fetchAvailableUsers()).unwrap().catch(err => {
+          console.error('Failed to fetch available users:', err);
+          // Return empty array instead of throwing
+          return [];
+        });
+        
+        await Promise.all([conversationsPromise, usersPromise]);
         setHasInitialized(true);
       } catch (err) {
         console.error('❌ Failed to initialize messaging:', err);
-        setInitError('Failed to load messaging data');
+        // SAFER ERROR MESSAGE EXTRACTION
+        let errorMessage = 'Failed to load messaging data';
+        if (err && typeof err === 'object') {
+          if (err.message) {
+            errorMessage = err.message;
+          } else if (err.response && err.response.data && err.response.data.message) {
+            errorMessage = err.response.data.message;
+          }
+        }
+        setInitError(errorMessage);
         setHasInitialized(true); // Still mark as initialized to show error state
       }
     };
@@ -98,7 +118,12 @@ const MessagingDashboard = () => {
           dispatch(markAsRead({ conversationId: activeConversation._id }));
         } catch (err) {
           console.error('Failed to load messages:', err);
-          toast.error('Failed to load messages');
+          // SAFER ERROR MESSAGE EXTRACTION
+          let errorMessage = 'Failed to load messages';
+          if (err && typeof err === 'object' && err.message) {
+            errorMessage = err.message;
+          }
+          toast.error(errorMessage);
         }
       };
       loadMessages();
@@ -124,7 +149,16 @@ const MessagingDashboard = () => {
       toast.success(`Started conversation with ${recipientName}`);
     } catch (error) {
       console.error('Failed to start conversation:', error);
-      toast.error(error?.message || 'Failed to start conversation');
+      // SAFER ERROR MESSAGE EXTRACTION
+      let errorMessage = 'Failed to start conversation';
+      if (error && typeof error === 'object') {
+        if (error.message) {
+          errorMessage = error.message;
+        } else if (error.response && error.response.data && error.response.data.message) {
+          errorMessage = error.response.data.message;
+        }
+      }
+      toast.error(errorMessage);
     }
   };
 
@@ -140,7 +174,16 @@ const MessagingDashboard = () => {
       setNewMessage('');
     } catch (error) {
       console.error('Failed to send message:', error);
-      toast.error(error?.message || 'Failed to send message');
+      // SAFER ERROR MESSAGE EXTRACTION
+      let errorMessage = 'Failed to send message';
+      if (error && typeof error === 'object') {
+        if (error.message) {
+          errorMessage = error.message;
+        } else if (error.response && error.response.data && error.response.data.message) {
+          errorMessage = error.response.data.message;
+        }
+      }
+      toast.error(errorMessage);
     }
   };
 
