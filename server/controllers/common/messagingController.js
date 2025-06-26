@@ -323,15 +323,7 @@ const sendMediaMessage = asyncHandler(async (req, res) => {
     conversationId,
     userId,
     filesCount: req.files?.length,
-    fileTypes: req.files?.map(f => f.mimetype),
-    fileNames: req.files?.map(f => f.originalname)
-  });
-
-  // Test Cloudinary configuration
-  console.log('🔍 Cloudinary config check:', {
-    cloud_name: cloudinary.config().cloud_name,
-    api_key: cloudinary.config().api_key ? '***set***' : 'missing',
-    api_secret: cloudinary.config().api_secret ? '***set***' : 'missing'
+    fileTypes: req.files?.map(f => f.mimetype)
   });
 
   // Verify conversation exists and user is participant
@@ -366,15 +358,12 @@ const sendMediaMessage = asyncHandler(async (req, res) => {
 
       // Create data URI for upload
       const dataURI = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
-      console.log('🔍 Created dataURI for upload, length:', dataURI.length);
       
       // Determine message type and upload options based on file mime type
       if (file.mimetype.startsWith('image/')) {
-        console.log('🔍 Uploading image using ImageUploadUtil...');
         messageType = 'image';
         uploadResult = await ImageUploadUtil(dataURI);
       } else if (file.mimetype.startsWith('audio/')) {
-        console.log('🔍 Uploading audio using cloudinary.uploader.upload...');
         messageType = 'audio';
         
         // Verify cloudinary.uploader exists
@@ -387,14 +376,12 @@ const sendMediaMessage = asyncHandler(async (req, res) => {
           resource_type: 'video' // Cloudinary uses 'video' for audio files
         });
       } else if (file.mimetype.startsWith('video/')) {
-        console.log('🔍 Uploading video using cloudinary.uploader.upload...');
         messageType = 'video';
         uploadResult = await cloudinary.uploader.upload(dataURI, {
           folder: 'messaging/videos',
           resource_type: 'video'
         });
       } else {
-        console.log('🔍 Uploading file using cloudinary.uploader.upload...');
         messageType = 'file';
         uploadResult = await cloudinary.uploader.upload(dataURI, {
           folder: 'messaging/files',
@@ -402,11 +389,7 @@ const sendMediaMessage = asyncHandler(async (req, res) => {
         });
       }
 
-      console.log('🔍 Upload successful:', {
-        public_id: uploadResult.public_id,
-        secure_url: uploadResult.secure_url,
-        resource_type: uploadResult.resource_type
-      });
+      console.log('✅ Upload successful:', uploadResult.public_id);
 
       const attachment = {
         fileName: uploadResult.public_id,
