@@ -44,7 +44,7 @@ const NotificationBell = ({ className = "" }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Initial fetch and real-time polling for updates
+  // Initial fetch and real-time polling for updates with smart error handling
   useEffect(() => {
     if (!user || (user.role !== 'admin' && user.role !== 'superAdmin')) {
       console.log('🔔 NotificationBell: User not valid for messaging', { user: user?.userName, role: user?.role });
@@ -59,17 +59,45 @@ const NotificationBell = ({ className = "" }) => {
     }
 
     let authErrorCount = 0;
+    let consecutiveNetworkErrors = 0;
+    let isComponentMounted = true;
+    let timeoutId = null;
     const MAX_AUTH_ERRORS = 3;
 
     const pollForUpdates = async () => {
+      if (!isComponentMounted) return 'stop';
+
       try {
         await dispatch(fetchConversations()).unwrap();
         authErrorCount = 0; // Reset on success
+        consecutiveNetworkErrors = 0; // Reset network errors on success
         console.log('🔔 NotificationBell: Successfully fetched conversations');
-      } catch (error) {
-        console.log('🔔 NotificationBell fetch failed:', error);
         
-        // If it's an auth error, increment counter
+        // Schedule next poll
+        scheduleNextPoll(10000); // Normal 10 second interval
+        return 'continue';
+      } catch (error) {
+        if (!isComponentMounted) return 'stop';
+
+        // Check for network errors
+        const isNetworkError = !navigator.onLine || 
+                              error?.message?.includes('Network Error') ||
+                              error?.code === 'ERR_NETWORK' ||
+                              error?.code === 'ERR_INTERNET_DISCONNECTED' ||
+                              error?.response?.status === 0 ||
+                              error?.message?.includes('ERR_ADDRESS_UNREACHABLE');
+
+        if (isNetworkError) {
+          consecutiveNetworkErrors++;
+          console.warn(`🌐 NotificationBell: Network error #${consecutiveNetworkErrors}`, error.message);
+          
+          // Exponential backoff for network errors: 10s, 20s, 40s, max 60s
+          const backoffDelay = Math.min(10000 * Math.pow(2, consecutiveNetworkErrors - 1), 60000);
+          scheduleNextPoll(backoffDelay);
+          return 'continue';
+        }
+        
+        // Handle auth errors
         if (error?.response?.status === 401 || error?.message?.includes('Unauthorized')) {
           authErrorCount++;
           console.log(`🔔 NotificationBell: Auth error #${authErrorCount}/${MAX_AUTH_ERRORS}`);
@@ -79,26 +107,36 @@ const NotificationBell = ({ className = "" }) => {
             console.log('🔔 NotificationBell: Too many auth errors, stopping polling');
             return 'stop';
           }
+        } else {
+          // Log other errors but continue polling
+          console.error('🔔 NotificationBell fetch failed:', error);
         }
+        
+        // Continue polling with normal interval for non-network errors
+        scheduleNextPoll(10000);
+        return 'continue';
       }
-      return 'continue';
+    };
+
+    const scheduleNextPoll = (delay) => {
+      if (!isComponentMounted) return;
+      
+      timeoutId = setTimeout(async () => {
+        if (isComponentMounted) {
+          await pollForUpdates();
+        }
+      }, delay);
     };
 
     // Initial fetch
-    pollForUpdates().then(result => {
-      if (result === 'stop') return;
+    pollForUpdates();
 
-      // Polling interval
-      const interval = setInterval(async () => {
-        const result = await pollForUpdates();
-        if (result === 'stop') {
-          clearInterval(interval);
-        }
-      }, 10000); // Poll every 10 seconds
-      
-      return () => clearInterval(interval);
-    });
-
+    return () => {
+      isComponentMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [dispatch, user]);
 
   // Listen for real-time message events to immediately update notifications

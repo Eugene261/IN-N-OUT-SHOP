@@ -174,11 +174,17 @@ const MessagingDashboard = () => {
     }
   }, [activeConversation, dispatch, hasInitialized]);
 
-  // Auto-refresh messages and conversations
+  // Auto-refresh messages and conversations with smart error handling
   useEffect(() => {
     if (!hasInitialized) return;
 
+    let consecutiveErrors = 0;
+    let isComponentMounted = true;
+    let timeoutId = null;
+
     const refreshData = async () => {
+      if (!isComponentMounted) return;
+
       try {
         // Refresh conversations to get latest messages and unread counts
         await dispatch(fetchConversations()).unwrap();
@@ -187,20 +193,53 @@ const MessagingDashboard = () => {
         if (activeConversation) {
           await dispatch(fetchMessages({ conversationId: activeConversation._id })).unwrap();
         }
+        
+        // Reset error count on success
+        consecutiveErrors = 0;
+        scheduleNextRefresh(5000); // Normal 5 second interval
       } catch (error) {
-        console.error('Auto-refresh failed:', error);
-        // Don't show toast for auto-refresh errors to avoid spam
+        if (!isComponentMounted) return;
+        
+        consecutiveErrors++;
+        
+        // Check if it's a network error
+        const isNetworkError = !navigator.onLine || 
+                              error?.message?.includes('Network Error') ||
+                              error?.code === 'ERR_NETWORK' ||
+                              error?.code === 'ERR_INTERNET_DISCONNECTED' ||
+                              error?.response?.status === 0 ||
+                              error?.message?.includes('ERR_ADDRESS_UNREACHABLE');
+        
+        if (isNetworkError) {
+          console.warn('🌐 Network connection issue during auto-refresh');
+        } else {
+          console.error('❌ Auto-refresh failed:', error);
+        }
+        
+        // Exponential backoff: 5s, 10s, 20s, 30s max
+        const backoffDelay = Math.min(5000 * Math.pow(2, consecutiveErrors - 1), 30000);
+        scheduleNextRefresh(backoffDelay);
       }
+    };
+
+    const scheduleNextRefresh = (delay) => {
+      if (!isComponentMounted) return;
+      
+      timeoutId = setTimeout(() => {
+        if (isComponentMounted) {
+          refreshData();
+        }
+      }, delay);
     };
 
     // Initial refresh
     refreshData();
 
-    // Set up polling interval for real-time updates
-    const interval = setInterval(refreshData, 5000); // Poll every 5 seconds
-
     return () => {
-      clearInterval(interval);
+      isComponentMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
   }, [dispatch, hasInitialized, activeConversation]);
 

@@ -135,33 +135,68 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
 
     try {
       setIsLoading(true);
+      setHasError(false);
       
-      // For mobile, we need to load the audio first
+      const audio = audioRef.current;
+      
+      // Mobile-specific initialization
       if (isMobile) {
+        // Reset audio source to ensure fresh load
+        const currentSrc = audio.src;
+        audio.src = '';
+        audio.load();
+        
+        // Add cache-busting parameter for mobile
+        const url = new URL(currentSrc);
+        url.searchParams.set('t', Date.now().toString());
+        audio.src = url.toString();
+        
+        // Use a more robust loading approach for mobile
         await new Promise((resolve, reject) => {
-          const audio = audioRef.current;
           const timeout = setTimeout(() => {
-            reject(new Error('Audio loading timeout'));
-          }, 10000); // 10 second timeout
+            reject(new Error('Audio loading timeout - check your connection'));
+          }, 15000); // Increased timeout for mobile
 
-          const onLoad = () => {
+          const cleanup = () => {
             clearTimeout(timeout);
-            audio.removeEventListener('canplay', onLoad);
+            audio.removeEventListener('canplay', onCanPlay);
+            audio.removeEventListener('loadeddata', onLoadedData);
             audio.removeEventListener('error', onError);
+            audio.removeEventListener('abort', onAbort);
+          };
+
+          const onCanPlay = () => {
+            cleanup();
+            resolve();
+          };
+
+          const onLoadedData = () => {
+            cleanup();
             resolve();
           };
 
           const onError = (e) => {
-            clearTimeout(timeout);
-            audio.removeEventListener('canplay', onLoad);
-            audio.removeEventListener('error', onError);
-            reject(e);
+            cleanup();
+            console.error('Mobile audio load error:', e);
+            reject(new Error(`Audio load failed: ${e.target?.error?.message || 'Unknown error'}`));
           };
 
-          audio.addEventListener('canplay', onLoad);
+          const onAbort = () => {
+            cleanup();
+            reject(new Error('Audio loading was aborted'));
+          };
+
+          audio.addEventListener('canplay', onCanPlay);
+          audio.addEventListener('loadeddata', onLoadedData);
           audio.addEventListener('error', onError);
+          audio.addEventListener('abort', onAbort);
+          
+          // Start loading
           audio.load();
         });
+      } else {
+        // Desktop initialization - simpler approach
+        audio.load();
       }
 
       setIsInitialized(true);
@@ -171,7 +206,17 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
       console.error('Audio initialization failed:', error);
       setIsLoading(false);
       setHasError(true);
-      setErrorMessage('Failed to load audio');
+      
+      // More specific error messages for mobile
+      if (error.message.includes('timeout')) {
+        setErrorMessage('Audio loading timeout. Please check your connection and try again.');
+      } else if (error.message.includes('CORS')) {
+        setErrorMessage('Audio blocked by security policy. Please refresh and try again.');
+      } else if (error.message.includes('Network')) {
+        setErrorMessage('Network error loading audio. Check your connection.');
+      } else {
+        setErrorMessage(error.message || 'Failed to load audio');
+      }
       return false;
     }
   };
@@ -289,15 +334,18 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
       <audio 
         ref={audioRef} 
         preload={isMobile ? "none" : "metadata"}
-        crossOrigin="anonymous"
+        crossOrigin={audioUrl?.includes('cloudinary') || audioUrl?.includes('amazonaws') ? "anonymous" : undefined}
         playsInline
         controls={false}
         muted={false}
+        controlsList="nodownload"
+        onContextMenu={(e) => isMobile && e.preventDefault()}
       >
-        <source src={audioUrl} type="audio/webm" />
+        <source src={audioUrl} type="audio/webm;codecs=opus" />
+        <source src={audioUrl} type="audio/mp3" />
         <source src={audioUrl} type="audio/mpeg" />
         <source src={audioUrl} type="audio/wav" />
-        <source src={audioUrl} type="audio/ogg" />
+        <source src={audioUrl} type="audio/ogg;codecs=vorbis" />
         Your browser does not support the audio element.
       </audio>
 
