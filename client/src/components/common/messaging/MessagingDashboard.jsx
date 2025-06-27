@@ -1073,6 +1073,7 @@ const MessagingDashboard = () => {
                     {/* Inline Components - Above Footer */}
                     {showInlineAttachment && (
                       <div className="flex-shrink-0 border-t border-gray-200 bg-white shadow-lg">
+                        {console.log('🔍 Rendering InlineAttachmentMenu')}
                         <InlineAttachmentMenu
                           conversationId={activeConversation._id}
                           onClose={() => setShowInlineAttachment(false)}
@@ -1083,6 +1084,7 @@ const MessagingDashboard = () => {
 
                     {showInlineRecorder && (
                       <div className="flex-shrink-0 border-t border-gray-200 bg-white shadow-lg">
+                        {console.log('🔍 Rendering InlineVoiceRecorder')}
                         <InlineVoiceRecorder
                           conversationId={activeConversation._id}
                           onClose={() => setShowInlineRecorder(false)}
@@ -1091,12 +1093,24 @@ const MessagingDashboard = () => {
                       </div>
                     )}
 
+                    {/* Debug Info - Remove this later */}
+                    {(showInlineAttachment || showInlineRecorder) && (
+                      <div className="flex-shrink-0 bg-yellow-100 p-2 text-xs text-yellow-800">
+                        Debug: showInlineAttachment={showInlineAttachment.toString()}, showInlineRecorder={showInlineRecorder.toString()}
+                      </div>
+                    )}
+
                     {/* Message Input Footer - Always Visible */}
                     <div className="flex-shrink-0 bg-white p-3 sm:p-4 lg:p-6 border-t border-gray-200 safe-area-inset-bottom">
                       <div className="flex items-end space-x-2 sm:space-x-3">
                         {/* File Upload Button */}
                         <button 
-                          onClick={() => setShowInlineAttachment(!showInlineAttachment)}
+                          onClick={() => {
+                            console.log('File attachment button clicked, current state:', showInlineAttachment);
+                            // Close recorder if open, then toggle attachment
+                            if (showInlineRecorder) setShowInlineRecorder(false);
+                            setShowInlineAttachment(!showInlineAttachment);
+                          }}
                           className={`flex-shrink-0 p-3 rounded-xl transition-colors touch-manipulation ${
                             showInlineAttachment 
                               ? 'bg-blue-100 text-blue-600' 
@@ -1109,7 +1123,12 @@ const MessagingDashboard = () => {
                         
                         {/* Voice Recording Button */}
                         <button 
-                          onClick={() => setShowInlineRecorder(!showInlineRecorder)}
+                          onClick={() => {
+                            console.log('Voice recorder button clicked, current state:', showInlineRecorder);
+                            // Close attachment if open, then toggle recorder
+                            if (showInlineAttachment) setShowInlineAttachment(false);
+                            setShowInlineRecorder(!showInlineRecorder);
+                          }}
                           className={`flex-shrink-0 p-3 rounded-xl transition-colors touch-manipulation ${
                             showInlineRecorder 
                               ? 'bg-red-100 text-red-600' 
@@ -1201,7 +1220,7 @@ const MessagingDashboard = () => {
   };
 
   return (
-    <div className="-m-4 sm:-m-6 lg:-m-8 h-[calc(100vh-128px)] bg-gray-50 flex overflow-hidden border border-gray-200 rounded-lg shadow-sm">
+    <div className="-m-4 sm:-m-6 lg:-m-8 h-[calc(100vh-120px)] bg-gray-50 flex overflow-hidden border border-gray-200 rounded-lg shadow-sm">
       {/* Sound Notifications */}
       <SoundNotifications />
       
