@@ -94,8 +94,7 @@ class EmailService {
       throw new Error('Email service not configured. Please check your environment variables.');
     }
 
-    // Enhanced anti-spam and deliverability headers
-    // Handle EMAIL_FROM that might already include display name
+    // Clean, professional headers that don't trigger spam filters
     const fromAddress = process.env.EMAIL_FROM || process.env.EMAIL_USER;
     const cleanFromAddress = fromAddress.includes('<') ? fromAddress.match(/<(.+)>/)[1] : fromAddress;
     
@@ -103,111 +102,39 @@ class EmailService {
       from: `"IN-N-OUT Store" <${cleanFromAddress}>`,
       replyTo: process.env.REPLY_TO_EMAIL || cleanFromAddress,
       headers: {
-        // Mailer identification
-        'X-Mailer': 'IN-N-OUT Store Email Service v2.0',
-        'X-Entity-ID': 'IN-N-OUT-Store-Official',
-        'X-SenderScore': 'Trusted-Merchant',
-        
-        // Email priority and importance
+        // Essential headers only
+        'X-Mailer': 'IN-N-OUT Store',
         'X-Priority': '3',
-        'X-MSMail-Priority': 'Normal',
-        'Importance': 'Normal',
-        
-        // Subscription management (required for better deliverability)
         'List-Unsubscribe': `<${process.env.CLIENT_URL}/unsubscribe>`,
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-        'List-ID': '<in-n-out-store.in-nd-out.com>',
         
-        // Anti-spam and classification headers
-        'X-Auto-Response-Suppress': 'OOF, AutoReply',
-        'X-SES-RECEIPT': 'AEUBSRUaI2xvY2FsaG9zdA==',
-        'X-Classification': 'TRANSACTIONAL',
-        'X-Email-Type': 'LEGITIMATE-BUSINESS',
-        
-        // Authentication and security headers
-        'Authentication-Results': 'in-nd-out.com; spf=pass; dkim=pass; dmarc=pass',
-        'X-Spam-Status': 'No, score=-2.6',
-        'X-Spam-Level': '',
-        'X-Spam-Flag': 'NO',
-        
-        // Content classification
+        // Professional business headers
+        'Organization': 'IN-N-OUT Store',
+        'X-Auto-Response-Suppress': 'All',
         'Content-Language': 'en-US',
-        'X-Content-Type-Message-Body': 'html',
         
-        // Delivery confirmation
-        'Return-Receipt-To': process.env.EMAIL_FROM || process.env.EMAIL_USER,
-        'Disposition-Notification-To': process.env.EMAIL_FROM || process.env.EMAIL_USER,
-        
-        // Anti-phishing headers
-        'X-Originating-IP': '[127.0.0.1]',
-        'X-Source-IP': '[127.0.0.1]',
-        'X-Source-Args': '[127.0.0.1]:ESMTP',
-        
-        // Message categorization
-        'X-MS-Exchange-Organization-PRD': 'IN-N-OUT.store',
-        'X-MS-Exchange-Organization-MessageDirectionality': 'Outbound',
-        
-        // Bulk email classification (mark as transactional, not bulk)
-        'Precedence': 'list',
-        'X-Auto-Generated': 'false',
-        'X-Bulk': 'false',
-        
-        // Enhanced message ID for tracking
-        'Message-ID': `<${Date.now()}-${Math.random().toString(36).substr(2, 9)}-innout@${process.env.EMAIL_DOMAIN || 'in-nd-out.com'}>`,
-        
-        // Thread and conversation management
-        'X-Thread-Topic': options.subject || 'IN-N-OUT Store Notification',
-        'Thread-Topic': options.subject || 'IN-N-OUT Store Notification',
-        
-        // Feedback loop headers
-        'X-Report-Abuse-To': `abuse@${process.env.EMAIL_DOMAIN || 'in-nd-out.com'}`,
-        'X-Complaints-To': `complaints@${process.env.EMAIL_DOMAIN || 'in-nd-out.com'}`,
-        
-        // Marketing compliance
-        'X-MC-User': 'legitimate-business',
-        'X-MC-Tags': 'transactional,ecommerce,order-confirmation,welcome',
-        
-        // Additional deliverability headers
-        'Organization': 'IN-N-OUT Store - Premium E-commerce',
-        'X-Company': 'IN-N-OUT Store',
-        'X-Business-Type': 'E-commerce',
-        'X-Industry': 'Retail',
-        
-        // GDPR and compliance headers
-        'X-Privacy-Policy': `${process.env.CLIENT_URL}/privacy`,
-        'X-Terms-Of-Service': `${process.env.CLIENT_URL}/terms`,
-        'X-Unsubscribe-Policy': `${process.env.CLIENT_URL}/unsubscribe-policy`
+        // Simple authentication reference
+        'Message-ID': `<${Date.now()}-${Math.random().toString(36).substr(2, 9)}-innout@${process.env.EMAIL_DOMAIN || 'in-nd-out.com'}>`
       }
     };
 
     const mailOptions = { ...defaultOptions, ...options };
 
-    // Enhance sender information based on email type
+    // Enhanced sender information based on email type
     if (options.emailType) {
       const senderConfig = this.getSenderConfig(options.emailType);
       mailOptions.from = senderConfig.from;
       mailOptions.replyTo = senderConfig.replyTo;
     }
 
-    // Add text version for better deliverability (crucial for spam prevention)
+    // Add text version for better deliverability
     if (mailOptions.html && !mailOptions.text) {
       mailOptions.text = this.htmlToText(mailOptions.html);
-    }
-
-    // Optimize subject line to avoid spam triggers
-    if (mailOptions.subject) {
-      mailOptions.subject = this.optimizeSubjectLine(mailOptions.subject);
-    }
-
-    // Add tracking pixel for engagement (helps with sender reputation)
-    if (mailOptions.html) {
-      mailOptions.html = this.addTrackingPixel(mailOptions.html);
     }
 
     try {
       const info = await this.transporter.sendMail(mailOptions);
       console.log('✅ Email sent successfully:', info.messageId);
-      console.log('📧 Anti-spam headers applied for better deliverability');
       return info;
     } catch (error) {
       console.error('❌ Failed to send email:', error);
@@ -368,18 +295,8 @@ class EmailService {
     return senderConfigs[emailType] || senderConfigs['default'];
   }
 
-  // Modern email template generator with improved design and spam prevention
-  getModernEmailTemplate({ title, headerColor, icon, content }) {
-    // Use the red IN-N-OUT logo for emails
-    const logoSvg = `
-      <svg width="40" height="40" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <rect width="100" height="100" rx="8" fill="#DC2626"/>
-        <text x="50" y="35" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-weight="bold" font-size="18">IN</text>
-        <text x="50" y="55" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-weight="bold" font-size="12">N</text>
-        <text x="50" y="75" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-weight="bold" font-size="18">OUT</text>
-      </svg>
-    `;
-    
+  // Modern, professional email template inspired by industry best practices
+  getModernEmailTemplate({ title, headerColor = '#DC2626', content, compact = false }) {
     return `
       <!DOCTYPE html>
       <html lang="en">
@@ -387,228 +304,144 @@ class EmailService {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="format-detection" content="telephone=no">
-        <meta name="format-detection" content="date=no">
-        <meta name="format-detection" content="address=no">
-        <meta name="format-detection" content="email=no">
         <title>${title}</title>
-        <!--[if mso]>
-        <noscript>
-          <xml>
-            <o:OfficeDocumentSettings>
-              <o:PixelsPerInch>96</o:PixelsPerInch>
-            </o:OfficeDocumentSettings>
-          </xml>
-        </noscript>
-        <![endif]-->
         <style>
-          /* Reset and base styles */
+          /* Reset and base */
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; 
             line-height: 1.6; 
-            color: #333333; 
+            color: #333; 
             background: #f8f9fa; 
             margin: 0; 
-            padding: 0;
-            -webkit-text-size-adjust: 100%;
-            -ms-text-size-adjust: 100%;
-          }
-          
-          /* Container styles */
-          .email-container { 
-            max-width: 600px; 
-            margin: 20px auto; 
-            background: #ffffff; 
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            border: 1px solid #e9ecef;
-          }
-          
-          /* Header styles */
-          .header { 
-            background: linear-gradient(135deg, ${headerColor} 0%, ${headerColor}dd 100%); 
-            color: #ffffff; 
-            padding: 40px 30px; 
-            text-align: center; 
-            position: relative;
-            overflow: hidden;
-          }
-          .header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            animation: shimmer 3s ease-in-out infinite;
-          }
-          @keyframes shimmer {
-            0%, 100% { transform: translateX(-100%) translateY(-100%) rotate(0deg); }
-            50% { transform: translateX(0%) translateY(0%) rotate(180deg); }
-          }
-          
-          .logo-container {
-            margin-bottom: 20px;
-            position: relative;
-            z-index: 2;
-          }
-          .logo {
-            width: 60px;
-            height: 60px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 15px;
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255,255,255,0.3);
-          }
-          .logo svg {
-            width: 36px;
-            height: 36px;
-          }
-          .logo .icon {
-            font-size: 28px;
-            line-height: 1;
-          }
-          
-          .header h1 { 
-            font-size: 28px; 
-            margin-bottom: 8px; 
-            font-weight: 600; 
-            position: relative;
-            z-index: 2;
-          }
-          .header .subtitle { 
-            font-size: 16px; 
-            opacity: 0.9; 
-            font-weight: 400;
-            position: relative;
-            z-index: 2;
-          }
-          
-          /* Content styles */
-          .content { 
-            padding: 40px 30px; 
-            background: #ffffff;
-          }
-          
-          /* Message preview styles */
-          .message-preview {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-left: 4px solid #3b82f6;
-            border-radius: 8px;
             padding: 20px;
-            margin: 20px 0;
-          }
-          .message-header {
-            font-size: 14px;
-            color: #6c757d;
-            margin-bottom: 10px;
-            font-weight: 500;
-          }
-          .message-content {
-            font-size: 16px;
-            color: #495057;
-            font-style: italic;
-            line-height: 1.5;
-            padding: 10px 0;
           }
           
-          /* Component styles */
-          .notification-header h2 {
-            color: #2c3e50;
-            font-size: 24px;
-            margin-bottom: 16px;
-            font-weight: 600;
-          }
-          .notification-header p {
-            color: #5a6c7d;
-            font-size: 16px;
-            margin-bottom: 12px;
-            line-height: 1.5;
+          /* Container */
+          .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: #ffffff; 
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
           }
           
-          .button { 
-            display: inline-block; 
+          /* Header */
+          .header { 
             background: ${headerColor}; 
-            color: #ffffff; 
-            padding: 14px 28px; 
-            text-decoration: none; 
-            border-radius: 8px; 
-            font-weight: 600; 
+            color: white; 
+            padding: 32px 24px;
+            text-align: center;
+          }
+          .header .logo {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+          }
+          .header .title {
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0;
+            line-height: 1.2;
+          }
+          .header .subtitle {
             font-size: 16px;
-            margin: 8px 4px;
-            transition: all 0.3s ease;
-            border: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            cursor: pointer;
+            opacity: 0.9;
+            margin-top: 8px;
+          }
+          
+          /* Content */
+          .content { 
+            padding: 32px 24px;
+          }
+          .content h2 {
+            color: #1a1a1a;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            line-height: 1.3;
+          }
+          .content h3 {
+            color: #333;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 24px 0 12px 0;
+          }
+          .content p {
+            color: #555;
+            font-size: 16px;
+            margin-bottom: 16px;
+            line-height: 1.6;
+          }
+          .content ul {
+            margin: 16px 0;
+            padding-left: 20px;
+          }
+          .content li {
+            color: #555;
+            margin-bottom: 8px;
+          }
+          
+          /* Components */
+          .button {
+            display: inline-block;
+            background: ${headerColor};
+            color: white !important;
+            padding: 14px 28px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 16px 8px 16px 0;
+            transition: all 0.2s ease;
           }
           .button:hover {
             background: ${headerColor}dd;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
             text-decoration: none;
-            color: #ffffff;
+            color: white !important;
           }
           .button.secondary {
             background: #6c757d;
-            color: #ffffff;
-          }
-          .button.secondary:hover {
-            background: #5a6268;
-            color: #ffffff;
-            text-decoration: none;
+            color: white !important;
           }
           
-          .action-buttons {
-            text-align: center;
-            margin: 30px 0;
-          }
-          
-          .message-box {
+          .info-box {
             background: #f8f9fa;
             border: 1px solid #e9ecef;
-            border-radius: 8px;
+            border-radius: 6px;
             padding: 20px;
             margin: 20px 0;
             border-left: 4px solid ${headerColor};
           }
+          .info-box h3 {
+            margin-top: 0;
+            color: ${headerColor};
+          }
           
-          .action-required {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 8px;
+          .highlight-box {
+            background: ${headerColor}10;
+            border: 1px solid ${headerColor}30;
+            border-radius: 6px;
             padding: 20px;
             margin: 20px 0;
-            border-left: 4px solid #ffc107;
-          }
-          .action-required h3 {
-            color: #856404;
-            margin-bottom: 10px;
-          }
-          .action-required p {
-            color: #856404;
-            margin: 0;
+            text-align: center;
           }
           
-          .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          .stats-row {
+            display: flex;
             gap: 16px;
             margin: 24px 0;
+            flex-wrap: wrap;
           }
-          .stat-card {
+          .stat-item {
             background: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
+            border-radius: 6px;
+            padding: 16px;
             text-align: center;
-            border: 1px solid #e9ecef;
+            flex: 1;
+            min-width: 120px;
           }
           .stat-number {
             font-size: 24px;
@@ -618,105 +451,29 @@ class EmailService {
           }
           .stat-label {
             font-size: 14px;
-            color: #6c757d;
-            font-weight: 500;
+            color: #666;
           }
           
-          .order-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 16px 0;
-          }
-          .order-table td {
-            padding: 12px 8px;
-            border-bottom: 1px solid #e9ecef;
-            vertical-align: top;
-          }
-          .order-table td:first-child {
-            font-weight: 600;
-            color: #495057;
-            width: 40%;
-          }
-          .order-table td:last-child {
-            color: #212529;
+          .divider {
+            height: 1px;
+            background: #e9ecef;
+            margin: 32px 0;
           }
           
-          .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            color: #ffffff;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-          }
-          
-          .next-steps ul {
-            list-style: none;
-            padding: 0;
-          }
-          .next-steps li {
-            padding: 8px 0;
-            border-bottom: 1px solid #f1f3f4;
-            color: #5f6368;
-          }
-          .next-steps li:last-child {
-            border-bottom: none;
-          }
-          
-          .product-preview {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin: 16px 0;
-            padding: 16px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
-          }
-          .product-image {
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 8px;
-            border: 1px solid #dee2e6;
-          }
-          .product-info h4 {
-            margin: 0 0 8px 0;
-            color: #212529;
-            font-size: 16px;
-            font-weight: 600;
-          }
-          .product-info p {
-            margin: 4px 0;
-            color: #6c757d;
-            font-size: 14px;
-          }
-          .product-price {
-            font-weight: 600;
-            color: ${headerColor} !important;
-            font-size: 16px !important;
-          }
-          
-          /* Footer styles */
+          /* Footer */
           .footer { 
             background: #f8f9fa; 
-            padding: 30px 20px; 
+            padding: 24px; 
             text-align: center; 
-            color: #6c757d; 
-            font-size: 14px; 
-            border-top: 1px solid #dee2e6; 
-          }
-          .footer strong {
-            color: #495057;
+            color: #666; 
+            font-size: 14px;
+            border-top: 1px solid #e9ecef;
           }
           .footer p {
             margin: 8px 0;
-            line-height: 1.5;
           }
           .footer a {
-            color: #6c757d;
+            color: #666;
             text-decoration: none;
             margin: 0 8px;
           }
@@ -725,89 +482,43 @@ class EmailService {
             text-decoration: underline;
           }
           
-          /* Responsive design */
+          /* Mobile responsive */
           @media only screen and (max-width: 600px) {
-            .email-container {
-              margin: 10px;
-              border-radius: 8px;
+            body { padding: 10px; }
+            .container { border-radius: 4px; }
+            .header, .content { padding: 24px 16px; }
+            .header .title { font-size: 24px; }
+            .content h2 { font-size: 20px; }
+            .button { 
+              display: block; 
+              margin: 12px 0; 
+              text-align: center; 
             }
-            .header, .content {
-              padding: 30px 20px;
-            }
-            .header h1 {
-              font-size: 24px;
-            }
-            .button {
-              display: block;
-              margin: 12px 0;
-              text-align: center;
-            }
-            .stats-grid {
-              grid-template-columns: 1fr;
-            }
-            .product-preview {
+            .stats-row {
               flex-direction: column;
-              text-align: center;
-            }
-          }
-          
-          /* Dark mode support */
-          @media (prefers-color-scheme: dark) {
-            .email-container {
-              background: #1a1a1a;
-              border-color: #333;
-            }
-            .content {
-              background: #1a1a1a;
-              color: #e0e0e0;
-            }
-            .notification-header h2 {
-              color: #ffffff;
-            }
-            .notification-header p {
-              color: #b0b0b0;
-            }
-            .message-box {
-              background: #2a2a2a;
-              border-color: #444;
-              color: #e0e0e0;
-            }
-            .order-table td {
-              border-color: #444;
-              color: #e0e0e0;
-            }
-            .order-table td:first-child {
-              color: #b0b0b0;
             }
           }
         </style>
       </head>
       <body>
-        <div class="email-container">
+        <div class="container">
           <div class="header">
-            <div class="logo-container">
-              <div class="logo">
-                ${logoSvg}
-              </div>
-            </div>
-            <h1>${title}</h1>
-            <p class="subtitle">IN-N-OUT Store - Premium Shopping Experience</p>
+            <div class="logo">IN-N-OUT</div>
+            <h1 class="title">${title}</h1>
+            <p class="subtitle">Premium Shopping Experience</p>
           </div>
           <div class="content">
             ${content}
           </div>
           <div class="footer">
             <p><strong>IN-N-OUT Store</strong></p>
-            <p>Your gateway to premium products with a seamless shopping experience</p>
-            <p>© ${new Date().getFullYear()} IN-N-OUT Store. All rights reserved.</p>
-            <p style="margin-top: 20px;">
-              <a href="${process.env.CLIENT_URL}" style="color: #6c757d; text-decoration: none;">Visit Store</a> |
-              <a href="${process.env.CLIENT_URL}/support" style="color: #6c757d; text-decoration: none;">Support</a> |
-              <a href="${process.env.CLIENT_URL}/unsubscribe" style="color: #6c757d; text-decoration: none;">Unsubscribe</a>
+            <p>
+              <a href="${process.env.CLIENT_URL}">Visit Store</a> •
+              <a href="${process.env.CLIENT_URL}/support">Support</a> •
+              <a href="${process.env.CLIENT_URL}/unsubscribe">Unsubscribe</a>
             </p>
-            <p style="margin-top: 16px; font-size: 12px; color: #868e96;">
-              This email was sent to you because you have an account with IN-N-OUT Store.<br>
-              If you no longer wish to receive these emails, you can <a href="${process.env.CLIENT_URL}/unsubscribe" style="color: #868e96;">unsubscribe here</a>.
+            <p style="margin-top: 16px; font-size: 12px; color: #888;">
+              © ${new Date().getFullYear()} IN-N-OUT Store. All rights reserved.
             </p>
           </div>
         </div>
@@ -818,97 +529,71 @@ class EmailService {
 
   async sendPasswordResetEmail(email, resetUrl, userName = '') {
     const htmlContent = this.getModernEmailTemplate({
-      title: 'Password Reset Request',
-      headerColor: '#007bff',
-      icon: '🔐',
+      title: 'Reset Your Password',
       content: `
-        <div class="notification-header">
-          <h2>Password Reset Request</h2>
-          <p>Hello ${userName ? userName : ''},</p>
-          <p>We received a request to reset your password for your IN-N-OUT Store account.</p>
+        <h2>Password Reset Request</h2>
+        <p>Hi ${userName ? userName : 'there'},</p>
+        <p>You requested to reset your password for your IN-N-OUT Store account.</p>
+        
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${resetUrl}" class="button">Reset Password</a>
         </div>
         
-        <div class="action-buttons" style="text-align: center;">
-          <a href="${resetUrl}" class="button">Reset My Password</a>
+        <div class="info-box">
+          <p><strong>Security Notice:</strong> This link expires in 1 hour. If you didn't request this, please ignore this email.</p>
         </div>
         
-        <div class="message-box">
-          <p><strong>Or copy and paste this link into your browser:</strong></p>
-          <p style="word-break: break-all; font-family: monospace;">${resetUrl}</p>
-        </div>
-        
-        <div class="action-required">
-          <h3>⚠️ Important Security Notice</h3>
-          <p>This link will expire in 1 hour for security reasons. If you didn't request this password reset, please ignore this email.</p>
-        </div>
+        <p style="font-size: 14px; color: #666; margin-top: 24px;">
+          If the button doesn't work, copy and paste this link: <br>
+          <span style="font-family: monospace; background: #f5f5f5; padding: 4px; border-radius: 4px; word-break: break-all;">${resetUrl}</span>
+        </p>
       `
     });
 
-    const senderConfig = this.getSenderConfig('password_reset');
     return await this.sendEmail({
       to: email,
-      subject: 'Security: Password Reset for Your Account',
+      subject: 'Reset Your Password - IN-N-OUT Store',
       html: htmlContent,
-      ...senderConfig
+      emailType: 'password_reset'
     });
   }
 
-  async sendWelcomeEmail(email, userName) {
+  async sendWelcomeEmail(email, userName, userRole = 'user') {
     const htmlContent = this.getModernEmailTemplate({
-      title: 'Welcome to IN-N-OUT Store',
-      headerColor: '#28a745',
-      icon: '🎉',
+      title: `Welcome to IN-N-OUT Store`,
       content: `
-        <div class="notification-header">
-          <h2>Welcome ${userName}!</h2>
-          <p>Thank you for joining IN-N-OUT Store! Your account has been successfully created.</p>
-          <p><em>I'm Eugene, and I personally welcome you to our store family!</em></p>
+        <h2>Welcome aboard, ${userName}!</h2>
+        <p>Thank you for joining IN-N-OUT Store. We're excited to have you as part of our community.</p>
+        
+        <div class="highlight-box">
+          <h3>What's Next?</h3>
+          <p>Start exploring our premium collection and enjoy a seamless shopping experience.</p>
         </div>
         
-        <div class="next-steps">
-          <h3>🚀 Get Started</h3>
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${process.env.CLIENT_URL}/shop" class="button">Start Shopping</a>
+          <a href="${process.env.CLIENT_URL}/account" class="button secondary">Complete Profile</a>
+        </div>
+        
+        <div class="info-box">
+          <h3>Getting Started</h3>
           <ul>
-            <li>🛍️ Browse our premium product catalog</li>
-            <li>❤️ Save items to your wishlist</li>
-            <li>🛒 Enjoy our seamless checkout experience</li>
-            <li>📦 Track your orders in real-time</li>
-            <li>⭐ Leave reviews and earn rewards</li>
+            <li>Browse our latest products and deals</li>
+            <li>Add items to your wishlist for later</li>
+            <li>Set up your shipping preferences</li>
+            <li>Subscribe to our newsletter for exclusive offers</li>
           </ul>
         </div>
         
-        <div class="message-box">
-          <h3>💬 A Personal Note</h3>
-          <p>If you have any questions or need assistance, don't hesitate to reach out. I'm here to ensure you have the best shopping experience possible!</p>
-          <p style="margin-top: 15px;"><strong>- Eugene, Founder</strong></p>
-        </div>
-        
-        <div class="action-buttons" style="text-align: center;">
-          <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/shop/listing" 
-             class="button" 
-             target="_blank" 
-             rel="noopener noreferrer"
-             style="display: inline-block; background: #28a745; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 8px;">
-            Start Shopping Now
-          </a>
-          <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/support" 
-             class="button secondary" 
-             target="_blank" 
-             rel="noopener noreferrer"
-             style="display: inline-block; background: #6c757d; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 8px;">
-            Contact Support
-          </a>
-        </div>
+        <p>If you have any questions, our support team is here to help.</p>
       `
     });
 
-    // Send welcome email using enhanced sender configuration
-    const senderConfig = this.getSenderConfig('welcome');
     return await this.sendEmail({
       to: email,
-      subject: 'Welcome to IN-N-OUT Store - Account Created Successfully',
+      subject: `Welcome to IN-N-OUT Store, ${userName}!`,
       html: htmlContent,
-      emailType: 'welcome',
-      ...senderConfig
+      emailType: 'welcome'
     });
   }
 
@@ -1711,72 +1396,39 @@ class EmailService {
   // NEW: Send message notification email
   async sendMessageNotificationEmail(recipientEmail, recipientName, senderName, senderRole, messageContent, conversationId) {
     try {
-      // Truncate message content for email preview
-      const truncatedContent = messageContent.length > 100 
-        ? messageContent.substring(0, 100) + '...' 
-        : messageContent;
+      const messageUrl = `${process.env.CLIENT_URL}/${senderRole === 'admin' ? 'super-admin' : 'admin'}/messaging`;
+      const senderTitle = senderRole === 'admin' ? 'Admin' : 'Super Admin';
+      const truncatedContent = messageContent.length > 100 ? messageContent.substring(0, 100) + '...' : messageContent;
 
-      const senderTitle = senderRole === 'superAdmin' ? 'Super Admin' : 'Admin';
-      const clientUrl = process.env.CLIENT_URL || 'https://www.in-nd-out.com';
-      const messageUrl = `${clientUrl}/${senderRole === 'superAdmin' ? 'admin' : 'super-admin'}/messaging`;
-
-      const html = this.getModernEmailTemplate({
-        title: 'New Message Received',
-        headerColor: '#3b82f6',
-        icon: '💬',
+      const htmlContent = this.getModernEmailTemplate({
+        title: 'New Message',
         content: `
-          <h2>You have a new message!</h2>
+          <h2>You have a new message</h2>
           <p>Hi ${recipientName},</p>
-          <p>You've received a new message from <strong>${senderName}</strong> (${senderTitle}).</p>
-          
-          <div class="message-preview">
-            <div class="message-header">
-              <strong>From:</strong> ${senderName} (${senderTitle})
-            </div>
-            <div class="message-content">
-              "${truncatedContent}"
-            </div>
-          </div>
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${messageUrl}" 
-               style="display: inline-block; background: #3b82f6; color: white; padding: 14px 30px; 
-                      text-decoration: none; border-radius: 8px; font-weight: 600; 
-                      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
-              View Message
-            </a>
-          </div>
+          <p>You received a message from <strong>${senderName}</strong> (${senderTitle}).</p>
           
           <div class="info-box">
-            <h3>💡 Quick Actions:</h3>
-            <ul>
-              <li>Click "View Message" to read the full message and reply</li>
-              <li>Log into your admin dashboard to access all conversations</li>
-              <li>Reply directly through the messaging system</li>
-            </ul>
+            <h3>Message Preview</h3>
+            <p style="font-style: italic;">"${truncatedContent}"</p>
+            <p style="font-size: 14px; color: #666; margin-top: 12px;">From: ${senderName}</p>
           </div>
           
-          <div class="footer-note">
-            <p><strong>Note:</strong> This is an automated notification. Please do not reply to this email directly. 
-            Use the messaging system in your admin dashboard to respond.</p>
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${messageUrl}" class="button">View Message</a>
           </div>
+          
+          <p style="font-size: 14px; color: #666;">
+            Please log into your dashboard to read the full message and reply.
+          </p>
         `
       });
 
-      await this.sendEmail({
+      return await this.sendEmail({
         to: recipientEmail,
-        subject: `💬 New message from ${senderName} - IN-N-OUT Store`,
-        html,
-        emailType: 'system_notification',
-        headers: {
-          'X-Email-Category': 'message-notification',
-          'X-Sender-Type': 'notification',
-          'X-Priority': '2',
-          'Importance': 'High'
-        }
+        subject: `New message from ${senderName}`,
+        html: htmlContent,
+        emailType: 'system_notification'
       });
-
-      console.log(`Message notification email sent to: ${recipientEmail}`);
     } catch (error) {
       console.error('Error sending message notification email:', error);
       throw error;
