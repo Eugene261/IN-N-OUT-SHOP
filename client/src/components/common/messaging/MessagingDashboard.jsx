@@ -780,11 +780,11 @@ const MessagingDashboard = () => {
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex overflow-hidden h-full">
+            <div className="flex-1 flex overflow-hidden">
               {/* Conversations Sidebar */}
               <div className={`${
                 showConversations ? 'flex' : 'hidden'
-              } lg:flex lg:w-1/3 w-full bg-white border-r border-gray-200 flex-col relative shadow-sm h-full`}>
+              } lg:flex lg:w-1/3 w-full bg-white border-r border-gray-200 flex-col relative shadow-sm`}>
                 {/* Header */}
                 <div className="p-4 lg:p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
                   <div className="flex items-center justify-between mb-4">
@@ -918,11 +918,11 @@ const MessagingDashboard = () => {
               {/* Chat Area */}
               <div className={`${
                 showConversations ? 'hidden' : 'flex'
-              } lg:flex flex-1 flex-col bg-white relative h-full`}>
+              } lg:flex flex-1 flex-col bg-white relative`}>
                 {activeConversation ? (
                   <>
                     {/* Conversation Header - Fixed at Top */}
-                    <div className="flex-shrink-0 border-b border-gray-200 bg-white px-4 py-3 sticky top-0 z-10 shadow-sm">
+                    <div className="flex-shrink-0 border-b border-gray-200 bg-white px-4 py-3 shadow-sm">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
                           {/* Back Button for Mobile */}
@@ -1072,7 +1072,7 @@ const MessagingDashboard = () => {
 
                     {/* Message Input - Fixed at Bottom */}
                     {showInlineAttachment ? (
-                      <div className="flex-shrink-0 border-t border-gray-200 bg-white sticky bottom-0 z-10">
+                      <div className="flex-shrink-0 border-t border-gray-200 bg-white">
                         <InlineAttachmentMenu
                           conversationId={activeConversation._id}
                           onClose={() => setShowInlineAttachment(false)}
@@ -1080,7 +1080,7 @@ const MessagingDashboard = () => {
                         />
                       </div>
                     ) : showInlineRecorder ? (
-                      <div className="flex-shrink-0 border-t border-gray-200 bg-white sticky bottom-0 z-10">
+                      <div className="flex-shrink-0 border-t border-gray-200 bg-white">
                         <InlineVoiceRecorder
                           conversationId={activeConversation._id}
                           onClose={() => setShowInlineRecorder(false)}
@@ -1088,7 +1088,7 @@ const MessagingDashboard = () => {
                         />
                       </div>
                     ) : (
-                      <div className="flex-shrink-0 bg-white p-3 sm:p-4 lg:p-6 border-t border-gray-200 sticky bottom-0 z-10 safe-area-inset-bottom">
+                      <div className="flex-shrink-0 bg-white p-3 sm:p-4 lg:p-6 border-t border-gray-200 safe-area-inset-bottom">
                         <div className="flex items-end space-x-2 sm:space-x-3">
                           {/* File Upload Button */}
                           <button 
@@ -1190,7 +1190,7 @@ const MessagingDashboard = () => {
   };
 
   return (
-    <div className="h-full w-full bg-gray-50 flex">
+    <div className="h-[calc(100vh-200px)] w-full bg-gray-50 flex rounded-lg shadow-sm overflow-hidden">
       {/* Sound Notifications */}
       <SoundNotifications />
       
