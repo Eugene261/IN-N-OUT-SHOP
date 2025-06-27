@@ -1094,7 +1094,7 @@ const MessagingDashboard = () => {
                     )}
 
                     {/* Message Input Footer - Always Visible */}
-                    <div className="flex-shrink-0 bg-white p-3 sm:p-4 lg:p-6 border-t border-gray-200 safe-area-inset-bottom">
+                    <div className="flex-shrink-0 bg-white p-3 sm:p-4 lg:p-6 border-t border-gray-200">
                       <div className="flex items-end space-x-2 sm:space-x-3">
                         {/* File Upload Button */}
                         <button 
@@ -1211,7 +1211,7 @@ const MessagingDashboard = () => {
   };
 
   return (
-    <div className="-m-4 sm:-m-6 lg:-m-8 h-[calc(100vh-120px)] bg-gray-50 flex overflow-hidden border border-gray-200 rounded-lg shadow-sm">
+    <div className="-m-4 sm:-m-6 lg:-m-8 h-[calc(100vh-100px)] bg-gray-50 flex overflow-hidden border border-gray-200 rounded-lg shadow-sm">
       {/* Sound Notifications */}
       <SoundNotifications />
       
