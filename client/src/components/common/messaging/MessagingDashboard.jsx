@@ -1211,7 +1211,7 @@ const MessagingDashboard = () => {
   };
 
   return (
-    <div className="-m-4 sm:-m-6 lg:-m-8 h-[calc(100vh-100px)] bg-gray-50 flex overflow-hidden border border-gray-200 rounded-lg shadow-sm">
+    <div className="-m-4 sm:-m-6 lg:-m-8 h-[calc(100vh-80px)] bg-gray-50 flex overflow-hidden border border-gray-200 rounded-lg shadow-sm">
       {/* Sound Notifications */}
       <SoundNotifications />
       
