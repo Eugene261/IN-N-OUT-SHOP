@@ -106,9 +106,9 @@ function AdminHeader({ onMenuToggle }) {
         </div>
         
         {/* Right side: Notification Bell and Profile Dropdown */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Notification Bell */}
-          <NotificationBell />
+          <NotificationBell className="mr-1 sm:mr-2" />
           
           {/* Profile Dropdown */}
           <div className="relative" ref={dropdownRef}>

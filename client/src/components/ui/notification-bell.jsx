@@ -12,6 +12,8 @@ const NotificationBell = ({ className = "" }) => {
   const [hasNewNotification, setHasNewNotification] = useState(false);
   const bellRef = useRef(null);
   const dropdownRef = useRef(null);
+  const prevUnreadCountRef = useRef(0);
+  const isInitialLoadRef = useRef(true);
   
   // Redux selectors
   const unreadCount = useSelector(selectTotalUnread) || 0;
@@ -104,6 +106,12 @@ const NotificationBell = ({ className = "" }) => {
     const handleNewMessage = (event) => {
       console.log('🔔 NotificationBell: New message received, refreshing conversations');
       dispatch(fetchConversations());
+      
+      // Play receive sound for incoming messages
+      if (window.playMessageReceivedSound) {
+        window.playMessageReceivedSound();
+        console.log('🔔 NotificationBell: Playing receive sound');
+      }
     };
 
     const handleStorageChange = (event) => {
@@ -111,6 +119,12 @@ const NotificationBell = ({ className = "" }) => {
       if (event.key === 'new_message_notification') {
         console.log('🔔 NotificationBell: Cross-tab message notification, refreshing');
         dispatch(fetchConversations());
+        
+        // Play receive sound for cross-tab notifications
+        if (window.playMessageReceivedSound) {
+          window.playMessageReceivedSound();
+          console.log('🔔 NotificationBell: Playing receive sound (cross-tab)');
+        }
       }
     };
 
@@ -126,11 +140,37 @@ const NotificationBell = ({ className = "" }) => {
 
   // Convert conversations to notifications - FIXED: Remove circular dependency
   useEffect(() => {
+    const currentUnreadCount = unreadCount;
+    
     console.log('🔔 NotificationBell: Processing conversations', {
       conversationsCount: conversations.length,
       user: user?.userName,
-      userId: user?.id
+      userId: user?.id,
+      currentUnreadCount,
+      previousUnreadCount: prevUnreadCountRef.current,
+      conversationsWithUnread: conversations.filter(conv => 
+        conv.unreadCounts?.some(u => {
+          const unreadUserId = u.user?._id || u.user;
+          const currentUserId = user?.id;
+          return unreadUserId?.toString() === currentUserId?.toString() && u.count > 0;
+        })
+      ).length
     });
+
+    // Play receive sound if unread count increased (new messages arrived)
+    // Skip sound on initial load
+    if (!isInitialLoadRef.current && currentUnreadCount > prevUnreadCountRef.current && prevUnreadCountRef.current >= 0) {
+      if (window.playMessageReceivedSound) {
+        window.playMessageReceivedSound();
+        console.log('🔔 NotificationBell: Playing receive sound for increased unread count');
+      }
+    }
+    
+    // Update the previous unread count and mark as not initial load
+    prevUnreadCountRef.current = currentUnreadCount;
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false;
+    }
 
     if (!conversations.length || !user?.id) {
       console.log('🔔 NotificationBell: No conversations or user found');
@@ -141,7 +181,12 @@ const NotificationBell = ({ className = "" }) => {
     const notificationList = conversations
       .filter(conv => {
         // Find unread count for current user
-        const userUnread = conv.unreadCounts?.find(u => u.user === user?.id);
+        // Handle both populated and non-populated user references
+        const userUnread = conv.unreadCounts?.find(u => {
+          const unreadUserId = u.user?._id || u.user;
+          const currentUserId = user?.id;
+          return unreadUserId?.toString() === currentUserId?.toString();
+        });
         const hasUnread = userUnread && userUnread.count > 0;
         
         console.log('🔔 Conversation filter:', {
@@ -150,7 +195,12 @@ const NotificationBell = ({ className = "" }) => {
           hasUnread,
           lastMessage: conv.lastMessage?.content?.substring(0, 20),
           participants: conv.participants?.map(p => ({ id: p.user._id, name: p.user.userName })),
-          unreadCounts: conv.unreadCounts,
+          unreadCounts: conv.unreadCounts?.map(u => ({
+            userId: u.user?._id || u.user,
+            userName: u.user?.userName,
+            count: u.count
+          })),
+          currentUserId: user?.id,
           updatedAt: conv.updatedAt
         });
         
@@ -158,7 +208,11 @@ const NotificationBell = ({ className = "" }) => {
       })
       .map(conv => {
         const otherParticipant = conv.participants.find(p => p.user._id !== user?.id);
-        const userUnread = conv.unreadCounts?.find(u => u.user === user?.id);
+        const userUnread = conv.unreadCounts?.find(u => {
+          const unreadUserId = u.user?._id || u.user;
+          const currentUserId = user?.id;
+          return unreadUserId?.toString() === currentUserId?.toString();
+        });
         
         return {
           id: conv._id,
@@ -309,7 +363,7 @@ const NotificationBell = ({ className = "" }) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute right-0 mt-2 w-80 sm:w-96 max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-hidden"
+            className="absolute right-0 mt-2 w-72 sm:w-80 lg:w-96 max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-hidden"
           >
             {/* Header */}
             <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">

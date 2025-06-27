@@ -75,6 +75,7 @@ const MessagingDashboard = () => {
   const [initError, setInitError] = useState(null);
   const [showInlineAttachment, setShowInlineAttachment] = useState(false);
   const [showInlineRecorder, setShowInlineRecorder] = useState(false);
+  const [prevMessagesLength, setPrevMessagesLength] = useState(0);
 
   useEffect(() => {
     // Initialize data with error handling
@@ -210,6 +211,34 @@ const MessagingDashboard = () => {
       dispatch(clearError());
     }
   }, [error, dispatch]);
+
+  // Monitor messages for incoming message sounds
+  useEffect(() => {
+    if (!activeConversation || !messages || !hasInitialized) {
+      setPrevMessagesLength(messages?.length || 0);
+      return;
+    }
+
+    const currentMessageCount = messages.length;
+    
+    // If messages increased and we have previous messages (not initial load)
+    if (currentMessageCount > prevMessagesLength && prevMessagesLength > 0) {
+      // Get the new messages
+      const newMessages = messages.slice(prevMessagesLength);
+      
+      // Check if any new message is from another user (not current user)
+      const hasIncomingMessage = newMessages.some(msg => 
+        msg.sender?._id !== user?.id && msg.sender?.toString() !== user?.id
+      );
+      
+      if (hasIncomingMessage && window.playMessageReceivedSound) {
+        window.playMessageReceivedSound();
+        console.log('📱 MessagingDashboard: Playing receive sound for incoming message');
+      }
+    }
+    
+    setPrevMessagesLength(currentMessageCount);
+  }, [messages, activeConversation, user?.id, hasInitialized, prevMessagesLength]);
 
   const handleStartNewConversation = async (recipientId, recipientName) => {
     try {
