@@ -184,4 +184,4 @@ Your e-commerce platform is production-ready with:
 **Estimated monthly cost**: $0 (free tier) to $25 (production tier)
 
 Good luck with your deployment! 🎉 
-Man tha
+Man that's a wrap.
