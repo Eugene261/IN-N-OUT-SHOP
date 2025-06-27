@@ -76,6 +76,8 @@ const MessagingDashboard = () => {
   const [showInlineAttachment, setShowInlineAttachment] = useState(false);
   const [showInlineRecorder, setShowInlineRecorder] = useState(false);
   const [prevMessagesLength, setPrevMessagesLength] = useState(0);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [lastSeen, setLastSeen] = useState(new Date());
 
   useEffect(() => {
     // Initialize data with error handling
@@ -250,6 +252,34 @@ const MessagingDashboard = () => {
       dispatch(clearError());
     }
   }, [error, dispatch]);
+
+  // Monitor online/offline status for better user experience
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      setLastSeen(new Date());
+    };
+    
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+
+    // Update last seen timestamp periodically when online
+    const updateLastSeen = setInterval(() => {
+      if (navigator.onLine) {
+        setLastSeen(new Date());
+      }
+    }, 30000); // Update every 30 seconds
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      clearInterval(updateLastSeen);
+    };
+  }, []);
 
   // Monitor messages for incoming message sounds
   useEffect(() => {
@@ -445,6 +475,28 @@ const MessagingDashboard = () => {
       return conversation?.participants?.find(p => p?.user?._id !== user?.id)?.user;
     } catch (err) {
       return null;
+    }
+  };
+
+  const getOnlineStatus = () => {
+    if (isOnline) {
+      return { text: 'Online', color: 'bg-green-400', isOnline: true };
+    }
+    
+    const now = new Date();
+    const timeDiff = Math.floor((now - lastSeen) / 1000); // seconds
+    
+    if (timeDiff < 60) {
+      return { text: 'Last seen just now', color: 'bg-yellow-400', isOnline: false };
+    } else if (timeDiff < 3600) {
+      const minutes = Math.floor(timeDiff / 60);
+      return { text: `Last seen ${minutes}m ago`, color: 'bg-gray-400', isOnline: false };
+    } else if (timeDiff < 86400) {
+      const hours = Math.floor(timeDiff / 3600);
+      return { text: `Last seen ${hours}h ago`, color: 'bg-gray-400', isOnline: false };
+    } else {
+      const days = Math.floor(timeDiff / 86400);
+      return { text: `Last seen ${days}d ago`, color: 'bg-gray-400', isOnline: false };
     }
   };
 
@@ -692,8 +744,8 @@ const MessagingDashboard = () => {
                       }`}>
                         {getOtherParticipant(activeConversation)?.role === 'superAdmin' ? 'Super Admin' : 'Admin'}
                       </span>
-                      <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-                      <span className="text-sm text-gray-500">Online</span>
+                      <span className={`w-2 h-2 ${getOnlineStatus().color} rounded-full${getOnlineStatus().isOnline ? ' animate-pulse' : ''}`}></span>
+                      <span className="text-sm text-gray-500">{getOnlineStatus().text}</span>
                     </div>
                   </div>
                 </div>
