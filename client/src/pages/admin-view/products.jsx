@@ -277,23 +277,49 @@ function AdminProducts() {
 
   // Validate the form with multiselect fields included
   function isFormValid() {
+    console.log('🔍 Validating form...');
+    console.log('Current formData:', formData);
+    console.log('Current editedId:', currentEditedId);
+    console.log('Upload image URL:', uploadedImageUrl);
+    
     // If new product, require main image
     if (currentEditedId === null && !uploadedImageUrl) {
+      console.log('❌ Validation failed: No main image for new product');
       return false;
     }
     
     // Basic validation for required fields
     const requiredFields = ['title', 'description', 'category', 'gender', 'brand', 'price', 'totalStock'];
-    const hasRequiredFields = requiredFields.every(key => 
-      formData[key] !== '' && formData[key] !== null && formData[key] !== undefined
-    );
+    const hasRequiredFields = requiredFields.every(key => {
+      const value = formData[key];
+      const isValid = value !== '' && value !== null && value !== undefined;
+      if (!isValid) {
+        console.log(`❌ Validation failed: Missing ${key}, current value:`, value);
+      }
+      return isValid;
+    });
     
-    // Check sizes array - still required
+    if (!hasRequiredFields) {
+      console.log('❌ Validation failed: Missing required fields');
+      return false;
+    }
+    
+    // Check sizes array - required unless taxonomy data isn't loaded yet
     const hasSizes = Array.isArray(formData.sizes) && formData.sizes.length > 0;
+    if (!hasSizes) {
+      console.log('❌ Validation failed: No sizes selected');
+      console.log('Current sizes:', formData.sizes);
+      
+      // If taxonomy data isn't loaded, allow validation to pass for basic fields
+      if (!sizes || sizes.length === 0) {
+        console.log('⚠️ Sizes taxonomy not loaded, allowing validation to pass for basic fields');
+      } else {
+        return false;
+      }
+    }
     
-    // Colors are now optional - don't include in validation
-    
-    return hasRequiredFields && hasSizes;
+    console.log('✅ Form validation passed');
+    return true;
   }
 
   // Calculate stock summary
@@ -325,22 +351,29 @@ function AdminProducts() {
     setRefreshKey(prev => prev + 1);
   }, [productList]);
 
+  // Re-validate form when taxonomy data loads
+  useEffect(() => {
+    console.log('🔄 Taxonomy data changed, triggering validation check');
+    // Force a re-render to update button state when taxonomy data loads
+    setRefreshKey(prev => prev + 1);
+  }, [categories, subcategories, brands, sizes, colors]);
+
   // Generate dynamic form elements using taxonomy data
   const getDynamicFormElements = () => {
     const baseFormElements = [...addProductFormElements];
     
     // DEBUG: Log taxonomy data
     console.log('🔍 Taxonomy data in getDynamicFormElements:');
-    console.log('Categories:', categories.length, categories);
-    console.log('Subcategories:', subcategories.length, subcategories);
-    console.log('Brands:', brands.length, brands);
-    console.log('Sizes:', sizes.length, sizes);
-    console.log('Colors:', colors.length, colors);
+    console.log('Categories:', categories?.length || 0, categories);
+    console.log('Subcategories:', subcategories?.length || 0, subcategories);
+    console.log('Brands:', brands?.length || 0, brands);
+    console.log('Sizes:', sizes?.length || 0, sizes);
+    console.log('Colors:', colors?.length || 0, colors);
     console.log('Current formData.category:', formData.category);
     
-    // Update category options
+    // Update category options - only if data is available
     const categoryIndex = baseFormElements.findIndex(el => el.name === 'category');
-    if (categoryIndex !== -1 && categories.length > 0) {
+    if (categoryIndex !== -1 && categories && categories.length > 0) {
       baseFormElements[categoryIndex] = {
         ...baseFormElements[categoryIndex],
         options: categories.map(cat => ({
@@ -349,12 +382,14 @@ function AdminProducts() {
           _id: cat._id // Keep the actual ID for reference
         }))
       };
-      console.log('✅ Updated category options:', baseFormElements[categoryIndex].options);
+      console.log('✅ Updated category options:', baseFormElements[categoryIndex].options.length);
+    } else {
+      console.log('⚠️ Categories not loaded, using default options');
     }
     
-    // Update subcategory options - FIX: Ensure unique IDs by including category
+    // Update subcategory options - only if data is available
     const subcategoryIndex = baseFormElements.findIndex(el => el.name === 'subCategory');
-    if (subcategoryIndex !== -1) {
+    if (subcategoryIndex !== -1 && subcategories && subcategories.length > 0) {
       baseFormElements[subcategoryIndex] = {
         ...baseFormElements[subcategoryIndex],
         dynamicOptions: true,
@@ -371,12 +406,14 @@ function AdminProducts() {
           };
         })
       };
-      console.log('✅ Updated subcategory options:', baseFormElements[subcategoryIndex].options);
+      console.log('✅ Updated subcategory options:', baseFormElements[subcategoryIndex].options.length);
+    } else {
+      console.log('⚠️ Subcategories not loaded, using default options');
     }
     
-    // Update brand options with real data - FIX: Ensure unique IDs
+    // Update brand options with real data - only if data is available
     const brandIndex = baseFormElements.findIndex(el => el.name === 'brand');
-    if (brandIndex !== -1 && brands.length > 0) {
+    if (brandIndex !== -1 && brands && brands.length > 0) {
       baseFormElements[brandIndex] = {
         ...baseFormElements[brandIndex],
         options: brands.map((brand, index) => ({
@@ -388,12 +425,14 @@ function AdminProducts() {
           categories: ['men', 'women', 'kids', 'footwear', 'accessories', 'devices'] // Make brands available for all categories
         }))
       };
-      console.log('✅ Updated brand options:', baseFormElements[brandIndex].options);
+      console.log('✅ Updated brand options:', baseFormElements[brandIndex].options.length);
+    } else {
+      console.log('⚠️ Brands not loaded, using default options');
     }
     
-    // Update size options with real data - FIX: Ensure unique IDs
+    // Update size options with real data - only if data is available
     const sizeIndex = baseFormElements.findIndex(el => el.name === 'sizes');
-    if (sizeIndex !== -1 && sizes.length > 0) {
+    if (sizeIndex !== -1 && sizes && sizes.length > 0) {
       baseFormElements[sizeIndex] = {
         ...baseFormElements[sizeIndex],
         options: sizes.map((size, index) => {
@@ -430,12 +469,14 @@ function AdminProducts() {
           };
         })
       };
-      console.log('✅ Updated size options:', baseFormElements[sizeIndex].options);
+      console.log('✅ Updated size options:', baseFormElements[sizeIndex].options.length);
+    } else {
+      console.log('⚠️ Sizes not loaded, using default options from config');
     }
     
-    // Update color options with real data - FIX: Ensure unique IDs
+    // Update color options with real data - only if data is available
     const colorIndex = baseFormElements.findIndex(el => el.name === 'colors');
-    if (colorIndex !== -1 && colors.length > 0) {
+    if (colorIndex !== -1 && colors && colors.length > 0) {
       baseFormElements[colorIndex] = {
         ...baseFormElements[colorIndex],
         options: colors.map((color, index) => ({
@@ -445,7 +486,9 @@ function AdminProducts() {
           _id: color._id // Keep the actual ID for reference
         }))
       };
-      console.log('✅ Updated color options:', baseFormElements[colorIndex].options);
+      console.log('✅ Updated color options:', baseFormElements[colorIndex].options.length);
+    } else {
+      console.log('⚠️ Colors not loaded, using default options from config');
     }
     
     return baseFormElements;
