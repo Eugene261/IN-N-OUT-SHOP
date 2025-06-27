@@ -50,9 +50,24 @@ const cartSchema = new mongoose.Schema({
             image : {
                 type : String,
                 default: ''
+            },
+            // Effective calculated price (original price minus any applicable discount)
+            effectivePrice: {
+                type: Number,
+                required: false  // This will be calculated
             }
         }
-    ]
+    ],
+    // Abandoned cart tracking
+    lastReminderStage1: {
+        type: Date
+    },
+    lastReminderStage2: {
+        type: Date
+    },
+    lastReminderStage3: {
+        type: Date
+    }
 }, {
     timestamps : true
 })

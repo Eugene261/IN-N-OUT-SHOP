@@ -4,6 +4,144 @@ const crypto = require('crypto');
 const User = require('../models/User.js');
 const emailService = require('../services/emailService.js');
 
+// Security tracking - in production, use Redis or a proper database
+const securityTracker = new Map();
+
+// Helper function to safely track security events (production-safe)
+const safeSecurityTracking = {
+  track: (key, data) => {
+    try {
+      securityTracker.set(key, data);
+    } catch (error) {
+      console.error('Security tracking error:', error);
+      // Continue without tracking in case of errors
+    }
+  },
+  
+  get: (key) => {
+    try {
+      return securityTracker.get(key);
+    } catch (error) {
+      console.error('Security tracking retrieval error:', error);
+      return null;
+    }
+  },
+  
+  delete: (key) => {
+    try {
+      securityTracker.delete(key);
+    } catch (error) {
+      console.error('Security tracking deletion error:', error);
+      // Continue without deleting in case of errors
+    }
+  },
+  
+  cleanup: () => {
+    try {
+      const now = Date.now();
+      const oneHourAgo = now - (60 * 60 * 1000);
+      
+      // Limit cleanup iterations to prevent blocking
+      let cleanupCount = 0;
+      for (const [k, v] of securityTracker.entries()) {
+        if (cleanupCount > 100) break; // Prevent excessive cleanup
+        if (v.lastAttempt < oneHourAgo) {
+          securityTracker.delete(k);
+          cleanupCount++;
+        }
+      }
+    } catch (error) {
+      console.error('Security tracking cleanup error:', error);
+    }
+  }
+};
+
+// Helper function to get client info
+const getClientInfo = (req) => {
+  try {
+    return {
+      ipAddress: req.ip || req.connection?.remoteAddress || 'Unknown',
+      userAgent: req.get('User-Agent') || 'Unknown', 
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error getting client info:', error);
+    return {
+      ipAddress: 'Unknown',
+      userAgent: 'Unknown',
+      timestamp: new Date().toISOString()
+    };
+  }
+};
+
+// Helper function to track failed login attempts (production-safe)
+const trackFailedLogin = (email, clientInfo) => {
+  try {
+    if (!email || !clientInfo) return { attempts: 1 };
+    
+    const key = `${email}_${clientInfo.ipAddress}`;
+    const now = Date.now();
+    
+    const existing = safeSecurityTracking.get(key);
+    if (!existing) {
+      const newData = { attempts: 1, firstAttempt: now, lastAttempt: now };
+      safeSecurityTracking.track(key, newData);
+      return newData;
+    } else {
+      const updatedData = {
+        ...existing,
+        attempts: existing.attempts + 1,
+        lastAttempt: now
+      };
+      safeSecurityTracking.track(key, updatedData);
+      
+      // Cleanup periodically (every 10 failed attempts)
+      if (updatedData.attempts % 10 === 0) {
+        safeSecurityTracking.cleanup();
+      }
+      
+      return updatedData;
+    }
+  } catch (error) {
+    console.error('Error tracking failed login:', error);
+    return { attempts: 1 };
+  }
+};
+
+// Helper function to check if IP is locked (production-safe)
+const isIpLocked = (email, ipAddress) => {
+  try {
+    if (!email || !ipAddress) return false;
+    
+    const key = `${email}_${ipAddress}`;
+    const data = safeSecurityTracking.get(key);
+    
+    if (!data) return false;
+    
+    const now = Date.now();
+    const lockoutPeriod = 15 * 60 * 1000; // 15 minutes
+    
+    // Check if locked and lockout period hasn't expired
+    if (data.attempts >= 5 && (now - data.lastAttempt) < lockoutPeriod) {
+      return {
+        locked: true,
+        attempts: data.attempts,
+        unlockTime: new Date(data.lastAttempt + lockoutPeriod),
+        lockTime: new Date(data.lastAttempt)
+      };
+    }
+    
+    // Reset if lockout period expired
+    if (data.attempts >= 5 && (now - data.lastAttempt) >= lockoutPeriod) {
+      safeSecurityTracking.delete(key);
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Error checking IP lock status:', error);
+    return false; // Default to unlocked if there's an error
+  }
+};
 
 // register
 const registerUser = async (req, res) => {
@@ -110,12 +248,42 @@ const loginUser = async(req, res) => {
     const {email, password} = req.body;
 
     try {
+        const clientInfo = getClientInfo(req);
+        
+        // Check for account lockout
+        const lockoutStatus = isIpLocked(email, clientInfo.ipAddress);
+        if (lockoutStatus.locked) {
+            // Send lockout notification email
+            try {
+                const user = await User.findOne({ email });
+                if (user) {
+                    await emailService.sendAccountLockoutEmail(user.email, user.userName, {
+                        lockTime: lockoutStatus.lockTime,
+                        attempts: lockoutStatus.attempts,
+                        unlockTime: lockoutStatus.unlockTime,
+                        ipAddress: clientInfo.ipAddress
+                    });
+                }
+            } catch (emailError) {
+                console.error('Failed to send lockout notification:', emailError);
+            }
+            
+            return res.status(429).json({
+                success: false,
+                message: `Account temporarily locked due to multiple failed login attempts. Please try again after ${lockoutStatus.unlockTime.toLocaleTimeString()}.`,
+                lockedUntil: lockoutStatus.unlockTime
+            });
+        }
         
         const checkUser = await User.findOne({ email });
-        if(!checkUser) return res.json({
-            success : false,
-            message : "User doesn't exists! Please register first"
-        });
+        if(!checkUser) {
+            // Track failed login attempt
+            trackFailedLogin(email, clientInfo);
+            return res.json({
+                success : false,
+                message : "User doesn't exists! Please register first"
+            });
+        }
 
         // Check if user is active
         if (!checkUser.isActive) {
@@ -126,13 +294,69 @@ const loginUser = async(req, res) => {
         }
 
         const checkPasswordMatch = await bcrypt.compare(password, checkUser.password);
-        if(!checkPasswordMatch) return res.json({
-            success : false,
-            message : "email or password incorrect"
+        if(!checkPasswordMatch) {
+            // Track failed login attempt
+            const failedAttempts = trackFailedLogin(email, clientInfo);
+            
+            // Send security alert for multiple failed attempts
+            if (failedAttempts.attempts >= 3) {
+                try {
+                    await emailService.sendSecurityAlertEmail(
+                        checkUser.email,
+                        checkUser.userName,
+                        {
+                            type: 'failed_login_attempts',
+                            timestamp: clientInfo.timestamp,
+                            ipAddress: clientInfo.ipAddress,
+                            userAgent: clientInfo.userAgent,
+                            location: 'Unknown' // Could integrate with IP geolocation service
+                        }
+                    );
+                } catch (emailError) {
+                    console.error('Failed to send security alert:', emailError);
+                }
+            }
+            
+            return res.json({
+                success : false,
+                message : "email or password incorrect"
+            });
+        }
+
+        // Clear failed attempts on successful login
+        const key = `${email}_${clientInfo.ipAddress}`;
+        safeSecurityTracking.delete(key);
+
+        // Check for new device login (simplified check)
+        const isNewDevice = !checkUser.lastLogin || 
+                          (checkUser.lastUserAgent && checkUser.lastUserAgent !== clientInfo.userAgent) ||
+                          (checkUser.lastIpAddress && checkUser.lastIpAddress !== clientInfo.ipAddress);
+
+        // Update last login and device info
+        await User.findByIdAndUpdate(checkUser._id, { 
+            lastLogin: new Date(),
+            lastIpAddress: clientInfo.ipAddress,
+            lastUserAgent: clientInfo.userAgent
         });
 
-        // Update last login
-        await User.findByIdAndUpdate(checkUser._id, { lastLogin: new Date() });
+        // Send new device alert if applicable
+        if (isNewDevice && checkUser.lastLogin) {
+            try {
+                await emailService.sendSecurityAlertEmail(
+                    checkUser.email,
+                    checkUser.userName,
+                    {
+                        type: 'new_device_login',
+                        timestamp: clientInfo.timestamp,
+                        ipAddress: clientInfo.ipAddress,
+                        userAgent: clientInfo.userAgent,
+                        location: 'Unknown'
+                    }
+                );
+            } catch (emailError) {
+                console.error('Failed to send new device alert:', emailError);
+            }
+        }
 
         // Get updated user data
         const updatedUser = await User.findById(checkUser._id);
@@ -427,6 +651,24 @@ const resetPassword = async (req, res) => {
     await user.save();
 
     console.log('Password reset successful for user:', user.email);
+
+    // Send password changed security alert
+    try {
+      const clientInfo = getClientInfo(req);
+      await emailService.sendSecurityAlertEmail(
+        user.email,
+        user.userName,
+        {
+          type: 'password_changed',
+          timestamp: clientInfo.timestamp,
+          ipAddress: clientInfo.ipAddress,
+          userAgent: clientInfo.userAgent,
+          location: 'Unknown'
+        }
+      );
+    } catch (emailError) {
+      console.error('Failed to send password changed security alert:', emailError);
+    }
 
     res.status(200).json({
       success: true,

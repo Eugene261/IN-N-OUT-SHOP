@@ -1,5 +1,6 @@
 const Order = require('../../models/Order.js');
 const Product = require('../../models/Products.js');
+const emailService = require('../../services/emailService');
 
 
 
@@ -275,6 +276,57 @@ const updateOrderStatus = async(req, res) => {
             return total + (itemPrice * itemQuantity);
         }, 0);
         
+        // Send order status update email to customer
+        try {
+            if (updatedOrder.user) {
+                const orderDetails = {
+                    orderId: updatedOrder._id,
+                    orderDate: updatedOrder.orderDate,
+                    totalAmount: updatedOrder.totalAmount,
+                    trackingNumber: updatedOrder.trackingNumber,
+                    estimatedDelivery: '2-3 business days'
+                };
+                
+                await emailService.sendOrderStatusUpdateEmail(
+                    updatedOrder.user.email,
+                    updatedOrder.user.userName,
+                    orderDetails,
+                    status
+                );
+                console.log(`Order status update email sent to customer: ${updatedOrder.user.email} (Status: ${status})`);
+                
+                // If order is delivered, schedule review request
+                if (status === 'delivered') {
+                    setTimeout(async () => {
+                        try {
+                            // Send review request for each product in the order
+                            for (const item of updatedOrder.cartItems || []) {
+                                await emailService.sendProductReviewRequestEmail(
+                                    updatedOrder.user.email,
+                                    updatedOrder.user.userName,
+                                    {
+                                        orderId: updatedOrder._id,
+                                        deliveryDate: new Date()
+                                    },
+                                    {
+                                        id: item.productId,
+                                        title: item.title,
+                                        image: item.image
+                                    }
+                                );
+                            }
+                            console.log(`Review request emails sent to customer: ${updatedOrder.user.email}`);
+                        } catch (reviewEmailError) {
+                            console.error('Failed to send review request emails:', reviewEmailError);
+                        }
+                    }, 24 * 60 * 60 * 1000); // Send after 24 hours
+                }
+            }
+        } catch (emailError) {
+            console.error('Failed to send order status update email:', emailError);
+            // Don't fail the status update if email fails
+        }
+
         // Create a filtered response with only the admin's items and correct total
         const adminOrder = {
             ...updatedOrder.toObject(),

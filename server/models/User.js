@@ -84,13 +84,12 @@ const UserSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
-    createdAt: {
-        type: Date,
-        default: Date.now
+    // Security tracking fields
+    lastIpAddress: {
+        type: String
     },
-    updatedAt: {
-        type: Date,
-        default: Date.now
+    lastUserAgent: {
+        type: String
     },
     // Vendor shipping information
     baseRegion: {
@@ -184,17 +183,14 @@ const UserSchema = new mongoose.Schema({
     },
     // Store additional shipping preferences (fallback rates when no specific zones are configured)
     shippingPreferences: {
-        defaultBaseRate: {
+        zones: [{
+            name: String,
+            regions: [String],
+            fee: Number
+        }],
+        defaultFee: {
             type: Number,
-            default: 0 // Default fallback rate when no specific region zones are configured
-        },
-        defaultOutOfRegionRate: {
-            type: Number,
-            default: 0 // Default rate for deliveries outside the admin's base region
-        },
-        enableRegionalRates: {
-            type: Boolean,
-            default: true
+            default: 0
         }
     },
     // Password reset fields
@@ -206,7 +202,7 @@ const UserSchema = new mongoose.Schema({
         type: Date,
         default: null
     }
-});
+}, { timestamps: true });
 
 // Update the updatedAt field before saving
 UserSchema.pre('save', function(next) {

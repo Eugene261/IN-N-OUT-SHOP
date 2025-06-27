@@ -115,6 +115,9 @@ process.on('uncaughtException', (error) => {
 // Initialize database connection
 connectDB();
 
+// Initialize email scheduler for background tasks
+const emailScheduler = require('./services/emailScheduler');
+
 // CORS Configuration - Updated to fix production CORS issues
 const corsOptions = {
     origin: function (origin, callback) {
@@ -402,10 +405,18 @@ const gracefulShutdown = () => {
 };
 
 // Start server
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, async () => {
   console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`📝 Timestamp: ${new Date().toISOString()}`);
+  
+  // Initialize email scheduler for automated emails
+  try {
+    await emailScheduler.initialize();
+    console.log('📧 Email scheduler initialized successfully');
+  } catch (error) {
+    console.error('❌ Failed to initialize email scheduler:', error);
+  }
 });
 
 // Graceful shutdown listeners

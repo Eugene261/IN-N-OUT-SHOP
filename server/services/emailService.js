@@ -3,74 +3,136 @@ const nodemailer = require('nodemailer');
 class EmailService {
   constructor() {
     this.transporter = null;
+    this.isConfigured = false;
+    this.lastError = null;
     this.initializeTransporter();
   }
 
+  // Enhanced initialization with better error handling
   initializeTransporter() {
-    const emailProvider = process.env.EMAIL_PROVIDER || 'gmail';
-    
     try {
-      switch (emailProvider.toLowerCase()) {
+      // Check for required environment variables
+      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+        console.log('⚠️ Email service not configured - EMAIL_USER or EMAIL_PASSWORD missing');
+        this.isConfigured = false;
+        return;
+      }
+
+      const provider = (process.env.EMAIL_PROVIDER || 'gmail').toLowerCase();
+      console.log(`📧 Initializing email service with provider: ${provider}`);
+
+      let transportConfig = null;
+
+      // Provider-specific configurations with fallbacks
+      switch (provider) {
         case 'gmail':
-          this.transporter = nodemailer.createTransport({
+          transportConfig = {
             service: 'gmail',
             auth: {
               user: process.env.EMAIL_USER,
               pass: process.env.EMAIL_PASSWORD
+            },
+            secure: true,
+            tls: {
+              rejectUnauthorized: false // For development, remove in production if using proper certs
             }
-          });
+          };
           break;
 
         case 'sendgrid':
-          this.transporter = nodemailer.createTransport({
-            service: 'SendGrid',
+          if (!process.env.SENDGRID_API_KEY) {
+            console.error('❌ SendGrid API key not provided');
+            this.isConfigured = false;
+            return;
+          }
+          transportConfig = {
+            host: 'smtp.sendgrid.net',
+            port: 587,
+            secure: false,
             auth: {
               user: 'apikey',
               pass: process.env.SENDGRID_API_KEY
             }
-          });
+          };
           break;
 
         case 'mailgun':
-          this.transporter = nodemailer.createTransport({
-            service: 'Mailgun',
+          if (!process.env.MAILGUN_API_KEY || !process.env.MAILGUN_DOMAIN) {
+            console.error('❌ Mailgun credentials not provided');
+            this.isConfigured = false;
+            return;
+          }
+          transportConfig = {
+            host: 'smtp.mailgun.org',
+            port: 587,
+            secure: false,
             auth: {
-              user: process.env.MAILGUN_USERNAME,
-              pass: process.env.MAILGUN_PASSWORD
+              user: `postmaster@${process.env.MAILGUN_DOMAIN}`,
+              pass: process.env.MAILGUN_API_KEY
             }
-          });
+          };
           break;
 
         case 'outlook':
-          this.transporter = nodemailer.createTransport({
+        case 'hotmail':
+          transportConfig = {
             service: 'hotmail',
             auth: {
               user: process.env.EMAIL_USER,
               pass: process.env.EMAIL_PASSWORD
-            }
-          });
+            },
+            secure: true
+          };
           break;
 
         case 'custom':
-          this.transporter = nodemailer.createTransport({
+          if (!process.env.SMTP_HOST || !process.env.SMTP_PORT) {
+            console.error('❌ Custom SMTP configuration incomplete');
+            this.isConfigured = false;
+            return;
+          }
+          transportConfig = {
             host: process.env.SMTP_HOST,
-            port: process.env.SMTP_PORT || 587,
+            port: parseInt(process.env.SMTP_PORT),
             secure: process.env.SMTP_SECURE === 'true',
             auth: {
               user: process.env.EMAIL_USER,
               pass: process.env.EMAIL_PASSWORD
             }
-          });
+          };
           break;
 
         default:
-          console.warn('No valid email provider configured. Email functionality will be disabled.');
+          console.error(`❌ Unsupported email provider: ${provider}`);
+          this.isConfigured = false;
           return;
       }
 
-      console.log(`Email service initialized with provider: ${emailProvider}`);
+      // Create transporter with enhanced error handling
+      this.transporter = nodemailer.createTransporter(transportConfig);
+      
+      // Verify connection in non-production environments only
+      if (process.env.NODE_ENV !== 'production') {
+        this.transporter.verify((error, success) => {
+          if (error) {
+            console.error('❌ Email verification failed:', error.message);
+            this.lastError = error;
+            this.isConfigured = false;
+          } else {
+            console.log('✅ Email server is ready to send emails');
+            this.isConfigured = true;
+          }
+        });
+      } else {
+        // In production, assume configuration is correct to avoid blocking startup
+        this.isConfigured = true;
+        console.log('✅ Email service initialized (production mode)');
+      }
+
     } catch (error) {
-      console.error('Failed to initialize email transporter:', error);
+      console.error('❌ Critical error initializing email service:', error);
+      this.isConfigured = false;
+      this.lastError = error;
     }
   }
 
@@ -89,56 +151,90 @@ class EmailService {
     }
   }
 
+  // Enhanced sendEmail with production safety
   async sendEmail(options) {
-    if (!this.transporter) {
-      throw new Error('Email service not configured. Please check your environment variables.');
-    }
-
-    // Clean, professional headers that don't trigger spam filters
-    const fromAddress = process.env.EMAIL_FROM || process.env.EMAIL_USER;
-    const cleanFromAddress = fromAddress.includes('<') ? fromAddress.match(/<(.+)>/)[1] : fromAddress;
-    
-    const defaultOptions = {
-      from: `"IN-N-OUT Store" <${cleanFromAddress}>`,
-      replyTo: process.env.REPLY_TO_EMAIL || cleanFromAddress,
-      headers: {
-        // Essential headers only
-        'X-Mailer': 'IN-N-OUT Store',
-        'X-Priority': '3',
-        'List-Unsubscribe': `<${process.env.CLIENT_URL}/unsubscribe>`,
-        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-        
-        // Professional business headers
-        'Organization': 'IN-N-OUT Store',
-        'X-Auto-Response-Suppress': 'All',
-        'Content-Language': 'en-US',
-        
-        // Simple authentication reference
-        'Message-ID': `<${Date.now()}-${Math.random().toString(36).substr(2, 9)}-innout@${process.env.EMAIL_DOMAIN || 'in-nd-out.com'}>`
+    // Graceful degradation if email service is not configured
+    if (!this.transporter || !this.isConfigured) {
+      const errorMsg = this.lastError 
+        ? `Email service unavailable: ${this.lastError.message}`
+        : 'Email service not configured';
+      
+      console.warn(`⚠️ ${errorMsg}`);
+      
+      // In development, log what would have been sent
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('📧 [EMAIL SIMULATION]', {
+          to: options.to,
+          subject: options.subject,
+          timestamp: new Date().toISOString()
+        });
       }
-    };
-
-    const mailOptions = { ...defaultOptions, ...options };
-
-    // Enhanced sender information based on email type
-    if (options.emailType) {
-      const senderConfig = this.getSenderConfig(options.emailType);
-      mailOptions.from = senderConfig.from;
-      mailOptions.replyTo = senderConfig.replyTo;
-    }
-
-    // Add text version for better deliverability
-    if (mailOptions.html && !mailOptions.text) {
-      mailOptions.text = this.htmlToText(mailOptions.html);
+      
+      // Don't throw error - return success to prevent breaking application flow
+      return {
+        success: false,
+        simulated: true,
+        message: errorMsg
+      };
     }
 
     try {
-      const info = await this.transporter.sendMail(mailOptions);
-      console.log('✅ Email sent successfully:', info.messageId);
-      return info;
+      // Clean, professional headers that don't trigger spam filters
+      const fromAddress = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+      const cleanFromAddress = fromAddress?.includes('<') ? fromAddress.match(/<(.+)>/)?.[1] : fromAddress;
+      
+      if (!cleanFromAddress) {
+        throw new Error('Email FROM address not configured');
+      }
+      
+      const defaultOptions = {
+        from: `"IN-N-OUT Store" <${cleanFromAddress}>`,
+        replyTo: process.env.REPLY_TO_EMAIL || cleanFromAddress,
+        headers: {
+          // Essential headers only
+          'X-Mailer': 'IN-N-OUT Store',
+          'X-Priority': '3',
+          'List-Unsubscribe': `<mailto:unsubscribe@${cleanFromAddress.split('@')[1]}>`,
+          'Message-ID': `<${Date.now()}-${Math.random().toString(36)}@${cleanFromAddress.split('@')[1]}>`
+        }
+      };
+
+      const mailOptions = { ...defaultOptions, ...options };
+      
+      // Enhanced logging
+      console.log(`📧 Sending email to: ${mailOptions.to}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`📧 Subject: ${mailOptions.subject}`);
+      }
+
+      const result = await this.transporter.sendMail(mailOptions);
+      
+      console.log(`✅ Email sent successfully to: ${mailOptions.to}`);
+      return {
+        success: true,
+        messageId: result.messageId,
+        response: result.response
+      };
+
     } catch (error) {
-      console.error('❌ Failed to send email:', error);
-      throw error;
+      console.error('❌ Email sending failed:', {
+        to: options.to,
+        subject: options.subject,
+        error: error.message,
+        code: error.code,
+        command: error.command
+      });
+
+      // Don't throw error in production - log and continue
+      if (process.env.NODE_ENV === 'production') {
+        return {
+          success: false,
+          error: error.message,
+          code: error.code
+        };
+      } else {
+        throw error; // In development, throw to help debugging
+      }
     }
   }
 
@@ -1024,65 +1120,150 @@ class EmailService {
     });
   }
 
-  async sendAbandonedCartEmail(email, userName, cartItems) {
-    const totalValue = cartItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+  // Abandoned cart emails
+  async sendAbandonedCartEmail(email, userName, cartDetails, reminderStage = 1) {
+    const stageConfig = {
+      1: {
+        delay: '1 hour',
+        subject: 'You left something in your cart!',
+        title: 'Don\'t forget your items',
+        message: 'You have items waiting in your cart. Complete your purchase before they\'re gone!',
+        urgency: 'low',
+        discount: null
+      },
+      2: {
+        delay: '24 hours',
+        subject: 'Still thinking about your cart?',
+        title: 'Your cart is waiting',
+        message: 'Your selected items are still available. Complete your purchase now!',
+        urgency: 'medium',
+        discount: '5%'
+      },
+      3: {
+        delay: '3 days',
+        subject: 'Last chance - Cart expires soon!',
+        title: 'Final reminder',
+        message: 'This is your final reminder. Your cart will expire soon!',
+        urgency: 'high',
+        discount: '10%'
+      }
+    };
+
+    const config = stageConfig[reminderStage] || stageConfig[1];
+    const urgencyColors = {
+      low: '#17a2b8',
+      medium: '#ffc107',
+      high: '#dc3545'
+    };
 
     const htmlContent = this.getModernEmailTemplate({
-      title: 'Your Cart Awaits!',
-      headerColor: '#6f42c1',
-      icon: '🛒',
+      title: config.title,
+      headerColor: urgencyColors[config.urgency],
       content: `
-        <div class="notification-header">
-          <h2>Don't Miss Out, ${userName}!</h2>
-          <p>You have ${cartItems.length} item${cartItems.length > 1 ? 's' : ''} waiting in your cart worth $${totalValue.toFixed(2)}.</p>
-        </div>
+        <h2>🛒 ${config.title}</h2>
+        <p>Hi ${userName},</p>
+        <p>${config.message}</p>
         
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-number">${cartItems.length}</div>
-            <div class="stat-label">Items</div>
+        ${config.discount ? `
+          <div class="highlight-box">
+            <h3>🎉 Special Offer - ${config.discount} OFF!</h3>
+            <p>Complete your purchase now and save ${config.discount} on your entire order!</p>
+            <p><strong>Promo Code:</strong> <code>SAVE${config.discount.replace('%', '')}</code></p>
           </div>
-          <div class="stat-card">
-            <div class="stat-number">Gh₵${totalValue.toFixed(2)}</div>
-            <div class="stat-label">Total Value</div>
-          </div>
-        </div>
+        ` : ''}
         
-        <div class="items-section">
-          <h3>🛍️ Items in Your Cart</h3>
-          ${cartItems.slice(0, 3).map(item => `
-            <div class="item-row">
-              <img src="${item.image}" alt="${item.title}" class="item-image">
-              <div class="item-details">
-                <h4>${item.title}</h4>
-                <p>Quantity: ${item.quantity} × Gh₵${item.price}</p>
-                <p class="item-total">$${(item.quantity * item.price).toFixed(2)}</p>
+        <div class="cart-summary">
+          <h3>Your Cart Items</h3>
+          <div class="cart-items">
+            ${cartDetails.items.map(item => `
+              <div class="cart-item">
+                <img src="${item.image}" alt="${item.title}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
+                <div class="item-details">
+                  <h4>${item.title}</h4>
+                  <p>Quantity: ${item.quantity}</p>
+                  <p class="price">₵${item.price}</p>
+                </div>
               </div>
-            </div>
-          `).join('')}
-          ${cartItems.length > 3 ? `
-            <div class="message-box">
-              <p>+ ${cartItems.length - 3} more item${cartItems.length - 3 > 1 ? 's' : ''} in your cart</p>
-            </div>
-          ` : ''}
+            `).join('')}
+          </div>
+          <div class="cart-total">
+            <strong>Total: ₵${cartDetails.totalAmount}</strong>
+          </div>
         </div>
         
-        <div class="message-box">
-          <h3>🚀 Complete Your Purchase</h3>
-          <p>These items are popular and may sell out soon. Complete your purchase now to secure your items!</p>
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${process.env.CLIENT_URL}/shop/checkout" class="button">Complete Purchase</a>
+          <a href="${process.env.CLIENT_URL}/shop/cart" class="button secondary">View Cart</a>
         </div>
         
-        <div style="text-align: center;">
-          <a href="${process.env.CLIENT_URL}/cart" class="button">Complete Your Purchase</a>
+        ${reminderStage === 3 ? `
+          <div class="info-box">
+            <p><strong>⏰ Cart Expiry Notice:</strong> Your cart will be cleared in 24 hours to make room for other customers.</p>
+          </div>
+        ` : ''}
+        
+        <div class="info-box">
+          <h3>Why shop with us?</h3>
+          <ul>
+            <li>✅ Free shipping on orders over ₵100</li>
+            <li>✅ 30-day return policy</li>
+            <li>✅ Secure payment processing</li>
+            <li>✅ Fast delivery nationwide</li>
+          </ul>
+        </div>
+        
+        <p style="font-size: 12px; color: #666; margin-top: 24px;">
+          Don't want these reminders? <a href="${process.env.CLIENT_URL}/unsubscribe?email=${email}&type=cart" style="color: #666;">Unsubscribe from cart reminders</a>
+        </p>
+      `
+    });
+
+    return await this.sendEmail({
+      to: email,
+      subject: `🛒 ${config.subject} - IN-N-OUT Store`,
+      html: htmlContent,
+      emailType: 'abandoned_cart'
+    });
+  }
+
+  // Cart recovery success email
+  async sendCartRecoveryEmail(email, userName, orderDetails) {
+    const htmlContent = this.getModernEmailTemplate({
+      title: 'Thank you for your purchase!',
+      headerColor: '#28a745',
+      content: `
+        <h2>🎉 Purchase Complete!</h2>
+        <p>Hi ${userName},</p>
+        <p>Great news! You've successfully completed your purchase. Thank you for choosing IN-N-OUT Store!</p>
+        
+        <div class="order-details">
+          <h3>Order Summary</h3>
+          <p><strong>Order ID:</strong> #${orderDetails.orderId}</p>
+          <p><strong>Total:</strong> ₵${orderDetails.totalAmount}</p>
+          <p><strong>Estimated Delivery:</strong> ${orderDetails.estimatedDelivery || '3-5 business days'}</p>
+        </div>
+        
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${process.env.CLIENT_URL}/account/orders/${orderDetails.orderId}" class="button">Track Order</a>
           <a href="${process.env.CLIENT_URL}/shop" class="button secondary">Continue Shopping</a>
+        </div>
+        
+        <div class="highlight-box">
+          <h3>What's Next?</h3>
+          <ul>
+            <li>📧 You'll receive a shipping confirmation when your order ships</li>
+            <li>📱 Track your order anytime in your account</li>
+            <li>💬 Contact support if you have any questions</li>
+          </ul>
         </div>
       `
     });
 
     return await this.sendEmail({
       to: email,
-      subject: `🛒 ${userName}, your cart is waiting! (${cartItems.length} items, Gh₵${totalValue.toFixed(2)})`,
-      html: htmlContent
+      subject: '🎉 Order Confirmed - Thanks for completing your purchase!',
+      html: htmlContent,
+      emailType: 'order_confirmation'
     });
   }
 
@@ -1487,6 +1668,342 @@ class EmailService {
       to: customerEmail,
       subject: `📦 Order #${orderDetails.orderId} Delivered - We'd love your feedback!`,
       html: htmlContent
+    });
+  }
+
+  // Security alert emails
+  async sendSecurityAlertEmail(email, userName, alertDetails) {
+    const alertTypes = {
+      'suspicious_login': {
+        color: '#dc3545',
+        icon: '🚨',
+        title: 'Suspicious Login Detected',
+        message: 'We detected a login from an unrecognized device or location.'
+      },
+      'password_changed': {
+        color: '#28a745',
+        icon: '🔐',
+        title: 'Password Changed Successfully',
+        message: 'Your password has been successfully changed.'
+      },
+      'failed_login_attempts': {
+        color: '#ffc107',
+        icon: '⚠️',
+        title: 'Multiple Failed Login Attempts',
+        message: 'Multiple failed login attempts detected on your account.'
+      },
+      'account_locked': {
+        color: '#dc3545',
+        icon: '🔒',
+        title: 'Account Temporarily Locked',
+        message: 'Your account has been temporarily locked due to security reasons.'
+      },
+      'new_device_login': {
+        color: '#17a2b8',
+        icon: '📱',
+        title: 'New Device Login',
+        message: 'Your account was accessed from a new device.'
+      }
+    };
+
+    const config = alertTypes[alertDetails.type] || alertTypes['suspicious_login'];
+
+    const htmlContent = this.getModernEmailTemplate({
+      title: config.title,
+      headerColor: config.color,
+      content: `
+        <h2>${config.icon} ${config.title}</h2>
+        <p>Hi ${userName},</p>
+        <p>${config.message}</p>
+        
+        <div class="info-box">
+          <h3>Security Details</h3>
+          <p><strong>Time:</strong> ${new Date(alertDetails.timestamp).toLocaleString()}</p>
+          <p><strong>IP Address:</strong> ${alertDetails.ipAddress || 'Unknown'}</p>
+          <p><strong>Location:</strong> ${alertDetails.location || 'Unknown'}</p>
+          <p><strong>Device:</strong> ${alertDetails.userAgent || 'Unknown'}</p>
+        </div>
+        
+        ${alertDetails.type === 'suspicious_login' || alertDetails.type === 'new_device_login' ? `
+          <div class="highlight-box">
+            <h3>Was this you?</h3>
+            <p>If you recognize this activity, you can ignore this email. If not, please take immediate action.</p>
+          </div>
+        ` : ''}
+        
+        ${alertDetails.type === 'failed_login_attempts' || alertDetails.type === 'account_locked' ? `
+          <div class="highlight-box">
+            <h3>Account Protection</h3>
+            <p>If you're having trouble signing in, please reset your password or contact support.</p>
+          </div>
+        ` : ''}
+        
+        <div style="text-align: center; margin: 32px 0;">
+          ${alertDetails.type !== 'password_changed' ? `
+            <a href="${process.env.CLIENT_URL}/auth/forgot-password" class="button">Reset Password</a>
+          ` : ''}
+          <a href="${process.env.CLIENT_URL}/support" class="button secondary">Contact Support</a>
+        </div>
+        
+        <div class="info-box">
+          <h3>Security Best Practices</h3>
+          <ul>
+            <li>Use a strong, unique password</li>
+            <li>Enable two-factor authentication when available</li>
+            <li>Don't share your login credentials</li>
+            <li>Log out from shared devices</li>
+          </ul>
+        </div>
+        
+        <p style="font-size: 14px; color: #666; margin-top: 24px;">
+          If you didn't initiate this action, please contact our support team immediately.
+        </p>
+      `
+    });
+
+    return await this.sendEmail({
+      to: email,
+      subject: `🔒 Security Alert: ${config.title} - IN-N-OUT Store`,
+      html: htmlContent,
+      emailType: 'security_alert'
+    });
+  }
+
+  // Account lockout notification
+  async sendAccountLockoutEmail(email, userName, lockoutDetails) {
+    const htmlContent = this.getModernEmailTemplate({
+      title: 'Account Temporarily Locked',
+      headerColor: '#dc3545',
+      content: `
+        <h2>🔒 Account Security Alert</h2>
+        <p>Hi ${userName},</p>
+        <p>Your account has been temporarily locked due to multiple failed login attempts.</p>
+        
+        <div class="info-box">
+          <h3>Lockout Details</h3>
+          <p><strong>Locked at:</strong> ${new Date(lockoutDetails.lockTime).toLocaleString()}</p>
+          <p><strong>Failed attempts:</strong> ${lockoutDetails.attempts || 'Multiple'}</p>
+          <p><strong>Unlock time:</strong> ${lockoutDetails.unlockTime ? new Date(lockoutDetails.unlockTime).toLocaleString() : '15 minutes from lock time'}</p>
+          <p><strong>IP Address:</strong> ${lockoutDetails.ipAddress || 'Unknown'}</p>
+        </div>
+        
+        <div class="highlight-box">
+          <h3>What to do next:</h3>
+          <ul>
+            <li>Wait for the lockout period to expire (15 minutes)</li>
+            <li>Reset your password if you've forgotten it</li>
+            <li>Contact support if you didn't initiate these login attempts</li>
+          </ul>
+        </div>
+        
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${process.env.CLIENT_URL}/auth/forgot-password" class="button">Reset Password</a>
+          <a href="${process.env.CLIENT_URL}/support" class="button secondary">Contact Support</a>
+        </div>
+        
+        <p style="font-size: 14px; color: #666; margin-top: 24px;">
+          Your account security is important to us. If you suspect unauthorized access, please change your password immediately.
+        </p>
+      `
+    });
+
+    return await this.sendEmail({
+      to: email,
+      subject: '🔒 Account Locked - Security Protection - IN-N-OUT Store',
+      html: htmlContent,
+      emailType: 'security_alert'
+    });
+  }
+
+  // Weekly/Monthly report emails
+  async sendWeeklyReportEmail(email, userName, reportData) {
+    const htmlContent = this.getModernEmailTemplate({
+      title: 'Weekly Performance Report',
+      headerColor: '#28a745',
+      content: `
+        <h2>📊 Weekly Report</h2>
+        <p>Hi ${userName},</p>
+        <p>Here's your performance summary for the week of ${reportData.weekStart} to ${reportData.weekEnd}.</p>
+        
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-number">${reportData.totalOrders || 0}</div>
+            <div class="stat-label">Orders</div>
+            <div class="stat-change ${reportData.ordersChange >= 0 ? 'positive' : 'negative'}">
+              ${reportData.ordersChange >= 0 ? '+' : ''}${reportData.ordersChange || 0}%
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">₵${reportData.totalRevenue || 0}</div>
+            <div class="stat-label">Revenue</div>
+            <div class="stat-change ${reportData.revenueChange >= 0 ? 'positive' : 'negative'}">
+              ${reportData.revenueChange >= 0 ? '+' : ''}${reportData.revenueChange || 0}%
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">${reportData.newCustomers || 0}</div>
+            <div class="stat-label">New Customers</div>
+            <div class="stat-change ${reportData.customersChange >= 0 ? 'positive' : 'negative'}">
+              ${reportData.customersChange >= 0 ? '+' : ''}${reportData.customersChange || 0}%
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">${reportData.productsSold || 0}</div>
+            <div class="stat-label">Products Sold</div>
+            <div class="stat-change ${reportData.productsSoldChange >= 0 ? 'positive' : 'negative'}">
+              ${reportData.productsSoldChange >= 0 ? '+' : ''}${reportData.productsSoldChange || 0}%
+            </div>
+          </div>
+        </div>
+        
+        ${reportData.topProducts && reportData.topProducts.length > 0 ? `
+          <div class="highlight-box">
+            <h3>🏆 Top Performing Products</h3>
+            <div class="top-products">
+              ${reportData.topProducts.slice(0, 5).map((product, index) => `
+                <div class="product-item">
+                  <span class="rank">#${index + 1}</span>
+                  <img src="${product.image}" alt="${product.title}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px;">
+                  <div class="product-details">
+                    <h4>${product.title}</h4>
+                    <p>${product.soldCount} sold • ₵${product.revenue}</p>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+        
+        ${reportData.insights && reportData.insights.length > 0 ? `
+          <div class="info-box">
+            <h3>💡 Key Insights</h3>
+            <ul>
+              ${reportData.insights.map(insight => `<li>${insight}</li>`).join('')}
+            </ul>
+          </div>
+        ` : ''}
+        
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${process.env.CLIENT_URL}/${reportData.userRole === 'admin' ? 'admin' : 'super-admin'}/dashboard" class="button">View Full Dashboard</a>
+          <a href="${process.env.CLIENT_URL}/${reportData.userRole === 'admin' ? 'admin' : 'super-admin'}/reports" class="button secondary">Detailed Reports</a>
+        </div>
+        
+        <div class="info-box">
+          <h3>📈 Recommendations</h3>
+          <ul>
+            <li>Focus on promoting your top-performing products</li>
+            <li>Consider restocking items that are selling well</li>
+            <li>Analyze customer feedback for improvement opportunities</li>
+            <li>Monitor seasonal trends for better inventory planning</li>
+          </ul>
+        </div>
+      `
+    });
+
+    return await this.sendEmail({
+      to: email,
+      subject: `📊 Weekly Report: ${reportData.totalOrders} orders, ₵${reportData.totalRevenue} revenue`,
+      html: htmlContent,
+      emailType: 'weekly_report'
+    });
+  }
+
+  async sendMonthlyReportEmail(email, userName, reportData) {
+    const htmlContent = this.getModernEmailTemplate({
+      title: 'Monthly Performance Report',
+      headerColor: '#17a2b8',
+      content: `
+        <h2>📊 Monthly Report - ${reportData.monthName} ${reportData.year}</h2>
+        <p>Hi ${userName},</p>
+        <p>Here's your comprehensive performance summary for ${reportData.monthName} ${reportData.year}.</p>
+        
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-number">${reportData.totalOrders || 0}</div>
+            <div class="stat-label">Total Orders</div>
+            <div class="stat-change ${reportData.ordersChange >= 0 ? 'positive' : 'negative'}">
+              ${reportData.ordersChange >= 0 ? '+' : ''}${reportData.ordersChange || 0}% vs last month
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">₵${reportData.totalRevenue || 0}</div>
+            <div class="stat-label">Total Revenue</div>
+            <div class="stat-change ${reportData.revenueChange >= 0 ? 'positive' : 'negative'}">
+              ${reportData.revenueChange >= 0 ? '+' : ''}${reportData.revenueChange || 0}% vs last month
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">₵${reportData.avgOrderValue || 0}</div>
+            <div class="stat-label">Avg Order Value</div>
+            <div class="stat-change ${reportData.aovChange >= 0 ? 'positive' : 'negative'}">
+              ${reportData.aovChange >= 0 ? '+' : ''}${reportData.aovChange || 0}%
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">${reportData.newCustomers || 0}</div>
+            <div class="stat-label">New Customers</div>
+            <div class="stat-change ${reportData.customersChange >= 0 ? 'positive' : 'negative'}">
+              ${reportData.customersChange >= 0 ? '+' : ''}${reportData.customersChange || 0}%
+            </div>
+          </div>
+        </div>
+        
+        <div class="highlight-box">
+          <h3>🏆 Month Highlights</h3>
+          <div class="achievements">
+            ${reportData.highlights && reportData.highlights.map(highlight => `
+              <div class="achievement">
+                <span class="achievement-icon">${highlight.icon}</span>
+                <div class="achievement-text">
+                  <h4>${highlight.title}</h4>
+                  <p>${highlight.description}</p>
+                </div>
+              </div>
+            `).join('') || '<p>Great month! Keep up the excellent work.</p>'}
+          </div>
+        </div>
+        
+        ${reportData.categoryBreakdown && reportData.categoryBreakdown.length > 0 ? `
+          <div class="info-box">
+            <h3>📈 Sales by Category</h3>
+            <div class="category-breakdown">
+              ${reportData.categoryBreakdown.map(category => `
+                <div class="category-item">
+                  <span class="category-name">${category.name}</span>
+                  <span class="category-sales">₵${category.sales}</span>
+                  <span class="category-percentage">${category.percentage}%</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+        
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${process.env.CLIENT_URL}/${reportData.userRole === 'admin' ? 'admin' : 'super-admin'}/analytics" class="button">View Analytics</a>
+          <a href="${process.env.CLIENT_URL}/${reportData.userRole === 'admin' ? 'admin' : 'super-admin'}/export-report?month=${reportData.monthNumber}&year=${reportData.year}" class="button secondary">Export Report</a>
+        </div>
+        
+        <div class="info-box">
+          <h3>🚀 Growth Opportunities</h3>
+          <ul>
+            <li>Consider expanding inventory in your best-performing categories</li>
+            <li>Implement loyalty programs to retain existing customers</li>
+            <li>Analyze seasonal patterns for better planning</li>
+            <li>Focus marketing efforts on high-value customer segments</li>
+          </ul>
+        </div>
+        
+        <p style="font-size: 14px; color: #666; margin-top: 24px;">
+          Want to customize these reports? <a href="${process.env.CLIENT_URL}/settings/notifications">Update your preferences</a>
+        </p>
+      `
+    });
+
+    return await this.sendEmail({
+      to: email,
+      subject: `📊 ${reportData.monthName} Report: ₵${reportData.totalRevenue} revenue, ${reportData.totalOrders} orders`,
+      html: htmlContent,
+      emailType: 'monthly_report'
     });
   }
 }
