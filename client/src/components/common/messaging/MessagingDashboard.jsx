@@ -1070,76 +1070,87 @@ const MessagingDashboard = () => {
                       )}
                     </div>
 
-                    {/* Message Input - Fixed at Bottom */}
-                    {showInlineAttachment ? (
-                      <div className="flex-shrink-0 border-t border-gray-200 bg-white">
+                    {/* Inline Components - Above Footer */}
+                    {showInlineAttachment && (
+                      <div className="flex-shrink-0 border-t border-gray-200 bg-white shadow-lg">
                         <InlineAttachmentMenu
                           conversationId={activeConversation._id}
                           onClose={() => setShowInlineAttachment(false)}
                           onFilesSent={handleFileUpload}
                         />
                       </div>
-                    ) : showInlineRecorder ? (
-                      <div className="flex-shrink-0 border-t border-gray-200 bg-white">
+                    )}
+
+                    {showInlineRecorder && (
+                      <div className="flex-shrink-0 border-t border-gray-200 bg-white shadow-lg">
                         <InlineVoiceRecorder
                           conversationId={activeConversation._id}
                           onClose={() => setShowInlineRecorder(false)}
                           onSendAudio={handleAudioSent}
                         />
                       </div>
-                    ) : (
-                      <div className="flex-shrink-0 bg-white p-3 sm:p-4 lg:p-6 border-t border-gray-200 safe-area-inset-bottom">
-                        <div className="flex items-end space-x-2 sm:space-x-3">
-                          {/* File Upload Button */}
-                          <button 
-                            onClick={() => setShowInlineAttachment(true)}
-                            className="flex-shrink-0 p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors touch-manipulation" 
-                            title="Attach file"
-                          >
-                            <Paperclip className="w-5 h-5" />
-                          </button>
-                          
-                          {/* Voice Recording Button */}
-                          <button 
-                            onClick={() => setShowInlineRecorder(true)}
-                            className="flex-shrink-0 p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors touch-manipulation" 
-                            title="Record voice message"
-                          >
-                            <Mic className="w-5 h-5" />
-                          </button>
-                          
-                          <div className="flex-1 relative">
-                            <div className="relative">
-                              <input
-                                type="text"
-                                value={newMessage}
-                                onChange={(e) => setNewMessage(e.target.value)}
-                                onKeyPress={handleKeyPress}
-                                placeholder="Type your message here..."
-                                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 text-base placeholder-gray-500 resize-none touch-manipulation"
-                                disabled={sendingMessage}
-                              />
-                              {sendingMessage && (
-                                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
-                                </div>
-                              )}
-                            </div>
-                            <div className="text-xs text-gray-400 mt-1 px-2 hidden sm:block">
-                              Press Enter to send • Shift + Enter for new line
-                            </div>
-                          </div>
-                          <button
-                            onClick={handleSendMessage}
-                            disabled={!newMessage.trim() || sendingMessage}
-                            className="flex-shrink-0 p-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md disabled:hover:shadow-sm touch-manipulation"
-                            title="Send message"
-                          >
-                            <Send className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </div>
                     )}
+
+                    {/* Message Input Footer - Always Visible */}
+                    <div className="flex-shrink-0 bg-white p-3 sm:p-4 lg:p-6 border-t border-gray-200 safe-area-inset-bottom">
+                      <div className="flex items-end space-x-2 sm:space-x-3">
+                        {/* File Upload Button */}
+                        <button 
+                          onClick={() => setShowInlineAttachment(!showInlineAttachment)}
+                          className={`flex-shrink-0 p-3 rounded-xl transition-colors touch-manipulation ${
+                            showInlineAttachment 
+                              ? 'bg-blue-100 text-blue-600' 
+                              : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:bg-gray-200'
+                          }`}
+                          title="Attach file"
+                        >
+                          <Paperclip className="w-5 h-5" />
+                        </button>
+                        
+                        {/* Voice Recording Button */}
+                        <button 
+                          onClick={() => setShowInlineRecorder(!showInlineRecorder)}
+                          className={`flex-shrink-0 p-3 rounded-xl transition-colors touch-manipulation ${
+                            showInlineRecorder 
+                              ? 'bg-red-100 text-red-600' 
+                              : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:bg-gray-200'
+                          }`}
+                          title="Record voice message"
+                        >
+                          <Mic className="w-5 h-5" />
+                        </button>
+                        
+                        <div className="flex-1 relative">
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={newMessage}
+                              onChange={(e) => setNewMessage(e.target.value)}
+                              onKeyPress={handleKeyPress}
+                              placeholder="Type your message here..."
+                              className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 text-base placeholder-gray-500 resize-none touch-manipulation"
+                              disabled={sendingMessage}
+                            />
+                            {sendingMessage && (
+                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-400 mt-1 px-2 hidden sm:block">
+                            Press Enter to send • Shift + Enter for new line
+                          </div>
+                        </div>
+                        <button
+                          onClick={handleSendMessage}
+                          disabled={!newMessage.trim() || sendingMessage}
+                          className="flex-shrink-0 p-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md disabled:hover:shadow-sm touch-manipulation"
+                          title="Send message"
+                        >
+                          <Send className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
                   </>
                 ) : (
                   <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
@@ -1190,7 +1201,7 @@ const MessagingDashboard = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-200px)] w-full bg-gray-50 flex rounded-lg shadow-sm overflow-hidden">
+    <div className="-m-4 sm:-m-6 lg:-m-8 h-[calc(100vh-128px)] bg-gray-50 flex overflow-hidden border border-gray-200 rounded-lg shadow-sm">
       {/* Sound Notifications */}
       <SoundNotifications />
       
