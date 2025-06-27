@@ -693,18 +693,33 @@ const updateUserOnlineStatus = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
   try {
-    await User.findByIdAndUpdate(userId, {
-      isOnline: true,
-      lastSeen: new Date(),
-      lastHeartbeat: new Date()
-    });
+    console.log('📡 Heartbeat received from user:', userId);
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      userId, 
+      {
+        isOnline: true,
+        lastSeen: new Date(),
+        lastHeartbeat: new Date()
+      },
+      { new: true }
+    );
 
+    if (!updatedUser) {
+      console.log('❌ User not found for heartbeat:', userId);
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    console.log('✅ Heartbeat updated for user:', userId);
     res.json({
       success: true,
       message: 'Online status updated'
     });
   } catch (error) {
-    console.error('Error updating online status:', error);
+    console.error('❌ Error updating online status:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update online status'
@@ -717,25 +732,39 @@ const getUserOnlineStatus = asyncHandler(async (req, res) => {
   const { userId } = req.params;
 
   try {
-    const user = await User.findById(userId).select('isOnline lastSeen lastHeartbeat');
+    console.log('📡 Status check requested for user:', userId);
+    
+    const user = await User.findById(userId).select('isOnline lastSeen lastHeartbeat userName');
     
     if (!user) {
+      console.log('❌ User not found for status check:', userId);
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
 
-    // Consider user offline if no heartbeat in last 2 minutes
+    // Consider user offline if no heartbeat in last 3 minutes (more generous)
     const now = new Date();
-    const twoMinutesAgo = new Date(now.getTime() - 2 * 60 * 1000);
+    const threeMinutesAgo = new Date(now.getTime() - 3 * 60 * 1000);
     
     const isActuallyOnline = user.isOnline && 
       user.lastHeartbeat && 
-      user.lastHeartbeat > twoMinutesAgo;
+      user.lastHeartbeat > threeMinutesAgo;
+
+    console.log('📡 Status check result for user:', {
+      userId,
+      userName: user.userName,
+      isOnline: user.isOnline,
+      lastHeartbeat: user.lastHeartbeat,
+      lastSeen: user.lastSeen,
+      isActuallyOnline,
+      threeMinutesAgo
+    });
 
     // If user appears offline based on heartbeat, update their status
     if (user.isOnline && !isActuallyOnline) {
+      console.log('📡 Marking user as offline due to stale heartbeat:', userId);
       await User.findByIdAndUpdate(userId, {
         isOnline: false,
         lastSeen: user.lastHeartbeat || user.lastSeen || new Date()
@@ -745,13 +774,14 @@ const getUserOnlineStatus = asyncHandler(async (req, res) => {
     res.json({
       success: true,
       data: {
+        userId,
         isOnline: isActuallyOnline,
         lastSeen: user.lastSeen,
         lastHeartbeat: user.lastHeartbeat
       }
     });
   } catch (error) {
-    console.error('Error getting online status:', error);
+    console.error('❌ Error getting online status:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to get online status'

@@ -64,23 +64,82 @@ const InlineVoiceRecorder = ({
     try {
       chunksRef.current = [];
       
-      // Try MP3 format first for mobile compatibility, fallback to WebM
-      let mimeType = 'audio/webm;codecs=opus';
+      // Detect mobile and iOS specifically
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      console.log('🎵 Device detection:', { isIOS, isMobile, userAgent: navigator.userAgent });
+      
+      // Force mobile-friendly formats for iOS and mobile devices
+      let mimeType = 'audio/webm;codecs=opus'; // fallback
       let fileExtension = 'webm';
       
-      // Check for MP3 support (better mobile compatibility)
-      if (MediaRecorder.isTypeSupported('audio/mp4')) {
-        mimeType = 'audio/mp4';
-        fileExtension = 'mp4';
-      } else if (MediaRecorder.isTypeSupported('audio/mpeg')) {
-        mimeType = 'audio/mpeg';
-        fileExtension = 'mp3';
-      } else if (MediaRecorder.isTypeSupported('audio/wav')) {
-        mimeType = 'audio/wav';
-        fileExtension = 'wav';
+      if (isIOS) {
+        // iOS prefers AAC/MP4
+        if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          mimeType = 'audio/mp4';
+          fileExtension = 'mp4';
+          console.log('🎵 iOS: Using MP4 format');
+        } else if (MediaRecorder.isTypeSupported('audio/aac')) {
+          mimeType = 'audio/aac';
+          fileExtension = 'aac';
+          console.log('🎵 iOS: Using AAC format');
+        } else {
+          console.log('⚠️ iOS: No preferred formats supported, falling back to WebM');
+        }
+      } else if (isMobile) {
+        // Android and other mobile prefer MP3/MPEG
+        if (MediaRecorder.isTypeSupported('audio/mpeg')) {
+          mimeType = 'audio/mpeg';
+          fileExtension = 'mp3';
+          console.log('🎵 Mobile: Using MP3 format');
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          mimeType = 'audio/mp4';
+          fileExtension = 'mp4';
+          console.log('🎵 Mobile: Using MP4 format');
+        } else if (MediaRecorder.isTypeSupported('audio/wav')) {
+          mimeType = 'audio/wav';
+          fileExtension = 'wav';
+          console.log('🎵 Mobile: Using WAV format');
+        }
+      } else {
+        // Desktop - try modern formats first
+        if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          mimeType = 'audio/mp4';
+          fileExtension = 'mp4';
+        } else if (MediaRecorder.isTypeSupported('audio/mpeg')) {
+          mimeType = 'audio/mpeg';
+          fileExtension = 'mp3';
+        } else if (MediaRecorder.isTypeSupported('audio/wav')) {
+          mimeType = 'audio/wav';
+          fileExtension = 'wav';
+        }
       }
       
-      console.log('🎵 Using audio format:', mimeType);
+      console.log('🎵 Final audio format selected:', { mimeType, fileExtension });
+      
+      // Test if the selected format is actually supported
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        console.log('⚠️ Selected format not supported, testing alternatives...');
+        
+        // Test common formats one by one
+        const testFormats = [
+          { type: 'audio/mp4', ext: 'mp4' },
+          { type: 'audio/mpeg', ext: 'mp3' },
+          { type: 'audio/wav', ext: 'wav' },
+          { type: 'audio/webm;codecs=opus', ext: 'webm' },
+          { type: 'audio/ogg;codecs=opus', ext: 'ogg' }
+        ];
+        
+        for (const format of testFormats) {
+          if (MediaRecorder.isTypeSupported(format.type)) {
+            mimeType = format.type;
+            fileExtension = format.ext;
+            console.log('✅ Found working format:', format);
+            break;
+          }
+        }
+      }
       
       const mediaRecorder = new MediaRecorder(streamRef.current, {
         mimeType: mimeType

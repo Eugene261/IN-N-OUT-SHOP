@@ -12,8 +12,16 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
   const audioRef = useRef(null);
   const loadingTimeoutRef = useRef(null);
 
-  // Mobile detection
+  // Mobile detection with iOS-specific handling
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+  console.log('🎵 VoiceMessagePlayer: Device info:', {
+    isMobile,
+    isIOS,
+    audioUrl,
+    userAgent: navigator.userAgent
+  });
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -62,31 +70,55 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
     };
     const handleError = (e) => {
       console.error('Audio error:', e);
+      console.log('🎵 Audio error details:', {
+        error: e.target?.error,
+        audioUrl,
+        currentSrc: audioRef.current?.currentSrc,
+        networkState: audioRef.current?.networkState,
+        readyState: audioRef.current?.readyState
+      });
+      
       setIsLoading(false);
       setHasError(true);
       setIsPlaying(false);
       
-      // More specific error messages
+      // More specific error messages for iOS
       const error = e.target?.error;
       if (error) {
         switch (error.code) {
           case error.MEDIA_ERR_ABORTED:
-            setErrorMessage('Audio loading was aborted');
+            setErrorMessage('Audio loading was stopped');
             break;
           case error.MEDIA_ERR_NETWORK:
             setErrorMessage('Network error loading audio');
             break;
           case error.MEDIA_ERR_DECODE:
-            setErrorMessage('Audio format not supported');
+            if (isIOS) {
+              setErrorMessage('Audio format not supported on iOS. Try downloading instead.');
+            } else {
+              setErrorMessage('Audio format not supported');
+            }
             break;
           case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
-            setErrorMessage('Audio source not supported');
+            if (isIOS) {
+              setErrorMessage('Audio source not supported on iOS. Use download option.');
+            } else {
+              setErrorMessage('Audio source not supported');
+            }
             break;
           default:
-            setErrorMessage('Unable to play audio');
+            if (isIOS) {
+              setErrorMessage('Cannot play audio on iOS. Please download to listen.');
+            } else {
+              setErrorMessage('Unable to play audio');
+            }
         }
       } else {
-        setErrorMessage('Unable to play audio');
+        if (isIOS) {
+          setErrorMessage('iOS audio playback issue. Try download option.');
+        } else {
+          setErrorMessage('Unable to play audio');
+        }
       }
     };
 
@@ -485,29 +517,55 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
         x5-video-player-type="h5"
         x5-video-player-fullscreen="false"
       >
-        {/* Mobile-preferred formats first - UPDATED for better mobile support */}
+        {/* iOS-optimized source order */}
         {audioUrl && (
           <>
-            {/* Try the original URL first */}
-            <source src={audioUrl} type="audio/mp4" />
-            <source src={audioUrl} type="audio/mpeg" />
-            <source src={audioUrl} type="audio/mp3" />
-            <source src={audioUrl} type="audio/aac" />
-            <source src={audioUrl} type="audio/m4a" />
-            
-            {/* If Cloudinary URL, try converted formats */}
-            {audioUrl.includes('cloudinary') && (
+            {isIOS ? (
               <>
-                <source src={audioUrl.replace(/\.[^.]+$/, '.mp3')} type="audio/mp3" />
-                <source src={audioUrl.replace(/\.[^.]+$/, '.mp4')} type="audio/mp4" />
-                <source src={audioUrl.replace(/\.[^.]+$/, '.m4a')} type="audio/mp4" />
+                {/* iOS prefers these formats */}
+                <source src={audioUrl} type="audio/mp4" />
+                <source src={audioUrl} type="audio/aac" />
+                <source src={audioUrl} type="audio/m4a" />
+                <source src={audioUrl} type="audio/mpeg" />
+                
+                {/* Try Cloudinary format conversions for iOS */}
+                {audioUrl.includes('cloudinary') && (
+                  <>
+                    <source src={audioUrl.replace(/\.(webm|ogg|wav)$/i, '.mp4')} type="audio/mp4" />
+                    <source src={audioUrl.replace(/\.(webm|ogg|wav)$/i, '.m4a')} type="audio/mp4" />
+                    <source src={audioUrl.replace(/\.(webm|ogg|wav)$/i, '.aac')} type="audio/aac" />
+                  </>
+                )}
+                
+                {/* Legacy formats as last resort */}
+                <source src={audioUrl} type="audio/wav" />
+                <source src={audioUrl} type="audio/webm;codecs=opus" />
+                <source src={audioUrl} type="audio/ogg;codecs=vorbis" />
+              </>
+            ) : (
+              <>
+                {/* Non-iOS mobile and desktop */}
+                <source src={audioUrl} type="audio/mp4" />
+                <source src={audioUrl} type="audio/mpeg" />
+                <source src={audioUrl} type="audio/mp3" />
+                <source src={audioUrl} type="audio/aac" />
+                <source src={audioUrl} type="audio/m4a" />
+                
+                {/* If Cloudinary URL, try converted formats */}
+                {audioUrl.includes('cloudinary') && (
+                  <>
+                    <source src={audioUrl.replace(/\.[^.]+$/, '.mp3')} type="audio/mp3" />
+                    <source src={audioUrl.replace(/\.[^.]+$/, '.mp4')} type="audio/mp4" />
+                    <source src={audioUrl.replace(/\.[^.]+$/, '.m4a')} type="audio/mp4" />
+                  </>
+                )}
+                
+                {/* Legacy formats as fallback */}
+                <source src={audioUrl} type="audio/webm;codecs=opus" />
+                <source src={audioUrl} type="audio/wav" />
+                <source src={audioUrl} type="audio/ogg;codecs=vorbis" />
               </>
             )}
-            
-            {/* Legacy formats as fallback */}
-            <source src={audioUrl} type="audio/webm;codecs=opus" />
-            <source src={audioUrl} type="audio/wav" />
-            <source src={audioUrl} type="audio/ogg;codecs=vorbis" />
           </>
         )}
         Your browser does not support the audio element.

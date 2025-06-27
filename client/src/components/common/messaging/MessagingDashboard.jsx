@@ -82,6 +82,14 @@ const MessagingDashboard = () => {
   const heartbeatIntervalRef = useRef(null);
   const statusCheckIntervalRef = useRef(null);
 
+  // Track conversations with ref to prevent infinite loops
+  const conversationsRef = useRef(conversations);
+  
+  // Update ref when conversations change (but don't trigger effects)
+  useEffect(() => {
+    conversationsRef.current = conversations;
+  }, [conversations]);
+
   useEffect(() => {
     // Initialize data with error handling
     const initializeMessaging = async () => {
@@ -291,13 +299,13 @@ const MessagingDashboard = () => {
       }, 30000); // Every 30 seconds
     };
 
-    // Check online status of conversation participants every minute
+    // Check online status of conversation participants every 2 minutes (reduced frequency)
     const startStatusCheck = () => {
       statusCheckIntervalRef.current = setInterval(async () => {
-        if (navigator.onLine && conversations.length > 0) {
+        if (navigator.onLine && conversationsRef.current?.length > 0) {
           await checkParticipantStatuses();
         }
-      }, 60000); // Every minute
+      }, 120000); // Every 2 minutes to prevent overloading mobile
     };
 
     startHeartbeat();
@@ -314,18 +322,22 @@ const MessagingDashboard = () => {
         clearInterval(statusCheckIntervalRef.current);
       }
     };
-  }, [user?.id, conversations]);
+  }, [user?.id]); // REMOVED conversations dependency to prevent infinite loop
 
   // Check online status of conversation participants
   const checkParticipantStatuses = async () => {
-    if (!conversations.length) return;
+    // Use ref to get current conversations without dependency issues
+    const currentConversations = conversationsRef.current;
+    if (!currentConversations?.length) return;
 
     try {
       const token = localStorage.getItem('token');
+      if (!token) return;
+      
       const allParticipants = new Set();
       
       // Collect all unique participant IDs
-      conversations.forEach(conv => {
+      currentConversations.forEach(conv => {
         conv.participants?.forEach(p => {
           const participantId = p.user?._id || p.user;
           if (participantId && participantId !== user?.id) {
@@ -334,17 +346,26 @@ const MessagingDashboard = () => {
         });
       });
 
-      // Check status for each participant
-      const statusPromises = Array.from(allParticipants).map(async (participantId) => {
+      if (allParticipants.size === 0) return;
+
+      // Check status for each participant with timeout
+      const statusPromises = Array.from(allParticipants).slice(0, 10).map(async (participantId) => {
         try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
           const response = await axios.get(
             `${import.meta.env.VITE_API_URL}/api/common/messaging/users/${participantId}/status`,
             {
-              headers: { 'Authorization': `Bearer ${token}` }
+              headers: { 'Authorization': `Bearer ${token}` },
+              signal: controller.signal
             }
           );
+          
+          clearTimeout(timeoutId);
           return { participantId, status: response.data.data };
         } catch (error) {
+          // Return offline status for failed requests
           return { participantId, status: { isOnline: false, lastSeen: new Date() } };
         }
       });
@@ -358,6 +379,7 @@ const MessagingDashboard = () => {
       setParticipantStatuses(newStatuses);
     } catch (error) {
       console.error('Error checking participant statuses:', error);
+      // Don't crash the app, just log the error
     }
   };
 
@@ -592,17 +614,17 @@ const MessagingDashboard = () => {
     }
   };
 
-  // Fetch conversations on mount and when user changes
+  // Initial status check when conversations are loaded (only once)
   useEffect(() => {
-    if (user?.id) {
-      dispatch(fetchConversations({ limit: 50 }));
-      
-      // Initial status check for participants
-      setTimeout(() => {
+    if (conversations?.length > 0 && hasInitialized) {
+      // Delay initial status check to avoid overwhelming mobile
+      const timeoutId = setTimeout(() => {
         checkParticipantStatuses();
-      }, 1000);
+      }, 2000);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [dispatch, user?.id]);
+  }, [hasInitialized]); // Only run when initialized, not on every conversation change
 
   // Mark user as offline when leaving the page
   useEffect(() => {
@@ -692,442 +714,485 @@ const MessagingDashboard = () => {
       {/* Sound Notifications */}
       <SoundNotifications />
       
-      {/* Conversations Sidebar */}
-      <div className={`${
-        showConversations ? 'flex' : 'hidden'
-      } lg:flex lg:w-1/3 w-full bg-white border-r border-gray-200 flex-col relative shadow-sm`}>
-        {/* Header */}
-        <div className="p-4 lg:p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <MessageSquare className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <h1 className="text-lg lg:text-xl font-bold text-gray-900">Messages</h1>
-                <p className="text-sm text-gray-600">
-                  {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
-                </p>
-              </div>
-              {totalUnread > 0 && (
-                <span className="bg-red-500 text-white text-xs font-semibold rounded-full px-2.5 py-1 min-w-[24px] text-center shadow-sm">
-                  {totalUnread > 99 ? '99+' : totalUnread}
-                </span>
-              )}
-            </div>
-            <button
-              onClick={() => dispatch(setShowNewChatModal(true))}
-              className="p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-sm hover:shadow-md"
-              disabled={!availableUsers?.length}
-              title="Start new conversation"
-            >
-              <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
-            </button>
-          </div>
-          
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Search conversations..."
-              value={searchTerm}
-              onChange={(e) => dispatch(setSearchTerm(e.target.value))}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm text-sm"
-            />
-          </div>
-        </div>
-
-        {/* Conversations List - Scrollable */}
-        <div className="flex-1 min-h-0 overflow-y-auto bg-gray-50">
-          {filteredConversations?.length === 0 ? (
-            <div className="p-8 text-center">
-              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MessageSquare className="w-8 h-8 text-gray-400" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {conversations?.length === 0 ? 'No conversations yet' : 'No matches found'}
-              </h3>
-              <p className="text-gray-500 text-sm">
-                {conversations?.length === 0 
-                  ? 'Start a new conversation to get connected with your team'
-                  : 'Try adjusting your search terms'
-                }
-              </p>
-            </div>
-          ) : (
-            <div className="p-2">
-              {filteredConversations?.map((conversation) => {
-                const otherUser = getOtherParticipant(conversation);
-                const unreadCount = conversation?.unreadCounts?.find(u => u.user === user?.id)?.count || 0;
-                const isActive = activeConversation?._id === conversation._id;
-                const hasUnread = unreadCount > 0;
-
-                // Unread highlighting and badge system working! 🎯
-                
-                return (
-                  <motion.div
-                    key={conversation._id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`mb-2 p-3 lg:p-4 cursor-pointer rounded-xl transition-all duration-200 ${
-                      isActive 
-                        ? 'bg-blue-600 text-white shadow-lg' 
-                        : hasUnread
-                          ? 'bg-blue-50 border-2 border-blue-200 hover:bg-blue-100 shadow-sm'
-                          : 'bg-white hover:bg-gray-50 hover:shadow-sm'
-                    }`}
-                    onClick={() => handleConversationSelect(conversation)}
-                  >
-                    <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0 relative">
-                        <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center ${
-                          isActive ? 'bg-blue-500' : 'bg-gradient-to-br from-blue-400 to-purple-500'
-                        }`}>
-                          <User className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
-                        </div>
-                        {unreadCount > 0 && !isActive && (
-                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold rounded-full px-1.5 py-0.5 min-w-[20px] text-center shadow-sm">
-                            {unreadCount > 9 ? '9+' : unreadCount}
-                          </span>
-                        )}
+      {/* Error Boundary for Mobile */}
+      {(() => {
+        try {
+          return (
+            <>
+              {/* Conversations Sidebar */}
+              <div className={`${
+                showConversations ? 'flex' : 'hidden'
+              } lg:flex lg:w-1/3 w-full bg-white border-r border-gray-200 flex-col relative shadow-sm`}>
+                {/* Header */}
+                <div className="p-4 lg:p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <MessageSquare className="w-5 h-5 text-blue-600" />
                       </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className={`truncate ${
-                            hasUnread && !isActive ? 'font-bold text-blue-900' : 
-                            isActive ? 'font-semibold text-white' : 'font-semibold text-gray-900'
-                          }`}>
-                            {otherUser?.userName || 'Unknown User'}
-                          </p>
-                          <div className="flex items-center space-x-2">
-                            {conversation?.lastMessage?.sentAt && (
-                              <span className={`text-xs whitespace-nowrap ${
-                                hasUnread && !isActive ? 'font-semibold text-blue-700' :
-                                isActive ? 'text-blue-100' : 'text-gray-500'
-                              }`}>
-                                {formatTime(conversation.lastMessage.sentAt)}
-                              </span>
-                            )}
+                      <div>
+                        <h1 className="text-lg lg:text-xl font-bold text-gray-900">Messages</h1>
+                        <p className="text-sm text-gray-600">
+                          {conversations?.length || 0} conversation{(conversations?.length || 0) !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                      {totalUnread > 0 && (
+                        <span className="bg-red-500 text-white text-xs font-semibold rounded-full px-2.5 py-1 min-w-[24px] text-center shadow-sm">
+                          {totalUnread > 99 ? '99+' : totalUnread}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => dispatch(setShowNewChatModal(true))}
+                      className="p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                      disabled={!availableUsers?.length}
+                      title="Start new conversation"
+                    >
+                      <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
+                    </button>
+                  </div>
+                  
+                  {/* Search */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      placeholder="Search conversations..."
+                      value={searchTerm}
+                      onChange={(e) => dispatch(setSearchTerm(e.target.value))}
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Conversations List - Scrollable */}
+                <div className="flex-1 min-h-0 overflow-y-auto bg-gray-50">
+                  {filteredConversations?.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <MessageSquare className="w-8 h-8 text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        {conversations?.length === 0 ? 'No conversations yet' : 'No matches found'}
+                      </h3>
+                      <p className="text-gray-500 text-sm">
+                        {conversations?.length === 0 
+                          ? 'Start a new conversation to get connected with your team'
+                          : 'Try adjusting your search terms'
+                        }
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-2">
+                      {(filteredConversations || []).map((conversation) => {
+                        try {
+                          const otherUser = getOtherParticipant(conversation);
+                          const unreadCount = conversation?.unreadCounts?.find(u => {
+                            const unreadUserId = u.user?._id || u.user;
+                            return unreadUserId?.toString() === user?.id?.toString();
+                          })?.count || 0;
+                          const isActive = activeConversation?._id === conversation._id;
+                          const hasUnread = unreadCount > 0;
+
+                          return (
+                            <motion.div
+                              key={conversation._id}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className={`m-1 p-3 lg:p-4 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md border-2 ${
+                                isActive 
+                                  ? 'bg-blue-50 border-blue-200 shadow-sm' 
+                                  : hasUnread 
+                                    ? 'bg-white border-red-100 shadow-sm hover:border-red-200' 
+                                    : 'bg-white border-gray-100 hover:border-gray-200'
+                              }`}
+                              onClick={() => handleConversationSelect(conversation)}
+                            >
+                              <div className="flex items-start space-x-3">
+                                <div className="flex-shrink-0 relative">
+                                  <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center ${
+                                    isActive ? 'bg-blue-500' : 'bg-gradient-to-br from-blue-400 to-purple-500'
+                                  }`}>
+                                    <User className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
+                                  </div>
+                                  {unreadCount > 0 && !isActive && (
+                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold rounded-full px-1.5 py-0.5 min-w-[20px] text-center shadow-sm">
+                                      {unreadCount > 9 ? '9+' : unreadCount}
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <h3 className={`font-semibold truncate ${
+                                      isActive ? 'text-blue-900' : hasUnread ? 'text-gray-900' : 'text-gray-800'
+                                    }`}>
+                                      {otherUser?.userName || 'Unknown User'}
+                                    </h3>
+                                    <span className="text-xs text-gray-500 flex-shrink-0">
+                                      {conversation?.lastMessage?.sentAt ? formatTime(conversation.lastMessage.sentAt) : ''}
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex-1">
+                                      <p className={`text-sm truncate mb-1 ${
+                                        hasUnread ? 'text-gray-900 font-medium' : 'text-gray-600'
+                                      }`}>
+                                        {conversation?.lastMessage?.content || 'No messages yet'}
+                                      </p>
+                                      
+                                      <div className="flex items-center space-x-2">
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                          otherUser?.role === 'superAdmin' 
+                                            ? 'bg-purple-100 text-purple-800' 
+                                            : 'bg-green-100 text-green-800'
+                                        }`}>
+                                          {otherUser?.role === 'superAdmin' ? 'Super Admin' : 'Admin'}
+                                        </span>
+                                        
+                                        {/* Online status indicator */}
+                                        {(() => {
+                                          const participantId = otherUser?._id;
+                                          if (!participantId) return null;
+                                          
+                                          const onlineStatus = getOnlineStatus(participantId);
+                                          return (
+                                            <div className="flex items-center space-x-1">
+                                              <span className={`w-2 h-2 ${onlineStatus.color} rounded-full${onlineStatus.isOnline ? ' animate-pulse' : ''}`}></span>
+                                              <span className="text-xs text-gray-500">{onlineStatus.text}</span>
+                                            </div>
+                                          );
+                                        })()}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        } catch (err) {
+                          console.error('Error rendering conversation:', err, conversation);
+                          return (
+                            <div key={conversation._id || Math.random()} className="m-1 p-3 bg-red-50 border border-red-200 rounded-xl">
+                              <p className="text-red-600 text-sm">Error loading conversation</p>
+                            </div>
+                          );
+                        }
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Chat Area */}
+              <div className={`${
+                showConversations ? 'hidden' : 'flex'
+              } lg:flex flex-1 flex-col bg-gray-50 h-full`}>
+                {activeConversation ? (
+                  <>
+                    {/* Conversation Header - Fixed */}
+                    <div className="flex-shrink-0 border-b border-gray-200 bg-white px-4 py-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          {/* Back Button for Mobile */}
+                          <button
+                            onClick={() => setShowConversations(true)}
+                            className="lg:hidden p-1 text-gray-400 hover:text-gray-600 rounded-md"
+                          >
+                            <ArrowLeft className="w-5 h-5" />
+                          </button>
+                          
+                          {/* Conversation Info */}
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <User className="w-4 h-4 text-blue-600" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium text-gray-900 text-sm sm:text-base">
+                                {activeConversation?.title || 'Conversation'}
+                              </h3>
+                              {/* Show online status of other participant */}
+                              {activeConversation?.participants && (
+                                <div className="flex items-center space-x-1">
+                                  {(() => {
+                                    const otherParticipant = activeConversation.participants.find(p => {
+                                      const participantId = p.user?._id || p.user;
+                                      return participantId !== user?.id;
+                                    });
+                                    
+                                    if (otherParticipant) {
+                                      const participantId = otherParticipant.user?._id || otherParticipant.user;
+                                      const onlineStatus = getOnlineStatus(participantId);
+                                      return (
+                                        <>
+                                          <span className={`w-2 h-2 ${onlineStatus.color} rounded-full${onlineStatus.isOnline ? ' animate-pulse' : ''}`}></span>
+                                          <span className="text-sm text-gray-500">{onlineStatus.text}</span>
+                                        </>
+                                      );
+                                    }
+                                    return null;
+                                  })()}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                        
-                        <p className={`text-sm truncate mb-2 ${
-                          hasUnread && !isActive ? 'font-semibold text-blue-800' :
-                          isActive ? 'text-blue-100' : 'text-gray-600'
-                        }`}>
-                          {conversation?.lastMessage?.content || 'Start a conversation...'}
-                        </p>
-                        
-                        <div className="flex items-center justify-between">
-                          <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-                            otherUser?.role === 'superAdmin' 
-                              ? isActive ? 'bg-purple-400 text-white' : 'bg-purple-100 text-purple-800'
-                              : isActive ? 'bg-green-400 text-white' : 'bg-green-100 text-green-800'
-                          }`}>
-                            {otherUser?.role === 'superAdmin' ? 'Super Admin' : 'Admin'}
-                          </span>
-                          {unreadCount > 0 && isActive && (
-                            <span className="bg-white text-blue-600 text-xs font-semibold rounded-full px-2 py-1">
-                              {unreadCount} new
-                            </span>
-                          )}
-                        </div>
                       </div>
                     </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
 
-      {/* Chat Area */}
-      <div className={`${
-        showConversations ? 'hidden' : 'flex'
-      } lg:flex flex-1 flex-col bg-gray-50 h-full`}>
-        {activeConversation ? (
-          <>
-            {/* Conversation Header - Fixed */}
-            <div className="flex-shrink-0 border-b border-gray-200 bg-white px-4 py-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  {/* Back Button for Mobile */}
-                  <button
-                    onClick={() => setShowConversations(true)}
-                    className="lg:hidden p-1 text-gray-400 hover:text-gray-600 rounded-md"
-                  >
-                    <ArrowLeft className="w-5 h-5" />
-                  </button>
-                  
-                  {/* Conversation Info */}
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <User className="w-4 h-4 text-blue-600" />
+                    {/* Messages - Scrollable */}
+                    <div className="flex-1 min-h-0 overflow-y-auto p-4 lg:p-6 space-y-4">
+                      {messagesLoading && messages?.length === 0 ? (
+                        <div className="flex justify-center py-8">
+                          <div className="flex items-center space-x-2 text-blue-600">
+                            <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"></div>
+                            <span className="text-sm font-medium">Loading messages...</span>
+                          </div>
+                        </div>
+                      ) : messages?.length === 0 ? (
+                        <div className="text-center py-12">
+                          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <MessageSquare className="w-8 h-8 text-blue-600" />
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">No messages yet</h3>
+                          <p className="text-gray-500">Start the conversation by sending your first message!</p>
+                        </div>
+                      ) : (
+                        messages?.map((message, index) => {
+                          const isOwn = message?.sender?._id === user?.id;
+                          const showAvatar = index === 0 || messages[index - 1]?.sender?._id !== message?.sender?._id;
+                          
+                          return (
+                            <motion.div
+                              key={message._id}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}
+                            >
+                              <div className={`flex items-end space-x-2 max-w-[85%] sm:max-w-xs lg:max-w-md ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                                {!isOwn && (
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${showAvatar ? 'bg-gradient-to-br from-gray-400 to-gray-600' : 'invisible'}`}>
+                                    <User className="w-4 h-4 text-white" />
+                                  </div>
+                                )}
+                                <div className={`rounded-2xl shadow-sm ${
+                                  isOwn
+                                    ? 'bg-blue-600 text-white rounded-br-lg'
+                                    : 'bg-white text-gray-900 border border-gray-200 rounded-bl-lg'
+                                }`}>
+                                  {/* Render different message types */}
+                                  {message?.messageType === 'audio' && message?.attachments?.length > 0 ? (
+                                    <div className="p-2">
+                                      <VoiceMessagePlayer
+                                        audioUrl={message.attachments[0].fileUrl}
+                                        duration={message.attachments[0].duration}
+                                        className={isOwn ? 'voice-message-own' : 'voice-message-other'}
+                                      />
+                                      {message?.content && message.content !== '🎤 Voice message' && (
+                                        <p className="text-xs mt-2 opacity-75">{message.content}</p>
+                                      )}
+                                    </div>
+                                  ) : message?.messageType === 'image' && message?.attachments?.length > 0 ? (
+                                    <div className="p-2">
+                                      <img
+                                        src={message.attachments[0].fileUrl}
+                                        alt={message.attachments[0].originalName || 'Image'}
+                                        className="max-w-full h-auto rounded-lg cursor-pointer"
+                                        style={{ maxHeight: '250px', minHeight: '100px' }}
+                                        onClick={() => {
+                                          const isMobile = window.innerWidth <= 768;
+                                          if (isMobile) {
+                                            // On mobile, open in same tab for better UX
+                                            window.location.href = message.attachments[0].fileUrl;
+                                          } else {
+                                            // On desktop, open in new tab
+                                            window.open(message.attachments[0].fileUrl, '_blank');
+                                          }
+                                        }}
+                                      />
+                                      {message?.content && (
+                                        <p className="text-sm mt-2">{message.content}</p>
+                                      )}
+                                    </div>
+                                  ) : message?.messageType === 'file' && message?.attachments?.length > 0 ? (
+                                    <div className="p-3">
+                                      <a
+                                        href={message.attachments[0].fileUrl}
+                                        download={message.attachments[0].originalName}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center space-x-3 text-blue-500 hover:text-blue-700 active:text-blue-800 transition-colors min-h-[44px] touch-manipulation"
+                                      >
+                                        <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                          <Paperclip className="w-4 h-4" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm font-medium truncate">{message.attachments[0].originalName}</p>
+                                          <p className="text-xs text-gray-500">Tap to download</p>
+                                        </div>
+                                      </a>
+                                      {message?.content && (
+                                        <p className="text-sm mt-2">{message.content}</p>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="px-4 py-3">
+                                      <p className="text-sm leading-relaxed">{message?.content || ''}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <div className={`text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-end pb-1 ${isOwn ? 'mr-2' : 'ml-2'}`}>
+                                <div className="flex flex-col items-end space-y-1">
+                                  <span>
+                                    {message?.createdAt ? formatTime(message.createdAt) : ''}
+                                  </span>
+                                  {isOwn && (
+                                    <div className="flex items-center space-x-1">
+                                      <CheckCircle className="w-3 h-3 text-blue-500" />
+                                      <span className="text-xs">Sent</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        })
+                      )}
                     </div>
-                    <div>
-                      <h3 className="font-medium text-gray-900 text-sm sm:text-base">
-                        {activeConversation?.title || 'Conversation'}
-                      </h3>
-                      {/* Show online status of other participant */}
-                      {activeConversation?.participants && (
-                        <div className="flex items-center space-x-1">
-                          {(() => {
-                            const otherParticipant = activeConversation.participants.find(p => {
-                              const participantId = p.user?._id || p.user;
-                              return participantId !== user?.id;
-                            });
+
+                    {/* Message Input, Voice Recorder, or Attachment Menu - Fixed */}
+                    <div className="flex-shrink-0">
+                      {showInlineRecorder ? (
+                        <InlineVoiceRecorder
+                          isVisible={showInlineRecorder}
+                          onClose={() => setShowInlineRecorder(false)}
+                          onSendAudio={handleAudioSent}
+                          conversationId={activeConversation?._id}
+                        />
+                      ) : showInlineAttachment ? (
+                        <InlineAttachmentMenu
+                          isVisible={showInlineAttachment}
+                          onClose={() => setShowInlineAttachment(false)}
+                          onSendFiles={handleFileUpload}
+                          conversationId={activeConversation?._id}
+                        />
+                      ) : (
+                        <div className="bg-white p-3 sm:p-4 lg:p-6 border-t border-gray-200 safe-area-inset-bottom">
+                          <div className="flex items-end space-x-2 sm:space-x-3">
+                            {/* File Upload Button */}
+                            <button 
+                              onClick={() => setShowInlineAttachment(true)}
+                              className="flex-shrink-0 p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors touch-manipulation" 
+                              title="Attach file"
+                            >
+                              <Paperclip className="w-5 h-5" />
+                            </button>
                             
-                            if (otherParticipant) {
-                              const participantId = otherParticipant.user?._id || otherParticipant.user;
-                              const onlineStatus = getOnlineStatus(participantId);
-                              return (
-                                <>
-                                  <span className={`w-2 h-2 ${onlineStatus.color} rounded-full${onlineStatus.isOnline ? ' animate-pulse' : ''}`}></span>
-                                  <span className="text-sm text-gray-500">{onlineStatus.text}</span>
-                                </>
-                              );
-                            }
-                            return null;
-                          })()}
+                            {/* Voice Recording Button */}
+                            <button 
+                              onClick={() => setShowInlineRecorder(true)}
+                              className="flex-shrink-0 p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors touch-manipulation" 
+                              title="Record voice message"
+                            >
+                              <Mic className="w-5 h-5" />
+                            </button>
+                            
+                            <div className="flex-1 relative">
+                              <div className="relative">
+                                <input
+                                  type="text"
+                                  value={newMessage}
+                                  onChange={(e) => setNewMessage(e.target.value)}
+                                  onKeyPress={handleKeyPress}
+                                  placeholder="Type your message here..."
+                                  className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 text-base placeholder-gray-500 resize-none touch-manipulation"
+                                  disabled={sendingMessage}
+                                />
+                                {sendingMessage && (
+                                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-400 mt-1 px-2 hidden sm:block">
+                                Press Enter to send • Shift + Enter for new line
+                              </div>
+                            </div>
+                            <button
+                              onClick={handleSendMessage}
+                              disabled={!newMessage.trim() || sendingMessage}
+                              className="flex-shrink-0 p-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md disabled:hover:shadow-sm touch-manipulation"
+                              title="Send message"
+                            >
+                              <Send className="w-5 h-5" />
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Messages - Scrollable */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-4 lg:p-6 space-y-4">
-              {messagesLoading && messages?.length === 0 ? (
-                <div className="flex justify-center py-8">
-                  <div className="flex items-center space-x-2 text-blue-600">
-                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"></div>
-                    <span className="text-sm font-medium">Loading messages...</span>
-                  </div>
-                </div>
-              ) : messages?.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <MessageSquare className="w-8 h-8 text-blue-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No messages yet</h3>
-                  <p className="text-gray-500">Start the conversation by sending your first message!</p>
-                </div>
-              ) : (
-                messages?.map((message, index) => {
-                  const isOwn = message?.sender?._id === user?.id;
-                  const showAvatar = index === 0 || messages[index - 1]?.sender?._id !== message?.sender?._id;
-                  
-                  return (
-                    <motion.div
-                      key={message._id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}
-                    >
-                      <div className={`flex items-end space-x-2 max-w-[85%] sm:max-w-xs lg:max-w-md ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                        {!isOwn && (
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${showAvatar ? 'bg-gradient-to-br from-gray-400 to-gray-600' : 'invisible'}`}>
-                            <User className="w-4 h-4 text-white" />
-                          </div>
-                        )}
-                        <div className={`rounded-2xl shadow-sm ${
-                          isOwn
-                            ? 'bg-blue-600 text-white rounded-br-lg'
-                            : 'bg-white text-gray-900 border border-gray-200 rounded-bl-lg'
-                        }`}>
-                          {/* Render different message types */}
-                          {message?.messageType === 'audio' && message?.attachments?.length > 0 ? (
-                            <div className="p-2">
-                              <VoiceMessagePlayer
-                                audioUrl={message.attachments[0].fileUrl}
-                                duration={message.attachments[0].duration}
-                                className={isOwn ? 'voice-message-own' : 'voice-message-other'}
-                              />
-                              {message?.content && message.content !== '🎤 Voice message' && (
-                                <p className="text-xs mt-2 opacity-75">{message.content}</p>
-                              )}
-                            </div>
-                          ) : message?.messageType === 'image' && message?.attachments?.length > 0 ? (
-                            <div className="p-2">
-                              <img
-                                src={message.attachments[0].fileUrl}
-                                alt={message.attachments[0].originalName || 'Image'}
-                                className="max-w-full h-auto rounded-lg cursor-pointer"
-                                style={{ maxHeight: '250px', minHeight: '100px' }}
-                                onClick={() => {
-                                  const isMobile = window.innerWidth <= 768;
-                                  if (isMobile) {
-                                    // On mobile, open in same tab for better UX
-                                    window.location.href = message.attachments[0].fileUrl;
-                                  } else {
-                                    // On desktop, open in new tab
-                                    window.open(message.attachments[0].fileUrl, '_blank');
-                                  }
-                                }}
-                              />
-                              {message?.content && (
-                                <p className="text-sm mt-2">{message.content}</p>
-                              )}
-                            </div>
-                          ) : message?.messageType === 'file' && message?.attachments?.length > 0 ? (
-                            <div className="p-3">
-                              <a
-                                href={message.attachments[0].fileUrl}
-                                download={message.attachments[0].originalName}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center space-x-3 text-blue-500 hover:text-blue-700 active:text-blue-800 transition-colors min-h-[44px] touch-manipulation"
-                              >
-                                <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                                  <Paperclip className="w-4 h-4" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium truncate">{message.attachments[0].originalName}</p>
-                                  <p className="text-xs text-gray-500">Tap to download</p>
-                                </div>
-                              </a>
-                              {message?.content && (
-                                <p className="text-sm mt-2">{message.content}</p>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="px-4 py-3">
-                              <p className="text-sm leading-relaxed">{message?.content || ''}</p>
-                            </div>
-                          )}
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
+                    <div className="text-center max-w-md">
+                      <div className="relative mb-8">
+                        <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                          <MessageSquare className="w-10 h-10 text-white" />
                         </div>
+                        <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-400 rounded-full border-4 border-white animate-pulse"></div>
                       </div>
-                      <div className={`text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-end pb-1 ${isOwn ? 'mr-2' : 'ml-2'}`}>
-                        <div className="flex flex-col items-end space-y-1">
-                          <span>
-                            {message?.createdAt ? formatTime(message.createdAt) : ''}
-                          </span>
-                          {isOwn && (
-                            <div className="flex items-center space-x-1">
-                              <CheckCircle className="w-3 h-3 text-blue-500" />
-                              <span className="text-xs">Sent</span>
-                            </div>
-                          )}
+                      <h3 className="text-xl lg:text-2xl font-bold text-gray-900 mb-3">Welcome to Messaging</h3>
+                      <p className="text-gray-600 mb-6 leading-relaxed">
+                        Select a conversation from the sidebar to start chatting, or click the 
+                        <span className="inline-flex items-center mx-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                          <Plus className="w-3 h-3 mr-1" />
+                          plus
+                        </span> 
+                        button to start a new conversation.
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <button
+                          onClick={() => dispatch(setShowNewChatModal(true))}
+                          disabled={!availableUsers?.length}
+                          className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center space-x-2"
+                        >
+                          <Plus className="w-5 h-5" />
+                          <span>Start New Chat</span>
+                        </button>
+                        <div className="text-sm text-gray-500 flex items-center justify-center space-x-2">
+                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                          <span>{availableUsers?.length || 0} users available</span>
                         </div>
-                      </div>
-                    </motion.div>
-                  );
-                })
-              )}
-            </div>
-
-            {/* Message Input, Voice Recorder, or Attachment Menu - Fixed */}
-            <div className="flex-shrink-0">
-              {showInlineRecorder ? (
-                <InlineVoiceRecorder
-                  isVisible={showInlineRecorder}
-                  onClose={() => setShowInlineRecorder(false)}
-                  onSendAudio={handleAudioSent}
-                  conversationId={activeConversation?._id}
-                />
-              ) : showInlineAttachment ? (
-                <InlineAttachmentMenu
-                  isVisible={showInlineAttachment}
-                  onClose={() => setShowInlineAttachment(false)}
-                  onSendFiles={handleFileUpload}
-                  conversationId={activeConversation?._id}
-                />
-              ) : (
-                <div className="bg-white p-3 sm:p-4 lg:p-6 border-t border-gray-200 safe-area-inset-bottom">
-                  <div className="flex items-end space-x-2 sm:space-x-3">
-                    {/* File Upload Button */}
-                    <button 
-                      onClick={() => setShowInlineAttachment(true)}
-                      className="flex-shrink-0 p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors touch-manipulation" 
-                      title="Attach file"
-                    >
-                      <Paperclip className="w-5 h-5" />
-                    </button>
-                    
-                    {/* Voice Recording Button */}
-                    <button 
-                      onClick={() => setShowInlineRecorder(true)}
-                      className="flex-shrink-0 p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors touch-manipulation" 
-                      title="Record voice message"
-                    >
-                      <Mic className="w-5 h-5" />
-                    </button>
-                    
-                    <div className="flex-1 relative">
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={newMessage}
-                          onChange={(e) => setNewMessage(e.target.value)}
-                          onKeyPress={handleKeyPress}
-                          placeholder="Type your message here..."
-                          className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 text-base placeholder-gray-500 resize-none touch-manipulation"
-                          disabled={sendingMessage}
-                        />
-                        {sendingMessage && (
-                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-400 mt-1 px-2 hidden sm:block">
-                        Press Enter to send • Shift + Enter for new line
                       </div>
                     </div>
-                    <button
-                      onClick={handleSendMessage}
-                      disabled={!newMessage.trim() || sendingMessage}
-                      className="flex-shrink-0 p-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md disabled:hover:shadow-sm touch-manipulation"
-                      title="Send message"
-                    >
-                      <Send className="w-5 h-5" />
-                    </button>
                   </div>
-                </div>
-              )}
-            </div>
-          </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
-            <div className="text-center max-w-md">
-              <div className="relative mb-8">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <MessageSquare className="w-10 h-10 text-white" />
-                </div>
-                <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-400 rounded-full border-4 border-white animate-pulse"></div>
+                )}
               </div>
-              <h3 className="text-xl lg:text-2xl font-bold text-gray-900 mb-3">Welcome to Messaging</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                Select a conversation from the sidebar to start chatting, or click the 
-                <span className="inline-flex items-center mx-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                  <Plus className="w-3 h-3 mr-1" />
-                  plus
-                </span> 
-                button to start a new conversation.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            </>
+          );
+        } catch (error) {
+          console.error('Error in error boundary:', error);
+          return (
+            <div className="h-full w-full bg-gray-50 flex items-center justify-center">
+              <div className="text-center max-w-md">
+                <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Error in Error Boundary</h3>
+                <p className="text-gray-600 mb-4">{error?.message || 'An error occurred'}</p>
                 <button
-                  onClick={() => dispatch(setShowNewChatModal(true))}
-                  disabled={!availableUsers?.length}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center space-x-2"
+                  onClick={() => {
+                    setHasInitialized(false);
+                    setInitError(null);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
-                  <Plus className="w-5 h-5" />
-                  <span>Start New Chat</span>
+                  Try Again
                 </button>
-                <div className="text-sm text-gray-500 flex items-center justify-center space-x-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span>{availableUsers?.length || 0} users available</span>
-                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          );
+        }
+      })()}
 
       {/* New Chat Modal */}
       <AnimatePresence>
@@ -1194,10 +1259,6 @@ const MessagingDashboard = () => {
           </>
         )}
       </AnimatePresence>
-
-
-
-
     </div>
   );
 };
