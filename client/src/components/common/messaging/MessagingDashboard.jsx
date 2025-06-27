@@ -1073,30 +1073,23 @@ const MessagingDashboard = () => {
                     {/* Inline Components - Above Footer */}
                     {showInlineAttachment && (
                       <div className="flex-shrink-0 border-t border-gray-200 bg-white shadow-lg">
-                        {console.log('🔍 Rendering InlineAttachmentMenu')}
                         <InlineAttachmentMenu
+                          isVisible={showInlineAttachment}
                           conversationId={activeConversation._id}
                           onClose={() => setShowInlineAttachment(false)}
-                          onFilesSent={handleFileUpload}
+                          onSendFiles={handleFileUpload}
                         />
                       </div>
                     )}
 
                     {showInlineRecorder && (
                       <div className="flex-shrink-0 border-t border-gray-200 bg-white shadow-lg">
-                        {console.log('🔍 Rendering InlineVoiceRecorder')}
                         <InlineVoiceRecorder
+                          isVisible={showInlineRecorder}
                           conversationId={activeConversation._id}
                           onClose={() => setShowInlineRecorder(false)}
                           onSendAudio={handleAudioSent}
                         />
-                      </div>
-                    )}
-
-                    {/* Debug Info - Remove this later */}
-                    {(showInlineAttachment || showInlineRecorder) && (
-                      <div className="flex-shrink-0 bg-yellow-100 p-2 text-xs text-yellow-800">
-                        Debug: showInlineAttachment={showInlineAttachment.toString()}, showInlineRecorder={showInlineRecorder.toString()}
                       </div>
                     )}
 
@@ -1106,7 +1099,6 @@ const MessagingDashboard = () => {
                         {/* File Upload Button */}
                         <button 
                           onClick={() => {
-                            console.log('File attachment button clicked, current state:', showInlineAttachment);
                             // Close recorder if open, then toggle attachment
                             if (showInlineRecorder) setShowInlineRecorder(false);
                             setShowInlineAttachment(!showInlineAttachment);
@@ -1124,7 +1116,6 @@ const MessagingDashboard = () => {
                         {/* Voice Recording Button */}
                         <button 
                           onClick={() => {
-                            console.log('Voice recorder button clicked, current state:', showInlineRecorder);
                             // Close attachment if open, then toggle recorder
                             if (showInlineAttachment) setShowInlineAttachment(false);
                             setShowInlineRecorder(!showInlineRecorder);
