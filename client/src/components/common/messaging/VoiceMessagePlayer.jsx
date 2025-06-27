@@ -486,17 +486,123 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
     );
   }
 
-  // Mobile-specific download handler
-  const handleMobileDownload = () => {
-    if (isMobile && audioUrl) {
-      // Create a temporary link for download
-      const link = document.createElement('a');
-      link.href = audioUrl;
-      link.download = 'voice_message.webm';
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+  // Mobile-specific download handler - FIXED for iOS compatibility
+  const handleMobileDownload = async () => {
+    if (!isMobile || !audioUrl) return;
+
+    try {
+      console.log('🎵 Mobile download starting for:', audioUrl);
+      
+      if (isIOS) {
+        // iOS-specific download approach
+        console.log('🎵 iOS download: Opening in new tab');
+        
+        // For iOS, open the audio URL directly in a new tab
+        // This allows users to save via Safari's share menu
+        const newWindow = window.open(audioUrl, '_blank');
+        
+        // Fallback if popup blocked
+        if (!newWindow) {
+          // Create invisible iframe to trigger download
+          const iframe = document.createElement('iframe');
+          iframe.style.display = 'none';
+          iframe.src = audioUrl;
+          document.body.appendChild(iframe);
+          
+          // Clean up after 5 seconds
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+          }, 5000);
+          
+          // Show instructions
+          alert('Audio opened in new tab. Use Safari\'s share button to save the audio file.');
+        }
+      } else {
+        // Android and other mobile browsers
+        console.log('🎵 Android download: Using blob download');
+        
+        try {
+          // Try to fetch and download as blob
+          const response = await fetch(audioUrl, {
+            mode: 'cors',
+            cache: 'no-cache'
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch audio');
+          }
+          
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          
+          // Determine file extension from URL or content type
+          let fileName = 'voice_message';
+          if (audioUrl.includes('.mp3')) {
+            fileName += '.mp3';
+          } else if (audioUrl.includes('.mp4')) {
+            fileName += '.mp4';
+          } else if (audioUrl.includes('.wav')) {
+            fileName += '.wav';
+          } else if (audioUrl.includes('.webm')) {
+            fileName += '.webm';
+          } else {
+            // Use content type to determine extension
+            const contentType = response.headers.get('content-type');
+            if (contentType?.includes('mp3') || contentType?.includes('mpeg')) {
+              fileName += '.mp3';
+            } else if (contentType?.includes('mp4')) {
+              fileName += '.mp4';
+            } else if (contentType?.includes('wav')) {
+              fileName += '.wav';
+            } else {
+              fileName += '.webm';
+            }
+          }
+          
+          // Create download link
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = fileName;
+          link.style.display = 'none';
+          
+          // Trigger download
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          // Clean up blob URL
+          setTimeout(() => {
+            window.URL.revokeObjectURL(url);
+          }, 1000);
+          
+          console.log('✅ Android download successful');
+          
+        } catch (fetchError) {
+          console.log('⚠️ Blob download failed, using direct link:', fetchError);
+          
+          // Fallback: Direct link approach
+          const link = document.createElement('a');
+          link.href = audioUrl;
+          link.download = 'voice_message.webm';
+          link.target = '_blank';
+          link.style.display = 'none';
+          
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      }
+      
+    } catch (error) {
+      console.error('Mobile download error:', error);
+      
+      // Last resort: copy URL to clipboard and show instructions
+      try {
+        await navigator.clipboard.writeText(audioUrl);
+        alert('Audio URL copied to clipboard. You can paste this in your browser to download the file.');
+      } catch (clipboardError) {
+        alert(`To download: Long press this link and select "Save": ${audioUrl}`);
+      }
     }
   };
 
@@ -517,52 +623,32 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
         x5-video-player-type="h5"
         x5-video-player-fullscreen="false"
       >
-        {/* iOS-optimized source order */}
+        {/* Mobile-optimized source order - FIXED */}
         {audioUrl && (
           <>
             {isIOS ? (
               <>
-                {/* iOS prefers these formats */}
+                {/* iOS prefers these formats - try original URL with different MIME types */}
                 <source src={audioUrl} type="audio/mp4" />
                 <source src={audioUrl} type="audio/aac" />
                 <source src={audioUrl} type="audio/m4a" />
                 <source src={audioUrl} type="audio/mpeg" />
-                
-                {/* Try Cloudinary format conversions for iOS */}
-                {audioUrl.includes('cloudinary') && (
-                  <>
-                    <source src={audioUrl.replace(/\.(webm|ogg|wav)$/i, '.mp4')} type="audio/mp4" />
-                    <source src={audioUrl.replace(/\.(webm|ogg|wav)$/i, '.m4a')} type="audio/mp4" />
-                    <source src={audioUrl.replace(/\.(webm|ogg|wav)$/i, '.aac')} type="audio/aac" />
-                  </>
-                )}
-                
-                {/* Legacy formats as last resort */}
                 <source src={audioUrl} type="audio/wav" />
+                {/* Fallback formats */}
                 <source src={audioUrl} type="audio/webm;codecs=opus" />
                 <source src={audioUrl} type="audio/ogg;codecs=vorbis" />
               </>
             ) : (
               <>
-                {/* Non-iOS mobile and desktop */}
+                {/* Non-iOS mobile and desktop - try original URL with different MIME types */}
                 <source src={audioUrl} type="audio/mp4" />
                 <source src={audioUrl} type="audio/mpeg" />
                 <source src={audioUrl} type="audio/mp3" />
                 <source src={audioUrl} type="audio/aac" />
                 <source src={audioUrl} type="audio/m4a" />
-                
-                {/* If Cloudinary URL, try converted formats */}
-                {audioUrl.includes('cloudinary') && (
-                  <>
-                    <source src={audioUrl.replace(/\.[^.]+$/, '.mp3')} type="audio/mp3" />
-                    <source src={audioUrl.replace(/\.[^.]+$/, '.mp4')} type="audio/mp4" />
-                    <source src={audioUrl.replace(/\.[^.]+$/, '.m4a')} type="audio/mp4" />
-                  </>
-                )}
-                
-                {/* Legacy formats as fallback */}
-                <source src={audioUrl} type="audio/webm;codecs=opus" />
                 <source src={audioUrl} type="audio/wav" />
+                {/* Fallback formats */}
+                <source src={audioUrl} type="audio/webm;codecs=opus" />
                 <source src={audioUrl} type="audio/ogg;codecs=vorbis" />
               </>
             )}
