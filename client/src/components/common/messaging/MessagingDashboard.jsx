@@ -20,6 +20,7 @@ import InlineAttachmentMenu from './InlineAttachmentMenu';
 import InlineVoiceRecorder from './InlineVoiceRecorder';
 import VoiceMessagePlayer from './VoiceMessagePlayer';
 import SoundNotifications from './SoundNotifications';
+import NewConversationModal from './NewConversationModal';
 import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 import {
@@ -1217,6 +1218,13 @@ const MessagingDashboard = () => {
       
       {/* Main Interface */}
       {renderMessagingInterface()}
+      
+      {/* New Conversation Modal */}
+      <NewConversationModal 
+        isOpen={showNewChatModal}
+        onClose={() => dispatch(setShowNewChatModal(false))}
+        onStartConversation={handleStartNewConversation}
+      />
     </div>
   );
 };
