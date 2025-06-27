@@ -2,6 +2,9 @@
 
 ## ✅ **PRE-DEPLOYMENT VERIFICATION**
 
+some cshansgehee hgshs
+Sjhjdh
+
 ### **1. Environment Variables** 🔧
 Ensure these environment variables are configured in Vercel:
 
