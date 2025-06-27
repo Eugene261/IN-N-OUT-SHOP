@@ -1,5 +1,5 @@
 // CACHE BUST v3.0 - Critical error handling fixes for status access errors
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MessageSquare, 
@@ -13,7 +13,8 @@ import {
   Paperclip,
   X,
   AlertCircle,
-  Mic
+  Mic,
+  ArrowLeft
 } from 'lucide-react';
 import InlineAttachmentMenu from './InlineAttachmentMenu';
 import InlineVoiceRecorder from './InlineVoiceRecorder';
@@ -45,6 +46,7 @@ import {
   selectShowNewChatModal,
   selectFilteredConversations
 } from '../../../store/common/messaging-slice';
+import axios from 'axios';
 
 const MessagingDashboard = () => {
   const dispatch = useDispatch();
@@ -76,8 +78,9 @@ const MessagingDashboard = () => {
   const [showInlineAttachment, setShowInlineAttachment] = useState(false);
   const [showInlineRecorder, setShowInlineRecorder] = useState(false);
   const [prevMessagesLength, setPrevMessagesLength] = useState(0);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [lastSeen, setLastSeen] = useState(new Date());
+  const [participantStatuses, setParticipantStatuses] = useState({}); // Track real online status
+  const heartbeatIntervalRef = useRef(null);
+  const statusCheckIntervalRef = useRef(null);
 
   useEffect(() => {
     // Initialize data with error handling
@@ -253,33 +256,110 @@ const MessagingDashboard = () => {
     }
   }, [error, dispatch]);
 
-  // Monitor online/offline status for better user experience
+  // Monitor online/offline status for better user experience  
   useEffect(() => {
     const handleOnline = () => {
-      setIsOnline(true);
-      setLastSeen(new Date());
+      console.log('📶 Network restored');
     };
-    
     const handleOffline = () => {
-      setIsOnline(false);
+      console.log('📴 Network lost');
     };
-
-    // Update last seen timestamp periodically when online
-    const updateLastSeen = setInterval(() => {
-      if (navigator.onLine) {
-        setLastSeen(new Date());
-      }
-    }, 30000); // Update every 30 seconds
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
+    // Heartbeat system - ping server every 30 seconds to maintain online status
+    const startHeartbeat = () => {
+      heartbeatIntervalRef.current = setInterval(async () => {
+        if (navigator.onLine && user?.id) {
+          try {
+            const token = localStorage.getItem('token');
+            await axios.post(
+              `${import.meta.env.VITE_API_URL}/api/common/messaging/heartbeat`,
+              {},
+              {
+                headers: { 'Authorization': `Bearer ${token}` }
+              }
+            );
+          } catch (error) {
+            // Silent heartbeat errors - don't spam console
+            if (error.response?.status !== 401) {
+              console.log('⚠️ Heartbeat failed:', error.message);
+            }
+          }
+        }
+      }, 30000); // Every 30 seconds
+    };
+
+    // Check online status of conversation participants every minute
+    const startStatusCheck = () => {
+      statusCheckIntervalRef.current = setInterval(async () => {
+        if (navigator.onLine && conversations.length > 0) {
+          await checkParticipantStatuses();
+        }
+      }, 60000); // Every minute
+    };
+
+    startHeartbeat();
+    startStatusCheck();
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      clearInterval(updateLastSeen);
+      
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
+      }
+      if (statusCheckIntervalRef.current) {
+        clearInterval(statusCheckIntervalRef.current);
+      }
     };
-  }, []);
+  }, [user?.id, conversations]);
+
+  // Check online status of conversation participants
+  const checkParticipantStatuses = async () => {
+    if (!conversations.length) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const allParticipants = new Set();
+      
+      // Collect all unique participant IDs
+      conversations.forEach(conv => {
+        conv.participants?.forEach(p => {
+          const participantId = p.user?._id || p.user;
+          if (participantId && participantId !== user?.id) {
+            allParticipants.add(participantId);
+          }
+        });
+      });
+
+      // Check status for each participant
+      const statusPromises = Array.from(allParticipants).map(async (participantId) => {
+        try {
+          const response = await axios.get(
+            `${import.meta.env.VITE_API_URL}/api/common/messaging/users/${participantId}/status`,
+            {
+              headers: { 'Authorization': `Bearer ${token}` }
+            }
+          );
+          return { participantId, status: response.data.data };
+        } catch (error) {
+          return { participantId, status: { isOnline: false, lastSeen: new Date() } };
+        }
+      });
+
+      const statuses = await Promise.all(statusPromises);
+      const newStatuses = {};
+      statuses.forEach(({ participantId, status }) => {
+        newStatuses[participantId] = status;
+      });
+
+      setParticipantStatuses(newStatuses);
+    } catch (error) {
+      console.error('Error checking participant statuses:', error);
+    }
+  };
 
   // Monitor messages for incoming message sounds
   useEffect(() => {
@@ -478,14 +558,26 @@ const MessagingDashboard = () => {
     }
   };
 
-  const getOnlineStatus = () => {
-    if (isOnline) {
+  // Get real online status for conversation participants
+  const getOnlineStatus = (participantId) => {
+    if (!participantId) {
+      return { text: 'Unknown', color: 'bg-gray-400', isOnline: false };
+    }
+
+    const status = participantStatuses[participantId];
+    if (!status) {
+      return { text: 'Unknown', color: 'bg-gray-400', isOnline: false };
+    }
+
+    if (status.isOnline) {
       return { text: 'Online', color: 'bg-green-400', isOnline: true };
     }
-    
+
+    // Calculate time since last seen
     const now = new Date();
+    const lastSeen = new Date(status.lastSeen);
     const timeDiff = Math.floor((now - lastSeen) / 1000); // seconds
-    
+
     if (timeDiff < 60) {
       return { text: 'Last seen just now', color: 'bg-yellow-400', isOnline: false };
     } else if (timeDiff < 3600) {
@@ -499,6 +591,49 @@ const MessagingDashboard = () => {
       return { text: `Last seen ${days}d ago`, color: 'bg-gray-400', isOnline: false };
     }
   };
+
+  // Fetch conversations on mount and when user changes
+  useEffect(() => {
+    if (user?.id) {
+      dispatch(fetchConversations({ limit: 50 }));
+      
+      // Initial status check for participants
+      setTimeout(() => {
+        checkParticipantStatuses();
+      }, 1000);
+    }
+  }, [dispatch, user?.id]);
+
+  // Mark user as offline when leaving the page
+  useEffect(() => {
+    const markOffline = async () => {
+      if (user?.id) {
+        try {
+          const token = localStorage.getItem('token');
+          await axios.post(
+            `${import.meta.env.VITE_API_URL}/api/common/messaging/offline`,
+            {},
+            {
+              headers: { 'Authorization': `Bearer ${token}` }
+            }
+          );
+        } catch (error) {
+          // Silent error - page is unloading anyway
+        }
+      }
+    };
+
+    const handleBeforeUnload = () => {
+      markOffline();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      markOffline(); // Also mark offline when component unmounts
+    };
+  }, [user?.id]);
 
   // Show initialization error
   if (initError) {
@@ -715,45 +850,52 @@ const MessagingDashboard = () => {
       } lg:flex flex-1 flex-col bg-gray-50 h-full`}>
         {activeConversation ? (
           <>
-            {/* Chat Header - Fixed */}
-            <div className="flex-shrink-0 bg-white p-4 lg:p-6 border-b border-gray-200 shadow-sm">
+            {/* Conversation Header - Fixed */}
+            <div className="flex-shrink-0 border-b border-gray-200 bg-white px-4 py-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  {/* Back button for mobile */}
+                <div className="flex items-center space-x-3">
+                  {/* Back Button for Mobile */}
                   <button
                     onClick={() => setShowConversations(true)}
-                    className="lg:hidden p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="lg:hidden p-1 text-gray-400 hover:text-gray-600 rounded-md"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
+                    <ArrowLeft className="w-5 h-5" />
                   </button>
                   
-                  <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center shadow-sm">
-                    <User className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg lg:text-xl font-bold text-gray-900">
-                      {getOtherParticipant(activeConversation)?.userName || 'Unknown User'}
-                    </h2>
-                    <div className="flex items-center space-x-2">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        getOtherParticipant(activeConversation)?.role === 'superAdmin' 
-                          ? 'bg-purple-100 text-purple-800' 
-                          : 'bg-green-100 text-green-800'
-                      }`}>
-                        {getOtherParticipant(activeConversation)?.role === 'superAdmin' ? 'Super Admin' : 'Admin'}
-                      </span>
-                      <span className={`w-2 h-2 ${getOnlineStatus().color} rounded-full${getOnlineStatus().isOnline ? ' animate-pulse' : ''}`}></span>
-                      <span className="text-sm text-gray-500">{getOnlineStatus().text}</span>
+                  {/* Conversation Info */}
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <User className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-900 text-sm sm:text-base">
+                        {activeConversation?.title || 'Conversation'}
+                      </h3>
+                      {/* Show online status of other participant */}
+                      {activeConversation?.participants && (
+                        <div className="flex items-center space-x-1">
+                          {(() => {
+                            const otherParticipant = activeConversation.participants.find(p => {
+                              const participantId = p.user?._id || p.user;
+                              return participantId !== user?.id;
+                            });
+                            
+                            if (otherParticipant) {
+                              const participantId = otherParticipant.user?._id || otherParticipant.user;
+                              const onlineStatus = getOnlineStatus(participantId);
+                              return (
+                                <>
+                                  <span className={`w-2 h-2 ${onlineStatus.color} rounded-full${onlineStatus.isOnline ? ' animate-pulse' : ''}`}></span>
+                                  <span className="text-sm text-gray-500">{onlineStatus.text}</span>
+                                </>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" title="More options">
-                    <MoreVertical className="w-5 h-5" />
-                  </button>
                 </div>
               </div>
             </div>

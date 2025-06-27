@@ -64,8 +64,26 @@ const InlineVoiceRecorder = ({
     try {
       chunksRef.current = [];
       
+      // Try MP3 format first for mobile compatibility, fallback to WebM
+      let mimeType = 'audio/webm;codecs=opus';
+      let fileExtension = 'webm';
+      
+      // Check for MP3 support (better mobile compatibility)
+      if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        mimeType = 'audio/mp4';
+        fileExtension = 'mp4';
+      } else if (MediaRecorder.isTypeSupported('audio/mpeg')) {
+        mimeType = 'audio/mpeg';
+        fileExtension = 'mp3';
+      } else if (MediaRecorder.isTypeSupported('audio/wav')) {
+        mimeType = 'audio/wav';
+        fileExtension = 'wav';
+      }
+      
+      console.log('🎵 Using audio format:', mimeType);
+      
       const mediaRecorder = new MediaRecorder(streamRef.current, {
-        mimeType: 'audio/webm;codecs=opus'
+        mimeType: mimeType
       });
       
       mediaRecorderRef.current = mediaRecorder;
@@ -77,7 +95,7 @@ const InlineVoiceRecorder = ({
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm;codecs=opus' });
+        const blob = new Blob(chunksRef.current, { type: mimeType });
         setAudioBlob(blob);
         
         const url = URL.createObjectURL(blob);
@@ -131,8 +149,25 @@ const InlineVoiceRecorder = ({
 
     try {
       const formData = new FormData();
-      const audioFile = new File([audioBlob], `voice-message-${Date.now()}.webm`, {
-        type: 'audio/webm'
+      
+      // Determine file extension based on MIME type
+      let fileExtension = 'webm';
+      if (audioBlob.type.includes('mp4')) {
+        fileExtension = 'mp4';
+      } else if (audioBlob.type.includes('mpeg') || audioBlob.type.includes('mp3')) {
+        fileExtension = 'mp3';
+      } else if (audioBlob.type.includes('wav')) {
+        fileExtension = 'wav';
+      }
+      
+      const audioFile = new File([audioBlob], `voice-message-${Date.now()}.${fileExtension}`, {
+        type: audioBlob.type
+      });
+      
+      console.log('🎵 Sending audio file:', {
+        name: audioFile.name,
+        type: audioFile.type,
+        size: audioFile.size
       });
       
       formData.append('files', audioFile);

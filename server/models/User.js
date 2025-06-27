@@ -71,6 +71,19 @@ const UserSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
+    // Online status tracking
+    isOnline: {
+        type: Boolean,
+        default: false
+    },
+    lastSeen: {
+        type: Date,
+        default: Date.now
+    },
+    lastHeartbeat: {
+        type: Date,
+        default: null
+    },
     createdAt: {
         type: Date,
         default: Date.now

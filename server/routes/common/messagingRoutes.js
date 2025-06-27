@@ -15,7 +15,10 @@ const {
   editMessage,
   deleteMessage,
   getAvailableUsers,
-  archiveConversation
+  archiveConversation,
+  updateUserOnlineStatus,
+  getUserOnlineStatus,
+  markUserOffline
 } = require('../../controllers/common/messagingController');
 
 // Configure Cloudinary (ensure it's configured)
@@ -103,5 +106,13 @@ router.post('/conversations/:conversationId/messages/text', sendTextMessage);
 router.post('/conversations/:conversationId/messages/media', uploadFiles, sendMediaMessage);
 router.put('/messages/:messageId', editMessage);
 router.delete('/messages/:messageId', deleteMessage);
+
+// Archive conversation
+router.put('/conversations/:conversationId/archive', archiveConversation);
+
+// Online status routes
+router.post('/heartbeat', updateUserOnlineStatus);
+router.get('/users/:userId/status', getUserOnlineStatus);
+router.post('/offline', markUserOffline);
 
 module.exports = router; 

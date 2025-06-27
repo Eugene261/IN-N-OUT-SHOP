@@ -485,13 +485,31 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
         x5-video-player-type="h5"
         x5-video-player-fullscreen="false"
       >
-        {/* Mobile-preferred formats first */}
-        <source src={audioUrl} type="audio/mp4" />
-        <source src={audioUrl} type="audio/mpeg" />
-        <source src={audioUrl} type="audio/mp3" />
-        <source src={audioUrl} type="audio/webm;codecs=opus" />
-        <source src={audioUrl} type="audio/wav" />
-        <source src={audioUrl} type="audio/ogg;codecs=vorbis" />
+        {/* Mobile-preferred formats first - UPDATED for better mobile support */}
+        {audioUrl && (
+          <>
+            {/* Try the original URL first */}
+            <source src={audioUrl} type="audio/mp4" />
+            <source src={audioUrl} type="audio/mpeg" />
+            <source src={audioUrl} type="audio/mp3" />
+            <source src={audioUrl} type="audio/aac" />
+            <source src={audioUrl} type="audio/m4a" />
+            
+            {/* If Cloudinary URL, try converted formats */}
+            {audioUrl.includes('cloudinary') && (
+              <>
+                <source src={audioUrl.replace(/\.[^.]+$/, '.mp3')} type="audio/mp3" />
+                <source src={audioUrl.replace(/\.[^.]+$/, '.mp4')} type="audio/mp4" />
+                <source src={audioUrl.replace(/\.[^.]+$/, '.m4a')} type="audio/mp4" />
+              </>
+            )}
+            
+            {/* Legacy formats as fallback */}
+            <source src={audioUrl} type="audio/webm;codecs=opus" />
+            <source src={audioUrl} type="audio/wav" />
+            <source src={audioUrl} type="audio/ogg;codecs=vorbis" />
+          </>
+        )}
         Your browser does not support the audio element.
       </audio>
 

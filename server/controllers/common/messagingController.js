@@ -387,10 +387,23 @@ const sendMediaMessage = asyncHandler(async (req, res) => {
           throw new Error('Cloudinary uploader not properly initialized');
         }
         
-        uploadResult = await cloudinary.uploader.upload(dataURI, {
+        // For audio files, ensure mobile compatibility by converting to MP3 if needed
+        const uploadOptions = {
           folder: 'messaging/audio',
           resource_type: 'video' // Cloudinary uses 'video' for audio files
-        });
+        };
+        
+        // Convert WebM audio to MP3 for mobile compatibility
+        if (file.mimetype === 'audio/webm' || file.originalname.includes('.webm')) {
+          uploadOptions.format = 'mp3';
+          uploadOptions.audio_codec = 'mp3';
+          uploadOptions.transformation = [
+            { audio_codec: 'mp3', audio_frequency: 44100 }
+          ];
+          console.log('🔄 Converting WebM audio to MP3 for mobile compatibility');
+        }
+        
+        uploadResult = await cloudinary.uploader.upload(dataURI, uploadOptions);
       } else if (file.mimetype.startsWith('video/')) {
         messageType = 'video';
         uploadResult = await cloudinary.uploader.upload(dataURI, {
@@ -675,7 +688,99 @@ const archiveConversation = asyncHandler(async (req, res) => {
   });
 });
 
+// Update user online status
+const updateUserOnlineStatus = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
 
+  try {
+    await User.findByIdAndUpdate(userId, {
+      isOnline: true,
+      lastSeen: new Date(),
+      lastHeartbeat: new Date()
+    });
+
+    res.json({
+      success: true,
+      message: 'Online status updated'
+    });
+  } catch (error) {
+    console.error('Error updating online status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update online status'
+    });
+  }
+});
+
+// Get user online status
+const getUserOnlineStatus = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const user = await User.findById(userId).select('isOnline lastSeen lastHeartbeat');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Consider user offline if no heartbeat in last 2 minutes
+    const now = new Date();
+    const twoMinutesAgo = new Date(now.getTime() - 2 * 60 * 1000);
+    
+    const isActuallyOnline = user.isOnline && 
+      user.lastHeartbeat && 
+      user.lastHeartbeat > twoMinutesAgo;
+
+    // If user appears offline based on heartbeat, update their status
+    if (user.isOnline && !isActuallyOnline) {
+      await User.findByIdAndUpdate(userId, {
+        isOnline: false,
+        lastSeen: user.lastHeartbeat || user.lastSeen || new Date()
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        isOnline: isActuallyOnline,
+        lastSeen: user.lastSeen,
+        lastHeartbeat: user.lastHeartbeat
+      }
+    });
+  } catch (error) {
+    console.error('Error getting online status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get online status'
+    });
+  }
+});
+
+// Mark user as offline (called on logout or page unload)
+const markUserOffline = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    await User.findByIdAndUpdate(userId, {
+      isOnline: false,
+      lastSeen: new Date()
+    });
+
+    res.json({
+      success: true,
+      message: 'Marked as offline'
+    });
+  } catch (error) {
+    console.error('Error marking user offline:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to mark as offline'
+    });
+  }
+});
 
 module.exports = {
   // Multer middleware
@@ -692,5 +797,8 @@ module.exports = {
   editMessage,
   deleteMessage,
   getAvailableUsers,
-  archiveConversation
+  archiveConversation,
+  updateUserOnlineStatus,
+  getUserOnlineStatus,
+  markUserOffline
 }; 
