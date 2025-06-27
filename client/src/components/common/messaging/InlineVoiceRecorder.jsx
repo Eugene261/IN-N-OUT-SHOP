@@ -25,10 +25,12 @@ const InlineVoiceRecorder = ({
   const [sending, setSending] = useState(false);
   const [permission, setPermission] = useState('prompt');
 
-  const mediaRecorderRef = useRef(null);
+  const recorderRef = useRef(null);
   const streamRef = useRef(null);
-  const intervalRef = useRef(null);
+  const timerRef = useRef(null);
   const chunksRef = useRef([]);
+  const audioRef = useRef(null);
+  const isPlayingRef = useRef(false);
 
   // Request microphone permission
   const requestPermission = async () => {
@@ -64,193 +66,208 @@ const InlineVoiceRecorder = ({
     try {
       chunksRef.current = [];
       
-      // Detect mobile and iOS specifically
+      // FIXED: Force mobile-friendly formats from the start
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       
-      console.log('🎵 Device detection:', { isIOS, isMobile, userAgent: navigator.userAgent });
-      
-      // Force mobile-friendly formats for iOS and mobile devices
       let mimeType = 'audio/webm;codecs=opus'; // fallback
       let fileExtension = 'webm';
       
-      if (isIOS) {
-        // iOS prefers AAC/MP4
-        if (MediaRecorder.isTypeSupported('audio/mp4')) {
-          mimeType = 'audio/mp4';
-          fileExtension = 'mp4';
-          console.log('🎵 iOS: Using MP4 format');
-        } else if (MediaRecorder.isTypeSupported('audio/aac')) {
-          mimeType = 'audio/aac';
-          fileExtension = 'aac';
-          console.log('🎵 iOS: Using AAC format');
-        } else {
-          console.log('⚠️ iOS: No preferred formats supported, falling back to WebM');
-        }
-      } else if (isMobile) {
-        // Android and other mobile prefer MP3/MPEG
-        if (MediaRecorder.isTypeSupported('audio/mpeg')) {
-          mimeType = 'audio/mpeg';
-          fileExtension = 'mp3';
-          console.log('🎵 Mobile: Using MP3 format');
-        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-          mimeType = 'audio/mp4';
-          fileExtension = 'mp4';
-          console.log('🎵 Mobile: Using MP4 format');
-        } else if (MediaRecorder.isTypeSupported('audio/wav')) {
-          mimeType = 'audio/wav';
-          fileExtension = 'wav';
-          console.log('🎵 Mobile: Using WAV format');
-        }
-      } else {
-        // Desktop - try modern formats first
-        if (MediaRecorder.isTypeSupported('audio/mp4')) {
-          mimeType = 'audio/mp4';
-          fileExtension = 'mp4';
-        } else if (MediaRecorder.isTypeSupported('audio/mpeg')) {
-          mimeType = 'audio/mpeg';
-          fileExtension = 'mp3';
-        } else if (MediaRecorder.isTypeSupported('audio/wav')) {
-          mimeType = 'audio/wav';
-          fileExtension = 'wav';
-        }
-      }
+      console.log('🎵 Starting recording - Device:', { isIOS, isMobile });
       
-      console.log('🎵 Final audio format selected:', { mimeType, fileExtension });
-      
-      // Test if the selected format is actually supported
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        console.log('⚠️ Selected format not supported, testing alternatives...');
-        
-        // Test common formats one by one
-        const testFormats = [
-          { type: 'audio/mp4', ext: 'mp4' },
-          { type: 'audio/mpeg', ext: 'mp3' },
-          { type: 'audio/wav', ext: 'wav' },
-          { type: 'audio/webm;codecs=opus', ext: 'webm' },
-          { type: 'audio/ogg;codecs=opus', ext: 'ogg' }
+      // Try to use mobile-friendly formats first
+      if (isMobile) {
+        // For mobile, try these formats in order of preference
+        const mobileFormats = [
+          'audio/mp4',
+          'audio/aac', 
+          'audio/mpeg',
+          'audio/wav',
+          'audio/webm;codecs=opus'
         ];
         
-        for (const format of testFormats) {
-          if (MediaRecorder.isTypeSupported(format.type)) {
-            mimeType = format.type;
-            fileExtension = format.ext;
-            console.log('✅ Found working format:', format);
+        for (const format of mobileFormats) {
+          if (MediaRecorder.isTypeSupported(format)) {
+            mimeType = format;
+            
+            // Set appropriate file extension
+            if (format.includes('mp4')) {
+              fileExtension = 'mp4';
+            } else if (format.includes('aac')) {
+              fileExtension = 'aac';
+            } else if (format.includes('mpeg')) {
+              fileExtension = 'mp3';
+            } else if (format.includes('wav')) {
+              fileExtension = 'wav';
+            } else {
+              fileExtension = 'webm';
+            }
+            
+            console.log('✅ Selected mobile format:', format);
+            break;
+          }
+        }
+      } else {
+        // Desktop - try high quality formats
+        const desktopFormats = [
+          'audio/mp4',
+          'audio/mpeg',
+          'audio/wav',
+          'audio/webm;codecs=opus'
+        ];
+        
+        for (const format of desktopFormats) {
+          if (MediaRecorder.isTypeSupported(format)) {
+            mimeType = format;
+            
+            if (format.includes('mp4')) {
+              fileExtension = 'mp4';
+            } else if (format.includes('mpeg')) {
+              fileExtension = 'mp3';
+            } else if (format.includes('wav')) {
+              fileExtension = 'wav';
+            } else {
+              fileExtension = 'webm';
+            }
+            
+            console.log('✅ Selected desktop format:', format);
             break;
           }
         }
       }
-      
-      const mediaRecorder = new MediaRecorder(streamRef.current, {
-        mimeType: mimeType
-      });
-      
-      mediaRecorderRef.current = mediaRecorder;
 
-      mediaRecorder.ondataavailable = (event) => {
+      const options = {
+        mimeType,
+        audioBitsPerSecond: isMobile ? 32000 : 64000, // Lower bitrate for mobile
+      };
+
+      console.log('🎵 Recording options:', options);
+
+      recorderRef.current = new MediaRecorder(streamRef.current, options);
+      
+      recorderRef.current.ondataavailable = (event) => {
         if (event.data.size > 0) {
           chunksRef.current.push(event.data);
         }
       };
 
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: mimeType });
-        setAudioBlob(blob);
+      recorderRef.current.onstop = async () => {
+        console.log('🎵 Recording stopped, processing...');
+        const audioBlob = new Blob(chunksRef.current, { type: mimeType });
         
-        const url = URL.createObjectURL(blob);
-        setAudioUrl(url);
+        // FIXED: Send with correct MIME type and extension
+        await sendAudioMessage(audioBlob, mimeType, fileExtension);
+        
+        chunksRef.current = [];
       };
 
-      mediaRecorder.start(100);
+      recorderRef.current.start();
       setIsRecording(true);
       setDuration(0);
 
-      intervalRef.current = setInterval(() => {
+      timerRef.current = setInterval(() => {
         setDuration(prev => prev + 1);
       }, 1000);
 
-    } catch (err) {
-      console.error('Failed to start recording:', err);
-      setError('Failed to start recording');
+    } catch (error) {
+      console.error('Recording error:', error);
+      setError('Failed to start recording. Please check microphone permissions.');
     }
   };
 
   // Stop recording
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+    if (recorderRef.current && isRecording) {
+      recorderRef.current.stop();
       setIsRecording(false);
-      
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      clearInterval(timerRef.current);
+    }
+  };
+
+  // Play recorded audio
+  const playRecording = () => {
+    if (audioRef.current) {
+      audioRef.current.play();
+      isPlayingRef.current = true;
+    }
+  };
+
+  const pauseRecording = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      isPlayingRef.current = false;
     }
   };
 
   // Delete recording
   const deleteRecording = () => {
-    if (audioUrl) {
-      URL.revokeObjectURL(audioUrl);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      isPlayingRef.current = false;
     }
+    
     setAudioBlob(null);
-    setAudioUrl(null);
+    setAudioUrl('');
     setDuration(0);
     onClose();
   };
 
   // Send audio
-  const sendAudio = async () => {
-    if (!audioBlob) return;
-
-    setSending(true);
-    setError('');
+  const sendAudioMessage = async (audioBlob, mimeType, fileExtension) => {
+    if (!conversationId) {
+      setError('No conversation selected');
+      return;
+    }
 
     try {
+      setSending(true);
+
       const formData = new FormData();
       
-      // Determine file extension based on MIME type
-      let fileExtension = 'webm';
-      if (audioBlob.type.includes('mp4')) {
-        fileExtension = 'mp4';
-      } else if (audioBlob.type.includes('mpeg') || audioBlob.type.includes('mp3')) {
-        fileExtension = 'mp3';
-      } else if (audioBlob.type.includes('wav')) {
-        fileExtension = 'wav';
-      }
+      // FIXED: Create file with proper extension and MIME type
+      const timestamp = Date.now();
+      const fileName = `voice_message_${timestamp}.${fileExtension}`;
       
-      const audioFile = new File([audioBlob], `voice-message-${Date.now()}.${fileExtension}`, {
-        type: audioBlob.type
-      });
-      
-      console.log('🎵 Sending audio file:', {
-        name: audioFile.name,
-        type: audioFile.type,
-        size: audioFile.size
+      // Create file with correct MIME type
+      const audioFile = new File([audioBlob], fileName, { 
+        type: mimeType,
+        lastModified: timestamp
       });
       
       formData.append('files', audioFile);
       formData.append('content', '🎤 Voice message');
 
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
+      console.log('🎵 Sending audio:', {
+        fileName,
+        mimeType,
+        size: audioBlob.size,
+        extension: fileExtension
+      });
+
+      const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/common/messaging/conversations/${conversationId}/messages/media`,
-        formData,
         {
+          method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          }
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: formData
         }
       );
 
-      if (response.data.success) {
-        onSendAudio(response.data.data);
-        handleClose();
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to send voice message');
       }
+
+      const result = await response.json();
+      console.log('✅ Audio message sent successfully:', result);
+      
+      onSendAudio(result.data);
+      onClose();
     } catch (error) {
-      console.error('Audio upload error:', error);
-      setError(error.response?.data?.message || 'Failed to send voice message');
+      console.error('❌ Failed to send audio message:', error);
+      setError(`Failed to send voice message: ${error.message}`);
     } finally {
       setSending(false);
     }
@@ -274,8 +291,12 @@ const InlineVoiceRecorder = ({
       streamRef.current = null;
     }
 
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+
+    if (audioRef.current) {
+      audioRef.current.pause();
     }
 
     if (audioUrl) {
@@ -303,8 +324,8 @@ const InlineVoiceRecorder = ({
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
       }
       if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
@@ -410,7 +431,7 @@ const InlineVoiceRecorder = ({
                   <Trash2 className="w-5 h-5" />
                 </button>
                 <button
-                  onClick={sendAudio}
+                  onClick={sendAudioMessage}
                   disabled={sending}
                   className="p-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >

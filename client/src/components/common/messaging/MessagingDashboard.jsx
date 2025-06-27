@@ -257,9 +257,20 @@ const MessagingDashboard = () => {
   }, [dispatch, hasInitialized, activeConversation]);
 
   useEffect(() => {
-    // Show error notifications
+    // Show error notifications - FIXED: Don't show auth errors from background processes
     if (error) {
-      toast.error(error);
+      // Skip showing toast for authentication-related errors from background processes
+      const isAuthError = error.includes('Unauthorized') || 
+                          error.includes('Authentication') || 
+                          error.includes('Invalid token') ||
+                          error.includes('token expired');
+      
+      if (!isAuthError) {
+        toast.error(error);
+      } else {
+        console.log('🔔 Skipping auth error toast:', error);
+      }
+      
       dispatch(clearError());
     }
   }, [error, dispatch]);
@@ -282,6 +293,11 @@ const MessagingDashboard = () => {
         if (navigator.onLine && user?.id) {
           try {
             const token = localStorage.getItem('token');
+            if (!token) {
+              console.log('🔔 No token available for heartbeat, skipping');
+              return;
+            }
+            
             await axios.post(
               `${import.meta.env.VITE_API_URL}/api/common/messaging/heartbeat`,
               {},
@@ -290,7 +306,23 @@ const MessagingDashboard = () => {
               }
             );
           } catch (error) {
-            // Silent heartbeat errors - don't spam console
+            // FIXED: Handle authentication errors gracefully without toasts
+            if (error.response?.status === 401) {
+              console.log('🔔 Heartbeat authentication failed, token may be expired');
+              // Clear intervals to stop making failing requests
+              if (heartbeatIntervalRef.current) {
+                clearInterval(heartbeatIntervalRef.current);
+                heartbeatIntervalRef.current = null;
+              }
+              if (statusCheckIntervalRef.current) {
+                clearInterval(statusCheckIntervalRef.current);
+                statusCheckIntervalRef.current = null;
+              }
+              // Don't show error toast - let axios interceptor handle token expiration
+              return;
+            }
+            
+            // Only log non-auth errors
             if (error.response?.status !== 401) {
               console.log('⚠️ Heartbeat failed:', error.message);
             }
@@ -332,7 +364,10 @@ const MessagingDashboard = () => {
 
     try {
       const token = localStorage.getItem('token');
-      if (!token) return;
+      if (!token) {
+        console.log('🔔 No token available for status check, skipping');
+        return;
+      }
       
       const allParticipants = new Set();
       
@@ -365,7 +400,14 @@ const MessagingDashboard = () => {
           clearTimeout(timeoutId);
           return { participantId, status: response.data.data };
         } catch (error) {
-          // Return offline status for failed requests
+          // FIXED: Handle 401 errors without logging as failures
+          if (error.response?.status === 401) {
+            console.log('🔔 Status check authentication failed for participant:', participantId);
+            // Return offline status for auth failures (don't treat as error)
+            return { participantId, status: { isOnline: false, lastSeen: new Date() } };
+          }
+          
+          // Return offline status for other failed requests (network, timeout, etc.)
           return { participantId, status: { isOnline: false, lastSeen: new Date() } };
         }
       });
@@ -378,7 +420,17 @@ const MessagingDashboard = () => {
 
       setParticipantStatuses(newStatuses);
     } catch (error) {
-      console.error('Error checking participant statuses:', error);
+      // FIXED: Only log non-authentication errors
+      if (error.response?.status !== 401) {
+        console.error('Error checking participant statuses:', error);
+      } else {
+        console.log('🔔 Participant status check authentication failed, stopping status checks');
+        // Stop status checking if authentication fails
+        if (statusCheckIntervalRef.current) {
+          clearInterval(statusCheckIntervalRef.current);
+          statusCheckIntervalRef.current = null;
+        }
+      }
       // Don't crash the app, just log the error
     }
   };
@@ -574,8 +626,24 @@ const MessagingDashboard = () => {
 
   const getOtherParticipant = (conversation) => {
     try {
-      return conversation?.participants?.find(p => p?.user?._id !== user?.id)?.user;
+      // FIXED: Complete null safety to prevent crashes
+      if (!conversation || !conversation.participants || !Array.isArray(conversation.participants)) {
+        return null;
+      }
+      
+      const participant = conversation.participants.find(p => {
+        // Safe property access
+        if (!p || !p.user) return false;
+        
+        const participantId = p.user._id || p.user;
+        const currentUserId = user?.id;
+        
+        return participantId && currentUserId && participantId.toString() !== currentUserId.toString();
+      });
+      
+      return participant?.user || null;
     } catch (err) {
+      console.error('Error getting other participant:', err);
       return null;
     }
   };
@@ -732,58 +800,81 @@ const MessagingDashboard = () => {
             <div className="flex-1 overflow-y-auto">
               {filteredConversations && filteredConversations.length > 0 ? (
                 <div className="divide-y divide-gray-100">
-                  {filteredConversations.map((conversation) => {
-                    // Safe conversation rendering with fallbacks
-                    const otherUser = getOtherParticipant(conversation) || { userName: 'Unknown User' };
-                    const unreadCount = conversation?.unreadCounts?.find(u => {
-                      const unreadUserId = u?.user?._id || u?.user;
-                      return unreadUserId?.toString() === user?.id?.toString();
-                    })?.count || 0;
-                    const isActive = activeConversation?._id === conversation?._id;
-                    const hasUnread = unreadCount > 0;
+                  {(filteredConversations || []).map((conversation) => {
+                    try {
+                      // FIXED: Safe conversation data extraction
+                      if (!conversation || !conversation._id) {
+                        return null; // Skip invalid conversations
+                      }
+                      
+                      const otherUser = getOtherParticipant(conversation) || { userName: 'Unknown User' };
+                      
+                      // Safe unread count calculation
+                      let unreadCount = 0;
+                      try {
+                        const userUnread = conversation.unreadCounts?.find(u => {
+                          if (!u || !u.user) return false;
+                          const unreadUserId = u.user._id || u.user;
+                          return unreadUserId && user?.id && unreadUserId.toString() === user.id.toString();
+                        });
+                        unreadCount = userUnread?.count || 0;
+                      } catch (unreadError) {
+                        console.warn('Error calculating unread count:', unreadError);
+                      }
+                      
+                      const isActive = activeConversation?._id === conversation._id;
+                      const hasUnread = unreadCount > 0;
+                      
+                      // Safe last message content
+                      const lastMessageContent = conversation.lastMessage?.content || 'No messages yet';
+                      const lastMessageTime = conversation.lastMessage?.createdAt || conversation.updatedAt;
 
-                    return (
-                      <motion.div
-                        key={conversation._id || Math.random()}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className={`p-3 lg:p-4 cursor-pointer transition-all duration-200 hover:bg-gray-50 active:bg-gray-100 ${
-                          isActive ? 'bg-blue-50 border-r-4 border-blue-500' : ''
-                        } ${hasUnread ? 'bg-blue-50/50' : ''}`}
-                        onClick={() => handleConversationSelect(conversation)}
-                      >
-                        <div className="flex items-start space-x-3">
-                          <div className="flex-shrink-0">
-                            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm lg:text-base">
-                              {otherUser.userName ? otherUser.userName.charAt(0).toUpperCase() : 'U'}
+                      return (
+                        <motion.div
+                          key={conversation._id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className={`p-3 lg:p-4 cursor-pointer transition-all duration-200 hover:bg-gray-50 active:bg-gray-100 ${
+                            isActive ? 'bg-blue-50 border-r-4 border-blue-500' : ''
+                          } ${hasUnread ? 'bg-blue-50/50' : ''}`}
+                          onClick={() => handleConversationSelect(conversation)}
+                        >
+                          <div className="flex items-start space-x-3">
+                            <div className="flex-shrink-0">
+                              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm lg:text-base">
+                                {(otherUser.userName || 'U').charAt(0).toUpperCase()}
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
-                              <h3 className={`text-sm lg:text-base font-medium truncate ${
-                                hasUnread ? 'text-gray-900 font-semibold' : 'text-gray-900'
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <h3 className={`text-sm lg:text-base font-medium truncate ${
+                                  hasUnread ? 'text-gray-900 font-semibold' : 'text-gray-900'
+                                }`}>
+                                  {otherUser.userName || 'Unknown User'}
+                                </h3>
+                                {hasUnread && (
+                                  <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-blue-600 rounded-full">
+                                    {unreadCount}
+                                  </span>
+                                )}
+                              </div>
+                              <p className={`text-xs lg:text-sm truncate mt-1 ${
+                                hasUnread ? 'text-gray-700 font-medium' : 'text-gray-500'
                               }`}>
-                                {otherUser.userName || 'Unknown User'}
-                              </h3>
-                              {hasUnread && (
-                                <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-blue-600 rounded-full">
-                                  {unreadCount}
-                                </span>
-                              )}
+                                {lastMessageContent}
+                              </p>
+                              <p className="text-xs text-gray-400 mt-1">
+                                {lastMessageTime ? formatTime(lastMessageTime) : ''}
+                              </p>
                             </div>
-                            <p className={`text-xs lg:text-sm truncate mt-1 ${
-                              hasUnread ? 'text-gray-700 font-medium' : 'text-gray-500'
-                            }`}>
-                              {conversation.lastMessage?.content || 'No messages yet'}
-                            </p>
-                            <p className="text-xs text-gray-400 mt-1">
-                              {conversation.lastMessage?.createdAt ? formatTime(conversation.lastMessage.createdAt) : ''}
-                            </p>
                           </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
+                        </motion.div>
+                      );
+                    } catch (conversationError) {
+                      console.error('Error rendering conversation:', conversationError);
+                      return null; // Skip problematic conversations
+                    }
+                  }).filter(Boolean) /* Remove null entries */}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full p-8 text-center">

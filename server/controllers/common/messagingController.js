@@ -789,25 +789,40 @@ const getUserOnlineStatus = asyncHandler(async (req, res) => {
   }
 });
 
-// Mark user as offline (called on logout or page unload)
+// Mark user as offline
 const markUserOffline = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
   try {
-    await User.findByIdAndUpdate(userId, {
-      isOnline: false,
-      lastSeen: new Date()
-    });
+    console.log('📡 Marking user offline:', userId);
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      userId, 
+      {
+        isOnline: false,
+        lastSeen: new Date()
+      },
+      { new: true }
+    );
 
+    if (!updatedUser) {
+      console.log('❌ User not found for offline marking:', userId);
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    console.log('✅ User marked offline:', userId);
     res.json({
       success: true,
-      message: 'Marked as offline'
+      message: 'User marked offline'
     });
   } catch (error) {
-    console.error('Error marking user offline:', error);
+    console.error('❌ Error marking user offline:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to mark as offline'
+      message: 'Failed to mark user offline'
     });
   }
 });

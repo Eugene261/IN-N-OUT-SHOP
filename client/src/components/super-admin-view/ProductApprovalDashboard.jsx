@@ -363,9 +363,12 @@ const ProductApprovalDashboard = () => {
                             <h3 className="text-base lg:text-lg font-medium text-gray-900 truncate">
                               {product.title}
                             </h3>
-                            <p className="text-sm text-gray-500 mt-1 line-clamp-2 lg:line-clamp-none">
-                              {product.description?.substring(0, 100)}...
-                            </p>
+                            <div 
+                              className="text-sm text-gray-500 mt-1 line-clamp-2 lg:line-clamp-none prose prose-sm max-w-none [&>p]:mb-0 [&>strong]:font-semibold [&>em]:italic"
+                              dangerouslySetInnerHTML={{ 
+                                __html: (product.description?.substring(0, 100) || 'No description available') + '...' 
+                              }} 
+                            />
                           </div>
 
                           <div className="flex items-start space-x-2 ml-3 lg:hidden">
@@ -552,7 +555,12 @@ const ProductApprovalDashboard = () => {
 
                   <div className="mb-4 lg:mb-6">
                     <label className="text-sm font-medium text-gray-700">Description</label>
-                    <p className="text-gray-600 mt-1 text-sm lg:text-base">{selectedProduct.description}</p>
+                    <div 
+                      className="text-gray-600 mt-1 text-sm lg:text-base prose prose-sm max-w-none [&>p]:mb-2 [&>strong]:font-semibold [&>em]:italic [&>ul]:list-disc [&>ol]:list-decimal [&>li]:ml-4"
+                      dangerouslySetInnerHTML={{ 
+                        __html: selectedProduct.description || 'No description available' 
+                      }} 
+                    />
                   </div>
 
                   <div className="mb-4 lg:mb-6">

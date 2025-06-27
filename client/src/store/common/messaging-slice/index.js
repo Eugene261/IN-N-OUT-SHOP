@@ -345,10 +345,15 @@ const messagingSlice = createSlice({
       })
       .addCase(fetchConversations.rejected, (state, action) => {
         state.loading = false;
-        // SAFER ERROR ACCESS: Completely avoid action.error to prevent status access errors
+        // FIXED: Don't show error for authentication failures
         const payload = action.payload;
-        if (payload && typeof payload === 'object' && payload.message) {
-          state.error = payload.message;
+        if (payload && typeof payload === 'object') {
+          // Skip showing error toast for 401 authentication failures
+          if (payload.status === 401) {
+            console.log('🔔 Conversations fetch authentication failed (background)');
+            return; // Don't set error state for auth failures
+          }
+          state.error = payload.message || 'Failed to fetch conversations';
         } else {
           state.error = 'Failed to fetch conversations';
         }
@@ -547,13 +552,19 @@ const messagingSlice = createSlice({
         state.availableUsers = action.payload || [];
       })
       .addCase(fetchAvailableUsers.rejected, (state, action) => {
-        // SAFER ERROR ACCESS: Completely avoid action.error to prevent status access errors
+        // FIXED: Don't show error for authentication failures
         const payload = action.payload;
-        let errorMessage = 'Failed to fetch available users';
-        if (payload && typeof payload === 'object' && payload.message) {
-          errorMessage = payload.message;
+        if (payload && typeof payload === 'object') {
+          // Skip showing error for 401 authentication failures
+          if (payload.status === 401) {
+            console.log('🔔 Available users fetch authentication failed (background)');
+            state.availableUsers = []; // Set empty array but no error message
+            return;
+          }
+          console.warn('Failed to fetch available users:', payload.message || 'Unknown error');
+        } else {
+          console.warn('Failed to fetch available users: Unknown error');
         }
-        console.warn('Failed to fetch available users:', errorMessage);
         state.availableUsers = [];
       });
     
@@ -616,9 +627,21 @@ export const selectFilteredConversations = (state) => {
   if (!searchTerm) return conversations;
   
   return conversations.filter(conversation => {
-    const otherParticipant = conversation.participants.find(p => p.user._id !== state.auth.user?.id);
-    return otherParticipant?.user.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           conversation.title.toLowerCase().includes(searchTerm.toLowerCase());
+    try {
+      // FIXED: Safe property access to prevent crashes
+      const otherParticipant = conversation.participants?.find(p => {
+        return p?.user?._id !== state.auth.user?.id;
+      });
+      
+      const participantName = otherParticipant?.user?.userName || '';
+      const conversationTitle = conversation.title || '';
+      
+      return participantName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             conversationTitle.toLowerCase().includes(searchTerm.toLowerCase());
+    } catch (error) {
+      console.error('Error filtering conversation:', error);
+      return false; // Skip problematic conversations
+    }
   });
 };
 

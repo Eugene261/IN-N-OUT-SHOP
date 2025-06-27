@@ -79,42 +79,41 @@ const NotificationBell = ({ className = "" }) => {
       } catch (error) {
         if (!isComponentMounted) return 'stop';
 
-        // Check for network errors
-        const isNetworkError = !navigator.onLine || 
-                              error?.message?.includes('Network Error') ||
-                              error?.code === 'ERR_NETWORK' ||
-                              error?.code === 'ERR_INTERNET_DISCONNECTED' ||
-                              error?.response?.status === 0 ||
-                              error?.message?.includes('ERR_ADDRESS_UNREACHABLE');
-
-        if (isNetworkError) {
-          consecutiveNetworkErrors++;
-          console.warn(`🌐 NotificationBell: Network error #${consecutiveNetworkErrors}`, error.message);
-          
-          // Exponential backoff for network errors: 10s, 20s, 40s, max 60s
-          const backoffDelay = Math.min(10000 * Math.pow(2, consecutiveNetworkErrors - 1), 60000);
-          scheduleNextPoll(backoffDelay);
-          return 'continue';
-        }
-        
-        // Handle auth errors
-        if (error?.response?.status === 401 || error?.message?.includes('Unauthorized')) {
+        // FIXED: Handle authentication errors gracefully
+        if (error.response?.status === 401) {
           authErrorCount++;
-          console.log(`🔔 NotificationBell: Auth error #${authErrorCount}/${MAX_AUTH_ERRORS}`);
+          console.log(`🔔 NotificationBell: Authentication failed (${authErrorCount}/${MAX_AUTH_ERRORS})`);
           
-          // Stop polling after too many auth errors to prevent spam
           if (authErrorCount >= MAX_AUTH_ERRORS) {
             console.log('🔔 NotificationBell: Too many auth errors, stopping polling');
+            return 'stop'; // Stop polling after multiple auth failures
+          }
+          
+          // For auth errors, wait longer before retrying
+          scheduleNextPoll(30000); // Wait 30 seconds for auth issues
+          return 'auth_error';
+        } else if (!navigator.onLine || 
+                  error.code === 'ERR_NETWORK' || 
+                  error.code === 'ERR_INTERNET_DISCONNECTED' ||
+                  error.message?.includes('Network Error')) {
+          
+          consecutiveNetworkErrors++;
+          console.log(`🔔 NotificationBell: Network error (${consecutiveNetworkErrors})`);
+          
+          if (consecutiveNetworkErrors >= 5) {
+            console.log('🔔 NotificationBell: Too many network errors, stopping polling');
             return 'stop';
           }
+          
+          // Use exponential backoff for network errors
+          const backoffDelay = Math.min(5000 * Math.pow(2, consecutiveNetworkErrors - 1), 60000);
+          scheduleNextPoll(backoffDelay);
+          return 'network_error';
         } else {
-          // Log other errors but continue polling
-          console.error('🔔 NotificationBell fetch failed:', error);
+          console.error('🔔 NotificationBell: Unexpected error:', error);
+          scheduleNextPoll(20000); // Longer delay for unexpected errors
+          return 'error';
         }
-        
-        // Continue polling with normal interval for non-network errors
-        scheduleNextPoll(10000);
-        return 'continue';
       }
     };
 
