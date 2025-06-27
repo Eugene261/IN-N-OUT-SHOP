@@ -754,388 +754,417 @@ const MessagingDashboard = () => {
 
       return (
         <>
-          {/* Conversations Sidebar */}
-          <div className={`${
-            showConversations ? 'flex' : 'hidden'
-          } lg:flex lg:w-1/3 w-full bg-white border-r border-gray-200 flex-col relative shadow-sm`}>
-            {/* Header */}
-            <div className="p-4 lg:p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                    <MessageSquare className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-lg lg:text-xl font-bold text-gray-900">Messages</h1>
-                    <p className="text-xs lg:text-sm text-gray-600">
-                      {totalUnread > 0 ? `${totalUnread} unread` : 'All caught up'}
-                    </p>
-                  </div>
-                </div>
+          {/* Main Container */}
+          {initError ? (
+            <div className="flex-1 flex items-center justify-center p-8">
+              <div className="text-center max-w-md bg-red-50 border border-red-200 rounded-lg p-6">
+                <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-red-900 mb-2">Unable to Load Messaging</h3>
+                <p className="text-red-700 mb-4">{initError}</p>
                 <button
-                  onClick={() => dispatch(setShowNewChatModal(true))}
-                  className="p-2 lg:p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm hover:shadow-md touch-manipulation"
-                  title="Start new conversation"
+                  onClick={() => {
+                    setInitError(null);
+                    setHasInitialized(false);
+                  }}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                 >
-                  <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
+                  Try Again
                 </button>
               </div>
-
-              {/* Search */}
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-4 w-4 lg:h-5 lg:w-5 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  className="block w-full pl-9 lg:pl-10 pr-3 py-2 lg:py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base touch-manipulation"
-                  placeholder="Search conversations..."
-                  value={searchTerm}
-                  onChange={(e) => dispatch(setSearchTerm(e.target.value))}
-                />
+            </div>
+          ) : !hasInitialized ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="flex items-center space-x-3 text-blue-600">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent"></div>
+                <span className="text-lg font-medium">Loading messaging...</span>
               </div>
             </div>
-
-            {/* Conversations List */}
-            <div className="flex-1 overflow-y-auto">
-              {filteredConversations && filteredConversations.length > 0 ? (
-                <div className="divide-y divide-gray-100">
-                  {(filteredConversations || []).map((conversation) => {
-                    try {
-                      // FIXED: Safe conversation data extraction
-                      if (!conversation || !conversation._id) {
-                        return null; // Skip invalid conversations
-                      }
-                      
-                      const otherUser = getOtherParticipant(conversation) || { userName: 'Unknown User' };
-                      
-                      // Safe unread count calculation
-                      let unreadCount = 0;
-                      try {
-                        const userUnread = conversation.unreadCounts?.find(u => {
-                          if (!u || !u.user) return false;
-                          const unreadUserId = u.user._id || u.user;
-                          return unreadUserId && user?.id && unreadUserId.toString() === user.id.toString();
-                        });
-                        unreadCount = userUnread?.count || 0;
-                      } catch (unreadError) {
-                        console.warn('Error calculating unread count:', unreadError);
-                      }
-                      
-                      const isActive = activeConversation?._id === conversation._id;
-                      const hasUnread = unreadCount > 0;
-                      
-                      // Safe last message content
-                      const lastMessageContent = conversation.lastMessage?.content || 'No messages yet';
-                      const lastMessageTime = conversation.lastMessage?.createdAt || conversation.updatedAt;
-
-                      return (
-                        <motion.div
-                          key={conversation._id}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className={`p-3 lg:p-4 cursor-pointer transition-all duration-200 hover:bg-gray-50 active:bg-gray-100 ${
-                            isActive ? 'bg-blue-50 border-r-4 border-blue-500' : ''
-                          } ${hasUnread ? 'bg-blue-50/50' : ''}`}
-                          onClick={() => handleConversationSelect(conversation)}
-                        >
-                          <div className="flex items-start space-x-3">
-                            <div className="flex-shrink-0">
-                              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm lg:text-base">
-                                {(otherUser.userName || 'U').charAt(0).toUpperCase()}
-                              </div>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between">
-                                <h3 className={`text-sm lg:text-base font-medium truncate ${
-                                  hasUnread ? 'text-gray-900 font-semibold' : 'text-gray-900'
-                                }`}>
-                                  {otherUser.userName || 'Unknown User'}
-                                </h3>
-                                {hasUnread && (
-                                  <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-blue-600 rounded-full">
-                                    {unreadCount}
-                                  </span>
-                                )}
-                              </div>
-                              <p className={`text-xs lg:text-sm truncate mt-1 ${
-                                hasUnread ? 'text-gray-700 font-medium' : 'text-gray-500'
-                              }`}>
-                                {lastMessageContent}
-                              </p>
-                              <p className="text-xs text-gray-400 mt-1">
-                                {lastMessageTime ? formatTime(lastMessageTime) : ''}
-                              </p>
-                            </div>
-                          </div>
-                        </motion.div>
-                      );
-                    } catch (conversationError) {
-                      console.error('Error rendering conversation:', conversationError);
-                      return null; // Skip problematic conversations
-                    }
-                  }).filter(Boolean) /* Remove null entries */}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <MessageSquare className="w-8 h-8 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No conversations</h3>
-                  <p className="text-gray-500 mb-4">Start a new conversation to get started!</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Chat Area */}
-          <div className={`${
-            showConversations ? 'hidden' : 'flex'
-          } lg:flex flex-1 flex-col bg-white relative`}>
-            {activeConversation ? (
-              <>
-                {/* Conversation Header - Fixed */}
-                <div className="flex-shrink-0 border-b border-gray-200 bg-white px-4 py-3">
-                  <div className="flex items-center justify-between">
+          ) : (
+            <div className="flex-1 flex overflow-hidden h-full">
+              {/* Conversations Sidebar */}
+              <div className={`${
+                showConversations ? 'flex' : 'hidden'
+              } lg:flex lg:w-1/3 w-full bg-white border-r border-gray-200 flex-col relative shadow-sm h-full`}>
+                {/* Header */}
+                <div className="p-4 lg:p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                  <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
-                      {/* Back Button for Mobile */}
-                      <button
-                        onClick={() => setShowConversations(true)}
-                        className="lg:hidden p-1 text-gray-400 hover:text-gray-600 rounded-md"
-                      >
-                        <ArrowLeft className="w-5 h-5" />
-                      </button>
-                      
-                      {/* Conversation Info */}
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                          {getOtherParticipant(activeConversation)?.userName?.charAt(0)?.toUpperCase() || 'U'}
-                        </div>
-                        <div>
-                          <h2 className="text-base lg:text-lg font-semibold text-gray-900">
-                            {getOtherParticipant(activeConversation)?.userName || 'Unknown User'}
-                          </h2>
-                          {/* Online Status */}
-                          <div className="flex items-center space-x-2 text-xs lg:text-sm">
-                            {(() => {
-                              const otherParticipant = getOtherParticipant(activeConversation);
-                              const status = getOnlineStatus(otherParticipant?._id || otherParticipant?.id);
-                              return (
-                                <div className="flex items-center space-x-1">
-                                  <div className={`w-2 h-2 rounded-full ${status.color} ${status.isOnline ? 'animate-pulse' : ''}`}></div>
-                                  <span className="text-gray-500">{status.text}</span>
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        </div>
+                      <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                        <MessageSquare className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h1 className="text-lg lg:text-xl font-bold text-gray-900">Messages</h1>
+                        <p className="text-xs lg:text-sm text-gray-600">
+                          {totalUnread > 0 ? `${totalUnread} unread` : 'All caught up'}
+                        </p>
                       </div>
                     </div>
+                    <button
+                      onClick={() => dispatch(setShowNewChatModal(true))}
+                      className="p-2 lg:p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm hover:shadow-md touch-manipulation"
+                      title="Start new conversation"
+                    >
+                      <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
+                    </button>
+                  </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex items-center space-x-2">
-                      <button
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                        title="More options"
-                      >
-                        <MoreVertical className="w-5 h-5" />
-                      </button>
+                  {/* Search */}
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search className="h-4 w-4 lg:h-5 lg:w-5 text-gray-400" />
                     </div>
+                    <input
+                      type="text"
+                      className="block w-full pl-9 lg:pl-10 pr-3 py-2 lg:py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base touch-manipulation"
+                      placeholder="Search conversations..."
+                      value={searchTerm}
+                      onChange={(e) => dispatch(setSearchTerm(e.target.value))}
+                    />
                   </div>
                 </div>
 
-                {/* Messages - Scrollable */}
-                <div className="flex-1 min-h-0 overflow-y-auto p-4 lg:p-6 space-y-4">
-                  {messagesLoading && (!messages || messages.length === 0) ? (
-                    <div className="flex justify-center py-8">
-                      <div className="flex items-center space-x-2 text-blue-600">
-                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"></div>
-                        <span className="text-sm font-medium">Loading messages...</span>
-                      </div>
-                    </div>
-                  ) : (!messages || messages.length === 0) ? (
-                    <div className="text-center py-12">
-                      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <MessageSquare className="w-8 h-8 text-blue-600" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No messages yet</h3>
-                      <p className="text-gray-500">Start the conversation by sending your first message!</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {messages.map((message, index) => {
-                        const isOwnMessage = message?.sender?._id === user?.id || message?.sender?.toString() === user?.id;
-                        const showAvatar = index === 0 || messages[index - 1]?.sender?._id !== message?.sender?._id;
+                {/* Conversations List */}
+                <div className="flex-1 overflow-y-auto">
+                  {filteredConversations && filteredConversations.length > 0 ? (
+                    <div className="divide-y divide-gray-100">
+                      {(filteredConversations || []).map((conversation) => {
+                        try {
+                          // FIXED: Safe conversation data extraction
+                          if (!conversation || !conversation._id) {
+                            return null; // Skip invalid conversations
+                          }
+                          
+                          const otherUser = getOtherParticipant(conversation) || { userName: 'Unknown User' };
+                          
+                          // Safe unread count calculation
+                          let unreadCount = 0;
+                          try {
+                            const userUnread = conversation.unreadCounts?.find(u => {
+                              if (!u || !u.user) return false;
+                              const unreadUserId = u.user._id || u.user;
+                              return unreadUserId && user?.id && unreadUserId.toString() === user.id.toString();
+                            });
+                            unreadCount = userUnread?.count || 0;
+                          } catch (unreadError) {
+                            console.warn('Error calculating unread count:', unreadError);
+                          }
+                          
+                          const isActive = activeConversation?._id === conversation._id;
+                          const hasUnread = unreadCount > 0;
+                          
+                          // Safe last message content
+                          const lastMessageContent = conversation.lastMessage?.content || 'No messages yet';
+                          const lastMessageTime = conversation.lastMessage?.createdAt || conversation.updatedAt;
 
-                        return (
-                          <motion.div
-                            key={message._id || index}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} space-x-2 lg:space-x-3`}
-                          >
-                            {!isOwnMessage && showAvatar && (
-                              <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                                {message?.sender?.userName?.charAt(0)?.toUpperCase() || 'U'}
-                              </div>
-                            )}
-                            {!isOwnMessage && !showAvatar && (
-                              <div className="w-8 h-8 flex-shrink-0"></div>
-                            )}
-
-                            <div className={`max-w-xs lg:max-w-md xl:max-w-lg rounded-2xl shadow-sm ${
-                              isOwnMessage 
-                                ? 'bg-blue-600 text-white' 
-                                : 'bg-gray-100 text-gray-900'
-                            }`}>
-                              {/* Handle different message types */}
-                              {message?.messageType === 'audio' && message?.attachments?.length > 0 ? (
-                                <div className="p-3">
-                                  <VoiceMessagePlayer
-                                    audioUrl={message.attachments[0].fileUrl}
-                                    duration={message.attachments[0].duration}
-                                    className={isOwnMessage ? 'audio-player-own' : 'audio-player-other'}
-                                  />
-                                  {message?.content && message.content !== '🎤 Voice message' && (
-                                    <p className="text-sm mt-2">{message.content}</p>
-                                  )}
+                          return (
+                            <motion.div
+                              key={conversation._id}
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              className={`p-3 lg:p-4 cursor-pointer transition-all duration-200 hover:bg-gray-50 active:bg-gray-100 ${
+                                isActive ? 'bg-blue-50 border-r-4 border-blue-500' : ''
+                              } ${hasUnread ? 'bg-blue-50/50' : ''}`}
+                              onClick={() => handleConversationSelect(conversation)}
+                            >
+                              <div className="flex items-start space-x-3">
+                                <div className="flex-shrink-0">
+                                  <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm lg:text-base">
+                                    {(otherUser.userName || 'U').charAt(0).toUpperCase()}
+                                  </div>
                                 </div>
-                              ) : message?.messageType === 'image' && message?.attachments?.length > 0 ? (
-                                <div className="p-2">
-                                  <img
-                                    src={message.attachments[0].fileUrl}
-                                    alt={message.attachments[0].originalName || 'Image'}
-                                    className="max-w-full h-auto rounded-lg cursor-pointer"
-                                    style={{ maxHeight: '250px', minHeight: '100px' }}
-                                    onClick={() => {
-                                      const isMobileDevice = window.innerWidth <= 768;
-                                      if (isMobileDevice) {
-                                        // On mobile, open in same tab for better UX
-                                        window.location.href = message.attachments[0].fileUrl;
-                                      } else {
-                                        // On desktop, open in new tab
-                                        window.open(message.attachments[0].fileUrl, '_blank');
-                                      }
-                                    }}
-                                  />
-                                  {message?.content && (
-                                    <p className="text-sm mt-2">{message.content}</p>
-                                  )}
-                                </div>
-                              ) : (
-                                <div className="p-3 lg:p-4">
-                                  <p className="text-sm lg:text-base leading-relaxed">
-                                    {message?.content || 'Message content unavailable'}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between">
+                                    <h3 className={`text-sm lg:text-base font-medium truncate ${
+                                      hasUnread ? 'text-gray-900 font-semibold' : 'text-gray-900'
+                                    }`}>
+                                      {otherUser.userName || 'Unknown User'}
+                                    </h3>
+                                    {hasUnread && (
+                                      <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-blue-600 rounded-full">
+                                        {unreadCount}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className={`text-xs lg:text-sm truncate mt-1 ${
+                                    hasUnread ? 'text-gray-700 font-medium' : 'text-gray-500'
+                                  }`}>
+                                    {lastMessageContent}
+                                  </p>
+                                  <p className="text-xs text-gray-400 mt-1">
+                                    {lastMessageTime ? formatTime(lastMessageTime) : ''}
                                   </p>
                                 </div>
-                              )}
-
-                              <div className={`px-3 lg:px-4 pb-2 text-xs ${
-                                isOwnMessage ? 'text-blue-100' : 'text-gray-500'
-                              }`}>
-                                {message?.createdAt ? formatTime(message.createdAt) : 'Unknown time'}
                               </div>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
+                            </motion.div>
+                          );
+                        } catch (conversationError) {
+                          console.error('Error rendering conversation:', conversationError);
+                          return null; // Skip problematic conversations
+                        }
+                      }).filter(Boolean) /* Remove null entries */}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <MessageSquare className="w-8 h-8 text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No conversations</h3>
+                      <p className="text-gray-500 mb-4">Start a new conversation to get started!</p>
                     </div>
                   )}
                 </div>
+              </div>
 
-                {/* Message Input - Fixed */}
-                {showInlineAttachment ? (
-                  <div className="flex-shrink-0 border-t border-gray-200 bg-white">
-                    <InlineAttachmentMenu
-                      conversationId={activeConversation._id}
-                      onClose={() => setShowInlineAttachment(false)}
-                      onFilesSent={handleFileUpload}
-                    />
-                  </div>
-                ) : showInlineRecorder ? (
-                  <div className="flex-shrink-0 border-t border-gray-200 bg-white">
-                    <InlineVoiceRecorder
-                      conversationId={activeConversation._id}
-                      onClose={() => setShowInlineRecorder(false)}
-                      onSendAudio={handleAudioSent}
-                    />
-                  </div>
-                ) : (
-                  <div className="bg-white p-3 sm:p-4 lg:p-6 border-t border-gray-200 safe-area-inset-bottom">
-                    <div className="flex items-end space-x-2 sm:space-x-3">
-                      {/* File Upload Button */}
-                      <button 
-                        onClick={() => setShowInlineAttachment(true)}
-                        className="flex-shrink-0 p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors touch-manipulation" 
-                        title="Attach file"
-                      >
-                        <Paperclip className="w-5 h-5" />
-                      </button>
-                      
-                      {/* Voice Recording Button */}
-                      <button 
-                        onClick={() => setShowInlineRecorder(true)}
-                        className="flex-shrink-0 p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors touch-manipulation" 
-                        title="Record voice message"
-                      >
-                        <Mic className="w-5 h-5" />
-                      </button>
-                      
-                      <div className="flex-1 relative">
-                        <div className="relative">
-                          <input
-                            type="text"
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            onKeyPress={handleKeyPress}
-                            placeholder="Type your message here..."
-                            className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 text-base placeholder-gray-500 resize-none touch-manipulation"
-                            disabled={sendingMessage}
-                          />
-                          {sendingMessage && (
-                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+              {/* Chat Area */}
+              <div className={`${
+                showConversations ? 'hidden' : 'flex'
+              } lg:flex flex-1 flex-col bg-white relative h-full`}>
+                {activeConversation ? (
+                  <>
+                    {/* Conversation Header - Fixed at Top */}
+                    <div className="flex-shrink-0 border-b border-gray-200 bg-white px-4 py-3 sticky top-0 z-10 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          {/* Back Button for Mobile */}
+                          <button
+                            onClick={() => setShowConversations(true)}
+                            className="lg:hidden p-1 text-gray-400 hover:text-gray-600 rounded-md"
+                          >
+                            <ArrowLeft className="w-5 h-5" />
+                          </button>
+                          
+                          {/* Conversation Info */}
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                              {getOtherParticipant(activeConversation)?.userName?.charAt(0)?.toUpperCase() || 'U'}
                             </div>
-                          )}
+                            <div>
+                              <h2 className="text-base lg:text-lg font-semibold text-gray-900">
+                                {getOtherParticipant(activeConversation)?.userName || 'Unknown User'}
+                              </h2>
+                              {/* Online Status */}
+                              <div className="flex items-center space-x-2 text-xs lg:text-sm">
+                                {(() => {
+                                  const otherParticipant = getOtherParticipant(activeConversation);
+                                  const status = getOnlineStatus(otherParticipant?._id || otherParticipant?.id);
+                                  return (
+                                    <div className="flex items-center space-x-1">
+                                      <div className={`w-2 h-2 rounded-full ${status.color} ${status.isOnline ? 'animate-pulse' : ''}`}></div>
+                                      <span className="text-gray-500">{status.text}</span>
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-400 mt-1 px-2 hidden sm:block">
-                          Press Enter to send • Shift + Enter for new line
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center space-x-2">
+                          <button
+                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                            title="More options"
+                          >
+                            <MoreVertical className="w-5 h-5" />
+                          </button>
                         </div>
                       </div>
-                      <button
-                        onClick={handleSendMessage}
-                        disabled={!newMessage.trim() || sendingMessage}
-                        className="flex-shrink-0 p-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md disabled:hover:shadow-sm touch-manipulation"
-                        title="Send message"
-                      >
-                        <Send className="w-5 h-5" />
-                      </button>
+                    </div>
+
+                    {/* Messages - Scrollable Area */}
+                    <div className="flex-1 min-h-0 overflow-y-auto p-4 lg:p-6 space-y-4 scroll-smooth">
+                      {messagesLoading && (!messages || messages.length === 0) ? (
+                        <div className="flex justify-center py-8">
+                          <div className="flex items-center space-x-2 text-blue-600">
+                            <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"></div>
+                            <span className="text-sm font-medium">Loading messages...</span>
+                          </div>
+                        </div>
+                      ) : (!messages || messages.length === 0) ? (
+                        <div className="text-center py-12">
+                          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <MessageSquare className="w-8 h-8 text-blue-600" />
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">No messages yet</h3>
+                          <p className="text-gray-500">Start the conversation by sending your first message!</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {messages.map((message, index) => {
+                            const isOwnMessage = message?.sender?._id === user?.id || message?.sender?.toString() === user?.id;
+                            const showAvatar = index === 0 || messages[index - 1]?.sender?._id !== message?.sender?._id;
+
+                            return (
+                              <motion.div
+                                key={message._id || index}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} space-x-2 lg:space-x-3`}
+                              >
+                                {!isOwnMessage && showAvatar && (
+                                  <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                                    {message?.sender?.userName?.charAt(0)?.toUpperCase() || 'U'}
+                                  </div>
+                                )}
+                                {!isOwnMessage && !showAvatar && (
+                                  <div className="w-8 h-8 flex-shrink-0"></div>
+                                )}
+
+                                <div className={`max-w-xs lg:max-w-md xl:max-w-lg rounded-2xl shadow-sm ${
+                                  isOwnMessage 
+                                    ? 'bg-blue-600 text-white' 
+                                    : 'bg-gray-100 text-gray-900'
+                                }`}>
+                                  {/* Handle different message types */}
+                                  {message?.messageType === 'audio' && message?.attachments?.length > 0 ? (
+                                    <div className="p-3">
+                                      <VoiceMessagePlayer
+                                        audioUrl={message.attachments[0].fileUrl}
+                                        duration={message.attachments[0].duration}
+                                        className={isOwnMessage ? 'audio-player-own' : 'audio-player-other'}
+                                      />
+                                      {message?.content && message.content !== '🎤 Voice message' && (
+                                        <p className="text-sm mt-2">{message.content}</p>
+                                      )}
+                                    </div>
+                                  ) : message?.messageType === 'image' && message?.attachments?.length > 0 ? (
+                                    <div className="p-2">
+                                      <img
+                                        src={message.attachments[0].fileUrl}
+                                        alt={message.attachments[0].originalName || 'Image'}
+                                        className="max-w-full h-auto rounded-lg cursor-pointer"
+                                        style={{ maxHeight: '250px', minHeight: '100px' }}
+                                        onClick={() => {
+                                          const isMobileDevice = window.innerWidth <= 768;
+                                          if (isMobileDevice) {
+                                            // On mobile, open in same tab for better UX
+                                            window.location.href = message.attachments[0].fileUrl;
+                                          } else {
+                                            // On desktop, open in new tab
+                                            window.open(message.attachments[0].fileUrl, '_blank');
+                                          }
+                                        }}
+                                      />
+                                      {message?.content && (
+                                        <p className="text-sm mt-2">{message.content}</p>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="p-3 lg:p-4">
+                                      <p className="text-sm lg:text-base leading-relaxed">
+                                        {message?.content || 'Message content unavailable'}
+                                      </p>
+                                    </div>
+                                  )}
+
+                                  <div className={`px-3 lg:px-4 pb-2 text-xs ${
+                                    isOwnMessage ? 'text-blue-100' : 'text-gray-500'
+                                  }`}>
+                                    {message?.createdAt ? formatTime(message.createdAt) : 'Unknown time'}
+                                  </div>
+                                </div>
+                              </motion.div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Message Input - Fixed at Bottom */}
+                    {showInlineAttachment ? (
+                      <div className="flex-shrink-0 border-t border-gray-200 bg-white sticky bottom-0 z-10">
+                        <InlineAttachmentMenu
+                          conversationId={activeConversation._id}
+                          onClose={() => setShowInlineAttachment(false)}
+                          onFilesSent={handleFileUpload}
+                        />
+                      </div>
+                    ) : showInlineRecorder ? (
+                      <div className="flex-shrink-0 border-t border-gray-200 bg-white sticky bottom-0 z-10">
+                        <InlineVoiceRecorder
+                          conversationId={activeConversation._id}
+                          onClose={() => setShowInlineRecorder(false)}
+                          onSendAudio={handleAudioSent}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex-shrink-0 bg-white p-3 sm:p-4 lg:p-6 border-t border-gray-200 sticky bottom-0 z-10 safe-area-inset-bottom">
+                        <div className="flex items-end space-x-2 sm:space-x-3">
+                          {/* File Upload Button */}
+                          <button 
+                            onClick={() => setShowInlineAttachment(true)}
+                            className="flex-shrink-0 p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors touch-manipulation" 
+                            title="Attach file"
+                          >
+                            <Paperclip className="w-5 h-5" />
+                          </button>
+                          
+                          {/* Voice Recording Button */}
+                          <button 
+                            onClick={() => setShowInlineRecorder(true)}
+                            className="flex-shrink-0 p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors touch-manipulation" 
+                            title="Record voice message"
+                          >
+                            <Mic className="w-5 h-5" />
+                          </button>
+                          
+                          <div className="flex-1 relative">
+                            <div className="relative">
+                              <input
+                                type="text"
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                onKeyPress={handleKeyPress}
+                                placeholder="Type your message here..."
+                                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 text-base placeholder-gray-500 resize-none touch-manipulation"
+                                disabled={sendingMessage}
+                              />
+                              {sendingMessage && (
+                                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1 px-2 hidden sm:block">
+                              Press Enter to send • Shift + Enter for new line
+                            </div>
+                          </div>
+                          <button
+                            onClick={handleSendMessage}
+                            disabled={!newMessage.trim() || sendingMessage}
+                            className="flex-shrink-0 p-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md disabled:hover:shadow-sm touch-manipulation"
+                            title="Send message"
+                          >
+                            <Send className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
+                    <div className="text-center max-w-md">
+                      <div className="relative mb-8">
+                        <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                          <MessageSquare className="w-10 h-10 text-white" />
+                        </div>
+                        <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-400 rounded-full border-4 border-white animate-pulse"></div>
+                      </div>
+                      <h3 className="text-xl lg:text-2xl font-bold text-gray-900 mb-3">Welcome to Messaging</h3>
+                      <p className="text-gray-600 mb-6 leading-relaxed">
+                        Select a conversation from the sidebar to start chatting, or click the 
+                        <span className="inline-flex items-center mx-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                          <Plus className="w-3 h-3 mr-1" />
+                          plus
+                        </span> 
+                        button to start a new conversation.
+                      </p>
                     </div>
                   </div>
                 )}
-              </>
-            ) : (
-              <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50">
-                <div className="text-center max-w-md">
-                  <div className="relative mb-8">
-                    <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                      <MessageSquare className="w-10 h-10 text-white" />
-                    </div>
-                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-400 rounded-full border-4 border-white animate-pulse"></div>
-                  </div>
-                  <h3 className="text-xl lg:text-2xl font-bold text-gray-900 mb-3">Welcome to Messaging</h3>
-                  <p className="text-gray-600 mb-6 leading-relaxed">
-                    Select a conversation from the sidebar to start chatting, or click the 
-                    <span className="inline-flex items-center mx-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                      <Plus className="w-3 h-3 mr-1" />
-                      plus
-                    </span> 
-                    button to start a new conversation.
-                  </p>
-                </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </>
       );
     } catch (error) {

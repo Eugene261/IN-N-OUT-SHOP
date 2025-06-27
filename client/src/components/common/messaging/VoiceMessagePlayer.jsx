@@ -8,87 +8,208 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isReady, setIsReady] = useState(false);
   const audioRef = useRef(null);
 
-  // SIMPLIFIED: Basic mobile detection
+  // Mobile detection
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
   console.log('🎵 VoiceMessagePlayer initialized:', {
     audioUrl,
     isMobile,
-    isIOS
+    isIOS,
+    duration
   });
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !audioUrl) return;
 
-    // SIMPLIFIED: Basic event handlers
-    const updateTime = () => setCurrentTime(audio.currentTime);
-    const updateDuration = () => {
-      if (audio.duration && isFinite(audio.duration)) {
-        setTotalDuration(audio.duration);
+    // Reset states
+    setIsReady(false);
+    setHasError(false);
+    setIsLoading(true);
+
+    // Comprehensive event handlers
+    const updateTime = () => {
+      if (audio.currentTime !== currentTime) {
+        setCurrentTime(audio.currentTime);
       }
     };
+
+    const updateDuration = () => {
+      if (audio.duration && isFinite(audio.duration) && audio.duration > 0) {
+        setTotalDuration(audio.duration);
+        console.log('🎵 Duration loaded:', audio.duration);
+      }
+    };
+
+    const handleLoadStart = () => {
+      console.log('🎵 Audio loading started');
+      setIsLoading(true);
+      setHasError(false);
+    };
+
+    const handleLoadedMetadata = () => {
+      console.log('🎵 Metadata loaded');
+      updateDuration();
+    };
+
+    const handleCanPlay = () => {
+      console.log('🎵 Audio can play');
+      setIsLoading(false);
+      setIsReady(true);
+      setHasError(false);
+    };
+
+    const handleCanPlayThrough = () => {
+      console.log('🎵 Audio can play through');
+      setIsLoading(false);
+      setIsReady(true);
+    };
+
     const handlePlay = () => {
+      console.log('🎵 Audio started playing');
       setIsPlaying(true);
       setIsLoading(false);
     };
-    const handlePause = () => setIsPlaying(false);
+
+    const handlePause = () => {
+      console.log('🎵 Audio paused');
+      setIsPlaying(false);
+    };
+
     const handleEnded = () => {
+      console.log('🎵 Audio ended');
       setIsPlaying(false);
       setCurrentTime(0);
     };
-    const handleLoadStart = () => setIsLoading(true);
-    const handleCanPlay = () => {
-      setIsLoading(false);
-      setHasError(false);
-    };
+
     const handleError = (e) => {
       console.error('🎵 Audio error:', e);
+      console.error('🎵 Audio error details:', {
+        error: audio.error,
+        networkState: audio.networkState,
+        readyState: audio.readyState,
+        src: audio.src
+      });
+      
       setIsLoading(false);
       setHasError(true);
       setIsPlaying(false);
+      setIsReady(false);
       
-      if (isIOS) {
-        setErrorMessage('Cannot play audio on iOS. Use download button.');
+      // More specific error messages
+      if (audio.error) {
+        switch (audio.error.code) {
+          case audio.error.MEDIA_ERR_ABORTED:
+            setErrorMessage('Audio loading was aborted');
+            break;
+          case audio.error.MEDIA_ERR_NETWORK:
+            setErrorMessage('Network error loading audio');
+            break;
+          case audio.error.MEDIA_ERR_DECODE:
+            setErrorMessage('Audio format not supported');
+            break;
+          case audio.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+            setErrorMessage('Audio source not supported');
+            break;
+          default:
+            setErrorMessage('Unable to load audio');
+        }
       } else {
-        setErrorMessage('Unable to play audio. Try download option.');
+        setErrorMessage('Audio playback failed');
       }
     };
 
-    audio.addEventListener('timeupdate', updateTime);
-    audio.addEventListener('loadedmetadata', updateDuration);
+    const handleWaiting = () => {
+      console.log('🎵 Audio waiting/buffering');
+      setIsLoading(true);
+    };
+
+    const handleStalled = () => {
+      console.log('🎵 Audio stalled');
+      setIsLoading(false);
+    };
+
+    // Add all event listeners
+    audio.addEventListener('loadstart', handleLoadStart);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('canplaythrough', handleCanPlayThrough);
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
     audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('loadstart', handleLoadStart);
-    audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('timeupdate', updateTime);
     audio.addEventListener('error', handleError);
+    audio.addEventListener('waiting', handleWaiting);
+    audio.addEventListener('stalled', handleStalled);
+
+    // Load the audio
+    audio.load();
+
+    // Timeout to handle cases where audio never loads
+    const loadTimeout = setTimeout(() => {
+      if (!isReady && !hasError) {
+        console.log('🎵 Audio load timeout');
+        setIsLoading(false);
+        setHasError(true);
+        setErrorMessage('Audio loading timed out');
+      }
+    }, 10000); // 10 second timeout
 
     return () => {
-      audio.removeEventListener('timeupdate', updateTime);
-      audio.removeEventListener('loadedmetadata', updateDuration);
+      clearTimeout(loadTimeout);
+      audio.removeEventListener('loadstart', handleLoadStart);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('canplay', handleCanPlay);
+      audio.removeEventListener('canplaythrough', handleCanPlayThrough);
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('loadstart', handleLoadStart);
-      audio.removeEventListener('canplay', handleCanPlay);
+      audio.removeEventListener('timeupdate', updateTime);
       audio.removeEventListener('error', handleError);
+      audio.removeEventListener('waiting', handleWaiting);
+      audio.removeEventListener('stalled', handleStalled);
     };
-  }, [isIOS]);
+  }, [audioUrl]);
 
-  // SIMPLIFIED: Basic play/pause toggle
+  // Play/pause toggle with better error handling
   const togglePlayPause = async () => {
     if (!audioRef.current) return;
 
     try {
       if (isPlaying) {
+        console.log('🎵 Pausing audio');
         audioRef.current.pause();
       } else {
+        console.log('🎵 Attempting to play audio');
+        
+        // For mobile devices, we need to handle user interaction requirements
+        if (isMobile) {
+          // Ensure audio is ready before playing
+          if (!isReady) {
+            setIsLoading(true);
+            await new Promise((resolve, reject) => {
+              const checkReady = () => {
+                if (audioRef.current.readyState >= 2) { // HAVE_CURRENT_DATA
+                  resolve();
+                } else {
+                  setTimeout(checkReady, 100);
+                }
+              };
+              checkReady();
+              
+              // Timeout after 5 seconds
+              setTimeout(() => reject(new Error('Audio not ready')), 5000);
+            });
+          }
+        }
+        
         setIsLoading(true);
         await audioRef.current.play();
+        console.log('🎵 Audio playing successfully');
       }
     } catch (error) {
       console.error('🎵 Playback error:', error);
@@ -96,18 +217,18 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
       setHasError(true);
       
       if (error.name === 'NotAllowedError') {
-        setErrorMessage('Audio blocked. Allow audio then try again.');
-      } else if (isIOS) {
-        setErrorMessage('iOS playback issue. Use download button.');
+        setErrorMessage('Audio blocked by browser. Please enable audio autoplay.');
+      } else if (error.name === 'NotSupportedError') {
+        setErrorMessage('Audio format not supported by your browser.');
       } else {
-        setErrorMessage('Cannot play audio. Try download option.');
+        setErrorMessage(`Playback failed: ${error.message}`);
       }
     }
   };
 
-  // SIMPLIFIED: Basic seek functionality
+  // Seek functionality
   const handleSeek = (e) => {
-    if (!audioRef.current || !totalDuration) return;
+    if (!audioRef.current || !totalDuration || !isReady) return;
     
     const rect = e.currentTarget.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
@@ -115,42 +236,22 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
     
     try {
       audioRef.current.currentTime = Math.max(0, Math.min(newTime, totalDuration));
+      setCurrentTime(newTime);
     } catch (error) {
       console.error('🎵 Seek error:', error);
     }
   };
 
-  // SIMPLIFIED: Mobile download
-  const handleDownload = async () => {
-    if (!audioUrl) return;
-
-    try {
-      if (isIOS) {
-        // iOS: Open in new tab
-        window.open(audioUrl, '_blank');
-      } else {
-        // Android: Try blob download
-        try {
-          const response = await fetch(audioUrl);
-          const blob = await response.blob();
-          const url = window.URL.createObjectURL(blob);
-          
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = 'voice_message.mp3';
-          link.click();
-          
-          window.URL.revokeObjectURL(url);
-        } catch (fetchError) {
-          // Fallback: Direct link
-          const link = document.createElement('a');
-          link.href = audioUrl;
-          link.download = 'voice_message.mp3';
-          link.click();
-        }
-      }
-    } catch (error) {
-      console.error('🎵 Download error:', error);
+  // Retry loading audio
+  const retryAudio = () => {
+    console.log('🎵 Retrying audio load');
+    setHasError(false);
+    setErrorMessage('');
+    setIsLoading(true);
+    setIsReady(false);
+    
+    if (audioRef.current) {
+      audioRef.current.load();
     }
   };
 
@@ -163,6 +264,7 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
 
   const progress = totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0;
 
+  // Error state
   if (hasError) {
     return (
       <div className={`flex items-center space-x-3 p-3 bg-red-50 border border-red-200 rounded-lg ${className}`}>
@@ -171,22 +273,16 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
           <span className="text-red-600 text-sm block">{errorMessage}</span>
           <div className="flex gap-2 mt-2">
             <button
-              onClick={() => {
-                setHasError(false);
-                setErrorMessage('');
-                if (audioRef.current) {
-                  audioRef.current.load();
-                }
-              }}
-              className="text-red-500 hover:text-red-700 text-xs underline"
+              onClick={retryAudio}
+              className="text-blue-500 hover:text-blue-700 text-xs underline"
             >
               Try again
             </button>
             <button
-              onClick={handleDownload}
+              onClick={() => window.open(audioUrl, '_blank')}
               className="text-blue-500 hover:text-blue-700 text-xs underline"
             >
-              Download
+              Open audio
             </button>
           </div>
         </div>
@@ -196,20 +292,25 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
 
   return (
     <div className={`flex items-center space-x-3 p-3 bg-gray-50 rounded-lg max-w-sm ${className}`}>
-      {/* SIMPLIFIED: Single audio element */}
+      {/* Audio element - removed crossOrigin to avoid CORS issues */}
       <audio 
         ref={audioRef} 
         src={audioUrl}
         preload="metadata"
         playsInline
-        crossOrigin="anonymous"
+        muted={false}
       />
 
       {/* Play/Pause Button */}
       <button
         onClick={togglePlayPause}
-        disabled={isLoading}
-        className="flex-shrink-0 w-10 h-10 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-full flex items-center justify-center transition-colors"
+        disabled={isLoading || !isReady}
+        className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+          isLoading || !isReady 
+            ? 'bg-gray-400 cursor-not-allowed' 
+            : 'bg-blue-500 hover:bg-blue-600 active:bg-blue-700'
+        } text-white`}
+        title={isLoading ? 'Loading audio...' : isReady ? (isPlaying ? 'Pause' : 'Play') : 'Audio not ready'}
       >
         {isLoading ? (
           <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
@@ -223,8 +324,8 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
       {/* Progress and Time */}
       <div className="flex-1 min-w-0">
         <div 
-          className="w-full h-2 bg-gray-200 rounded-full cursor-pointer"
-          onClick={handleSeek}
+          className={`w-full h-2 bg-gray-200 rounded-full ${isReady ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+          onClick={isReady ? handleSeek : undefined}
         >
           <div 
             className="h-full bg-blue-500 rounded-full transition-all duration-100"
@@ -237,15 +338,11 @@ const VoiceMessagePlayer = ({ audioUrl, duration = 0, className = "" }) => {
         </div>
       </div>
 
-      {/* Download Button for Mobile */}
-      {isMobile && (
-        <button
-          onClick={handleDownload}
-          className="flex-shrink-0 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-          title="Download audio"
-        >
-          <Download className="w-4 h-4" />
-        </button>
+      {/* Status indicator */}
+      {!isReady && !isLoading && !hasError && (
+        <div className="flex-shrink-0 text-xs text-gray-500">
+          Loading...
+        </div>
       )}
     </div>
   );
