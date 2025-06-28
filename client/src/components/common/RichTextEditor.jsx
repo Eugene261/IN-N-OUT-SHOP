@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { AlertCircle, Info, Bold, Italic, Underline, List, ListOrdered, Type, RotateCcw } from 'lucide-react';
+import { AlertCircle, Info, Bold, Italic, Underline, List, ListOrdered, Type, RotateCcw, Eye, EyeOff } from 'lucide-react';
 
 const RichTextEditor = ({ 
   value, 
@@ -11,6 +11,7 @@ const RichTextEditor = ({
 }) => {
   const editorRef = useRef(null);
   const [isActive, setIsActive] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   
   // Add CSS for rich text formatting
   useEffect(() => {
@@ -357,6 +358,23 @@ const RichTextEditor = ({
               <RotateCcw size={16} />
             </button>
           </div>
+
+          <div className="w-px h-6 bg-gray-300 mx-2"></div>
+
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setShowPreview(!showPreview)}
+              className={`p-2 rounded transition-colors ${
+                showPreview 
+                  ? 'bg-green-100 text-green-700 shadow-sm' 
+                  : 'text-gray-600 hover:bg-gray-200'
+              }`}
+              title={showPreview ? "Hide Preview" : "Show Preview"}
+            >
+              {showPreview ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
         </div>
       )}
 
@@ -394,6 +412,27 @@ const RichTextEditor = ({
           </div>
         )}
       </div>
+
+      {/* Preview */}
+      {showPreview && value && value.trim() !== '' && (
+        <div className="border rounded-lg bg-gray-50">
+          <div className="bg-gray-100 px-4 py-2 border-b rounded-t-lg">
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <Eye size={16} />
+              Preview
+            </div>
+          </div>
+          <div 
+            className="p-4 prose prose-sm max-w-none"
+            dangerouslySetInnerHTML={{ __html: value }}
+            style={{
+              wordBreak: 'break-word',
+              overflowWrap: 'break-word',
+              lineHeight: '1.6'
+            }}
+          />
+        </div>
+      )}
 
       {/* Character count and help */}
       <div className="flex justify-between items-start text-xs text-gray-500">

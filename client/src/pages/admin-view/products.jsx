@@ -1,6 +1,6 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import React, { Fragment, useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../config/api';
 import { Plus } from 'lucide-react';
 import CommonForm from '@/components/common/form';
 import { addProductFormElements } from '@/config';
@@ -74,21 +74,39 @@ function AdminProducts() {
   
   // Function to fetch form configuration based on category
   const fetchFormConfig = async (category) => {
-    if (!category) return null;
+    if (!category) {
+      console.log('🔍 No category provided, skipping form config fetch');
+      return null;
+    }
     
     try {
       setFormConfigLoading(true);
       console.log('🔍 Fetching form config for category:', category);
+      console.log('🌐 API URL:', `/api/admin/products/form-config?category=${category}`);
       
-      const response = await axios.get(`/api/admin/products/form-config?category=${category}`);
-      console.log('📋 Form config response:', response.data);
+      const response = await apiClient.get(`/api/admin/products/form-config?category=${category}`, {
+        timeout: 10000 // 10 second timeout
+      });
+      
+      console.log('📋 Form config response status:', response.status);
+      console.log('📋 Form config response data:', response.data);
       
       if (response.data.success) {
+        console.log('✅ Form config loaded successfully:', response.data.data);
         setFormConfig(response.data.data);
         return response.data.data;
+      } else {
+        console.warn('⚠️ Form config response was not successful:', response.data);
+        throw new Error(response.data.message || 'Form config response not successful');
       }
     } catch (error) {
-      console.warn('⚠️ Form config endpoint not available, using defaults:', error.message);
+      console.error('❌ Form config fetch failed:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
+      
       // Fallback to basic requirements
       const fallbackConfig = {
         fieldRequirements: {
@@ -98,8 +116,12 @@ function AdminProducts() {
           weight: category === 'devices',
           dimensions: category === 'devices'
         },
-        customFields: []
+        customFields: [],
+        fallbackMode: true,
+        error: error.message
       };
+      
+      console.log('🔄 Using fallback config:', fallbackConfig);
       setFormConfig(fallbackConfig);
       return fallbackConfig;
     } finally {
@@ -109,10 +131,24 @@ function AdminProducts() {
   
   // Fetch form config when category changes
   useEffect(() => {
+    console.log('🔄 useEffect triggered - formData.category changed:', formData.category);
     if (formData.category) {
+      console.log('🚀 Calling fetchFormConfig for category:', formData.category);
       fetchFormConfig(formData.category);
+    } else {
+      console.log('⚠️ No category set, clearing form config');
+      setFormConfig(null);
     }
   }, [formData.category]);
+
+  // Debug useEffect to track when dialog opens
+  useEffect(() => {
+    console.log('🔄 Dialog state changed - openCreateProductsDialog:', openCreateProductsDialog);
+    if (openCreateProductsDialog && formData.category) {
+      console.log('🔄 Dialog opened with category, refreshing form config:', formData.category);
+      fetchFormConfig(formData.category);
+    }
+  }, [openCreateProductsDialog, formData.category]);
   
   // ========================================
   // END PRODUCTTEMPLATE INTEGRATION
@@ -383,6 +419,28 @@ function AdminProducts() {
     
     const hasRequiredFields = requiredFields.every(key => {
       const value = formData[key];
+      
+      // Special validation for price - must be a positive number
+      if (key === 'price') {
+        const priceValue = parseFloat(value);
+        const isValid = !isNaN(priceValue) && priceValue > 0;
+        if (!isValid) {
+          console.log(`❌ Validation failed: Invalid ${key}, current value:`, value, 'parsed:', priceValue);
+        }
+        return isValid;
+      }
+      
+      // Special validation for totalStock - must be a non-negative number
+      if (key === 'totalStock') {
+        const stockValue = parseInt(value);
+        const isValid = !isNaN(stockValue) && stockValue >= 0;
+        if (!isValid) {
+          console.log(`❌ Validation failed: Invalid ${key}, current value:`, value, 'parsed:', stockValue);
+        }
+        return isValid;
+      }
+      
+      // Standard validation for other fields
       const isValid = value !== '' && value !== null && value !== undefined;
       if (!isValid) {
         console.log(`❌ Validation failed: Missing ${key}, current value:`, value);
