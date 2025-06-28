@@ -558,7 +558,7 @@ const ProductApprovalDashboard = () => {
                     <div className="space-y-4">
                       {/* Main Image */}
                       <div 
-                        className="relative bg-gray-50 rounded-lg overflow-hidden cursor-pointer group"
+                        className="relative bg-white rounded-lg overflow-hidden cursor-pointer group border"
                         onClick={() => openImageLightbox(0)}
                       >
                         <img
@@ -566,7 +566,7 @@ const ProductApprovalDashboard = () => {
                           alt={selectedProduct.title}
                           className="w-full h-64 lg:h-80 object-contain transition-transform duration-200 group-hover:scale-105"
                         />
-                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-5 transition-all duration-200 flex items-center justify-center">
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/90 rounded-full p-2">
                             <Eye className="w-5 h-5 text-gray-700" />
                           </div>
@@ -585,7 +585,7 @@ const ProductApprovalDashboard = () => {
                             <button
                               key={index}
                               onClick={() => openImageLightbox(index)}
-                              className="flex-shrink-0 w-16 h-16 rounded-md overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all duration-200"
+                              className="flex-shrink-0 w-16 h-16 rounded-md overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all duration-200 bg-white"
                             >
                               <img
                                 src={image}
@@ -690,35 +690,35 @@ const ProductApprovalDashboard = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-[60]"
+              className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center p-4 z-[60]"
               onClick={closeImageLightbox}
             >
               <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="relative max-w-4xl max-h-[90vh] w-full"
+                className="relative max-w-5xl max-h-[95vh] w-full"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Close button */}
                 <button
                   onClick={closeImageLightbox}
-                  className="absolute top-4 right-4 z-10 bg-white/20 hover:bg-white/30 text-white rounded-full p-2 transition-all duration-200"
+                  className="absolute top-4 right-4 z-10 bg-white/80 hover:bg-white/90 text-gray-700 rounded-full p-2 transition-all duration-200 shadow-lg border"
                 >
                   <XCircle className="w-6 h-6" />
                 </button>
 
                 {/* Image counter */}
-                <div className="absolute top-4 left-4 z-10 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                <div className="absolute top-4 left-4 z-10 bg-white/80 text-gray-800 px-3 py-1 rounded-full text-sm font-medium shadow-lg border">
                   {currentImageIndex + 1} / {allImages.length}
                 </div>
 
                 {/* Main image */}
-                <div className="bg-white rounded-lg overflow-hidden">
+                <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-2xl overflow-hidden border">
                   <img
                     src={allImages[currentImageIndex]}
                     alt={`${selectedProduct?.title} - Image ${currentImageIndex + 1}`}
-                    className="w-full h-auto max-h-[80vh] object-contain"
+                    className="w-full h-auto max-h-[75vh] object-contain"
                   />
                 </div>
 
@@ -727,13 +727,13 @@ const ProductApprovalDashboard = () => {
                   <>
                     <button
                       onClick={() => navigateImage('prev')}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white rounded-full p-3 transition-all duration-200"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white/90 text-gray-700 rounded-full p-3 transition-all duration-200 shadow-lg border"
                     >
                       <ChevronLeft className="w-6 h-6" />
                     </button>
                     <button
                       onClick={() => navigateImage('next')}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white rounded-full p-3 transition-all duration-200"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white/90 text-gray-700 rounded-full p-3 transition-all duration-200 shadow-lg border"
                     >
                       <ChevronRight className="w-6 h-6" />
                     </button>
@@ -742,15 +742,15 @@ const ProductApprovalDashboard = () => {
 
                 {/* Thumbnail navigation */}
                 {allImages.length > 1 && (
-                  <div className="mt-4 flex justify-center space-x-2 overflow-x-auto pb-2">
+                  <div className="mt-6 flex justify-center space-x-3 overflow-x-auto pb-2">
                     {allImages.map((image, index) => (
                       <button
                         key={index}
                         onClick={() => setCurrentImageIndex(index)}
-                        className={`flex-shrink-0 w-16 h-16 rounded-md overflow-hidden border-2 transition-all duration-200 ${
+                        className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all duration-200 shadow-sm bg-white ${
                           currentImageIndex === index 
-                            ? 'border-white' 
-                            : 'border-white/30 hover:border-white/60'
+                            ? 'border-blue-500 ring-2 ring-blue-200' 
+                            : 'border-gray-300 hover:border-gray-400'
                         }`}
                       >
                         <img
@@ -760,6 +760,13 @@ const ProductApprovalDashboard = () => {
                         />
                       </button>
                     ))}
+                  </div>
+                )}
+
+                {/* Product title overlay */}
+                {selectedProduct && (
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/80 text-gray-800 px-4 py-2 rounded-full text-sm font-medium shadow-lg border max-w-md truncate">
+                    {selectedProduct.title}
                   </div>
                 )}
               </motion.div>
