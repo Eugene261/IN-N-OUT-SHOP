@@ -115,8 +115,8 @@ function SimpleForm({
     const isPasswordVisible = showPassword[controlItem.name];
     const error = errors[controlItem.name];
 
-    // Password requirements for validation
-    const passwordRequirements = [
+    // Use password requirements from controlItem if available, otherwise fallback to simplified version
+    const passwordRequirements = controlItem.passwordRequirements || [
       { 
         id: 'length', 
         text: 'At least 8 characters', 
@@ -136,11 +136,6 @@ function SimpleForm({
         id: 'number', 
         text: 'One number', 
         regex: /\d/ 
-      },
-      { 
-        id: 'special', 
-        text: 'One special character (@$!%*?&)', 
-        regex: /[@$!%*?&]/ 
       }
     ];
 
@@ -190,7 +185,7 @@ function SimpleForm({
             )}
 
             {/* Password Requirements - only show for password fields on register page and when user starts typing */}
-            {isPasswordField && value && controlItem.name === 'password' && buttonText.toLowerCase().includes('create') && (
+            {isPasswordField && value && controlItem.name === 'password' && (buttonText.toLowerCase().includes('register') || buttonText.toLowerCase().includes('create')) && (
               <div className="mt-3 p-3 bg-gray-50 rounded-lg border">
                 <p className="text-sm font-medium text-gray-700 mb-2">Password Requirements:</p>
                 <div className="space-y-1">
@@ -211,7 +206,7 @@ function SimpleForm({
                   })}
                 </div>
                 
-                {/* Password Strength Indicator */}
+                {/* Simplified Password Strength Indicator */}
                 <div className="mt-3">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-gray-700">Strength:</span>
@@ -220,9 +215,9 @@ function SimpleForm({
                         className={`h-2 rounded-full transition-all duration-300 ${
                           passwordRequirements.filter(req => checkRequirement(req)).length < 2 
                             ? 'bg-red-500 w-1/4' 
+                            : passwordRequirements.filter(req => checkRequirement(req)).length < 3
+                            ? 'bg-yellow-500 w-1/2'
                             : passwordRequirements.filter(req => checkRequirement(req)).length < 4
-                            ? 'bg-yellow-500 w-2/4'
-                            : passwordRequirements.filter(req => checkRequirement(req)).length < 5
                             ? 'bg-blue-500 w-3/4'
                             : 'bg-green-500 w-full'
                         }`}
@@ -231,17 +226,17 @@ function SimpleForm({
                     <span className={`text-sm font-medium ${
                       passwordRequirements.filter(req => checkRequirement(req)).length < 2 
                         ? 'text-red-500' 
-                        : passwordRequirements.filter(req => checkRequirement(req)).length < 4
+                        : passwordRequirements.filter(req => checkRequirement(req)).length < 3
                         ? 'text-yellow-500'
-                        : passwordRequirements.filter(req => checkRequirement(req)).length < 5
+                        : passwordRequirements.filter(req => checkRequirement(req)).length < 4
                         ? 'text-blue-500'
                         : 'text-green-500'
                     }`}>
                       {passwordRequirements.filter(req => checkRequirement(req)).length < 2 
                         ? 'Weak' 
-                        : passwordRequirements.filter(req => checkRequirement(req)).length < 4
+                        : passwordRequirements.filter(req => checkRequirement(req)).length < 3
                         ? 'Fair'
-                        : passwordRequirements.filter(req => checkRequirement(req)).length < 5
+                        : passwordRequirements.filter(req => checkRequirement(req)).length < 4
                         ? 'Good'
                         : 'Strong'
                       }

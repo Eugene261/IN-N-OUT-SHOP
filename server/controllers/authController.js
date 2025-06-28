@@ -172,12 +172,12 @@ const registerUser = async (req, res) => {
         });
       }
       
-      // Check password pattern (uppercase, lowercase, number, special character)
-      const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      // Simplified password pattern (uppercase, lowercase, number - special characters optional)
+      const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&#+\-_=]{8,}$/;
       if (!passwordPattern.test(password)) {
         return res.status(400).json({
           success: false,
-          message: 'Password must include at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)',
+          message: 'Password must include at least one uppercase letter, one lowercase letter, and one number',
         });
       }
   
@@ -616,12 +616,12 @@ const resetPassword = async (req, res) => {
       });
     }
     
-    // Check password pattern (uppercase, lowercase, number, special character)
-    const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    // Simplified password pattern (uppercase, lowercase, number - special characters optional)
+    const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&#+\-_=]{8,}$/;
     if (!passwordPattern.test(newPassword)) {
       return res.status(400).json({
         success: false,
-        message: 'Password must include at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)'
+        message: 'Password must include at least one uppercase letter, one lowercase letter, and one number'
       });
     }
 

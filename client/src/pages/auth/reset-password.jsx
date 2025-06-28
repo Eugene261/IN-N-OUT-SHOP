@@ -71,10 +71,10 @@ function ResetPassword() {
       return false;
     }
     
-    // Check password pattern (uppercase, lowercase, number, special character)
-    const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    // Simplified password pattern (uppercase, lowercase, number - special characters optional)
+    const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&#+\-_=]{8,}$/;
     if (!passwordPattern.test(passwords.password)) {
-      toast.error('Password must include uppercase, lowercase, number and special character (@$!%*?&)');
+      toast.error('Password must include uppercase, lowercase, and number');
       return false;
     }
     
@@ -278,7 +278,7 @@ function ResetPassword() {
                   </button>
                 </div>
                 <p className="text-xs text-gray-500">
-                  Password must be at least 8 characters and include uppercase, lowercase, number and special character (@$!%*?&)
+                  Password must be at least 8 characters with uppercase, lowercase, and number
                 </p>
               </div>
 

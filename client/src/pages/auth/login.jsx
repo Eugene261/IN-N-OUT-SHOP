@@ -143,7 +143,7 @@ function AuthLogin() {
       {/* Close button for mobile - goes to shop home */}
       <div className="flex justify-between items-center lg:hidden mb-6">
         <div></div>
-        <h2 className="text-xl font-semibold">Come on in</h2>
+        <h2 className="text-xl font-semibold">Great to have you here</h2>
         <Link to="/shop/home" className="text-2xl text-gray-500 hover:text-gray-700 transition-colors">×</Link>
       </div>
       

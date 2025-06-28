@@ -349,10 +349,10 @@ const UserManagement = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                       minLength={8}
-                      placeholder="Must include uppercase, lowercase, number & special character"
+                      placeholder="Must include uppercase, lowercase, and number"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Password must be at least 8 characters and include uppercase, lowercase, number and special character (@$!%*?&)
+                      Password must be at least 8 characters with uppercase, lowercase, and number
                     </p>
                   </div>
                   <div>

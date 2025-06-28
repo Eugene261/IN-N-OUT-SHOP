@@ -22,17 +22,17 @@ export const ghanaRegions = [
 export const registerFormControls = [
   {
       name: "userName",
-      label: "User Name",
-      placeholder: "Enter your user name",
+      label: "Full name",
+      placeholder: "Enter your full name",
       componentType: "input",
       type: "text",
       required: true,
       minLength: 3,
       validation: {
-        required: "Username is required",
+        required: "Full name is required",
         minLength: {
           value: 3,
-          message: "Username must be at least 3 characters"
+          message: "Full name must be at least 3 characters"
         }
       }
   },
@@ -65,18 +65,17 @@ export const registerFormControls = [
           message: "Password must be at least 8 characters"
         },
         pattern: {
-          value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-          message: "Password must include uppercase, lowercase, number and special character"
+          value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&#+\-_=]{8,}$/,
+          message: "Password must include uppercase, lowercase, and number"
         }
       },
-      helpText: "Password must be at least 8 characters and include uppercase, lowercase, number and special character",
+      helpText: "Password must be at least 8 characters with uppercase, lowercase, and number",
       showPasswordRequirements: true,
       passwordRequirements: [
         { id: "length", text: "At least 8 characters", regex: /.{8,}/ },
-        { id: "uppercase", text: "One uppercase letter (A-Z)", regex: /[A-Z]/ },
-        { id: "lowercase", text: "One lowercase letter (a-z)", regex: /[a-z]/ },
-        { id: "number", text: "One number (0-9)", regex: /\d/ },
-        { id: "special", text: "One special character (@$!%*?&)", regex: /[@$!%*?&]/ }
+        { id: "uppercase", text: "One uppercase letter", regex: /[A-Z]/ },
+        { id: "lowercase", text: "One lowercase letter", regex: /[a-z]/ },
+        { id: "number", text: "One number", regex: /\d/ }
       ]
   },
 ];
