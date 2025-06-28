@@ -109,7 +109,7 @@ class EmailService {
       }
 
       // Create transporter with enhanced error handling
-      this.transporter = nodemailer.createTransporter(transportConfig);
+      this.transporter = nodemailer.createTransport(transportConfig);
       
       // Verify connection in non-production environments only
       if (process.env.NODE_ENV !== 'production') {

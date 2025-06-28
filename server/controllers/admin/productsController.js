@@ -4,9 +4,19 @@ const User = require('../../models/User.js');
 const emailService = require('../../services/emailService.js');
 const { featureFlags } = require('../../utils/featureFlags');
 const cloudinary = require('cloudinary').v2;
-const ProductTemplate = require('../../models/ProductTemplate');
-const ProductTemplateService = require('../../services/productTemplateService');
 const { uploadToCloudinary, deleteFromCloudinary } = require('../../helpers/cloudinary');
+
+// Safe ProductTemplate imports with error handling
+let ProductTemplate, ProductTemplateService;
+try {
+  ProductTemplate = require('../../models/ProductTemplate');
+  ProductTemplateService = require('../../services/productTemplateService');
+  console.log('✅ ProductTemplate system loaded successfully');
+} catch (error) {
+  console.warn('⚠️ ProductTemplate system not available:', error.message);
+  ProductTemplate = null;
+  ProductTemplateService = null;
+}
 
 const handleImageUpload = async (req, res) => {
     try {
