@@ -102,14 +102,6 @@ function CommonForm({
     
     const error = errors[controlItem.name];
     
-    // Check if this is a dynamic field that should be hidden based on category
-    if (controlItem.dynamicField && controlItem.categories) {
-      const currentCategory = formData.category;
-      if (!currentCategory || !controlItem.categories.includes(currentCategory)) {
-        return null; // Don't render this field for the current category
-      }
-    }
-    
     const commonProps = {
       name: controlItem.name,
       placeholder: controlItem.placeholder,
@@ -156,11 +148,7 @@ function CommonForm({
         // Filter options for dynamic fields like subcategory and brand
         let selectOptions = controlItem.options || [];
         
-        // DEBUG: Log select options
-        console.log(`🔍 Select field: ${controlItem.name}`);
-        console.log('All options:', controlItem.options);
-        console.log('Current category:', formData.category);
-        console.log('Dynamic options?', controlItem.dynamicOptions);
+        // Filter options for dynamic select fields
         
         if (controlItem.dynamicOptions && formData.category) {
           if (controlItem.name === 'subCategory') {
@@ -168,16 +156,12 @@ function CommonForm({
             selectOptions = controlItem.options.filter(option => 
               option.categories && option.categories.includes(formData.category)
             );
-            console.log('Filtered subcategory options:', selectOptions);
           } else if (controlItem.name === 'brand') {
             // Filter brand options based on the selected category
             selectOptions = controlItem.options.filter(option => 
               option.categories && option.categories.includes(formData.category)
             );
-            console.log('Filtered brand options:', selectOptions);
           }
-        } else {
-          console.log('Using all options (no filtering):', selectOptions);
         }
         
         element = (
@@ -241,11 +225,7 @@ function CommonForm({
         let filteredOptions = controlItem.options || [];
         let isRequired = controlItem.required || false;
         
-        // DEBUG: Log multiselect options
-        console.log(`🔍 Multiselect field: ${controlItem.name}`);
-        console.log('All options:', controlItem.options);
-        console.log('Current category:', formData.category);
-        console.log('Dynamic options?', controlItem.dynamicOptions);
+        // Filter multiselect options based on category
         
         if (controlItem.dynamicOptions && controlItem.name === 'sizes') {
           // Determine if sizes are required based on category
@@ -291,8 +271,6 @@ function CommonForm({
             );
           }
         }
-        
-        console.log('Final filtered options for', controlItem.name, ':', filteredOptions);
         
         element = (
           <div className="space-y-1">
@@ -546,7 +524,16 @@ function CommonForm({
               ? 'space-y-4 sm:space-y-6' 
               : 'grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6'
           }`}>
-            {formControls.map((controlItem) => (
+            {formControls
+              .filter((controlItem) => {
+                // Filter out dynamic fields that don't match the current category
+                if (controlItem.dynamicField && controlItem.categories) {
+                  const currentCategory = formData.category;
+                  return currentCategory && controlItem.categories.includes(currentCategory);
+                }
+                return true; // Show all non-dynamic fields
+              })
+              .map((controlItem) => (
               <motion.div 
                 key={controlItem.name} 
                 className={`${
