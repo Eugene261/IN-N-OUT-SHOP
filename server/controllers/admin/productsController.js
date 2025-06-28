@@ -907,6 +907,165 @@ const deleteFeatureImage = async (req, res) => {
     }
 };
 
+// Get bulk products by IDs
+const getBulkProductsByIds = async (req, res) => {
+    try {
+        const { productIds } = req.body;
+        
+        if (!productIds || !Array.isArray(productIds)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Product IDs array is required'
+            });
+        }
+        
+        const products = await Product.find({ _id: { $in: productIds } });
+        
+        res.status(200).json({
+            success: true,
+            data: products
+        });
+        
+    } catch (error) {
+        console.error('Error getting bulk products:', error);
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred'
+        });
+    }
+};
+
+// Bulk delete products
+const bulkDeleteProducts = async (req, res) => {
+    try {
+        const { productIds } = req.body;
+        const adminId = req.user._id || req.user.id;
+        
+        if (!productIds || !Array.isArray(productIds)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Product IDs array is required'
+            });
+        }
+        
+        // Only delete products created by the current admin
+        const result = await Product.deleteMany({ 
+            _id: { $in: productIds },
+            createdBy: adminId 
+        });
+        
+        res.status(200).json({
+            success: true,
+            message: `${result.deletedCount} products deleted successfully`,
+            deletedCount: result.deletedCount
+        });
+        
+    } catch (error) {
+        console.error('Error bulk deleting products:', error);
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred'
+        });
+    }
+};
+
+// Get product analytics
+const getProductAnalytics = async (req, res) => {
+    try {
+        const adminId = req.user._id || req.user.id;
+        
+        // Get analytics for products created by this admin
+        const totalProducts = await Product.countDocuments({ createdBy: adminId });
+        const totalValue = await Product.aggregate([
+            { $match: { createdBy: adminId } },
+            { $group: { _id: null, total: { $sum: { $multiply: ['$price', '$totalStock'] } } } }
+        ]);
+        
+        const lowStockProducts = await Product.countDocuments({ 
+            createdBy: adminId,
+            totalStock: { $lte: 5 }
+        });
+        
+        const outOfStockProducts = await Product.countDocuments({ 
+            createdBy: adminId,
+            totalStock: 0 
+        });
+        
+        res.status(200).json({
+            success: true,
+            data: {
+                totalProducts,
+                totalValue: totalValue[0]?.total || 0,
+                lowStockProducts,
+                outOfStockProducts
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error getting product analytics:', error);
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred'
+        });
+    }
+};
+
+// Update product status (approval status)
+const updateProductStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, comments } = req.body;
+        
+        // Validate status
+        const validStatuses = ['pending', 'approved', 'rejected'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status. Must be: pending, approved, or rejected'
+            });
+        }
+        
+        const updateData = {
+            approvalStatus: status,
+            approvalComments: comments || ''
+        };
+        
+        if (status === 'approved') {
+            updateData.approvedAt = new Date();
+            updateData.approvedBy = req.user._id || req.user.id;
+        } else if (status === 'rejected') {
+            updateData.rejectedAt = new Date();
+            updateData.rejectedBy = req.user._id || req.user.id;
+        }
+        
+        const product = await Product.findByIdAndUpdate(
+            id,
+            updateData,
+            { new: true }
+        ).populate('approvedBy rejectedBy', 'userName email');
+        
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found'
+            });
+        }
+        
+        res.status(200).json({
+            success: true,
+            data: product,
+            message: `Product ${status} successfully`
+        });
+        
+    } catch (error) {
+        console.error('Error updating product status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred'
+        });
+    }
+};
+
 module.exports = {
     handleImageUpload,
     addProduct,
@@ -919,5 +1078,9 @@ module.exports = {
     getFeatureImages,
     addFeatureImage,
     deleteFeatureImage,
+    getBulkProductsByIds,
+    bulkDeleteProducts,
+    getProductAnalytics,
+    updateProductStatus,
     getFormConfiguration
 };
