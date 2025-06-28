@@ -14,7 +14,9 @@ import {
   ShoppingBag,
   User,
   Calendar,
-  BarChart3
+  BarChart3,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'sonner';
@@ -69,6 +71,9 @@ const ProductApprovalDashboard = () => {
   
   // Local state for comments
   const [approvalComments, setApprovalComments] = useState('');
+  const [imageGalleryOpen, setImageGalleryOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [allImages, setAllImages] = useState([]);
 
   useEffect(() => {
     const loadFeatureFlagsAndData = async () => {
@@ -150,6 +155,33 @@ const ProductApprovalDashboard = () => {
   const openApprovalModal = (product) => {
     dispatch(openModal(product));
     setApprovalComments('');
+    
+    // Prepare image gallery
+    const images = [];
+    if (product.image) images.push(product.image);
+    if (product.additionalImages && Array.isArray(product.additionalImages)) {
+      images.push(...product.additionalImages);
+    }
+    setAllImages(images);
+    setCurrentImageIndex(0);
+    setImageGalleryOpen(false);
+  };
+
+  const openImageLightbox = (imageIndex) => {
+    setCurrentImageIndex(imageIndex);
+    setImageGalleryOpen(true);
+  };
+
+  const closeImageLightbox = () => {
+    setImageGalleryOpen(false);
+  };
+
+  const navigateImage = (direction) => {
+    if (direction === 'prev') {
+      setCurrentImageIndex(prev => prev > 0 ? prev - 1 : allImages.length - 1);
+    } else {
+      setCurrentImageIndex(prev => prev < allImages.length - 1 ? prev + 1 : 0);
+    }
   };
 
   const getStatusBadge = (status) => {
@@ -498,14 +530,14 @@ const ProductApprovalDashboard = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+              className="fixed inset-0 bg-white bg-opacity-90 backdrop-blur-sm flex items-center justify-center p-4 z-50"
               onClick={() => dispatch(closeModal())}
             >
               <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto mx-4"
+                className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto mx-4 border"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="p-4 lg:p-6">
@@ -522,12 +554,48 @@ const ProductApprovalDashboard = () => {
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-4 lg:mb-6">
-                    <div>
-                      <img
-                        src={selectedProduct.image || '/placeholder-product.jpg'}
-                        alt={selectedProduct.title}
-                        className="w-full h-40 lg:h-48 object-cover rounded-lg"
-                      />
+                    {/* Enhanced Image Gallery */}
+                    <div className="space-y-4">
+                      {/* Main Image */}
+                      <div 
+                        className="relative bg-gray-50 rounded-lg overflow-hidden cursor-pointer group"
+                        onClick={() => openImageLightbox(0)}
+                      >
+                        <img
+                          src={selectedProduct.image || '/placeholder-product.jpg'}
+                          alt={selectedProduct.title}
+                          className="w-full h-64 lg:h-80 object-contain transition-transform duration-200 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200 flex items-center justify-center">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/90 rounded-full p-2">
+                            <Eye className="w-5 h-5 text-gray-700" />
+                          </div>
+                        </div>
+                        {allImages.length > 1 && (
+                          <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
+                            1 / {allImages.length}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Thumbnail Gallery */}
+                      {allImages.length > 1 && (
+                        <div className="flex space-x-2 overflow-x-auto pb-2">
+                          {allImages.map((image, index) => (
+                            <button
+                              key={index}
+                              onClick={() => openImageLightbox(index)}
+                              className="flex-shrink-0 w-16 h-16 rounded-md overflow-hidden border-2 border-gray-200 hover:border-gray-400 transition-all duration-200"
+                            >
+                              <img
+                                src={image}
+                                alt={`${selectedProduct.title} ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     
                     <div className="space-y-3">
@@ -550,6 +618,13 @@ const ProductApprovalDashboard = () => {
                         <label className="text-sm font-medium text-gray-700">Submitted by</label>
                         <p className="text-sm lg:text-base">{selectedProduct.createdBy?.userName}</p>
                       </div>
+
+                      {selectedProduct.additionalImages && selectedProduct.additionalImages.length > 0 && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-700">Additional Images</label>
+                          <p className="text-sm text-gray-600">{selectedProduct.additionalImages.length} additional images available</p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -603,6 +678,90 @@ const ProductApprovalDashboard = () => {
                     </button>
                   </div>
                 </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Image Lightbox Modal */}
+        <AnimatePresence>
+          {imageGalleryOpen && allImages.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-[60]"
+              onClick={closeImageLightbox}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="relative max-w-4xl max-h-[90vh] w-full"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Close button */}
+                <button
+                  onClick={closeImageLightbox}
+                  className="absolute top-4 right-4 z-10 bg-white/20 hover:bg-white/30 text-white rounded-full p-2 transition-all duration-200"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+
+                {/* Image counter */}
+                <div className="absolute top-4 left-4 z-10 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                  {currentImageIndex + 1} / {allImages.length}
+                </div>
+
+                {/* Main image */}
+                <div className="bg-white rounded-lg overflow-hidden">
+                  <img
+                    src={allImages[currentImageIndex]}
+                    alt={`${selectedProduct?.title} - Image ${currentImageIndex + 1}`}
+                    className="w-full h-auto max-h-[80vh] object-contain"
+                  />
+                </div>
+
+                {/* Navigation arrows */}
+                {allImages.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => navigateImage('prev')}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white rounded-full p-3 transition-all duration-200"
+                    >
+                      <ChevronLeft className="w-6 h-6" />
+                    </button>
+                    <button
+                      onClick={() => navigateImage('next')}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white rounded-full p-3 transition-all duration-200"
+                    >
+                      <ChevronRight className="w-6 h-6" />
+                    </button>
+                  </>
+                )}
+
+                {/* Thumbnail navigation */}
+                {allImages.length > 1 && (
+                  <div className="mt-4 flex justify-center space-x-2 overflow-x-auto pb-2">
+                    {allImages.map((image, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentImageIndex(index)}
+                        className={`flex-shrink-0 w-16 h-16 rounded-md overflow-hidden border-2 transition-all duration-200 ${
+                          currentImageIndex === index 
+                            ? 'border-white' 
+                            : 'border-white/30 hover:border-white/60'
+                        }`}
+                      >
+                        <img
+                          src={image}
+                          alt={`Thumbnail ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </motion.div>
             </motion.div>
           )}
