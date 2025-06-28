@@ -102,6 +102,14 @@ function CommonForm({
     
     const error = errors[controlItem.name];
     
+    // Check if this is a dynamic field that should be hidden based on category
+    if (controlItem.dynamicField && controlItem.categories) {
+      const currentCategory = formData.category;
+      if (!currentCategory || !controlItem.categories.includes(currentCategory)) {
+        return null; // Don't render this field for the current category
+      }
+    }
+    
     const commonProps = {
       name: controlItem.name,
       placeholder: controlItem.placeholder,
@@ -118,6 +126,9 @@ function CommonForm({
             <Input
               {...commonProps}
               type={controlItem.type}
+              step={controlItem.step}
+              min={controlItem.min}
+              max={controlItem.max}
               onChange={(e) => handleInputChange(
                 controlItem.name,
                 e.target.value,

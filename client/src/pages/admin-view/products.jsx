@@ -33,7 +33,10 @@ const initialFormData = {
   // ProductTemplate fields
   productType: 'physical',
   customAttributes: {},
-  weight: 0,
+  weight: '',
+  dimensionLength: '',
+  dimensionWidth: '',
+  dimensionHeight: '',
   dimensions: { length: 0, width: 0, height: 0 }
 }
 
@@ -167,9 +170,18 @@ function AdminProducts() {
         // Add ProductTemplate fields
         productType: formData.productType || 'physical',
         customAttributes: formData.customAttributes || {},
-        weight: formData.weight || 0,
-        dimensions: formData.dimensions || { length: 0, width: 0, height: 0 }
+        weight: formData.weight ? parseFloat(formData.weight) : 0,
+        dimensions: {
+          length: formData.dimensionLength ? parseFloat(formData.dimensionLength) : 0,
+          width: formData.dimensionWidth ? parseFloat(formData.dimensionWidth) : 0,
+          height: formData.dimensionHeight ? parseFloat(formData.dimensionHeight) : 0
+        }
       };
+
+      // Remove the individual dimension fields from submission as they're now in the dimensions object
+      delete submissionData.dimensionLength;
+      delete submissionData.dimensionWidth;
+      delete submissionData.dimensionHeight;
       
       // Ensure category and subcategory values are stored as their display names
       // The form uses lowercase IDs but we want to store the actual display names
@@ -472,15 +484,26 @@ function AdminProducts() {
     }
     
     // Additional template-based validations
-    if (fieldRequirements.weight && (!formData.weight || formData.weight <= 0)) {
-      console.log('❌ Validation failed: Weight required by template');
-      return false;
+    if (fieldRequirements.weight) {
+      const weightValue = parseFloat(formData.weight);
+      if (!formData.weight || isNaN(weightValue) || weightValue <= 0) {
+        console.log('❌ Validation failed: Weight required by template, current value:', formData.weight, 'parsed:', weightValue);
+        return false;
+      }
     }
     
     if (fieldRequirements.dimensions) {
-      const dimensions = formData.dimensions;
-      if (!dimensions || !dimensions.length || !dimensions.width || !dimensions.height) {
+      const length = parseFloat(formData.dimensionLength);
+      const width = parseFloat(formData.dimensionWidth);
+      const height = parseFloat(formData.dimensionHeight);
+      
+      if (!formData.dimensionLength || !formData.dimensionWidth || !formData.dimensionHeight || 
+          isNaN(length) || isNaN(width) || isNaN(height) ||
+          length <= 0 || width <= 0 || height <= 0) {
         console.log('❌ Validation failed: Dimensions required by template');
+        console.log('Length:', formData.dimensionLength, 'parsed:', length);
+        console.log('Width:', formData.dimensionWidth, 'parsed:', width);
+        console.log('Height:', formData.dimensionHeight, 'parsed:', height);
         return false;
       }
     }

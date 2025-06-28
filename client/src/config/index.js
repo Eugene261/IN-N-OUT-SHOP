@@ -312,6 +312,47 @@ export const addProductFormElements = [
       type: "number",
       placeholder: "Enter total stock",
   },
+  {
+      label: "Weight (kg)",
+      name: "weight",
+      componentType: "input",
+      type: "number",
+      placeholder: "Enter product weight in kg",
+      dynamicField: true, // This field shows/hides based on category
+      categories: ["devices"], // Only show for devices category
+      step: "0.01",
+      min: "0"
+  },
+  {
+      label: "Length (cm)",
+      name: "dimensionLength",
+      componentType: "input",
+      type: "number",
+      placeholder: "Enter length in cm",
+      dynamicField: true,
+      categories: ["devices"],
+      min: "0"
+  },
+  {
+      label: "Width (cm)", 
+      name: "dimensionWidth",
+      componentType: "input",
+      type: "number",
+      placeholder: "Enter width in cm",
+      dynamicField: true,
+      categories: ["devices"],
+      min: "0"
+  },
+  {
+      label: "Height (cm)",
+      name: "dimensionHeight",
+      componentType: "input",
+      type: "number",
+      placeholder: "Enter height in cm",
+      dynamicField: true,
+      categories: ["devices"],
+      min: "0"
+  },
 ];
 
 export const shoppingViewHeaderMenuItems = [    {        id: "products",        label: "All Products",        path: "/shop/listing",    },    {        id: "shops",        label: "Shops",        path: "/shop/shops",    },    {        id: 'men',
