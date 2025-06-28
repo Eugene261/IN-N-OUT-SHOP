@@ -120,6 +120,7 @@ export const addProductFormElements = [
       componentType: "input",
       type: "text",
       placeholder: "Enter product title",
+      className: "lg:col-span-2",
   },
   {
       label: "Description",
@@ -174,7 +175,7 @@ export const addProductFormElements = [
           { id: "men", label: "Men" },
           { id: "women", label: "Women" },
           { id: "kids", label: "Kids" },
-          { id: "unisex", label: "Unisex" },
+          { id: "unisex", label: "Unisex/All" },
       ],
   },
   {

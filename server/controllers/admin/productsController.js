@@ -4,6 +4,9 @@ const User = require('../../models/User.js');
 const emailService = require('../../services/emailService.js');
 const { featureFlags } = require('../../utils/featureFlags');
 const cloudinary = require('cloudinary').v2;
+const ProductTemplate = require('../../models/ProductTemplate');
+const ProductTemplateService = require('../../services/productTemplateService');
+const { uploadToCloudinary, deleteFromCloudinary } = require('../../helpers/cloudinary');
 
 const handleImageUpload = async (req, res) => {
     try {
@@ -38,7 +41,132 @@ const handleImageUpload = async (req, res) => {
     }
 };
 
-// Add a new Product
+// ========================================
+// ENHANCED FORM CONFIGURATION
+// ========================================
+
+// Get dynamic form configuration based on category
+const getFormConfiguration = async (req, res) => {
+    try {
+        const { category, productType = 'physical' } = req.query;
+        
+        if (!category) {
+            return res.status(400).json({
+                success: false,
+                message: 'Category is required'
+            });
+        }
+        
+        console.log(`🔍 Getting form configuration for category: ${category}, type: ${productType}`);
+        
+        // ========================================
+        // SAFE PRODUCTTEMPLATE INTEGRATION
+        // ========================================
+        
+        // Check if ProductTemplate system is available
+        if (!ProductTemplateService || !ProductTemplate) {
+            console.warn('⚠️ ProductTemplate system not available, using fallback');
+            
+            // Fallback configuration based on category
+            const fallbackConfig = {
+                fieldRequirements: {
+                    sizes: category !== 'devices',
+                    colors: true,
+                    brand: true,
+                    weight: category === 'devices',
+                    dimensions: category === 'devices'
+                },
+                customFields: [],
+                validationRules: {}
+            };
+            
+            return res.status(200).json({
+                success: true,
+                data: {
+                    category,
+                    productType,
+                    fieldRequirements: fallbackConfig.fieldRequirements,
+                    customFields: fallbackConfig.customFields,
+                    validationRules: fallbackConfig.validationRules,
+                    availableTemplates: [],
+                    fallbackMode: true
+                }
+            });
+        }
+        
+        try {
+            // Get enhanced form configuration using template service
+            const formConfig = await ProductTemplateService.getEnhancedFormConfig(category, productType);
+            
+            // Get available templates for this category
+            const availableTemplates = await ProductTemplate.getTemplatesForCategory(category);
+            
+            console.log('📋 Form configuration:', {
+                fieldRequirements: formConfig.fieldRequirements,
+                customFieldsCount: formConfig.customFields.length,
+                templatesCount: availableTemplates.length
+            });
+            
+            res.status(200).json({
+                success: true,
+                data: {
+                    category,
+                    productType,
+                    fieldRequirements: formConfig.fieldRequirements,
+                    customFields: formConfig.customFields,
+                    validationRules: formConfig.adaptedValidation,
+                    availableTemplates: availableTemplates.map(template => ({
+                        id: template._id,
+                        name: template.name,
+                        description: template.description,
+                        examples: template.examples
+                    })),
+                    templateSystemActive: true
+                }
+            });
+            
+        } catch (templateError) {
+            console.error('❌ ProductTemplate error, using fallback:', templateError.message);
+            
+            // Fallback if template system fails
+            const fallbackConfig = {
+                fieldRequirements: {
+                    sizes: category !== 'devices',
+                    colors: true,
+                    brand: true,
+                    weight: category === 'devices',
+                    dimensions: category === 'devices'
+                },
+                customFields: [],
+                validationRules: {}
+            };
+            
+            res.status(200).json({
+                success: true,
+                data: {
+                    category,
+                    productType,
+                    fieldRequirements: fallbackConfig.fieldRequirements,
+                    customFields: fallbackConfig.customFields,
+                    validationRules: fallbackConfig.validationRules,
+                    availableTemplates: [],
+                    fallbackMode: true,
+                    templateError: templateError.message
+                }
+            });
+        }
+        
+    } catch (error) {
+        console.error('Error getting form configuration:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error getting form configuration',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};
+
+// Add a new Product with enhanced template support
 const addProduct = async(req, res) => {
     try {
         console.log('Add product request received:', req.body);
@@ -58,15 +186,88 @@ const addProduct = async(req, res) => {
             sizes,
             colors,
             isBestseller,
-            isNewArrival
+            isNewArrival,
+            // New enhanced fields
+            productType = 'physical',
+            customAttributes = {},
+            templateId,
+            weight,
+            dimensions
         } = req.body;
 
-        // Check for required fields
+        // Enhanced validation based on product template
         if (!title || !description || !category) {
             console.log('Missing required fields');
             return res.status(400).json({
                 success: false,
                 message: 'Required fields are missing'
+            });
+        }
+
+        // Get template-based validation rules with fallback
+        let formConfig, fieldRequirements;
+        
+        try {
+            if (ProductTemplateService) {
+                formConfig = await ProductTemplateService.getEnhancedFormConfig(category, productType);
+                fieldRequirements = formConfig.fieldRequirements;
+                console.log('📋 Using template-based field requirements:', fieldRequirements);
+            } else {
+                throw new Error('ProductTemplateService not available');
+            }
+        } catch (templateError) {
+            console.warn('⚠️ ProductTemplate validation failed, using fallback:', templateError.message);
+            
+            // Fallback field requirements
+            fieldRequirements = {
+                sizes: category !== 'devices',
+                colors: true,
+                brand: true,
+                weight: category === 'devices',
+                dimensions: category === 'devices'
+            };
+            
+            formConfig = { 
+                fieldRequirements, 
+                customFields: [] 
+            };
+            
+            console.log('📋 Using fallback field requirements:', fieldRequirements);
+        }
+        
+        // Enhanced validation based on field requirements
+        const validationErrors = [];
+        
+        if (fieldRequirements.brand && !brand) {
+            validationErrors.push('Brand is required for this product type');
+        }
+        
+        if (fieldRequirements.sizes && (!sizes || sizes.length === 0)) {
+            validationErrors.push('At least one size is required for this product type');
+        }
+        
+        if (fieldRequirements.weight && !weight) {
+            validationErrors.push('Weight is required for this product type');
+        }
+        
+        if (fieldRequirements.dimensions && (!dimensions || !dimensions.length || !dimensions.width || !dimensions.height)) {
+            validationErrors.push('Dimensions are required for this product type');
+        }
+        
+        // Validate custom fields
+        if (formConfig.customFields && formConfig.customFields.length > 0) {
+            for (const customField of formConfig.customFields) {
+                if (customField.required && !customAttributes[customField.name]) {
+                    validationErrors.push(`${customField.label} is required`);
+                }
+            }
+        }
+        
+        if (validationErrors.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Validation failed',
+                errors: validationErrors
             });
         }
 
@@ -102,6 +303,7 @@ const addProduct = async(req, res) => {
             }
         }
 
+        // Create enhanced product with flexible attributes
         const newlyCreatedProducts = new Product({
             image, 
             additionalImages: additionalImages || [],
@@ -109,15 +311,28 @@ const addProduct = async(req, res) => {
             description, 
             category, 
             subCategory: subCategory || '', 
-            brand, 
+            brand: fieldRequirements.brand ? brand : undefined, 
             price: price || 0, 
             salePrice: salePrice || 0, 
             totalStock: totalStock || 0,
-            sizes: sizes || [],
-            colors: colors || [],
+            sizes: fieldRequirements.sizes ? (sizes || []) : [],
+            colors: fieldRequirements.colors ? (colors || []) : [],
             isBestseller: isBestseller || false,
             isNewArrival: isNewArrival || false,
             createdBy: adminId,
+            
+            // ========================================
+            // ENHANCED ATTRIBUTES SYSTEM
+            // ========================================
+            productType,
+            customAttributes,
+            fieldRequirements,
+            weight: fieldRequirements.weight ? (weight || 0) : 0,
+            dimensions: fieldRequirements.dimensions ? {
+                length: dimensions?.length || 0,
+                width: dimensions?.width || 0,
+                height: dimensions?.height || 0
+            } : { length: 0, width: 0, height: 0 },
             
             // ========================================
             // APPROVAL SYSTEM FIELDS
@@ -130,6 +345,9 @@ const addProduct = async(req, res) => {
         });
 
         console.log('Saving product with approval status:', initialApprovalStatus);
+        console.log('📦 Product type:', productType);
+        console.log('🏷️ Custom attributes:', customAttributes);
+        
         const savedProduct = await newlyCreatedProducts.save();
         console.log('Product saved successfully:', savedProduct._id);
         
@@ -690,5 +908,6 @@ module.exports = {
     toggleProductNewArrival,
     getFeatureImages,
     addFeatureImage,
-    deleteFeatureImage
+    deleteFeatureImage,
+    getFormConfiguration
 };

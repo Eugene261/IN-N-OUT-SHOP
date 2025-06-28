@@ -29,7 +29,12 @@ const initialFormData = {
   salePrice: '',
   totalStock: '',
   isBestseller: false,
-  isNewArrival: false
+  isNewArrival: false,
+  // ProductTemplate fields
+  productType: 'physical',
+  customAttributes: {},
+  weight: 0,
+  dimensions: { length: 0, width: 0, height: 0 }
 }
 
 function AdminProducts() {
@@ -59,6 +64,60 @@ function AdminProducts() {
   // Reference to the product container
   const productContainerRef = React.useRef(null);
 
+  // ========================================
+  // PRODUCTTEMPLATE INTEGRATION (NEW)
+  // ========================================
+  
+  // State for form configuration from ProductTemplate system
+  const [formConfig, setFormConfig] = useState(null);
+  const [formConfigLoading, setFormConfigLoading] = useState(false);
+  
+  // Function to fetch form configuration based on category
+  const fetchFormConfig = async (category) => {
+    if (!category) return null;
+    
+    try {
+      setFormConfigLoading(true);
+      console.log('🔍 Fetching form config for category:', category);
+      
+      const response = await axios.get(`/api/admin/products/form-config?category=${category}`);
+      console.log('📋 Form config response:', response.data);
+      
+      if (response.data.success) {
+        setFormConfig(response.data.data);
+        return response.data.data;
+      }
+    } catch (error) {
+      console.warn('⚠️ Form config endpoint not available, using defaults:', error.message);
+      // Fallback to basic requirements
+      const fallbackConfig = {
+        fieldRequirements: {
+          sizes: category !== 'devices',
+          colors: true,
+          brand: true,
+          weight: category === 'devices',
+          dimensions: category === 'devices'
+        },
+        customFields: []
+      };
+      setFormConfig(fallbackConfig);
+      return fallbackConfig;
+    } finally {
+      setFormConfigLoading(false);
+    }
+  };
+  
+  // Fetch form config when category changes
+  useEffect(() => {
+    if (formData.category) {
+      fetchFormConfig(formData.category);
+    }
+  }, [formData.category]);
+  
+  // ========================================
+  // END PRODUCTTEMPLATE INTEGRATION
+  // ========================================
+
   const onSubmit = async (evt) => {
     evt.preventDefault();
     
@@ -68,7 +127,12 @@ function AdminProducts() {
         ...formData,
         sizes: formData.sizes || [],
         colors: formData.colors || [],
-        additionalImages: additionalImageUrls || []
+        additionalImages: additionalImageUrls || [],
+        // Add ProductTemplate fields
+        productType: formData.productType || 'physical',
+        customAttributes: formData.customAttributes || {},
+        weight: formData.weight || 0,
+        dimensions: formData.dimensions || { length: 0, width: 0, height: 0 }
       };
       
       // Ensure category and subcategory values are stored as their display names
@@ -281,6 +345,7 @@ function AdminProducts() {
     console.log('Current formData:', formData);
     console.log('Current editedId:', currentEditedId);
     console.log('Upload image URL:', uploadedImageUrl);
+    console.log('Form config:', formConfig);
     
     // If new product, require main image
     if (currentEditedId === null && !uploadedImageUrl) {
@@ -288,8 +353,34 @@ function AdminProducts() {
       return false;
     }
     
+    // ========================================
+    // ENHANCED VALIDATION USING PRODUCTTEMPLATE
+    // ========================================
+    
+    // Get field requirements from ProductTemplate or fallback to legacy logic
+    const fieldRequirements = formConfig?.fieldRequirements || {
+      sizes: formData.category !== 'devices',
+      colors: true,
+      brand: true,
+      weight: formData.category === 'devices',
+      dimensions: formData.category === 'devices'
+    };
+    
+    console.log('📋 Using field requirements:', fieldRequirements);
+    
     // Basic validation for required fields
-    const requiredFields = ['title', 'description', 'category', 'gender', 'brand', 'price', 'totalStock'];
+    let requiredFields = ['title', 'description', 'category', 'price', 'totalStock'];
+    
+    // Conditionally add fields based on template requirements
+    if (fieldRequirements.brand) {
+      requiredFields.push('brand');
+    }
+    
+    // Only require gender for non-device categories (legacy compatibility)
+    if (formData.category !== 'devices') {
+      requiredFields.push('gender');
+    }
+    
     const hasRequiredFields = requiredFields.every(key => {
       const value = formData[key];
       const isValid = value !== '' && value !== null && value !== undefined;
@@ -304,21 +395,39 @@ function AdminProducts() {
       return false;
     }
     
-    // Check sizes array - required unless taxonomy data isn't loaded yet
-    const hasSizes = Array.isArray(formData.sizes) && formData.sizes.length > 0;
-    if (!hasSizes) {
-      console.log('❌ Validation failed: No sizes selected');
-      console.log('Current sizes:', formData.sizes);
-      
-      // If taxonomy data isn't loaded, allow validation to pass for basic fields
-      if (!sizes || sizes.length === 0) {
-        console.log('⚠️ Sizes taxonomy not loaded, allowing validation to pass for basic fields');
-      } else {
+    // Check sizes array - using template-based requirements
+    if (fieldRequirements.sizes) {
+      const hasSizes = Array.isArray(formData.sizes) && formData.sizes.length > 0;
+      if (!hasSizes) {
+        console.log('❌ Validation failed: No sizes selected (required by template)');
+        console.log('Current sizes:', formData.sizes);
+        
+        // If taxonomy data isn't loaded, allow validation to pass for basic fields
+        if (!sizes || sizes.length === 0) {
+          console.log('⚠️ Sizes taxonomy not loaded, allowing validation to pass');
+        } else {
+          return false;
+        }
+      }
+    } else {
+      console.log('✅ Sizes not required by template for category:', formData.category);
+    }
+    
+    // Additional template-based validations
+    if (fieldRequirements.weight && (!formData.weight || formData.weight <= 0)) {
+      console.log('❌ Validation failed: Weight required by template');
+      return false;
+    }
+    
+    if (fieldRequirements.dimensions) {
+      const dimensions = formData.dimensions;
+      if (!dimensions || !dimensions.length || !dimensions.width || !dimensions.height) {
+        console.log('❌ Validation failed: Dimensions required by template');
         return false;
       }
     }
     
-    console.log('✅ Form validation passed');
+    console.log('✅ Form validation passed (template-enhanced)');
     return true;
   }
 
@@ -559,6 +668,26 @@ function AdminProducts() {
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4" role="alert">
             <p>{typeof error === 'object' ? (error.message || JSON.stringify(error)) : error}</p>
+          </div>
+        )}
+        
+        {/* ProductTemplate System Status Indicator */}
+        {formConfigLoading && (
+          <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded mb-4" role="alert">
+            <p>🔄 Loading enhanced form configuration...</p>
+          </div>
+        )}
+        
+        {formConfig && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-4" role="alert">
+            <p>✅ Enhanced product template system active</p>
+            <small>Field requirements: {Object.entries(formConfig.fieldRequirements).filter(([key, value]) => value).map(([key]) => key).join(', ')}</small>
+          </div>
+        )}
+        
+        {!formConfig && !formConfigLoading && formData.category && (
+          <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded mb-4" role="alert">
+            <p>⚠️ Using legacy form validation (ProductTemplate system unavailable)</p>
           </div>
         )}
       </div>

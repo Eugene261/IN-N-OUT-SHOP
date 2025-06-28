@@ -180,7 +180,9 @@ function CommonForm({
                     setFormData(prev => ({
                       ...prev,
                       [controlItem.name]: newValue,
-                      subCategory: '' // Reset subcategory when category changes
+                      subCategory: '', // Reset subcategory when category changes
+                      // Auto-set gender to unisex for devices if not already set
+                      ...(newValue === 'devices' && !prev.gender ? { gender: 'unisex' } : {})
                     }));
                   } else {
                     setFormData(prev => ({
@@ -291,7 +293,9 @@ function CommonForm({
                   {isRequired && <span className="text-red-500 ml-1">*</span>}
                 </Label>
                 {controlItem.name === 'sizes' && !isRequired && (
-                  <span className="text-xs text-gray-500">Optional</span>
+                  <span className="text-xs text-gray-500">
+                    {formData.category === 'devices' ? 'Not applicable for devices' : 'Optional'}
+                  </span>
                 )}
               </div>
             )}
@@ -541,7 +545,9 @@ function CommonForm({
                         controlItem.componentType === 'textarea' || 
                         controlItem.name === 'description' ||
                         controlItem.name === 'address' ||
-                        controlItem.name === 'notes'
+                        controlItem.name === 'notes' ||
+                        controlItem.name === 'title' ||
+                        controlItem.className === 'lg:col-span-2'
                           ? 'lg:col-span-2' 
                           : ''
                       } space-y-2`
@@ -555,7 +561,9 @@ function CommonForm({
                       className={`text-sm font-medium ${errors[controlItem.name] ? 'text-red-500' : 'text-gray-700'}`}
                     >
                       {controlItem.label}
-                      {controlItem.required && <span className="text-red-500 ml-1">*</span>}
+                      {/* Make gender optional for devices */}
+                      {controlItem.required && !(controlItem.name === 'gender' && formData.category === 'devices') && <span className="text-red-500 ml-1">*</span>}
+                      {controlItem.name === 'gender' && formData.category === 'devices' && <span className="text-xs text-gray-500 ml-2">(Optional for devices)</span>}
                     </Label>
                     
                     {!errors[controlItem.name] && formData[controlItem.name] && formData[controlItem.name].length > 0 && (
