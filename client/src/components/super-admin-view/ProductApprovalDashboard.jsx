@@ -561,11 +561,20 @@ const ProductApprovalDashboard = () => {
                         className="relative bg-white rounded-lg overflow-hidden cursor-pointer group border"
                         onClick={() => openImageLightbox(0)}
                       >
-                        <img
-                          src={selectedProduct.image || '/placeholder-product.jpg'}
-                          alt={selectedProduct.title}
-                          className="w-full h-64 lg:h-80 object-contain transition-transform duration-200 group-hover:scale-105"
-                        />
+                        <div className="w-full h-64 lg:h-80 flex items-center justify-center bg-gray-50">
+                          <img
+                            src={selectedProduct.image || '/placeholder-product.jpg'}
+                            alt={selectedProduct.title}
+                            className="max-w-full max-h-full object-contain transition-transform duration-200 group-hover:scale-105"
+                            onError={(e) => {
+                              console.log('Image load error:', e.target.src);
+                              e.target.src = '/placeholder-product.jpg';
+                            }}
+                            onLoad={(e) => {
+                              console.log('Image loaded successfully:', e.target.src);
+                            }}
+                          />
+                        </div>
                         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-5 transition-all duration-200 flex items-center justify-center">
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/90 rounded-full p-2">
                             <Eye className="w-5 h-5 text-gray-700" />
@@ -574,6 +583,12 @@ const ProductApprovalDashboard = () => {
                         {allImages.length > 1 && (
                           <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
                             1 / {allImages.length}
+                          </div>
+                        )}
+                        {/* Debug info */}
+                        {process.env.NODE_ENV === 'development' && (
+                          <div className="absolute top-2 left-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                            {selectedProduct.image ? 'Has Image' : 'No Image'}
                           </div>
                         )}
                       </div>
@@ -591,6 +606,9 @@ const ProductApprovalDashboard = () => {
                                 src={image}
                                 alt={`${selectedProduct.title} ${index + 1}`}
                                 className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.src = '/placeholder-product.jpg';
+                                }}
                               />
                             </button>
                           ))}
