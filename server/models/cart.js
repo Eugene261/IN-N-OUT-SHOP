@@ -20,11 +20,11 @@ const cartSchema = new mongoose.Schema({
             },
             size : {
                 type : String,
-                required : true
+                required : false  // Make optional - only required for products that have size variants
             },
             color : {
                 type : String,
-                required : true
+                required : false  // Make optional - only required for products that have color variants
             },
             // Added fields for direct price storage
             price : {

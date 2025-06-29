@@ -4,16 +4,15 @@ const asyncHandler = require('../../utils/asyncHandler');
 
 const addToCart = asyncHandler(async(req, res) => {
     const {userId, productId, quantity, size, color, price, title, image, adminId, adminName} = req.body;
-    // Removed salePrice from destructuring as we don't want to use it
 
-    if(!userId || !productId || quantity <= 0 || !size || !color) {
+    if(!userId || !productId || quantity <= 0) {
         return res.status(400).json({
             success: false,
-            message: 'Invalid data provided. Size and color are required.'
+            message: 'Invalid data provided. User ID, Product ID, and positive quantity are required.'
         });
     }
 
-    // Still fetch the product to verify it exists
+    // Fetch the product to check what variants it actually has
     const product = await Product.findById(productId);
 
     if(!product) {
@@ -23,59 +22,89 @@ const addToCart = asyncHandler(async(req, res) => {
         });
     }
 
+    // Check what variants this specific product has
+    const hasSize = product.sizes && product.sizes.length > 0;
+    const hasColor = product.colors && product.colors.length > 0;
+
+    // Validate required variants based on what the product actually has
+    if (hasSize && !size) {
+        return res.status(400).json({
+            success: false,
+            message: 'Size is required for this product.'
+        });
+    }
+
+    if (hasColor && !color) {
+        return res.status(400).json({
+            success: false,
+            message: 'Color is required for this product.'
+        });
+    }
+
     let cart = await Cart.findOne({userId});
 
     if(!cart){
         cart = new Cart({userId, items: []});
     }
 
-    const findCurrentProductIndex = cart.items.findIndex(item => 
-        item.productId && item.productId.toString() === productId &&
-        item.size === size && item.color === color
-    );
+    // Build the cart item search criteria based on what variants exist
+    const searchCriteria = {
+        productId: productId
+    };
+    
+    if (hasSize) searchCriteria.size = size;
+    if (hasColor) searchCriteria.color = color;
 
-    // Use product data from database as a fallback
-    // We only use the price field - not salePrice - as the actual purchase price
+    const findCurrentProductIndex = cart.items.findIndex(item => {
+        let matches = item.productId && item.productId.toString() === productId;
+        
+        if (hasSize) matches = matches && item.size === size;
+        if (hasColor) matches = matches && item.color === color;
+        
+        return matches;
+    });
+
+    // Use product data from database as fallback
     const productPrice = price || product.price;
     const productTitle = title || product.title;
     const productImage = image || product.image;
 
-    // Store extra product information directly in the cart item
+    // Build the cart item object dynamically based on product variants
+    const cartItemData = {
+        productId, 
+        quantity,
+        price: productPrice,
+        title: productTitle,
+        image: productImage,
+        adminId: product.createdBy ? product.createdBy.toString() : (adminId || 'unknown'),
+        adminName: adminName || 'Vendor'
+    };
+
+    // Only add size/color if the product actually has these variants
+    if (hasSize) cartItemData.size = size;
+    if (hasColor) cartItemData.color = color;
+
     if(findCurrentProductIndex === -1){
-        // Always use the product's createdBy as adminId if available
-        const productAdminId = product.createdBy ? product.createdBy.toString() : null;
-        console.log('Adding product to cart with adminId:', productAdminId || adminId || 'unknown');
-        
-        cart.items.push({
-            productId, 
-            quantity, 
-            size, 
-            color,
-            price: productPrice,
-            title: productTitle,
-            image: productImage,
-            adminId: productAdminId || adminId || 'unknown',
-            adminName: adminName || 'Vendor'
-        });
-        // Removed salePrice field from cart items
+        console.log('Adding new product to cart with variants:', { hasSize, hasColor, cartItemData });
+        cart.items.push(cartItemData);
     } else {
+        console.log('Updating existing cart item quantity');
         cart.items[findCurrentProductIndex].quantity += quantity;
+        
         // Update product information if provided
         if (productPrice) cart.items[findCurrentProductIndex].price = productPrice;
         if (productTitle) cart.items[findCurrentProductIndex].title = productTitle;
         if (productImage) cart.items[findCurrentProductIndex].image = productImage;
         
-        // Update vendor information if provided, but prioritize product.createdBy
+        // Update vendor information
         const productAdminId = product.createdBy ? product.createdBy.toString() : null;
         if (productAdminId) {
             cart.items[findCurrentProductIndex].adminId = productAdminId;
-            console.log('Updated cart item adminId to product createdBy:', productAdminId);
         } else if (adminId) {
             cart.items[findCurrentProductIndex].adminId = adminId;
         }
         
         if (adminName) cart.items[findCurrentProductIndex].adminName = adminName;
-        // Removed salePrice update
     }
 
     await cart.save();
@@ -83,7 +112,6 @@ const addToCart = asyncHandler(async(req, res) => {
     res.status(200).json({
         success: true,
         data: cart,
-        // Add itemUpdated flag to indicate whether an existing item was updated
         itemUpdated: findCurrentProductIndex !== -1
     });
 });
@@ -143,10 +171,38 @@ const fetchCartItems = asyncHandler(async(req, res) => {
 const updateCartItemQuantity = asyncHandler(async(req, res) => {
     const {userId, productId, quantity, size, color} = req.body;
 
-    if(!userId || !productId || quantity <= 0 || !size || !color) {
+    if(!userId || !productId || quantity <= 0) {
         return res.status(400).json({
             success: false,
-            message: 'Invalid data provided. Size and color are required.'
+            message: 'Invalid data provided. User ID, Product ID, and positive quantity are required.'
+        });
+    }
+
+    // Fetch the product to check what variants it has
+    const product = await Product.findById(productId);
+    if(!product) {
+        return res.status(404).json({
+            success: false,
+            message: 'Product not found'
+        });
+    }
+
+    // Check what variants this specific product has
+    const hasSize = product.sizes && product.sizes.length > 0;
+    const hasColor = product.colors && product.colors.length > 0;
+
+    // Validate required variants based on what the product actually has
+    if (hasSize && !size) {
+        return res.status(400).json({
+            success: false,
+            message: 'Size is required for this product.'
+        });
+    }
+
+    if (hasColor && !color) {
+        return res.status(400).json({
+            success: false,
+            message: 'Color is required for this product.'
         });
     }
 
@@ -159,10 +215,14 @@ const updateCartItemQuantity = asyncHandler(async(req, res) => {
         });
     }
 
-    const findCurrentProductIndex = cart.items.findIndex(item => 
-        item.productId && item.productId.toString() === productId &&
-        item.size === size && item.color === color
-    );
+    const findCurrentProductIndex = cart.items.findIndex(item => {
+        let matches = item.productId && item.productId.toString() === productId;
+        
+        if (hasSize) matches = matches && item.size === size;
+        if (hasColor) matches = matches && item.color === color;
+        
+        return matches;
+    });
 
     if (findCurrentProductIndex === -1) {
         return res.status(404).json({ // FIXED from res(404)
@@ -204,16 +264,44 @@ const deleteCartItem = asyncHandler(async(req, res) => {
     const {userId, productId} = req.params;
     const {size, color} = req.query; // Get size and color from query parameters
     
-    if(!userId || !productId || !size || !color) {
+    if(!userId || !productId) {
         return res.status(400).json({
             success: false,
-            message: 'Invalid data provided. Size and color are required.'
+            message: 'Invalid data provided. User ID and Product ID are required.'
+        });
+    }
+
+    // Fetch the product to check what variants it has
+    const product = await Product.findById(productId);
+    if(!product) {
+        return res.status(404).json({
+            success: false,
+            message: 'Product not found'
+        });
+    }
+
+    // Check what variants this specific product has
+    const hasSize = product.sizes && product.sizes.length > 0;
+    const hasColor = product.colors && product.colors.length > 0;
+
+    // Validate required variants based on what the product actually has
+    if (hasSize && !size) {
+        return res.status(400).json({
+            success: false,
+            message: 'Size is required for this product.'
+        });
+    }
+
+    if (hasColor && !color) {
+        return res.status(400).json({
+            success: false,
+            message: 'Color is required for this product.'
         });
     }
 
     const cart = await Cart.findOne({userId}).populate({
         path: 'items.productId',
-        select: 'image title price', // Removed salePrice
+        select: 'image title price',
     });
 
     if(!cart) {
@@ -223,12 +311,22 @@ const deleteCartItem = asyncHandler(async(req, res) => {
         });
     }
 
-    cart.items = cart.items.filter(item => 
-        !(item.productId && 
-          item.productId._id.toString() === productId && 
-          item.size === size && 
-          item.color === color)
-    );
+    cart.items = cart.items.filter(item => {
+        if (!item.productId || item.productId._id.toString() !== productId) {
+            return true; // Keep items that don't match the product ID
+        }
+        
+        // For matching product ID, check variants
+        let shouldKeep = false;
+        
+        if (hasSize && item.size !== size) shouldKeep = true;
+        if (hasColor && item.color !== color) shouldKeep = true;
+        
+        // If product has no variants, remove the item
+        if (!hasSize && !hasColor) shouldKeep = false;
+        
+        return shouldKeep;
+    });
     
     await cart.save();
 

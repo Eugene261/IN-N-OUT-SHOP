@@ -138,17 +138,30 @@ function ShoppingHome() {
         }
       }
 
-      dispatch(addToCart({
+      // Build cart data dynamically based on what variants the product has
+      const cartData = {
         userId: user?.id || user?._id,
         guestId: guestId,
         productId: getCurrentProductId, 
-        quantity: 1
-      })).then((data) => {
-        if (data?.payload?.success) {
-          dispatch(fetchCartItems(user?._id || user?.id || { guestId }));
-          toast.success('Product added to cart');
-        }
-      });
+        quantity: 1,
+        price: product.price,
+        title: product.title || product.name,
+        image: product.image,
+        adminId: product.createdBy,
+        adminName: product.createdByName || 'Vendor'
+      };
+
+      // Only add size/color if the product actually has these variants
+      // This prevents sending unnecessary default values
+      // The backend will handle validation based on the product's actual variants
+
+      dispatch(addToCart(cartData))
+        .then((data) => {
+          if (data?.payload?.success) {
+            dispatch(fetchCartItems(user?._id || user?.id || { guestId }));
+            toast.success('Product added to cart');
+          }
+        });
     }
   }
 
