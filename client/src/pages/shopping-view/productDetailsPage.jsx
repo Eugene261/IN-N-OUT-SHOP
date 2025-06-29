@@ -196,17 +196,30 @@ function ProductDetailsPage() {
     return productDetails.colors.map(color => convertIdToName(color, colors));
   };
 
+  // Check if productId is invalid and redirect immediately
   useEffect(() => {
-    if (productId) {
+    if (!productId || productId === 'undefined' || productId === 'null') {
+      console.error('Invalid product ID in URL:', productId);
+      navigate('/shop/listing', { replace: true });
+      return;
+    }
+  }, [productId, navigate]);
+
+  useEffect(() => {
+    if (productId && productId !== 'undefined') {
       dispatch(fetchProductDetails(productId));
       dispatch(fetchSimilarProducts(productId))
         .then((response) => {
           console.log('Similar products response:', response.payload);
         });
+    } else {
+      console.error('Invalid product ID:', productId);
+      // Redirect to product listing if productId is invalid
+      navigate('/shop/listing');
     }
     // Fetch taxonomy data for ID to name conversion
     dispatch(fetchAllTaxonomyData());
-  }, [productId, dispatch]);
+  }, [productId, dispatch, navigate]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -694,7 +707,13 @@ function ProductDetailsPage() {
                       >
                         <EnhancedShoppingProductTile
                           product={product}
-                          handleGetProductDetails={() => navigateWithScroll(navigate, `/shop/product/${product._id}`)}
+                          handleGetProductDetails={() => {
+                            if (product && product._id) {
+                              navigateWithScroll(navigate, `/shop/product/${product._id}`);
+                            } else {
+                              console.error('Product or product ID is missing:', product);
+                            }
+                          }}
                           handleAddToCart={() => {
                             if (!isAuthenticated) {
                               toast.error("Please login to add items to your cart");

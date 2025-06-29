@@ -87,6 +87,11 @@ const NewArrivals = () => {
   };
 
   const handleProductClick = (product) => {
+    // Validate product and product ID before navigation
+    if (!product || !product._id) {
+      console.error('Product or product ID is missing:', product);
+      return;
+    }
     // Navigate to product details page
     navigate(`/shop/product/${product._id}`);
   };

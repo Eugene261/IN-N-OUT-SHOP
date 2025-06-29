@@ -47,10 +47,16 @@ function EnhancedShoppingProductTile({
   const displayCategory = convertIdToName(product?.category, categories);
 
   const handleProductClick = () => {
+    // Ensure we have a valid product and product ID before navigating
+    if (!product || !product._id) {
+      console.error('Product or product ID is missing:', product);
+      return;
+    }
+
     if (handleGetProductDetails) {
       handleGetProductDetails();
     } else {
-      navigateWithScroll(navigate, `/shop/product/${product?._id}`);
+      navigateWithScroll(navigate, `/shop/product/${product._id}`);
     }
   };
 

@@ -101,6 +101,10 @@ function ShoppingHome() {
   }
 
   function handleGetProductDetails(getCurrentProductId){
+    if (!getCurrentProductId) {
+      console.error('Product ID is missing');
+      return;
+    }
     navigateWithScroll(navigate, `/shop/product/${getCurrentProductId}`);
   }
 

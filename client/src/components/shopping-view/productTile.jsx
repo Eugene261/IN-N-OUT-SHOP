@@ -140,7 +140,13 @@ function ShoppingProductTile({ product, handleAddToCart, onAddToCart }) {
         className="w-full max-w-sm mx-auto overflow-hidden rounded-xl
         border-none shadow-lg hover:shadow-xl transition-all duration-300 
         flex flex-col h-full cursor-pointer bg-white"
-        onClick={() => navigateWithScroll(navigate, `/shop/product/${product?._id}`)}
+        onClick={() => {
+          if (product && product._id) {
+            navigateWithScroll(navigate, `/shop/product/${product._id}`);
+          } else {
+            console.error('Product or product ID is missing:', product);
+          }
+        }}
       >
         {/* Image container */}
         <div className="relative w-full overflow-hidden">
