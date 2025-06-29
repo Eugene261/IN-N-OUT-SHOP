@@ -109,12 +109,12 @@ const ShopsSection = () => {
               className="flex-shrink-0"
             >
               <Card 
-                className="w-[280px] cursor-pointer group hover:shadow-lg transition-all duration-300 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                className="w-[240px] cursor-pointer group hover:shadow-lg transition-all duration-300 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
                 onClick={() => handleShopClick(shop._id)}
               >
-                <CardContent className="p-4">
-                  {/* Shop Logo/Banner */}
-                  <div className="relative mb-4 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg overflow-hidden">
+                <CardContent className="p-3">
+                  {/* Shop Logo/Banner - Reduced Height */}
+                  <div className="relative mb-3 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg overflow-hidden">
                     {shop.shopBanner ? (
                       <img 
                         src={shop.shopBanner} 
@@ -123,13 +123,13 @@ const ShopsSection = () => {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <Store className="w-8 h-8 text-white" />
+                        <Store className="w-6 h-6 text-white" />
                       </div>
                     )}
                     
-                    {/* Shop Logo Overlay */}
+                    {/* Shop Logo Overlay - Smaller */}
                     {shop.shopLogo && (
-                      <div className="absolute -bottom-3 left-4 w-12 h-12 rounded-full border-4 border-white dark:border-gray-800 overflow-hidden bg-white">
+                      <div className="absolute -bottom-2 left-3 w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 overflow-hidden bg-white">
                         <img 
                           src={shop.shopLogo} 
                           alt={shop.shopName}
@@ -139,38 +139,38 @@ const ShopsSection = () => {
                     )}
                   </div>
 
-                  {/* Shop Info */}
-                  <div className="mt-4">
-                    <h3 className="font-semibold text-lg text-gray-800 dark:text-white line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  {/* Shop Info - More Compact */}
+                  <div className="mt-3">
+                    <h3 className="font-semibold text-base text-gray-800 dark:text-white line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                       {shop.shopName}
                     </h3>
                     
                     {shop.shopCategory && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
                         {shop.shopCategory}
                       </p>
                     )}
                     
-                    {/* Rating */}
-                    <div className="flex items-center gap-1 mb-2">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {/* Rating - More Compact */}
+                    <div className="flex items-center gap-1 mb-1">
+                      <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
                         {shop.shopRating ? shop.shopRating.toFixed(1) : '5.0'}
                       </span>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
                         ({shop.shopReviewCount || 0})
                       </span>
                     </div>
 
-                    {/* Location & Products */}
-                    <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+                    {/* Location & Products - More Compact */}
+                    <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
                       <div className="flex items-center gap-1">
                         <MapPin className="w-3 h-3" />
                         <span>{shop.baseCity || 'Ghana'}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Package className="w-3 h-3" />
-                        <span>{shop.productCount || 0} products</span>
+                        <span>{shop.productCount || 0}</span>
                       </div>
                     </div>
                   </div>
