@@ -112,7 +112,7 @@ const ShopsSection = () => {
                 onClick={() => handleShopClick(shop._id)}
               >
                 {/* Shop Image/Banner */}
-                <div className="relative w-full aspect-[4/3] mb-3 overflow-hidden bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="relative w-full aspect-[4/2.5] mb-3 overflow-hidden bg-gray-50 dark:bg-gray-700 rounded-lg">
                   {shop.shopBanner ? (
                     <img
                       src={shop.shopBanner}
@@ -173,7 +173,7 @@ const ShopsSection = () => {
         </div>
 
         {/* View All Shops Button */}
-        <div className="text-center mt-8">
+        <div className="flex justify-start mt-8">
           <button 
             onClick={() => navigate('/shops')}
             className="px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"

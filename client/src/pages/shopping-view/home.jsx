@@ -464,7 +464,7 @@ function ShoppingHome() {
             {/* Explore All Button */}
             {productList?.length > productsToShow?.length && (
               <motion.div 
-                className="text-center mt-16"
+                className="flex justify-start mt-16"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -478,7 +478,7 @@ function ShoppingHome() {
                   }}
                   className="px-8 py-4 bg-black text-white rounded-xl
                   font-medium hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl
-                  flex items-center gap-2 mx-auto"
+                  flex items-center gap-2"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >

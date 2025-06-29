@@ -162,20 +162,18 @@ const BestSeller = () => {
                 transition={{ delay: index * 0.1 }}
                 className="flex-shrink-0"
               >
-                <div className="w-[280px] bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 group cursor-pointer border border-gray-200 dark:border-gray-700">
+                <div className="w-[280px] cursor-pointer group" onClick={() => handleOpenDialog(product._id)}>
                   {/* Product Image */}
-                  <div 
-                    className="relative h-64 bg-gray-50 dark:bg-gray-700 overflow-hidden"
-                    onClick={() => handleOpenDialog(product._id)}
-                  >
+                  <div className="relative w-full aspect-square mb-3 overflow-hidden bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <RenderImage 
                       src={product.image} 
                       alt={product.title} 
-                      className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
                     />
                     
                     {/* Bestseller Badge */}
-                    <div className="absolute top-3 left-3">
+                    <div className="absolute top-2 left-2">
                       <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-sm">
                         Bestseller
                       </span>
@@ -187,20 +185,20 @@ const BestSeller = () => {
                         e.stopPropagation();
                         handleToggleWishlist(product._id);
                       }}
-                      className="absolute top-3 right-3 p-2 bg-white dark:bg-gray-800 rounded-full shadow-md hover:shadow-lg transition-all"
+                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 hover:bg-white shadow-sm flex items-center justify-center transition-all duration-200 hover:scale-110"
                     >
-                      <Heart className={`w-4 h-4 ${isInWishlist ? 'fill-red-500 text-red-500' : 'text-gray-600 dark:text-gray-300'}`} />
+                      <Heart className={`w-4 h-4 transition-colors duration-200 ${isInWishlist ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
                     </button>
 
-                    {/* Hover overlay with quick actions */}
-                    <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    {/* Transparent Hover overlay with quick actions */}
+                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                       <div className="flex gap-2">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleOpenDialog(product._id);
                           }}
-                          className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors text-sm"
+                          className="bg-white/90 text-gray-900 px-4 py-2 rounded-lg font-medium hover:bg-white transition-colors text-sm"
                         >
                           Quick View
                         </button>
@@ -218,43 +216,28 @@ const BestSeller = () => {
                     </div>
                   </div>
 
-                  {/* Product Info */}
-                  <div className="p-4">
-                    <div className="mb-2">
-                      <span className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-medium">
-                        {product.category}
-                      </span>
-                    </div>
-                    
-                    <h3 
-                      className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                      onClick={() => handleOpenDialog(product._id)}
-                    >
+                  {/* Product Information - Product tile style */}
+                  <div className="space-y-1">
+                    {/* Category - small and subtle */}
+                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                      {product.category}
+                    </p>
+
+                    {/* Product Title */}
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 leading-tight">
                       {product.title}
                     </h3>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-gray-900 dark:text-white">
-                          GHS {product.price.toFixed(2)}
+
+                    {/* Price */}
+                    <div className="flex items-center gap-2 pt-1">
+                      <span className="text-sm font-bold text-gray-900 dark:text-white">
+                        GHS {product.price.toFixed(2)}
+                      </span>
+                      {product.salePrice && product.salePrice > product.price && (
+                        <span className="text-sm text-gray-500 line-through">
+                          GHS {product.salePrice.toFixed(2)}
                         </span>
-                        {product.salePrice && product.salePrice > product.price && (
-                          <span className="text-sm text-gray-400 line-through">
-                            GHS {product.salePrice.toFixed(2)}
-                          </span>
-                        )}
-                      </div>
-                      
-                      {/* Mobile Add to Cart Button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAddToCart(product._id);
-                        }}
-                        className="md:hidden bg-gray-900 dark:bg-white text-white dark:text-gray-900 p-2 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
-                      >
-                        <ShoppingBag className="w-4 h-4" />
-                      </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -263,8 +246,8 @@ const BestSeller = () => {
           })}
         </div>
 
-        {/* View All Products Button */}
-        <div className="text-center mt-8">
+        {/* View All Products Button - Moved to left */}
+        <div className="flex justify-start mt-8">
           <button 
             onClick={() => navigate('/shop/listing')}
             className="px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"

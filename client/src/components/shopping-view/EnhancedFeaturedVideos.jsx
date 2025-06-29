@@ -194,81 +194,29 @@ function EnhancedFeaturedVideos() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="mb-8 lg:mb-12 text-center relative"
+            className="flex justify-between items-center mb-8"
           >
-            {/* Background Decoration */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-5">
-              <Sparkles className="h-32 w-32 text-black" />
+            <div>
+              <span className="inline-block text-sm font-bold tracking-widest uppercase text-gray-500 mb-2">Trending Now</span>
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Featured Vendor Reels</h2>
             </div>
             
-            <div className="relative z-10">
-              {/* Badge */}
-                             <motion.div 
-                 initial={{ opacity: 0, scale: 0.8 }}
-                 whileInView={{ opacity: 1, scale: 1 }}
-                 viewport={{ once: true }}
-                 transition={{ duration: 0.5, delay: 0.2 }}
-                 className="inline-flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-full px-4 py-2 mb-4"
-               >
-                 <Sparkles className="h-4 w-4 text-gray-700" />
-                 <span className="text-sm font-medium text-black">Trending Now</span>
-               </motion.div>
-              
-              {/* Main Title */}
-                             <motion.h2 
-                 initial={{ opacity: 0, y: 20 }}
-                 whileInView={{ opacity: 1, y: 0 }}
-                 viewport={{ once: true }}
-                 transition={{ duration: 0.6, delay: 0.3 }}
-                 className="text-2xl lg:text-4xl font-bold text-black mb-4"
-               >
-                 Featured Vendor Reels
-               </motion.h2>
-              
-              {/* Description */}
-                             <motion.p 
-                 initial={{ opacity: 0, y: 20 }}
-                 whileInView={{ opacity: 1, y: 0 }}
-                 viewport={{ once: true }}
-                 transition={{ duration: 0.6, delay: 0.4 }}
-                 className="text-black text-base lg:text-lg max-w-2xl mx-auto leading-relaxed"
-               >
-                 Explore amazing content from our top vendors and discover the latest trends that are shaping the market
-               </motion.p>
-              
-              {/* Decorative Elements */}
-                             <motion.div 
-                 initial={{ opacity: 0, scale: 0 }}
-                 whileInView={{ opacity: 1, scale: 1 }}
-                 viewport={{ once: true }}
-                 transition={{ duration: 0.5, delay: 0.5 }}
-                 className="flex items-center justify-center gap-2 mt-6"
-               >
-                 <div className="h-1 w-8 bg-gradient-to-r from-black to-transparent rounded-full"></div>
-                 <div className="h-2 w-2 bg-black rounded-full"></div>
-                 <div className="h-1 w-8 bg-gradient-to-l from-black to-transparent rounded-full"></div>
-               </motion.div>
+            {/* Navigation Buttons */}
+            <div className="hidden md:flex gap-2">
+              <button
+                onClick={() => scroll('left')}
+                className="p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5 text-gray-600" />
+              </button>
+              <button
+                onClick={() => scroll('right')}
+                className="p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                <ChevronRight className="w-5 h-5 text-gray-600" />
+              </button>
             </div>
           </motion.div>
-
-          {/* Navigation Arrows */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="absolute left-4 top-[calc(50%+2rem)] -translate-y-1/2 z-20 bg-white hover:bg-gray-50 border border-gray-200 shadow-lg h-10 w-10 rounded-full flex items-center justify-center transition-all duration-300"
-            onClick={() => scroll('left')}
-          >
-            <ChevronLeft className="h-5 w-5 text-gray-700" />
-          </motion.button>
-          
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="absolute right-4 top-[calc(50%+2rem)] -translate-y-1/2 z-20 bg-white hover:bg-gray-50 border border-gray-200 shadow-lg h-10 w-10 rounded-full flex items-center justify-center transition-all duration-300"
-            onClick={() => scroll('right')}
-          >
-            <ChevronRight className="h-5 w-5 text-gray-700" />
-          </motion.button>
 
           {/* Horizontal Scrolling Video Container */}
           <div className="relative">
@@ -451,7 +399,7 @@ function EnhancedFeaturedVideos() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="text-center mt-6"
+            className="flex justify-start mt-6"
           >
             <motion.button
               whileHover={{ scale: 1.02, y: -2 }}
