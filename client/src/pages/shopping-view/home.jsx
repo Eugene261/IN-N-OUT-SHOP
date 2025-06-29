@@ -37,6 +37,7 @@ import NewsletterSection from '../../components/shopping-view/NewsletterSection'
 import EnhancedHeroCarousel from '../../components/shopping-view/EnhancedHeroCarousel'
 import { navigateWithScroll } from '../../utils/scrollUtils';
 import ThemeToggle from '../../components/ui/ThemeToggle';
+import ShopsSection from '../../components/shopping-view/ShopsSection';
 
 /* const categoriesWithIcon = [
   { id: "men", label: "Men", icon: Shirt },
@@ -309,6 +310,9 @@ function ShoppingHome() {
           FeatureImageList={FeatureImageList} 
           isLoading={isLoading}
         />
+
+        {/* Current Shops Section */}
+        <ShopsSection />
   
         {/* Categories Section */}
        {/*  <motion.section 
