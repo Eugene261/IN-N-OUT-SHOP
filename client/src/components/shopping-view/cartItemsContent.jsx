@@ -40,14 +40,14 @@ function UserCartItemsContent({ cartItem }) {
 
   // Utility function to convert database IDs to human-readable names
   const convertIdToName = (id, taxonomyArray) => {
-    if (!id || !taxonomyArray || taxonomyArray.length === 0) return id;
+    if (!id || !taxonomyArray || taxonomyArray.length === 0) return null;
     
     // If it's already a human-readable name (not a MongoDB ObjectId), return as is
     if (typeof id === 'string' && id.length !== 24) return id;
     
     // Find the taxonomy item by ID
     const item = taxonomyArray.find(item => item._id === id);
-    return item ? item.name : id;
+    return item ? item.name : null;
   };
 
   // Function to get color code from color name
@@ -234,126 +234,147 @@ function UserCartItemsContent({ cartItem }) {
     });
   }
 
+  // Get the actual size and color names (will be null if not available)
+  const sizeName = convertIdToName(cartItem?.size, taxonomySizes);
+  const colorName = convertIdToName(cartItem?.color, taxonomyColors);
+
   return (
     <motion.div
-      className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+      className="flex gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200"
       variants={itemVariants}
       initial="hidden"
       animate="visible"
       exit="exit"
-      whileHover={{ y: -2 }}
+      whileHover={{ y: -1 }}
       layout
     >
-      <div className="flex items-center space-x-4">
-        <motion.div 
-          className="relative overflow-hidden rounded-lg"
-          whileHover={{ scale: 1.02 }}
-          transition={{ type: "spring", stiffness: 400 }}
-        >
-          <img
-            src={cartItem?.image || '/images/placeholder-product.png'}
-            alt={cartItem?.title || 'Product'}
-            className="w-20 h-20 object-cover rounded-lg bg-gray-50"
-            onError={(e) => {
-              e.target.src = '/images/placeholder-product.png';
-              e.target.onerror = null; // Prevent infinite loop
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 hover:opacity-100 transition-opacity" />
-        </motion.div>
+      {/* Product Image */}
+      <motion.div 
+        className="relative overflow-hidden rounded-lg flex-shrink-0"
+        whileHover={{ scale: 1.02 }}
+        transition={{ type: "spring", stiffness: 400 }}
+      >
+        <img
+          src={cartItem?.image || '/images/placeholder-product.png'}
+          alt={cartItem?.title || 'Product'}
+          className="w-16 h-16 object-cover rounded-lg bg-gray-50 dark:bg-gray-700"
+          onError={(e) => {
+            e.target.src = '/images/placeholder-product.png';
+            e.target.onerror = null; // Prevent infinite loop
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 hover:opacity-100 transition-opacity" />
+      </motion.div>
 
-        <div className="space-y-2">
-          <h2 className="font-medium text-gray-900">{cartItem?.title}</h2>
-          
-          {/* Display size and color information */}
-          <div className="flex flex-col space-y-1">
-            <div className="flex items-center space-x-2">
-              <span className="text-xs text-gray-500">Size:</span>
-              <span className="text-xs font-medium uppercase">
-                {convertIdToName(cartItem?.size, taxonomySizes) || 'N/A'}
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-xs text-gray-500">Color:</span>
-              <span className="text-xs font-medium capitalize">
-                {convertIdToName(cartItem?.color, taxonomyColors) || 'N/A'}
-              </span>
-              {cartItem?.color && (
+      {/* Product Details */}
+      <div className="flex-1 min-w-0 space-y-2">
+        {/* Product Title - with proper text wrapping */}
+        <h2 className="font-medium text-gray-900 dark:text-gray-100 text-sm leading-5 line-clamp-2">
+          {cartItem?.title}
+        </h2>
+        
+        {/* Variant Information - Only show if they exist */}
+        {(sizeName || colorName) && (
+          <div className="flex flex-wrap gap-3 text-xs">
+            {sizeName && (
+              <div className="flex items-center gap-1">
+                <span className="text-gray-500 dark:text-gray-400">Size:</span>
+                <span className="font-medium text-gray-700 dark:text-gray-300 uppercase">
+                  {sizeName}
+                </span>
+              </div>
+            )}
+            {colorName && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-500 dark:text-gray-400">Color:</span>
+                <span className="font-medium text-gray-700 dark:text-gray-300 capitalize">
+                  {colorName}
+                </span>
                 <div 
-                  className="w-3 h-3 rounded-full border border-gray-300" 
+                  className="w-3 h-3 rounded-full border border-gray-300 dark:border-gray-500 flex-shrink-0" 
                   style={{
-                    background: getColorCode(convertIdToName(cartItem?.color, taxonomyColors)),
-                    display: 'inline-block'
+                    background: getColorCode(colorName),
                   }}
-                ></div>
-              )}
-            </div>
+                />
+              </div>
+            )}
           </div>
+        )}
+        
+        {/* Quantity Controls */}
+        <div className="flex items-center gap-2">
+          <motion.button
+            onClick={() => handleUpdateQuantity(cartItem, 'minus')}
+            className="h-7 w-7 rounded-full flex items-center justify-center border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+            disabled={cartItem?.quantity === 1}
+            whileHover={cartItem?.quantity !== 1 ? buttonHover : {}}
+            whileTap={cartItem?.quantity !== 1 ? buttonTap : {}}
+          >
+            <Minus className="w-3 h-3 text-gray-700 dark:text-gray-300" />
+          </motion.button>
           
-          <div className="flex items-center gap-2">
-            <motion.button
-              onClick={() => handleUpdateQuantity(cartItem, 'minus')}
-              className="h-8 w-8 rounded-full flex items-center justify-center border border-gray-200 hover:border-gray-300 disabled:opacity-40"
-              disabled={cartItem?.quantity === 1}
-              whileHover={buttonHover}
-              whileTap={buttonTap}
-            >
-              <Minus className="w-3 h-3 text-gray-700" />
-            </motion.button>
-            
-            <motion.span 
-              className="font-medium w-6 text-center"
-              key={cartItem.quantity}
-              initial={{ scale: 1.2 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring" }}
-            >
-              {cartItem?.quantity}
-            </motion.span>
-            
-            <motion.button
-              onClick={() => handleUpdateQuantity(cartItem, 'plus')}
-              className="h-8 w-8 rounded-full flex items-center justify-center border border-gray-200 hover:border-gray-300"
-              whileHover={buttonHover}
-              whileTap={buttonTap}
-            >
-              <Plus className="w-3 h-3 text-gray-700" />
-            </motion.button>
-          </div>
+          <motion.span 
+            className="font-medium w-6 text-center text-sm text-gray-900 dark:text-gray-100"
+            key={cartItem.quantity}
+            initial={{ scale: 1.2 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring" }}
+          >
+            {cartItem?.quantity}
+          </motion.span>
+          
+          <motion.button
+            onClick={() => handleUpdateQuantity(cartItem, 'plus')}
+            className="h-7 w-7 rounded-full flex items-center justify-center border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700"
+            whileHover={buttonHover}
+            whileTap={buttonTap}
+          >
+            <Plus className="w-3 h-3 text-gray-700 dark:text-gray-300" />
+          </motion.button>
         </div>
       </div>
 
-      <div className="flex flex-col items-end space-y-3">
-        <p className="font-semibold text-gray-900">
-          {(() => {
-            // Debug the price values
-            console.log('Cart item price data:', {
-              salePrice: cartItem?.salePrice,
-              price: cartItem?.price,
-              quantity: cartItem?.quantity
-            });
-            
-            // Ensure we have valid numbers
-            const salePrice = parseFloat(cartItem?.salePrice) || 0;
-            const price = parseFloat(cartItem?.price) || 0;
-            const quantity = parseInt(cartItem?.quantity) || 1;
-            
-            // Always use the actual price (not the sale price) for calculation
-            const unitPrice = price;
-            const totalPrice = unitPrice * quantity;
-            
-            // Format the price with fallback
-            return `GHS ${totalPrice.toFixed(2)}`;
-          })()}
-        </p>
+      {/* Price and Delete - Right side */}
+      <div className="flex flex-col items-end justify-between flex-shrink-0">
+        {/* Price */}
+        <div className="text-right">
+          <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
+            {(() => {
+              // Debug the price values
+              console.log('Cart item price data:', {
+                salePrice: cartItem?.salePrice,
+                price: cartItem?.price,
+                quantity: cartItem?.quantity
+              });
+              
+              // Ensure we have valid numbers
+              const salePrice = parseFloat(cartItem?.salePrice) || 0;
+              const price = parseFloat(cartItem?.price) || 0;
+              const quantity = parseInt(cartItem?.quantity) || 1;
+              
+              // Always use the actual price (not the sale price) for calculation
+              const unitPrice = price;
+              const totalPrice = unitPrice * quantity;
+              
+              // Format the price with fallback
+              return `GHS ${totalPrice.toFixed(2)}`;
+            })()}
+          </p>
+          {cartItem?.quantity > 1 && (
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              GHS {parseFloat(cartItem?.price || 0).toFixed(2)} each
+            </p>
+          )}
+        </div>
         
+        {/* Delete Button */}
         <motion.button
           onClick={() => handleCartItemDelete(cartItem)}
-          className="p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+          className="p-1.5 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors"
           whileHover={buttonHover}
           whileTap={buttonTap}
         >
-          <Trash className="text-gray-600" size={16} />
+          <Trash className="text-gray-600 dark:text-gray-400" size={14} />
         </motion.button>
       </div>
     </motion.div>
