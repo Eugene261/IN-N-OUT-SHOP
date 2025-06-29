@@ -18,9 +18,11 @@ const MessageWidget = ({ isOpen, onClose }) => {
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
-  // Prevent body scroll when widget is open
+  // Prevent body scroll when widget is open on mobile only
   useEffect(() => {
-    if (isOpen) {
+    const isMobile = window.innerWidth < 1024; // lg breakpoint
+    
+    if (isOpen && isMobile) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -51,10 +53,12 @@ const MessageWidget = ({ isOpen, onClose }) => {
     },
     minimized: {
       opacity: 1,
-      scale: 0.95,
-      height: 60,
+      scale: 1,
+      x: 0,
+      y: 0,
       transition: {
-        duration: 0.3
+        duration: 0.3,
+        ease: "easeInOut"
       }
     },
     exit: {
@@ -88,13 +92,13 @@ const MessageWidget = ({ isOpen, onClose }) => {
             onClick={onClose}
           />
 
-          {/* Widget Container */}
+          {/* Widget Container - Desktop Only */}
           <motion.div
-            className="fixed z-50 bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden"
+            className="fixed z-50 bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden hidden lg:block"
             style={{
               bottom: '100px',
               right: '24px',
-              width: isMinimized ? '300px' : '400px',
+              width: '400px',
               height: isMinimized ? '60px' : '600px',
               maxWidth: 'calc(100vw - 48px)',
               maxHeight: 'calc(100vh - 120px)'
@@ -131,24 +135,22 @@ const MessageWidget = ({ isOpen, onClose }) => {
 
             {/* Content */}
             {!isMinimized && (
-              <div className="h-full flex flex-col bg-gray-50">
-                <div className="flex-1 overflow-hidden">
-                  <MessagingDashboard isWidget={true} />
-                </div>
+              <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
+                <MessagingDashboard isWidget={true} />
               </div>
             )}
           </motion.div>
 
           {/* Mobile Full Screen on Small Devices */}
           <motion.div
-            className="fixed inset-0 z-50 bg-white lg:hidden"
+            className="fixed inset-0 z-50 bg-white lg:hidden flex flex-col"
             variants={overlayVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
           >
             {/* Mobile Header */}
-            <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between border-b">
+            <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between border-b flex-shrink-0">
               <h3 className="font-semibold">Messages</h3>
               <button
                 onClick={onClose}
@@ -159,7 +161,7 @@ const MessageWidget = ({ isOpen, onClose }) => {
             </div>
 
             {/* Mobile Content */}
-            <div className="h-full bg-gray-50 overflow-hidden">
+            <div className="flex-1 bg-gray-50 overflow-hidden">
               <MessagingDashboard isWidget={true} />
             </div>
           </motion.div>

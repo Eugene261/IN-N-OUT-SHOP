@@ -785,7 +785,7 @@ const MessagingDashboard = ({ isWidget = false }) => {
               {/* Conversations Sidebar */}
               <div className={`${
                 showConversations ? 'flex' : 'hidden'
-              } lg:flex lg:w-1/3 w-full bg-white border-r border-gray-200 flex-col relative shadow-sm`}>
+              } ${isWidget ? 'lg:flex lg:w-2/5' : 'lg:flex lg:w-1/3'} w-full bg-white border-r border-gray-200 flex-col relative shadow-sm`}>
                 {/* Header */}
                 <div className={`${isWidget ? 'p-3' : 'p-4 lg:p-6'} border-b border-gray-200 ${isWidget ? 'bg-gray-50' : 'bg-gradient-to-r from-blue-50 to-indigo-50'}`}>
                   <div className="flex items-center justify-between mb-4">
@@ -820,7 +820,7 @@ const MessagingDashboard = ({ isWidget = false }) => {
                     </div>
                     <input
                       type="text"
-                      className="block w-full pl-9 lg:pl-10 pr-3 py-2 lg:py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base touch-manipulation"
+                      className={`block w-full ${isWidget ? 'pl-9 pr-3 py-2' : 'pl-9 lg:pl-10 pr-3 py-2 lg:py-3'} border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isWidget ? 'text-sm' : 'text-sm lg:text-base'} touch-manipulation`}
                       placeholder="Search conversations..."
                       value={searchTerm}
                       onChange={(e) => dispatch(setSearchTerm(e.target.value))}
@@ -1099,8 +1099,8 @@ const MessagingDashboard = ({ isWidget = false }) => {
                     )}
 
                     {/* Message Input Footer - Always Visible */}
-                    <div className="flex-shrink-0 bg-white p-3 sm:p-4 lg:p-6 border-t border-gray-200">
-                      <div className="flex items-end space-x-2 sm:space-x-3">
+                    <div className={`flex-shrink-0 bg-white ${isWidget ? 'p-3' : 'p-3 sm:p-4 lg:p-6'} border-t border-gray-200`}>
+                      <div className={`flex items-end ${isWidget ? 'space-x-2' : 'space-x-2 sm:space-x-3'}`}>
                         {/* File Upload Button */}
                         <button 
                           onClick={() => {
@@ -1108,7 +1108,7 @@ const MessagingDashboard = ({ isWidget = false }) => {
                             if (showInlineRecorder) setShowInlineRecorder(false);
                             setShowInlineAttachment(!showInlineAttachment);
                           }}
-                          className={`flex-shrink-0 p-3 rounded-xl transition-colors touch-manipulation ${
+                          className={`flex-shrink-0 ${isWidget ? 'p-2' : 'p-3'} rounded-xl transition-colors touch-manipulation ${
                             showInlineAttachment 
                               ? 'bg-blue-100 text-blue-600' 
                               : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:bg-gray-200'
@@ -1125,7 +1125,7 @@ const MessagingDashboard = ({ isWidget = false }) => {
                             if (showInlineAttachment) setShowInlineAttachment(false);
                             setShowInlineRecorder(!showInlineRecorder);
                           }}
-                          className={`flex-shrink-0 p-3 rounded-xl transition-colors touch-manipulation ${
+                          className={`flex-shrink-0 ${isWidget ? 'p-2' : 'p-3'} rounded-xl transition-colors touch-manipulation ${
                             showInlineRecorder 
                               ? 'bg-red-100 text-red-600' 
                               : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:bg-gray-200'
@@ -1143,7 +1143,7 @@ const MessagingDashboard = ({ isWidget = false }) => {
                               onChange={(e) => setNewMessage(e.target.value)}
                               onKeyPress={handleKeyPress}
                               placeholder="Type your message here..."
-                              className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 text-base placeholder-gray-500 resize-none touch-manipulation"
+                              className={`w-full ${isWidget ? 'px-3 py-2' : 'px-4 py-3'} pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 ${isWidget ? 'text-sm' : 'text-base'} placeholder-gray-500 resize-none touch-manipulation`}
                               disabled={sendingMessage}
                             />
                             {sendingMessage && (
@@ -1159,7 +1159,7 @@ const MessagingDashboard = ({ isWidget = false }) => {
                         <button
                           onClick={handleSendMessage}
                           disabled={!newMessage.trim() || sendingMessage}
-                          className="flex-shrink-0 p-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md disabled:hover:shadow-sm touch-manipulation"
+                          className={`flex-shrink-0 ${isWidget ? 'p-2' : 'p-3'} bg-blue-600 text-white rounded-2xl hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md disabled:hover:shadow-sm touch-manipulation`}
                           title="Send message"
                         >
                           <Send className="w-5 h-5" />
