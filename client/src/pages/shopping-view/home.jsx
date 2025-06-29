@@ -91,7 +91,10 @@ function ShoppingHome() {
   }, []);
 
   function handleNavigateToListingPage(getCurrentItem, section){
+    // Clear any existing filters first
     sessionStorage.removeItem('filters');
+    
+    // Set the new filter for the selected category/brand
     const currentFilter = {
       [section] : [getCurrentItem.id]
     }
@@ -224,9 +227,20 @@ function ShoppingHome() {
 
   const [refreshKey, setRefreshKey] = useState(0);
   
+  // Clear filters when coming to homepage to ensure we see all products
+  useEffect(() => {
+    // Always clear session storage filters when on homepage
+    sessionStorage.removeItem('filters');
+    console.log('Home page: Cleared sessionStorage filters to ensure all products shown');
+  }, []);
+  
   useEffect(() => {
     console.log('Home page: Fetching products with refresh key:', refreshKey);
-    dispatch(fetchAllFilteredProducts({filterParams: {}, sortParams : 'price-lowtohigh'}));
+    // Force fresh fetch with empty filters and timestamp to prevent caching
+    dispatch(fetchAllFilteredProducts({
+      filterParams: {}, 
+      sortParams: 'price-lowtohigh'
+    }));
     
     // Also fetch bestsellers and new arrivals to ensure they're up to date
     dispatch(fetchBestsellerProducts());
@@ -440,7 +454,11 @@ function ShoppingHome() {
                 transition={{ delay: 0.3 }}
               >
                 <motion.button 
-                  onClick={() => navigate('/shop/listing')}
+                  onClick={() => {
+                    // Clear filters before navigating to listing page
+                    sessionStorage.removeItem('filters');
+                    navigate('/shop/listing');
+                  }}
                   className="px-8 py-4 bg-black text-white rounded-xl
                   font-medium hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl
                   flex items-center gap-2 mx-auto"
