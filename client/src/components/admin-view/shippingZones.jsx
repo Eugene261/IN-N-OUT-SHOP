@@ -35,13 +35,10 @@ const ShippingZones = () => {
     region: '',
     baseRate: 0,
     isDefault: false,
-    vendorRegion: '',
-    additionalRates: []
+    vendorRegion: ''
   });
   const [showNewZoneForm, setShowNewZoneForm] = useState(false);
-  const [newRateType, setNewRateType] = useState('price');
-  const [newRateThreshold, setNewRateThreshold] = useState(0);
-  const [newRateFee, setNewRateFee] = useState(0);
+
   const [showBaseRegionModal, setShowBaseRegionModal] = useState(false);
   const [baseRegion, setBaseRegion] = useState('');
   const [savedBaseRegion, setSavedBaseRegion] = useState('');
@@ -247,8 +244,7 @@ const ShippingZones = () => {
           region: '',
           baseRate: 0,
           isDefault: false,
-          vendorRegion: '',
-          additionalRates: []
+          vendorRegion: ''
         });
         fetchZones();
       } else {
@@ -281,7 +277,7 @@ const ShippingZones = () => {
         region: editingZone.region,
         baseRate: editingZone.baseRate,
         isDefault: editingZone.isDefault,
-        additionalRates: editingZone.additionalRates,
+
         vendorRegion: savedBaseRegion || editingZone.vendorRegion || editingZone.region
       };
       
@@ -325,55 +321,7 @@ const ShippingZones = () => {
     }
   };
 
-  const addAdditionalRate = () => {
-    if (!newRateThreshold || !newRateFee) {
-      toast.error('Please provide both threshold and fee values');
-      return;
-    }
 
-    const newRate = {
-      type: 'price',
-      threshold: parseFloat(newRateThreshold),
-      additionalFee: parseFloat(newRateFee)
-    };
-
-    if (editingZone) {
-      setEditingZone({
-        ...editingZone,
-        additionalRates: [...(editingZone.additionalRates || []), newRate]
-      });
-    } else {
-      setNewZone({
-        ...newZone,
-        additionalRates: [...newZone.additionalRates, newRate]
-      });
-    }
-
-    // Reset fields
-    setNewRateType('price');
-    setNewRateThreshold(0);
-    setNewRateFee(0);
-  };
-
-  const removeAdditionalRate = (index, isEditingZone = false) => {
-    if (isEditingZone) {
-      const updatedRates = [...editingZone.additionalRates];
-      updatedRates.splice(index, 1);
-      
-      setEditingZone({
-        ...editingZone,
-        additionalRates: updatedRates
-      });
-    } else {
-      const updatedRates = [...newZone.additionalRates];
-      updatedRates.splice(index, 1);
-      
-      setNewZone({
-        ...newZone,
-        additionalRates: updatedRates
-      });
-    }
-  };
 
   // Base Region Modal
   const BaseRegionModal = () => {
@@ -607,70 +555,7 @@ const ShippingZones = () => {
                 </label>
               </div>
 
-              {/* Additional Rates Section */}
-              <div className="border-t pt-4 mt-4">
-                <h3 className="text-md font-semibold mb-3">Additional Rates</h3>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-3">
-                  <div className="space-y-1">
-                    <label className="block text-sm font-medium">Min Order Value (GHS)</label>
-                    <Input
-                      type="number"
-                      value={newRateThreshold}
-                      onChange={(e) => setNewRateThreshold(e.target.value)}
-                      min="0"
-                      step="0.01"
-                      className="text-sm"
-                      placeholder="e.g., 500"
-                    />
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <label className="block text-sm font-medium">Additional Fee (GHS)</label>
-                    <Input
-                      type="number"
-                      value={newRateFee}
-                      onChange={(e) => setNewRateFee(e.target.value)}
-                      step="0.01"
-                      className="text-sm"
-                      placeholder="e.g., 10"
-                    />
-                  </div>
-                  
-                  <div className="flex items-end">
-                    <button
-                      type="button"
-                      onClick={addAdditionalRate}
-                      className="w-full h-9 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-                    >
-                      Add Rate
-                    </button>
-                  </div>
-                </div>
 
-                {/* Existing Additional Rates */}
-                {newZone.additionalRates.length > 0 && (
-                  <div className="border rounded-md p-3 mb-3">
-                    <h4 className="text-sm font-medium mb-2">Configured Additional Rates</h4>
-                    <div className="space-y-2">
-                      {newZone.additionalRates.map((rate, index) => (
-                        <div key={index} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-sm bg-gray-50 p-2 rounded">
-                          <span className="flex-1">
-                            Order ≥ {rate.threshold} GHS: {rate.additionalFee > 0 ? '+' : ''}{rate.additionalFee} GHS
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => removeAdditionalRate(index)}
-                            className="h-7 w-7 p-0 flex items-center justify-center bg-transparent hover:bg-gray-200 rounded-full self-end sm:self-center"
-                          >
-                            <Trash2 size={14} className="text-red-500" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
 
               <div className="flex justify-end pt-4">
                 <button 
@@ -847,68 +732,7 @@ const ShippingZones = () => {
                   )}
                 </div>
                 
-                {/* Additional Rates */}
-                {(zone.additionalRates && zone.additionalRates.length > 0) || (editingZone && editingZone._id === zone._id) ? (
-                  <div className="mt-4 pt-4 border-t">
-                    <h4 className="text-sm font-medium mb-2">Additional Rates</h4>
-                    
-                    {editingZone && editingZone._id === zone._id && (
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
-                        <Input
-                          type="number"
-                          placeholder="Min Order Value (GHS)"
-                          value={newRateThreshold}
-                          onChange={(e) => setNewRateThreshold(e.target.value)}
-                          min="0"
-                          step="0.01"
-                          className="text-sm"
-                        />
-                        
-                        <Input
-                          type="number"
-                          placeholder="Additional Fee (GHS)"
-                          value={newRateFee}
-                          onChange={(e) => setNewRateFee(e.target.value)}
-                          step="0.01"
-                          className="text-sm"
-                        />
-                        
-                        <button
-                          type="button"
-                          onClick={addAdditionalRate}
-                          className="h-8 px-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-                        >
-                          Add Rate
-                        </button>
-                      </div>
-                    )}
-                    
-                    <div className="space-y-1 text-sm">
-                      {editingZone && editingZone._id === zone._id
-                        ? editingZone.additionalRates && editingZone.additionalRates.map((rate, index) => (
-                            <div key={index} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-gray-50 p-2 rounded">
-                              <span className="flex-1">
-                                Order ≥ {rate.threshold} GHS: {rate.additionalFee > 0 ? '+' : ''}{rate.additionalFee} GHS
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => removeAdditionalRate(index, true)}
-                                className="h-7 w-7 p-0 flex items-center justify-center bg-transparent hover:bg-gray-200 rounded-full self-end sm:self-center"
-                              >
-                                <Trash2 size={14} className="text-red-500" />
-                              </button>
-                            </div>
-                          ))
-                        : zone.additionalRates && zone.additionalRates.map((rate, index) => (
-                            <div key={index} className="flex justify-between items-center bg-gray-50 p-2 rounded">
-                              <span>
-                                Order ≥ {rate.threshold} GHS: {rate.additionalFee > 0 ? '+' : ''}{rate.additionalFee} GHS
-                              </span>
-                            </div>
-                          ))}
-                    </div>
-                  </div>
-                ) : null}
+
                 
                 {/* Add Save button at the bottom when in edit mode */}
                 {editingZone && editingZone._id === zone._id && (
