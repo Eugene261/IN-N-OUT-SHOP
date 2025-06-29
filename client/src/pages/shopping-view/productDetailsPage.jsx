@@ -295,11 +295,11 @@ function ProductDetailsPage() {
             {/* Price Display */}
             <div className="flex items-center space-x-3">
               <span className="text-3xl font-bold text-gray-900">
-                ${productDetails?.price}
+                GHS {productDetails?.price}
               </span>
               {productDetails?.salePrice > 0 && (
                 <span className="text-xl text-gray-500 line-through">
-                  ${productDetails?.salePrice}
+                  GHS {productDetails?.salePrice}
                 </span>
               )}
             </div>

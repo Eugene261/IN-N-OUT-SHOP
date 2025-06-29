@@ -1,8 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Star, Store, MapPin, Package } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { ChevronLeft, ChevronRight, Star, Store } from 'lucide-react';
 import { fetchAllShops } from '@/store/shop/product-slice';
 import { useNavigate } from 'react-router-dom';
 
@@ -19,7 +18,7 @@ const ShopsSection = () => {
 
   const scroll = (direction) => {
     if (scrollRef.current) {
-      const scrollAmount = 300;
+      const scrollAmount = 340; // Width of one card plus gap
       const newScrollPosition = scrollRef.current.scrollLeft + (direction === 'left' ? -scrollAmount : scrollAmount);
       scrollRef.current.scrollTo({
         left: newScrollPosition,
@@ -38,7 +37,7 @@ const ShopsSection = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-8">
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white">
-              Current Shops
+              Shops
             </h2>
             <p className="text-gray-600 dark:text-gray-300 mt-2">Explore our trusted vendors</p>
           </div>
@@ -71,7 +70,7 @@ const ShopsSection = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white">
-              Current Shops
+              Shops
             </h2>
             <p className="text-gray-600 dark:text-gray-300 mt-2">Explore our trusted vendors</p>
           </div>
@@ -96,7 +95,7 @@ const ShopsSection = () => {
         {/* Shops Carousel */}
         <div 
           ref={scrollRef}
-          className="flex gap-4 overflow-x-auto scrollbar-hide pb-4"
+          className="flex gap-6 overflow-x-auto scrollbar-hide pb-4"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {allShops.map((shop, index) => (
@@ -108,74 +107,67 @@ const ShopsSection = () => {
               transition={{ delay: index * 0.1 }}
               className="flex-shrink-0"
             >
-              <Card 
-                className="w-[240px] cursor-pointer group hover:shadow-lg transition-all duration-300 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+              <div 
+                className="w-[320px] cursor-pointer group" 
                 onClick={() => handleShopClick(shop._id)}
               >
-                <CardContent className="p-3">
-                  {/* Shop Logo/Banner - Reduced Height */}
-                  <div className="relative mb-3 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg overflow-hidden">
-                    {shop.shopBanner ? (
+                {/* Shop Image/Banner */}
+                <div className="relative w-full aspect-[4/3] mb-3 overflow-hidden bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  {shop.shopBanner ? (
+                    <img
+                      src={shop.shopBanner}
+                      alt={shop.shopName}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600">
+                      <Store className="w-12 h-12 text-white" />
+                    </div>
+                  )}
+                  
+                  {/* Shop Logo Overlay */}
+                  {shop.shopLogo && (
+                    <div className="absolute bottom-3 left-3 w-12 h-12 rounded-full border-2 border-white overflow-hidden bg-white shadow-lg">
                       <img 
-                        src={shop.shopBanner} 
+                        src={shop.shopLogo} 
                         alt={shop.shopName}
                         className="w-full h-full object-cover"
                       />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Store className="w-6 h-6 text-white" />
-                      </div>
-                    )}
-                    
-                    {/* Shop Logo Overlay - Smaller */}
-                    {shop.shopLogo && (
-                      <div className="absolute -bottom-2 left-3 w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 overflow-hidden bg-white">
-                        <img 
-                          src={shop.shopLogo} 
-                          alt={shop.shopName}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Shop Information - Product tile style */}
+                <div className="space-y-1">
+                  {/* Shop Category - small and subtle */}
+                  {shop.shopCategory && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                      {shop.shopCategory}
+                    </p>
+                  )}
+
+                  {/* Shop Name */}
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    {shop.shopName}
+                  </h3>
+
+                  {/* Rating and Reviews */}
+                  <div className="flex items-center gap-1">
+                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {shop.shopRating ? shop.shopRating.toFixed(1) : '5.0'} ({shop.shopReviewCount || 0})
+                    </span>
                   </div>
 
-                  {/* Shop Info - More Compact */}
-                  <div className="mt-3">
-                    <h3 className="font-semibold text-base text-gray-800 dark:text-white line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                      {shop.shopName}
-                    </h3>
-                    
-                    {shop.shopCategory && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                        {shop.shopCategory}
-                      </p>
-                    )}
-                    
-                    {/* Rating - More Compact */}
-                    <div className="flex items-center gap-1 mb-1">
-                      <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                        {shop.shopRating ? shop.shopRating.toFixed(1) : '5.0'}
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        ({shop.shopReviewCount || 0})
-                      </span>
-                    </div>
-
-                    {/* Location & Products - More Compact */}
-                    <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        <span>{shop.baseCity || 'Ghana'}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Package className="w-3 h-3" />
-                        <span>{shop.productCount || 0}</span>
-                      </div>
-                    </div>
+                  {/* Product Count */}
+                  <div className="pt-1">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {shop.productCount || 0} Products
+                    </span>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </motion.div>
           ))}
         </div>
