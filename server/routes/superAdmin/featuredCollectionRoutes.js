@@ -14,11 +14,18 @@ const {
 
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
-const upload = multer({ 
-  storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
-  }
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 50 * 1024 * 1024, // 50MB limit - INCREASED FROM 5MB
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files are allowed!'), false);
+        }
+    }
 });
 
 // Apply auth middleware and SuperAdmin check to all routes

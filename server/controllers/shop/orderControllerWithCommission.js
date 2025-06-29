@@ -504,7 +504,7 @@ const getOrderById = async (req, res) => {
     }
 }
 
-// Update order status
+// Update order status with enhanced notifications
 const updateOrderStatus = async (req, res) => {
     try {
         const { orderId } = req.params;
@@ -524,6 +524,8 @@ const updateOrderStatus = async (req, res) => {
             });
         }
         
+        console.log(`📝 Updating order ${orderId} status to: ${status}`);
+        
         const order = await Order.findById(orderId);
         
         if (!order) {
@@ -533,22 +535,37 @@ const updateOrderStatus = async (req, res) => {
             });
         }
         
+        const oldStatus = order.status;
+        
         // Update the order status
         order.status = status;
         order.orderUpdateDate = new Date();
         
         await order.save();
         
-        // Send order status update email to customer
+        console.log(`✅ Order ${orderId} status updated from ${oldStatus} to ${status}`);
+        
+        // Send order status update email to customer with enhanced details
         try {
             const user = await User.findById(order.user);
             if (user) {
+                console.log(`📧 Sending status update email to customer: ${user.email}`);
+                
                 const orderDetails = {
                     orderId: order._id,
                     orderDate: order.orderDate,
                     totalAmount: order.totalAmount,
                     trackingNumber: order.trackingNumber,
-                    estimatedDelivery: '2-3 business days'
+                    estimatedDelivery: getEstimatedDelivery(status),
+                    items: order.cartItems?.map(item => ({
+                        title: item.title,
+                        image: item.image,
+                        quantity: item.quantity,
+                        price: item.price
+                    })) || [],
+                    shippingAddress: order.addressInfo,
+                    oldStatus: oldStatus,
+                    newStatus: status
                 };
                 
                 await emailService.sendOrderStatusUpdateEmail(
@@ -557,12 +574,24 @@ const updateOrderStatus = async (req, res) => {
                     orderDetails,
                     status
                 );
-                console.log(`Order status update email sent to customer: ${user.email} (Status: ${status})`);
+                console.log(`✅ Order status update email sent to customer: ${user.email} (Status: ${status})`);
                 
-                // If order is delivered, send review request email after a delay
+                // Send delivery confirmation email if order is delivered
                 if (status === 'delivered') {
+                    console.log(`📦 Order delivered - sending delivery confirmation email`);
+                    
+                    await emailService.sendOrderDeliveredEmail(
+                        user.email,
+                        user.userName,
+                        orderDetails
+                    );
+                    console.log(`✅ Delivery confirmation email sent to customer: ${user.email}`);
+                    
+                    // Schedule review request email after a delay
                     setTimeout(async () => {
                         try {
+                            console.log(`⭐ Sending review request emails for delivered order: ${order._id}`);
+                            
                             // Send review request for each product in the order
                             for (const item of order.cartItems) {
                                 await emailService.sendProductReviewRequestEmail(
@@ -579,25 +608,32 @@ const updateOrderStatus = async (req, res) => {
                                     }
                                 );
                             }
-                            console.log(`Review request emails sent to customer: ${user.email}`);
+                            console.log(`✅ Review request emails sent to customer: ${user.email}`);
                         } catch (reviewEmailError) {
-                            console.error('Failed to send review request emails:', reviewEmailError);
+                            console.error('❌ Failed to send review request emails:', reviewEmailError);
                         }
-                    }, 24 * 60 * 60 * 1000); // Send after 24 hours
+                    }, 2 * 60 * 60 * 1000); // Send after 2 hours instead of 24 hours for faster feedback
                 }
+            } else {
+                console.warn(`⚠️ User not found for order ${orderId}`);
             }
         } catch (emailError) {
-            console.error('Failed to send order status update email:', emailError);
+            console.error('❌ Failed to send order status update email:', emailError);
             // Don't fail the status update if email fails
         }
         
         res.status(200).json({
             success: true,
-            message: 'Order status updated successfully',
-            order
+            message: `Order status updated successfully from ${oldStatus} to ${status}`,
+            order: {
+                id: order._id,
+                status: order.status,
+                oldStatus: oldStatus,
+                updatedAt: order.orderUpdateDate
+            }
         });
     } catch (error) {
-        console.error('Error updating order status:', error);
+        console.error('❌ Error updating order status:', error);
         res.status(500).json({
             success: false,
             message: 'An error occurred while updating order status',
@@ -605,6 +641,88 @@ const updateOrderStatus = async (req, res) => {
         });
     }
 }
+
+// Helper function to get estimated delivery time based on status
+const getEstimatedDelivery = (status) => {
+    switch (status) {
+        case 'processing':
+            return '2-3 business days';
+        case 'confirmed':
+            return '1-2 business days';
+        case 'shipped':
+            return '1 business day';
+        case 'delivered':
+            return 'Delivered';
+        default:
+            return '3-5 business days';
+    }
+};
+
+// Enhanced function to automatically update order status based on certain triggers
+const autoUpdateOrderStatus = async (orderId, newStatus, reason) => {
+    try {
+        console.log(`🤖 Auto-updating order ${orderId} to ${newStatus} - Reason: ${reason}`);
+        
+        const order = await Order.findById(orderId);
+        if (!order) {
+            console.error(`❌ Order ${orderId} not found for auto-update`);
+            return false;
+        }
+        
+        const oldStatus = order.status;
+        order.status = newStatus;
+        order.orderUpdateDate = new Date();
+        
+        // Add automation metadata
+        if (!order.metadata) {
+            order.metadata = {};
+        }
+        if (!order.metadata.statusHistory) {
+            order.metadata.statusHistory = [];
+        }
+        
+        order.metadata.statusHistory.push({
+            from: oldStatus,
+            to: newStatus,
+            timestamp: new Date(),
+            automated: true,
+            reason: reason
+        });
+        
+        await order.save();
+        
+        // Trigger the same email notifications as manual update
+        const user = await User.findById(order.user);
+        if (user) {
+            const orderDetails = {
+                orderId: order._id,
+                orderDate: order.orderDate,
+                totalAmount: order.totalAmount,
+                estimatedDelivery: getEstimatedDelivery(newStatus),
+                items: order.cartItems?.map(item => ({
+                    title: item.title,
+                    quantity: item.quantity,
+                    price: item.price
+                })) || [],
+                shippingAddress: order.addressInfo
+            };
+            
+            await emailService.sendOrderStatusUpdateEmail(
+                user.email,
+                user.userName,
+                orderDetails,
+                newStatus
+            );
+            
+            console.log(`✅ Auto-status update completed for order ${orderId}: ${oldStatus} → ${newStatus}`);
+        }
+        
+        return true;
+    } catch (error) {
+        console.error(`❌ Error in auto-status update for order ${orderId}:`, error);
+        return false;
+    }
+};
 
 // Function to fix shipping fees for existing orders
 const fixShippingFees = async(req, res) => {
@@ -927,9 +1045,14 @@ const createOrderAfterPayment = async (req, res) => {
             if (savedOrder.cartItems && savedOrder.cartItems.length > 0) {
                 for (const item of savedOrder.cartItems) {
                     try {
-                        // Find the admin who owns this product
+                        console.log(`🔔 Processing vendor notification for product: ${item.productId}`);
+                        
+                        // Find the admin who owns this product with better error handling
                         const product = await Product.findById(item.productId).populate('adminId');
+                        
                         if (product && product.adminId) {
+                            console.log(`📧 Sending notification to vendor: ${product.adminId.email}`);
+                            
                             await emailService.sendProductSoldNotificationEmail(
                                 product.adminId.email,
                                 product.adminId.userName,
@@ -946,16 +1069,61 @@ const createOrderAfterPayment = async (req, res) => {
                                     customerName: savedOrder.customerName || 'Customer',
                                     orderDate: savedOrder.orderDate,
                                     quantity: item.quantity,
-                                    status: 'confirmed'
+                                    status: 'confirmed',
+                                    shippingAddress: savedOrder.addressInfo
                                 }
                             );
-                            console.log(`Product sold notification sent to admin: ${product.adminId.email}`);
+                            console.log(`✅ Product sold notification sent to vendor: ${product.adminId.email}`);
+                        } else if (product && !product.adminId) {
+                            console.warn(`⚠️ Product ${item.productId} exists but has no adminId populated`);
+                            
+                            // Try to find admin by item.adminId as fallback
+                            if (item.adminId) {
+                                try {
+                                    const User = require('../../models/User');
+                                    const admin = await User.findById(item.adminId);
+                                    
+                                    if (admin) {
+                                        console.log(`📧 Using fallback admin lookup for: ${admin.email}`);
+                                        
+                                        await emailService.sendProductSoldNotificationEmail(
+                                            admin.email,
+                                            admin.userName,
+                                            {
+                                                id: product._id,
+                                                title: product.title,
+                                                image: product.image,
+                                                salePrice: item.price,
+                                                category: product.category,
+                                                sku: product.sku
+                                            },
+                                            {
+                                                orderId: savedOrder._id,
+                                                customerName: savedOrder.customerName || 'Customer',
+                                                orderDate: savedOrder.orderDate,
+                                                quantity: item.quantity,
+                                                status: 'confirmed',
+                                                shippingAddress: savedOrder.addressInfo
+                                            }
+                                        );
+                                        console.log(`✅ Fallback notification sent to vendor: ${admin.email}`);
+                                    } else {
+                                        console.error(`❌ Admin not found for adminId: ${item.adminId}`);
+                                    }
+                                } catch (fallbackError) {
+                                    console.error(`❌ Fallback admin lookup failed:`, fallbackError);
+                                }
+                            } else {
+                                console.error(`❌ Product not found for productId: ${item.productId}`);
+                            }
                         }
                     } catch (emailError) {
-                        console.error('Failed to send product sold notification:', emailError);
+                        console.error(`❌ Failed to send product sold notification for ${item.productId}:`, emailError);
                         // Continue with next item even if email fails
                     }
                 }
+            } else {
+                console.warn(`⚠️ No cart items found in order ${savedOrder._id}`);
             }
             
             // Clear the cart after successful order creation
@@ -1012,6 +1180,7 @@ module.exports = {
     getOrdersByUser,
     getOrderById,
     updateOrderStatus,
+    autoUpdateOrderStatus,
     fixShippingFees,
     createOrderAfterPayment
 };

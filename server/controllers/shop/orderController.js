@@ -647,16 +647,21 @@ const createOrder = async(req, res) => {
                 // Don't fail the order creation if email fails
             }
 
-            // Send product sold notifications to admins/vendors
+            // Send product sold notifications to admins/vendors - FIXED TO USE CORRECT FIELD
             if (newlyCreatedOrder.cartItems && newlyCreatedOrder.cartItems.length > 0) {
                 for (const item of newlyCreatedOrder.cartItems) {
                     try {
-                        // Find the admin who owns this product
-                        const product = await Product.findById(item.productId).populate('adminId');
-                        if (product && product.adminId) {
+                        console.log(`🔔 Processing vendor notification for product: ${item.productId}`);
+                        
+                        // CRITICAL FIX: Use 'createdBy' field instead of 'adminId' to match Product schema
+                        const product = await Product.findById(item.productId).populate('createdBy');
+                        
+                        if (product && product.createdBy) {
+                            console.log(`📧 Sending notification to vendor: ${product.createdBy.email}`);
+                            
                             await emailService.sendProductSoldNotificationEmail(
-                                product.adminId.email,
-                                product.adminId.userName,
+                                product.createdBy.email,
+                                product.createdBy.userName,
                                 {
                                     id: product._id,
                                     title: product.title,
@@ -667,19 +672,64 @@ const createOrder = async(req, res) => {
                                 },
                                 {
                                     orderId: newlyCreatedOrder._id,
-                                    customerName: newlyCreatedOrder.customerName || 'Customer',
+                                    customerName: user?.userName || 'Customer',
                                     orderDate: newlyCreatedOrder.orderDate,
                                     quantity: item.quantity,
-                                    status: 'confirmed'
+                                    status: 'confirmed',
+                                    shippingAddress: newlyCreatedOrder.addressInfo
                                 }
                             );
-                            console.log(`Product sold notification sent to admin: ${product.adminId.email}`);
+                            console.log(`✅ Product sold notification sent to vendor: ${product.createdBy.email}`);
+                        } else if (product && !product.createdBy) {
+                            console.warn(`⚠️ Product ${item.productId} exists but has no createdBy populated`);
+                            
+                            // Try to find admin by item.adminId as fallback
+                            if (item.adminId) {
+                                try {
+                                    const User = require('../../models/User');
+                                    const admin = await User.findById(item.adminId);
+                                    
+                                    if (admin) {
+                                        console.log(`📧 Using fallback admin lookup for: ${admin.email}`);
+                                        
+                                        await emailService.sendProductSoldNotificationEmail(
+                                            admin.email,
+                                            admin.userName,
+                                            {
+                                                id: product._id,
+                                                title: product.title,
+                                                image: product.image,
+                                                salePrice: item.price,
+                                                category: product.category,
+                                                sku: product.sku
+                                            },
+                                            {
+                                                orderId: newlyCreatedOrder._id,
+                                                customerName: user?.userName || 'Customer',
+                                                orderDate: newlyCreatedOrder.orderDate,
+                                                quantity: item.quantity,
+                                                status: 'confirmed',
+                                                shippingAddress: newlyCreatedOrder.addressInfo
+                                            }
+                                        );
+                                        console.log(`✅ Fallback notification sent to vendor: ${admin.email}`);
+                                    } else {
+                                        console.error(`❌ Admin not found for adminId: ${item.adminId}`);
+                                    }
+                                } catch (fallbackError) {
+                                    console.error(`❌ Fallback admin lookup failed:`, fallbackError);
+                                }
+                            }
+                        } else {
+                            console.error(`❌ Product not found for productId: ${item.productId}`);
                         }
                     } catch (emailError) {
-                        console.error('Failed to send product sold notification:', emailError);
+                        console.error(`❌ Failed to send product sold notification for ${item.productId}:`, emailError);
                         // Continue with next item even if email fails
                     }
                 }
+            } else {
+                console.warn(`⚠️ No cart items found in order ${newlyCreatedOrder._id}`);
             }
             
             // Now do a direct database update with all the complex fields

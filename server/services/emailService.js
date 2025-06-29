@@ -392,7 +392,7 @@ class EmailService {
   }
 
   // Modern, professional email template inspired by industry best practices
-  getModernEmailTemplate({ title, headerColor = '#DC2626', content, compact = false }) {
+  getModernEmailTemplate({ title, headerColor = '#000000', content, compact = false }) {
     return `
 <!DOCTYPE html>
 <html lang="en">
@@ -406,16 +406,16 @@ class EmailService {
   <style>
     /* Dark mode support */
     @media (prefers-color-scheme: dark) {
-      .email-body { background: #1a1a1a !important; color: #ffffff !important; }
-      .email-container { background: #2d2d2d !important; border: 1px solid #404040 !important; }
-      .email-header { background: ${headerColor} !important; }
-      .email-content { background: #2d2d2d !important; color: #ffffff !important; }
-      .email-footer { background: #1a1a1a !important; color: #cccccc !important; }
+      .email-body { background: #000000 !important; color: #ffffff !important; }
+      .email-container { background: #1a1a1a !important; border: 1px solid #333333 !important; }
+      .email-header { background: #000000 !important; }
+      .email-content { background: #1a1a1a !important; color: #ffffff !important; }
+      .email-footer { background: #000000 !important; color: #cccccc !important; }
       .text-muted { color: #cccccc !important; }
-      .border-gray { border-color: #404040 !important; }
-      .info-box { background: #333333 !important; border-color: #404040 !important; color: #ffffff !important; }
-      .highlight-box { background: #2d2d2d !important; border-color: ${headerColor}50 !important; }
-      .stat-item { background: #333333 !important; color: #ffffff !important; }
+      .border-gray { border-color: #333333 !important; }
+      .info-box { background: #2d2d2d !important; border-color: #333333 !important; color: #ffffff !important; }
+      .highlight-box { background: #1a1a1a !important; border-color: #333333 !important; }
+      .stat-item { background: #2d2d2d !important; color: #ffffff !important; }
     }
     
     /* Light mode (default) */

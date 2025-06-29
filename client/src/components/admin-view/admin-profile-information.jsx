@@ -89,11 +89,11 @@ function AdminProfileInformation() {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file - INCREASED TO 100MB
+    if (file.size > 100 * 1024 * 1024) {
       toast({
         title: 'Error',
-        description: 'File size must be less than 5MB',
+        description: 'File size must be less than 100MB',
         variant: 'destructive'
       });
       return;
@@ -294,7 +294,7 @@ function AdminProfileInformation() {
                 {uploading ? 'Uploading...' : 'Change Picture'}
               </button>
               <p className="mt-2 text-sm text-gray-500">
-                JPG, PNG up to 5MB. Click to upload a new profile picture.
+                JPG, PNG up to 100MB. Click to upload a new profile picture.
               </p>
             </div>
           </div>

@@ -5,7 +5,8 @@ import AdminProfileInformation from '@/components/admin-view/admin-profile-infor
 import AdminPasswordChange from '@/components/admin-view/admin-password-change';
 import AdminUserSettings from '@/components/admin-view/admin-user-settings';
 import AdminUserManagement from '@/components/admin-view/user-management';
-import { User, Shield, Settings, Lock, Users, Crown } from 'lucide-react';
+import AdminShopProfile from '@/components/admin-view/admin-shop-profile';
+import { User, Shield, Settings, Lock, Users, Crown, Store } from 'lucide-react';
 
 function AdminProfile() {
   const { user } = useSelector((state) => state.auth);
@@ -92,10 +93,14 @@ function AdminProfile() {
       <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="bg-white rounded-lg shadow border border-gray-200">
           <Tabs defaultValue='profile' className="w-full">
-            <TabsList className={`grid w-full ${isSuperAdmin ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} gap-0`}>
+            <TabsList className={`grid w-full ${isSuperAdmin ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4'} gap-0`}>
               <TabsTrigger value='profile' className='cursor-pointer flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4'>
                 <User className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden xs:inline">Profile</span>
+              </TabsTrigger>
+              <TabsTrigger value='shop' className='cursor-pointer flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4'>
+                <Store className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden xs:inline">Shop</span>
               </TabsTrigger>
               <TabsTrigger value='password' className='cursor-pointer flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4'>
                 <Lock className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -116,6 +121,10 @@ function AdminProfile() {
             <div className="p-4 sm:p-6">
               <TabsContent value='profile' className="mt-0">
                 <AdminProfileInformation />
+              </TabsContent>
+              
+              <TabsContent value='shop' className="mt-0">
+                <AdminShopProfile />
               </TabsContent>
               
               <TabsContent value='password' className="mt-0">

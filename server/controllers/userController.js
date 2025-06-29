@@ -66,7 +66,13 @@ const updateUserProfile = async (req, res) => {
             shopName,
             userName,
             baseRegion,
-            baseCity
+            baseCity,
+            // Enhanced shop fields
+            shopDescription,
+            shopCategory,
+            shopWebsite,
+            shopEstablished,
+            shopPolicies
         } = req.body;
         
         console.log('Using userId:', userId);
@@ -100,15 +106,57 @@ const updateUserProfile = async (req, res) => {
             user.userName = userName;
         }
         
-        // Update profile fields
+        // Update basic profile fields
         if (firstName !== undefined) user.firstName = firstName;
         if (lastName !== undefined) user.lastName = lastName;
         if (phone !== undefined) user.phone = phone;
         if (dateOfBirth !== undefined) user.dateOfBirth = dateOfBirth;
         if (avatar !== undefined) user.avatar = avatar;
-        if (shopName !== undefined) user.shopName = shopName;
         if (baseRegion !== undefined) user.baseRegion = baseRegion;
         if (baseCity !== undefined) user.baseCity = baseCity;
+        
+        // Update shop fields (for admin/superAdmin users)
+        if (user.role === 'admin' || user.role === 'superAdmin') {
+            if (shopName !== undefined) {
+                // Check if shop name is unique (excluding current user)
+                if (shopName && shopName.trim() !== '') {
+                    const existingShop = await User.findOne({
+                        shopName: shopName.trim(),
+                        _id: { $ne: userId },
+                        role: { $in: ['admin', 'superAdmin'] }
+                    });
+                    
+                    if (existingShop) {
+                        return res.status(400).json({
+                            success: false,
+                            message: 'Shop name is already taken. Please choose a different name.'
+                        });
+                    }
+                }
+                user.shopName = shopName;
+            }
+            
+            if (shopDescription !== undefined) user.shopDescription = shopDescription;
+            if (shopCategory !== undefined) user.shopCategory = shopCategory;
+            if (shopWebsite !== undefined) user.shopWebsite = shopWebsite;
+            if (shopEstablished !== undefined) user.shopEstablished = shopEstablished;
+            
+            // Update shop policies if provided
+            if (shopPolicies !== undefined) {
+                if (!user.shopPolicies) {
+                    user.shopPolicies = {};
+                }
+                if (shopPolicies.returnPolicy !== undefined) {
+                    user.shopPolicies.returnPolicy = shopPolicies.returnPolicy;
+                }
+                if (shopPolicies.shippingPolicy !== undefined) {
+                    user.shopPolicies.shippingPolicy = shopPolicies.shippingPolicy;
+                }
+                if (shopPolicies.warrantyPolicy !== undefined) {
+                    user.shopPolicies.warrantyPolicy = shopPolicies.warrantyPolicy;
+                }
+            }
+        }
         
         await user.save();
         console.log('User saved successfully to database');
@@ -123,7 +171,9 @@ const updateUserProfile = async (req, res) => {
             phone: updatedUser.phone,
             baseRegion: updatedUser.baseRegion,
             baseCity: updatedUser.baseCity,
-            shopName: updatedUser.shopName
+            shopName: updatedUser.shopName,
+            shopDescription: updatedUser.shopDescription,
+            shopCategory: updatedUser.shopCategory
         });
         
         return res.status(200).json({
