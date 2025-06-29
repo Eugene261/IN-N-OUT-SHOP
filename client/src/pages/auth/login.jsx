@@ -172,6 +172,16 @@ function AuthLogin() {
           isAuthForm={true}
         />
         
+        {/* Forgot password link - right under sign in button */}
+        <div className="text-center">
+          <Link 
+            to="/auth/forgot-password"
+            className="text-sm text-gray-600 hover:text-gray-900 hover:underline"
+          >
+            Forgot your password?
+          </Link>
+        </div>
+        
         {/* OR divider */}
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
@@ -189,16 +199,6 @@ function AuthLogin() {
           By signing in, you agree to our{' '}
           <Link to="/shop/terms-of-service" className="underline hover:text-gray-900">Terms & Conditions</Link>,{' '}
           <Link to="/shop/privacy-policy" className="underline hover:text-gray-900">Privacy and Cookie Policy</Link>, and to join our loyalty programme
-        </div>
-        
-        {/* Forgot password link - moved to bottom */}
-        <div className="text-center mt-6">
-          <Link 
-            to="/auth/forgot-password"
-            className="text-sm text-gray-600 hover:text-gray-900 hover:underline"
-          >
-            Forgot your password?
-          </Link>
         </div>
       </div>
     </div>

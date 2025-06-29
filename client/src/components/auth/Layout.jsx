@@ -270,11 +270,8 @@ function AuthLayout() {
         transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
         className="flex flex-1 w-full lg:w-1/2 items-center justify-center relative min-h-screen lg:pt-[104px]"
       >
-        {/* Modern gradient background - subtle on mobile, more pronounced on desktop */}
+        {/* Clean gradient background */}
         <div className="absolute inset-0 bg-white lg:bg-gradient-to-br lg:from-gray-50 lg:via-white lg:to-gray-100"></div>
-        
-        {/* Decorative grid pattern - hidden on mobile */}
-        <div className="absolute inset-0 hidden lg:block bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:24px_24px]"></div>
         
         {/* Animated background elements - hidden on mobile */}
         <div className="absolute top-10 right-10 w-72 h-72 bg-blue-50 rounded-full filter blur-3xl opacity-60 animate-pulse hidden lg:block"></div>
@@ -310,17 +307,14 @@ function AuthLayout() {
           transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
         />
         
-        {/* Content card - full screen on mobile, card on desktop */}
-        <div className="w-full h-full lg:max-w-md relative z-10 px-0 py-0 lg:px-4 lg:py-6 flex items-center justify-center">
+        {/* Content container - fills entire space without background */}
+        <div className="w-full h-full relative z-10 px-6 py-6 lg:px-16 lg:py-12 flex items-center justify-center">
           <motion.div
-            className="w-full h-full lg:h-auto bg-white lg:bg-white/80 lg:backdrop-blur-md lg:rounded-2xl lg:shadow-xl lg:border lg:border-gray-100 p-6 sm:p-8 overflow-hidden flex flex-col justify-center"
+            className="w-full h-full lg:h-auto flex flex-col justify-center max-w-md lg:max-w-lg"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.5 }}
           >
-            {/* Brand indicator at top - desktop only */}
-            <div className="absolute -top-10 -right-10 w-20 h-20 bg-black rounded-full flex items-end justify-start p-2 opacity-10 hidden lg:block"></div>
-            
             {/* Content */}
             <Outlet/>
             
