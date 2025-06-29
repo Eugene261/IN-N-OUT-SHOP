@@ -4,10 +4,13 @@ import { useSelector } from 'react-redux';
 import SuperAdminSidebar from './superAdminSidebar';
 import { Menu } from 'lucide-react';
 import NotificationBell from '../ui/notification-bell';
+import FloatingMessageButton from '../common/messaging/FloatingMessageButton';
+import MessageWidget from '../common/messaging/MessageWidget';
 
 const SuperAdminLayout = () => {
   const { user } = useSelector(state => state.auth);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [messageWidgetOpen, setMessageWidgetOpen] = useState(false);
   const sidebarRef = useRef(null);
   
   // Close sidebar when clicking outside
@@ -28,6 +31,14 @@ const SuperAdminLayout = () => {
   
   const closeSidebar = () => {
     setSidebarOpen(false);
+  };
+
+  const toggleMessageWidget = () => {
+    setMessageWidgetOpen(prev => !prev);
+  };
+
+  const closeMessageWidget = () => {
+    setMessageWidgetOpen(false);
   };
 
   return (
@@ -114,6 +125,16 @@ const SuperAdminLayout = () => {
           </div>
         </main>
       </div>
+
+      {/* Floating Message Widget */}
+      <FloatingMessageButton 
+        isOpen={messageWidgetOpen}
+        onClick={toggleMessageWidget}
+      />
+      <MessageWidget 
+        isOpen={messageWidgetOpen}
+        onClose={closeMessageWidget}
+      />
     </div>
   );
 };

@@ -49,7 +49,7 @@ import {
 } from '../../../store/common/messaging-slice';
 import axios from 'axios';
 
-const MessagingDashboard = () => {
+const MessagingDashboard = ({ isWidget = false }) => {
   const dispatch = useDispatch();
   const { user } = useSelector(state => state.auth);
   
@@ -787,14 +787,18 @@ const MessagingDashboard = () => {
                 showConversations ? 'flex' : 'hidden'
               } lg:flex lg:w-1/3 w-full bg-white border-r border-gray-200 flex-col relative shadow-sm`}>
                 {/* Header */}
-                <div className="p-4 lg:p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <div className={`${isWidget ? 'p-3' : 'p-4 lg:p-6'} border-b border-gray-200 ${isWidget ? 'bg-gray-50' : 'bg-gradient-to-r from-blue-50 to-indigo-50'}`}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                        <MessageSquare className="w-6 h-6 text-white" />
-                      </div>
+                      {!isWidget && (
+                        <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                          <MessageSquare className="w-6 h-6 text-white" />
+                        </div>
+                      )}
                       <div>
-                        <h1 className="text-lg lg:text-xl font-bold text-gray-900">Messages</h1>
+                        <h1 className={`${isWidget ? 'text-base' : 'text-lg lg:text-xl'} font-bold text-gray-900`}>
+                          {isWidget ? 'Conversations' : 'Messages'}
+                        </h1>
                         <p className="text-xs lg:text-sm text-gray-600">
                           {totalUnread > 0 ? `${totalUnread} unread` : 'All caught up'}
                         </p>
@@ -802,10 +806,10 @@ const MessagingDashboard = () => {
                     </div>
                     <button
                       onClick={() => dispatch(setShowNewChatModal(true))}
-                      className="p-2 lg:p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm hover:shadow-md touch-manipulation"
+                      className={`${isWidget ? 'p-2' : 'p-2 lg:p-3'} bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm hover:shadow-md touch-manipulation`}
                       title="Start new conversation"
                     >
-                      <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
+                      <Plus className={`${isWidget ? 'w-4 h-4' : 'w-4 h-4 lg:w-5 lg:h-5'}`} />
                     </button>
                   </div>
 
@@ -1212,7 +1216,7 @@ const MessagingDashboard = () => {
   };
 
   return (
-    <div className="-m-4 sm:-m-6 lg:-m-8 h-[calc(100vh-80px)] bg-gray-50 flex overflow-hidden border border-gray-200 rounded-lg shadow-sm">
+    <div className={`${isWidget ? 'h-full bg-white' : '-m-4 sm:-m-6 lg:-m-8 h-[calc(100vh-80px)] bg-gray-50 border border-gray-200 rounded-lg shadow-sm'} flex overflow-hidden`}>
       {/* Sound Notifications */}
       <SoundNotifications />
       

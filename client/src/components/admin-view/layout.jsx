@@ -2,9 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import AdminHeader from './header';
 import AdminSidebar from './sidebar';
+import FloatingMessageButton from '../common/messaging/FloatingMessageButton';
+import MessageWidget from '../common/messaging/MessageWidget';
 
 function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [messageWidgetOpen, setMessageWidgetOpen] = useState(false);
   const sidebarRef = useRef(null);
   
   // Close sidebar when clicking outside
@@ -25,6 +28,14 @@ function AdminLayout() {
   
   const closeSidebar = () => {
     setSidebarOpen(false);
+  };
+
+  const toggleMessageWidget = () => {
+    setMessageWidgetOpen(prev => !prev);
+  };
+
+  const closeMessageWidget = () => {
+    setMessageWidgetOpen(false);
   };
 
   return (
@@ -70,6 +81,16 @@ function AdminLayout() {
           </div>
         </main>
       </div>
+
+      {/* Floating Message Widget */}
+      <FloatingMessageButton 
+        isOpen={messageWidgetOpen}
+        onClick={toggleMessageWidget}
+      />
+      <MessageWidget 
+        isOpen={messageWidgetOpen}
+        onClose={closeMessageWidget}
+      />
     </div>
   );
 }
