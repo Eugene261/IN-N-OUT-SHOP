@@ -37,7 +37,8 @@ const shippingZoneSchema = new mongoose.Schema({
     additionalRates: [{
         type: { 
             type: String, 
-            enum: ['weight', 'price'],
+            enum: ['price'],
+            default: 'price',
             required: true
         },
         threshold: { 

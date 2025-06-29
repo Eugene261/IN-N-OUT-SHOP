@@ -82,9 +82,7 @@ const getFormConfiguration = async (req, res) => {
                 fieldRequirements: {
                     sizes: category !== 'devices',
                     colors: true,
-                    brand: true,
-                    weight: category === 'devices',
-                    dimensions: category === 'devices'
+                    brand: true
                 },
                 customFields: [],
                 validationRules: {}
@@ -143,9 +141,7 @@ const getFormConfiguration = async (req, res) => {
                 fieldRequirements: {
                     sizes: category !== 'devices',
                     colors: true,
-                    brand: true,
-                    weight: category === 'devices',
-                    dimensions: category === 'devices'
+                    brand: true
                 },
                 customFields: [],
                 validationRules: {}
@@ -200,9 +196,7 @@ const addProduct = async(req, res) => {
             // New enhanced fields
             productType = 'physical',
             customAttributes = {},
-            templateId,
-            weight,
-            dimensions
+            templateId
         } = req.body;
 
         // Enhanced validation based on product template
@@ -232,9 +226,7 @@ const addProduct = async(req, res) => {
             fieldRequirements = {
                 sizes: category !== 'devices',
                 colors: true,
-                brand: true,
-                weight: category === 'devices',
-                dimensions: category === 'devices'
+                brand: true
             };
             
             formConfig = { 
@@ -256,13 +248,7 @@ const addProduct = async(req, res) => {
             validationErrors.push('At least one size is required for this product type');
         }
         
-        if (fieldRequirements.weight && !weight) {
-            validationErrors.push('Weight is required for this product type');
-        }
-        
-        if (fieldRequirements.dimensions && (!dimensions || !dimensions.length || !dimensions.width || !dimensions.height)) {
-            validationErrors.push('Dimensions are required for this product type');
-        }
+
         
         // Validate custom fields
         if (formConfig.customFields && formConfig.customFields.length > 0) {
@@ -337,12 +323,6 @@ const addProduct = async(req, res) => {
             productType,
             customAttributes,
             fieldRequirements,
-            weight: fieldRequirements.weight ? (weight || 0) : 0,
-            dimensions: fieldRequirements.dimensions ? {
-                length: dimensions?.length || 0,
-                width: dimensions?.width || 0,
-                height: dimensions?.height || 0
-            } : { length: 0, width: 0, height: 0 },
             
             // ========================================
             // APPROVAL SYSTEM FIELDS

@@ -57,8 +57,6 @@ const ProductSchema = new mongoose.Schema({
         colors: { type: Boolean, default: true },  // Most products have colors
         brand: { type: Boolean, default: true },   // Most products have brands
         gender: { type: Boolean, default: false }, // Not all products have gender targeting
-        weight: { type: Boolean, default: false },
-        dimensions: { type: Boolean, default: false },
         customFields: { type: [String], default: [] } // List of required custom field names
     },
     
@@ -69,17 +67,7 @@ const ProductSchema = new mongoose.Schema({
         default: 'physical'
     },
     
-    // Weight and dimensions for shipping calculations
-    weight: {
-        type: Number, // in grams
-        default: 0
-    },
-    
-    dimensions: {
-        length: { type: Number, default: 0 }, // in cm
-        width: { type: Number, default: 0 },
-        height: { type: Number, default: 0 }
-    },
+
     
     // ========================================
     // PRODUCT APPROVAL SYSTEM FIELDS

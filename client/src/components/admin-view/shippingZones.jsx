@@ -39,7 +39,7 @@ const ShippingZones = () => {
     additionalRates: []
   });
   const [showNewZoneForm, setShowNewZoneForm] = useState(false);
-  const [newRateType, setNewRateType] = useState('weight');
+  const [newRateType, setNewRateType] = useState('price');
   const [newRateThreshold, setNewRateThreshold] = useState(0);
   const [newRateFee, setNewRateFee] = useState(0);
   const [showBaseRegionModal, setShowBaseRegionModal] = useState(false);
@@ -332,7 +332,7 @@ const ShippingZones = () => {
     }
 
     const newRate = {
-      type: newRateType,
+      type: 'price',
       threshold: parseFloat(newRateThreshold),
       additionalFee: parseFloat(newRateFee)
     };
@@ -350,7 +350,7 @@ const ShippingZones = () => {
     }
 
     // Reset fields
-    setNewRateType('weight');
+    setNewRateType('price');
     setNewRateThreshold(0);
     setNewRateFee(0);
   };
@@ -611,23 +611,9 @@ const ShippingZones = () => {
               <div className="border-t pt-4 mt-4">
                 <h3 className="text-md font-semibold mb-3">Additional Rates</h3>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-3">
                   <div className="space-y-1">
-                    <label className="block text-sm font-medium">Type</label>
-                    <select
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                      value={newRateType}
-                      onChange={(e) => setNewRateType(e.target.value)}
-                    >
-                      <option value="weight">Weight-based</option>
-                      <option value="price">Price-based</option>
-                    </select>
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <label className="block text-sm font-medium">
-                      {newRateType === 'weight' ? 'Min Weight (kg)' : 'Min Order Value (GHS)'}
-                    </label>
+                    <label className="block text-sm font-medium">Min Order Value (GHS)</label>
                     <Input
                       type="number"
                       value={newRateThreshold}
@@ -635,19 +621,19 @@ const ShippingZones = () => {
                       min="0"
                       step="0.01"
                       className="text-sm"
+                      placeholder="e.g., 500"
                     />
                   </div>
                   
                   <div className="space-y-1">
-                    <label className="block text-sm font-medium">
-                      Additional Fee (GHS)
-                    </label>
+                    <label className="block text-sm font-medium">Additional Fee (GHS)</label>
                     <Input
                       type="number"
                       value={newRateFee}
                       onChange={(e) => setNewRateFee(e.target.value)}
                       step="0.01"
                       className="text-sm"
+                      placeholder="e.g., 10"
                     />
                   </div>
                   
@@ -670,9 +656,7 @@ const ShippingZones = () => {
                       {newZone.additionalRates.map((rate, index) => (
                         <div key={index} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-sm bg-gray-50 p-2 rounded">
                           <span className="flex-1">
-                            {rate.type === 'weight' 
-                              ? `Weight ≥ ${rate.threshold}kg: ${rate.additionalFee > 0 ? '+' : ''}${rate.additionalFee} GHS` 
-                              : `Order ≥ ${rate.threshold} GHS: ${rate.additionalFee > 0 ? '+' : ''}${rate.additionalFee} GHS`}
+                            Order ≥ {rate.threshold} GHS: {rate.additionalFee > 0 ? '+' : ''}{rate.additionalFee} GHS
                           </span>
                           <button
                             type="button"
@@ -869,19 +853,10 @@ const ShippingZones = () => {
                     <h4 className="text-sm font-medium mb-2">Additional Rates</h4>
                     
                     {editingZone && editingZone._id === zone._id && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
-                        <select
-                          className="text-sm px-2 py-1 border border-gray-300 rounded-md"
-                          value={newRateType}
-                          onChange={(e) => setNewRateType(e.target.value)}
-                        >
-                          <option value="weight">Weight</option>
-                          <option value="price">Price</option>
-                        </select>
-                        
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
                         <Input
                           type="number"
-                          placeholder="Threshold"
+                          placeholder="Min Order Value (GHS)"
                           value={newRateThreshold}
                           onChange={(e) => setNewRateThreshold(e.target.value)}
                           min="0"
@@ -891,7 +866,7 @@ const ShippingZones = () => {
                         
                         <Input
                           type="number"
-                          placeholder="Fee"
+                          placeholder="Additional Fee (GHS)"
                           value={newRateFee}
                           onChange={(e) => setNewRateFee(e.target.value)}
                           step="0.01"
@@ -903,7 +878,7 @@ const ShippingZones = () => {
                           onClick={addAdditionalRate}
                           className="h-8 px-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
                         >
-                          Add
+                          Add Rate
                         </button>
                       </div>
                     )}
@@ -913,9 +888,7 @@ const ShippingZones = () => {
                         ? editingZone.additionalRates && editingZone.additionalRates.map((rate, index) => (
                             <div key={index} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-gray-50 p-2 rounded">
                               <span className="flex-1">
-                                {rate.type === 'weight' 
-                                  ? `Weight ≥ ${rate.threshold}kg: ${rate.additionalFee > 0 ? '+' : ''}${rate.additionalFee} GHS` 
-                                  : `Order ≥ ${rate.threshold} GHS: ${rate.additionalFee > 0 ? '+' : ''}${rate.additionalFee} GHS`}
+                                Order ≥ {rate.threshold} GHS: {rate.additionalFee > 0 ? '+' : ''}{rate.additionalFee} GHS
                               </span>
                               <button
                                 type="button"
@@ -929,9 +902,7 @@ const ShippingZones = () => {
                         : zone.additionalRates && zone.additionalRates.map((rate, index) => (
                             <div key={index} className="flex justify-between items-center bg-gray-50 p-2 rounded">
                               <span>
-                                {rate.type === 'weight' 
-                                  ? `Weight ≥ ${rate.threshold}kg: ${rate.additionalFee > 0 ? '+' : ''}${rate.additionalFee} GHS` 
-                                  : `Order ≥ ${rate.threshold} GHS: ${rate.additionalFee > 0 ? '+' : ''}${rate.additionalFee} GHS`}
+                                Order ≥ {rate.threshold} GHS: {rate.additionalFee > 0 ? '+' : ''}{rate.additionalFee} GHS
                               </span>
                             </div>
                           ))}

@@ -50,17 +50,11 @@ class ProductTemplateService {
     const brandCategories = ['men', 'women', 'kids', 'devices', 'footwear', 'clothing'];
     const needsBrand = brandCategories.some(cat => categoryLower.includes(cat)) || categoryLower !== 'accessories';
     
-    // Categories that need physical dimensions
-    const physicalCategories = ['devices', 'furniture', 'appliances'];
-    const needsDimensions = physicalCategories.some(cat => categoryLower.includes(cat));
-    
     return {
       sizes: needsSizes,
       colors: !['services', 'digital', 'subscriptions'].includes(categoryLower),
       brand: needsBrand,
-      gender: needsGender,
-      weight: needsDimensions,
-      dimensions: needsDimensions
+      gender: needsGender
     };
   }
 
@@ -134,9 +128,7 @@ class ProductTemplateService {
           sizes: false,
           colors: false,
           brand: false,
-          gender: false,
-          weight: true,
-          dimensions: true
+          gender: false
         },
         customFields: [
           {

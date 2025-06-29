@@ -159,12 +159,9 @@ const calculateShippingFees = async (cartItems, addressInfo) => {
             // Apply additional rates from shipping zones (if any)
             if (destinationZone && destinationZone.additionalRates && destinationZone.additionalRates.length > 0) {
                 for (const rate of destinationZone.additionalRates) {
-                    if (rate.type === 'weight' && group.totalWeight > rate.threshold) {
+                    if (group.totalValue >= rate.threshold) {
                         adminFee += rate.additionalFee;
-                        console.log(`Added ${rate.additionalFee} GHS for weight > ${rate.threshold} kg`);
-                    } else if (rate.type === 'price' && group.totalValue > rate.threshold) {
-                        adminFee += rate.additionalFee;
-                        console.log(`Added ${rate.additionalFee} GHS for value > ${rate.threshold} GHS`);
+                        console.log(`Added ${rate.additionalFee} GHS for order value ≥ ${rate.threshold} GHS`);
                     }
                 }
             }
@@ -464,13 +461,7 @@ const findShippingZone = async (city, region, vendorId) => {
                 region: 'Ghana',
                 baseRate: 0,  // Default to zero instead of hardcoded 70 GHS
                 isDefault: true,
-                additionalRates: [
-                    {
-                        type: 'price',
-                        threshold: 1000,
-                        additionalFee: -20 // Discount for orders over 1000 GHS
-                    }
-                ]
+                additionalRates: []
             };
         }
         

@@ -111,8 +111,8 @@ const ShopsSection = () => {
                 className="w-[320px] cursor-pointer group" 
                 onClick={() => handleShopClick(shop._id)}
               >
-                {/* Shop Image/Banner */}
-                <div className="relative w-full aspect-[4/2.5] mb-3 overflow-hidden bg-gray-50 dark:bg-gray-700 rounded-lg">
+                {/* Shop Image/Banner - Reduced height */}
+                <div className="relative w-full h-24 mb-3 overflow-hidden bg-gray-50 dark:bg-gray-700 rounded-lg">
                   {shop.shopBanner ? (
                     <img
                       src={shop.shopBanner}
@@ -121,8 +121,8 @@ const ShopsSection = () => {
                       loading="lazy"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600">
-                      <Store className="w-12 h-12 text-white" />
+                    <div className="w-full h-full flex items-center justify-center bg-black">
+                      <Store className="w-8 h-8 text-white" />
                     </div>
                   )}
                   
