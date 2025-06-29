@@ -151,7 +151,7 @@ function App() {
   return (
     <>
       <TokenManager />
-      <div className="flex flex-col overflow-hidden bg-white">
+      <div className="flex flex-col overflow-hidden bg-white dark:bg-gray-900 transition-colors duration-300">
         <Routes>
           {/* AUTH */}
           <Route 

@@ -4,10 +4,11 @@ import { Label } from '../ui/label';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { ShoppingBag, X, Minus, Plus } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { addToCart, fetchCartItems, openCart } from '../../store/shop/cart-slice';
+import { addToCart, fetchCartItems } from '../../store/shop/cart-slice';
 import { fetchAllTaxonomyData } from '@/store/superAdmin/taxonomy-slice';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import AddToCartSuccessModal from './AddToCartSuccessModal';
 
 const ProductOptionsModal = ({ isOpen, onClose, product, onAddToCart }) => {
   const dispatch = useDispatch();
@@ -17,6 +18,7 @@ const ProductOptionsModal = ({ isOpen, onClose, product, onAddToCart }) => {
   const [selectedColor, setSelectedColor] = useState('Black');
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Utility function to convert database IDs to human-readable names
   const convertIdToName = (id, taxonomyArray) => {
@@ -140,10 +142,9 @@ const ProductOptionsModal = ({ isOpen, onClose, product, onAddToCart }) => {
         console.log("Cart fetch after adding item:", fetchResult);
         setIsLoading(false);
         
-        // Important for commission tracking: ensure the cart is properly updated
-        // before showing it to the user for checkout
+        // Show success modal instead of directly opening cart
         onClose();
-        dispatch(openCart());
+        setShowSuccessModal(true);
       })
       .catch((error) => {
         setIsLoading(false);
@@ -351,6 +352,14 @@ const ProductOptionsModal = ({ isOpen, onClose, product, onAddToCart }) => {
           </div>
         </div>
       </DialogContent>
+      
+      {/* Add to Cart Success Modal */}
+      <AddToCartSuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        product={product}
+        quantity={quantity}
+      />
     </Dialog>
   );
 };

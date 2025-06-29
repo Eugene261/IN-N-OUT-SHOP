@@ -394,232 +394,257 @@ class EmailService {
   // Modern, professional email template inspired by industry best practices
   getModernEmailTemplate({ title, headerColor = '#DC2626', content, compact = false }) {
     return `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title>${title}</title>
-        <style>
-          /* Reset and base */
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; 
-            line-height: 1.6; 
-            color: #333; 
-            background: #f8f9fa; 
-            margin: 0; 
-            padding: 20px;
-          }
-          
-          /* Container */
-          .container { 
-            max-width: 600px; 
-            margin: 0 auto; 
-            background: #ffffff; 
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-          }
-          
-          /* Header */
-          .header { 
-            background: ${headerColor}; 
-            color: white; 
-            padding: 32px 24px;
-            text-align: center;
-          }
-          .header .logo {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            letter-spacing: 1px;
-          }
-          .header .title {
-            font-size: 28px;
-            font-weight: 600;
-            margin: 0;
-            line-height: 1.2;
-          }
-          .header .subtitle {
-            font-size: 16px;
-            opacity: 0.9;
-            margin-top: 8px;
-          }
-          
-          /* Content */
-          .content { 
-            padding: 32px 24px;
-          }
-          .content h2 {
-            color: #1a1a1a;
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 16px;
-            line-height: 1.3;
-          }
-          .content h3 {
-            color: #333;
-            font-size: 18px;
-            font-weight: 600;
-            margin: 24px 0 12px 0;
-          }
-          .content p {
-            color: #555;
-            font-size: 16px;
-            margin-bottom: 16px;
-            line-height: 1.6;
-          }
-          .content ul {
-            margin: 16px 0;
-            padding-left: 20px;
-          }
-          .content li {
-            color: #555;
-            margin-bottom: 8px;
-          }
-          
-          /* Components */
-          .button {
-            display: inline-block;
-            background: ${headerColor};
-            color: white !important;
-            padding: 14px 28px;
-            text-decoration: none;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 16px;
-            margin: 16px 8px 16px 0;
-            transition: all 0.2s ease;
-          }
-          .button:hover {
-            background: ${headerColor}dd;
-            text-decoration: none;
-            color: white !important;
-          }
-          .button.secondary {
-            background: #6c757d;
-            color: white !important;
-          }
-          
-          .info-box {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 6px;
-            padding: 20px;
-            margin: 20px 0;
-            border-left: 4px solid ${headerColor};
-          }
-          .info-box h3 {
-            margin-top: 0;
-            color: ${headerColor};
-          }
-          
-          .highlight-box {
-            background: ${headerColor}10;
-            border: 1px solid ${headerColor}30;
-            border-radius: 6px;
-            padding: 20px;
-            margin: 20px 0;
-            text-align: center;
-          }
-          
-          .stats-row {
-            display: flex;
-            gap: 16px;
-            margin: 24px 0;
-            flex-wrap: wrap;
-          }
-          .stat-item {
-            background: #f8f9fa;
-            border-radius: 6px;
-            padding: 16px;
-            text-align: center;
-            flex: 1;
-            min-width: 120px;
-          }
-          .stat-number {
-            font-size: 24px;
-            font-weight: 700;
-            color: ${headerColor};
-            margin-bottom: 4px;
-          }
-          .stat-label {
-            font-size: 14px;
-            color: #666;
-          }
-          
-          .divider {
-            height: 1px;
-            background: #e9ecef;
-            margin: 32px 0;
-          }
-          
-          /* Footer */
-          .footer { 
-            background: #f8f9fa; 
-            padding: 24px; 
-            text-align: center; 
-            color: #666; 
-            font-size: 14px;
-            border-top: 1px solid #e9ecef;
-          }
-          .footer p {
-            margin: 8px 0;
-          }
-          .footer a {
-            color: #666;
-            text-decoration: none;
-            margin: 0 8px;
-          }
-          .footer a:hover {
-            color: ${headerColor};
-            text-decoration: underline;
-          }
-          
-          /* Mobile responsive */
-          @media only screen and (max-width: 600px) {
-            body { padding: 10px; }
-            .container { border-radius: 4px; }
-            .header, .content { padding: 24px 16px; }
-            .header .title { font-size: 24px; }
-            .content h2 { font-size: 20px; }
-            .button { 
-              display: block; 
-              margin: 12px 0; 
-              text-align: center; 
-            }
-            .stats-row {
-              flex-direction: column;
-            }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <div class="logo">IN-N-OUT</div>
-            <h1 class="title">${title}</h1>
-            <p class="subtitle">Premium Shopping Experience</p>
-          </div>
-          <div class="content">
-            ${content}
-          </div>
-          <div class="footer">
-            <p><strong>IN-N-OUT Store</strong></p>
-            <p>
-              <a href="${process.env.CLIENT_URL}">Visit Store</a> •
-              <a href="${process.env.CLIENT_URL}/support">Support</a> •
-              <a href="${process.env.CLIENT_URL}/unsubscribe">Unsubscribe</a>
-            </p>
-            <p style="margin-top: 16px; font-size: 12px; color: #888;">
-              © ${new Date().getFullYear()} IN-N-OUT Store. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </body>
-      </html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <title>${title}</title>
+  <style>
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+      .email-body { background: #1a1a1a !important; color: #ffffff !important; }
+      .email-container { background: #2d2d2d !important; border: 1px solid #404040 !important; }
+      .email-header { background: ${headerColor} !important; }
+      .email-content { background: #2d2d2d !important; color: #ffffff !important; }
+      .email-footer { background: #1a1a1a !important; color: #cccccc !important; }
+      .text-muted { color: #cccccc !important; }
+      .border-gray { border-color: #404040 !important; }
+      .info-box { background: #333333 !important; border-color: #404040 !important; color: #ffffff !important; }
+      .highlight-box { background: #2d2d2d !important; border-color: ${headerColor}50 !important; }
+      .stat-item { background: #333333 !important; color: #ffffff !important; }
+    }
+    
+    /* Light mode (default) */
+    .email-body {
+      margin: 0;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+      line-height: 1.6;
+      color: #333333;
+      background: #f8f9fa;
+    }
+    
+    .email-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      border: 1px solid #e9ecef;
+    }
+    
+    /* Container */
+    .container { 
+      max-width: 600px; 
+      margin: 0 auto; 
+      background: #ffffff; 
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    /* Header */
+    .header { 
+      background: ${headerColor}; 
+      color: white; 
+      padding: 32px 24px;
+      text-align: center;
+    }
+    .header .logo {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+    .header .title {
+      font-size: 28px;
+      font-weight: 600;
+      margin: 0;
+      line-height: 1.2;
+    }
+    .header .subtitle {
+      font-size: 16px;
+      opacity: 0.9;
+      margin-top: 8px;
+    }
+    
+    /* Content */
+    .content { 
+      padding: 32px 24px;
+    }
+    .content h2 {
+      color: #1a1a1a;
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      line-height: 1.3;
+    }
+    .content h3 {
+      color: #333;
+      font-size: 18px;
+      font-weight: 600;
+      margin: 24px 0 12px 0;
+    }
+    .content p {
+      color: #555;
+      font-size: 16px;
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+    .content ul {
+      margin: 16px 0;
+      padding-left: 20px;
+    }
+    .content li {
+      color: #555;
+      margin-bottom: 8px;
+    }
+    
+    /* Components */
+    .button {
+      display: inline-block;
+      background: ${headerColor};
+      color: white !important;
+      padding: 14px 28px;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 16px;
+      margin: 16px 8px 16px 0;
+      transition: all 0.2s ease;
+    }
+    .button:hover {
+      background: ${headerColor}dd;
+      text-decoration: none;
+      color: white !important;
+    }
+    .button.secondary {
+      background: #6c757d;
+      color: white !important;
+    }
+    
+    .info-box {
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 6px;
+      padding: 20px;
+      margin: 20px 0;
+      border-left: 4px solid ${headerColor};
+    }
+    .info-box h3 {
+      margin-top: 0;
+      color: ${headerColor};
+    }
+    
+    .highlight-box {
+      background: ${headerColor}10;
+      border: 1px solid ${headerColor}30;
+      border-radius: 6px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    
+    .stats-row {
+      display: flex;
+      gap: 16px;
+      margin: 24px 0;
+      flex-wrap: wrap;
+    }
+    .stat-item {
+      background: #f8f9fa;
+      border-radius: 6px;
+      padding: 16px;
+      text-align: center;
+      flex: 1;
+      min-width: 120px;
+    }
+    .stat-number {
+      font-size: 24px;
+      font-weight: 700;
+      color: ${headerColor};
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 14px;
+      color: #666;
+    }
+    
+    .divider {
+      height: 1px;
+      background: #e9ecef;
+      margin: 32px 0;
+    }
+    
+    /* Footer */
+    .footer { 
+      background: #f8f9fa; 
+      padding: 24px; 
+      text-align: center; 
+      color: #666; 
+      font-size: 14px;
+      border-top: 1px solid #e9ecef;
+    }
+    .footer p {
+      margin: 8px 0;
+    }
+    .footer a {
+      color: #666;
+      text-decoration: none;
+      margin: 0 8px;
+    }
+    .footer a:hover {
+      color: ${headerColor};
+      text-decoration: underline;
+    }
+    
+    /* Mobile responsive */
+    @media only screen and (max-width: 600px) {
+      body { padding: 10px; }
+      .container { border-radius: 4px; }
+      .header, .content { padding: 24px 16px; }
+      .header .title { font-size: 24px; }
+      .content h2 { font-size: 20px; }
+      .button { 
+        display: block; 
+        margin: 12px 0; 
+        text-align: center; 
+      }
+      .stats-row {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">IN-N-OUT</div>
+      <h1 class="title">${title}</h1>
+      <p class="subtitle">Premium Shopping Experience</p>
+    </div>
+    <div class="content">
+      ${content}
+    </div>
+    <div class="footer">
+      <p><strong>IN-N-OUT Store</strong></p>
+      <p>
+        <a href="${process.env.CLIENT_URL}">Visit Store</a> •
+        <a href="${process.env.CLIENT_URL}/support">Support</a> •
+        <a href="${process.env.CLIENT_URL}/unsubscribe">Unsubscribe</a>
+      </p>
+      <p style="margin-top: 16px; font-size: 12px; color: #888;">
+        © ${new Date().getFullYear()} IN-N-OUT Store. All rights reserved.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
     `;
   }
 

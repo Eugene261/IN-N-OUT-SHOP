@@ -135,11 +135,51 @@ function Address({setCurrentSelectedAddress, selectedId}) {
     }
 
     useEffect(() => {
-        const userId = user?.id || user?._id;
-        if (userId) {
-            dispatch(fetchAllAddresses(userId));
+        if (user) {
+            dispatch(fetchAllAddresses(user?.id));
         }
-    }, [dispatch, user?.id, user?._id]);
+    }, [dispatch, user]);
+
+    // Auto-select address logic with improved detection
+    useEffect(() => {
+        if (addressList && addressList.length > 0 && setCurrentSelectedAddress) {
+            // If no address is currently selected
+            if (!selectedId) {
+                if (addressList.length === 1) {
+                    // Auto-select the only address
+                    const singleAddress = addressList[0];
+                    setCurrentSelectedAddress(singleAddress);
+                    toast.success('Address automatically selected', {
+                        description: `Using: ${singleAddress.city}, ${singleAddress.region}`,
+                        duration: 3000
+                    });
+                } else if (addressList.length > 1) {
+                    // Multiple addresses - notify user to select
+                    toast.info(`${addressList.length} addresses found`, {
+                        description: 'Please select your preferred delivery address',
+                        duration: 4000
+                    });
+                }
+            } else {
+                // If an address is selected, verify it still exists in the list
+                const selectedExists = addressList.find(addr => addr._id === selectedId._id);
+                if (!selectedExists && addressList.length > 0) {
+                    // Selected address no longer exists, auto-select the first one
+                    setCurrentSelectedAddress(addressList[0]);
+                    toast.warning('Previous address unavailable', {
+                        description: 'Selected the first available address',
+                        duration: 3000
+                    });
+                }
+            }
+        } else if (addressList && addressList.length === 0 && setCurrentSelectedAddress) {
+            // No addresses found
+            toast.error('No delivery addresses found', {
+                description: 'Please add a delivery address to continue',
+                duration: 5000
+            });
+        }
+    }, [addressList, selectedId, setCurrentSelectedAddress]);
     
     return (
         <motion.div

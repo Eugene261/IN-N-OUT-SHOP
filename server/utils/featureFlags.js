@@ -48,9 +48,11 @@ class FeatureFlags {
   }
 
   /**
-   * Check if product approval workflow is active
+   * Check if product approval system is enabled
    */
   isProductApprovalEnabled() {
+    // Re-enable product approval system - the issue is not product visibility
+    // but cart functionality for approved products
     return this.isEnabled('PRODUCT_APPROVAL_ENABLED') && this.isEnabled('ENABLE_NEW_FEATURES');
   }
 

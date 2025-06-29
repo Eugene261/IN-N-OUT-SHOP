@@ -521,33 +521,53 @@ function FeaturedVideos() {
 
               {/* Video Info Overlay */}
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-6">
-                <h3 className="text-white text-2xl font-bold mb-2">{maximizedVideo.title}</h3>
-                {maximizedVideo.description && (
-                  <p className="text-gray-300 mb-4">{maximizedVideo.description}</p>
-                )}
+                {/* Hide title, description, and vendor info on mobile to reduce crowding */}
+                <div className="hidden md:block">
+                  <h3 className="text-white text-2xl font-bold mb-2">{maximizedVideo.title}</h3>
+                  {maximizedVideo.description && (
+                    <p className="text-gray-300 mb-4">{maximizedVideo.description}</p>
+                  )}
+                  
+                  {maximizedVideo.vendorId && (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="bg-white/10 backdrop-blur-md hover:bg-white/20 border border-white/20 rounded-lg p-3 transition-all duration-300 flex items-center gap-3"
+                      onClick={() => {
+                        handleMinimize();
+                        handleVendorClick(maximizedVideo);
+                      }}
+                    >
+                      <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
+                        <User className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-white font-medium">
+                          {maximizedVideo.vendorId.shopName || maximizedVideo.vendorId.userName}
+                        </p>
+                        <p className="text-gray-400 text-sm">Visit Store</p>
+                      </div>
+                      <ArrowRight className="h-5 w-5 text-gray-400" />
+                    </motion.button>
+                  )}
+                </div>
                 
-                {maximizedVideo.vendorId && (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="bg-white/10 backdrop-blur-md hover:bg-white/20 border border-white/20 rounded-lg p-3 transition-all duration-300 flex items-center gap-3"
-                    onClick={() => {
-                      handleMinimize();
-                      handleVendorClick(maximizedVideo);
-                    }}
-                  >
-                    <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
-                      <User className="h-5 w-5 text-white" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-white font-medium">
-                        {maximizedVideo.vendorId.shopName || maximizedVideo.vendorId.userName}
-                      </p>
-                      <p className="text-gray-400 text-sm">Visit Store</p>
-                    </div>
-                    <ArrowRight className="h-5 w-5 text-gray-400" />
-                  </motion.button>
-                )}
+                {/* On mobile, show minimal info in top-right corner instead */}
+                <div className="md:hidden absolute top-4 right-4">
+                  {maximizedVideo.vendorId && (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="bg-white/10 backdrop-blur-md hover:bg-white/20 border border-white/20 rounded-full p-2 transition-all duration-300"
+                      onClick={() => {
+                        handleMinimize();
+                        handleVendorClick(maximizedVideo);
+                      }}
+                    >
+                      <User className="h-4 w-4 text-white" />
+                    </motion.button>
+                  )}
+                </div>
               </div>
             </motion.div>
           </motion.div>
