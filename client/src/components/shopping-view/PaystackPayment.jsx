@@ -263,6 +263,45 @@ const PaystackPayment = ({ amount, items, shippingAddress, shippingFees = {}, to
   // Get admin shipping details for display
   const adminGroups = groupItemsByAdmin();
 
+  // Network logo components
+  const NetworkLogo = ({ network }) => {
+    switch(network.id) {
+      case 'mtn':
+        return (
+          <div className="w-full h-12 bg-yellow-400 rounded-lg flex items-center justify-center">
+            <div className="text-black font-bold text-lg border-2 border-black px-3 py-1 rounded-full">
+              MTN
+            </div>
+          </div>
+        );
+      case 'telecel':
+        return (
+          <div className="w-full h-12 bg-red-500 rounded-lg flex items-center justify-center">
+            <div className="text-white font-bold text-sm">
+              telecel
+            </div>
+          </div>
+        );
+      case 'airtel':
+        return (
+          <div className="w-full h-12 bg-white rounded-lg flex items-center justify-center border border-gray-200">
+            <div className="text-center">
+              <div className="text-lg font-bold">
+                <span className="text-red-500">a</span><span className="text-blue-600">t</span>
+              </div>
+              <div className="text-xs text-gray-600 italic -mt-1">life is simple</div>
+            </div>
+          </div>
+        );
+      default:
+        return (
+          <div className="w-full h-12 bg-gray-200 rounded-lg flex items-center justify-center">
+            <span className="text-gray-600 font-medium">{network.name}</span>
+          </div>
+        );
+    }
+  };
+
   return (
     <div className="w-full max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-xl font-semibold mb-4 text-center">Pay with Paystack</h2>
@@ -298,21 +337,35 @@ const PaystackPayment = ({ amount, items, shippingAddress, shippingFees = {}, to
       {paymentMethod === 'mobile_money' && (
         <>
           <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">Select Network</label>
-            <div className="grid grid-cols-3 gap-3">
+            <label className="block text-sm font-medium mb-3">Select Network</label>
+            <div className="grid grid-cols-1 gap-3">
               {networks.map(network => (
-                <button
+                <motion.button
                   key={network.id}
                   type="button"
                   onClick={() => setMobileNetwork(network.id)}
-                  className={`p-3 rounded-lg border text-center ${
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`relative overflow-hidden rounded-lg border-2 transition-all duration-200 ${
                     mobileNetwork === network.id 
-                      ? `border-2 border-blue-500 ring-2 ring-blue-200 scale-105 ${network.color} text-white` 
-                      : 'border-gray-200'
-                  } transition-all`}
+                      ? 'border-blue-500 ring-2 ring-blue-200 shadow-lg' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
                 >
-                  {network.name}
-                </button>
+                  <div className="p-4">
+                    <NetworkLogo network={network} />
+                    <div className="mt-3 text-center">
+                      <div className="font-medium text-gray-900">{network.name}</div>
+                    </div>
+                  </div>
+                  {mobileNetwork === network.id && (
+                    <div className="absolute top-2 right-2">
+                      <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                      </div>
+                    </div>
+                  )}
+                </motion.button>
               ))}
             </div>
           </div>
@@ -327,7 +380,7 @@ const PaystackPayment = ({ amount, items, shippingAddress, shippingFees = {}, to
               value={mobileNumber}
               onChange={(e) => setMobileNumber(e.target.value)}
               placeholder="e.g., 0241234567"
-              className="w-full p-3 border border-gray-300 rounded-md"
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               maxLength={10}
             />
             <p className="text-xs text-gray-500 mt-1">

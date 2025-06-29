@@ -18,7 +18,25 @@ export const PAYSTACK_API = {
 
 // Mobile money networks supported in Ghana
 export const MOBILE_MONEY_NETWORKS = [
-  { id: 'mtn', name: 'MTN Mobile Money', color: 'bg-yellow-500' },
-  { id: 'vodafone', name: 'Vodafone Cash', color: 'bg-red-600' },
-  { id: 'airtel', name: 'AirtelTigo Money', color: 'bg-blue-600' }
+  { 
+    id: 'mtn', 
+    name: 'MTN Mobile Money', 
+    color: 'bg-yellow-500',
+    logo: '/network-logos/mtn-logo.png',
+    bgColor: '#FFD700'
+  },
+  { 
+    id: 'telecel', 
+    name: 'Telecel Cash', 
+    color: 'bg-red-600',
+    logo: '/network-logos/telecel-logo.png',
+    bgColor: '#E31E24'
+  },
+  { 
+    id: 'airtel', 
+    name: 'AirtelTigo Money', 
+    color: 'bg-blue-600',
+    logo: '/network-logos/airteltigo-logo.png',
+    bgColor: '#E31E24'
+  }
 ];

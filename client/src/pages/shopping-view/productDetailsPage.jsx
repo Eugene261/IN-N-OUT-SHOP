@@ -36,11 +36,11 @@ function ImageGallery({ productDetails }) {
   return (
     <div className="space-y-4">
       {/* Main Image - Large and Clean */}
-      <div className="aspect-square bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
+      <div className="aspect-square bg-gray-50 rounded-lg overflow-hidden border border-gray-200 flex items-center justify-center">
         <img
           src={allImages[currentImageIndex]}
           alt={productDetails?.title || 'Product image'}
-          className="w-full h-full object-cover"
+          className="max-w-full max-h-full object-contain"
         />
       </div>
 
@@ -51,7 +51,7 @@ function ImageGallery({ productDetails }) {
             <button
               key={index}
               onClick={() => setCurrentImageIndex(index)}
-              className={`flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 transition-all ${
+              className={`flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 transition-all flex items-center justify-center bg-gray-50 ${
                 currentImageIndex === index 
                   ? 'border-gray-900' 
                   : 'border-gray-200 hover:border-gray-400'
@@ -60,7 +60,7 @@ function ImageGallery({ productDetails }) {
               <img
                 src={image}
                 alt={`${productDetails?.title || 'Product'} ${index + 1}`}
-                className="w-full h-full object-cover"
+                className="max-w-full max-h-full object-contain"
               />
             </button>
           ))}
