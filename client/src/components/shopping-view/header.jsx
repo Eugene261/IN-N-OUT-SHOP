@@ -10,6 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { logoutUser } from '@/store/auth-slice';
 import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 import UserCartWraper from './cartWrapper';
 import { fetchCartItems, openCart, closeCart } from '@/store/shop/cart-slice';
 import { fetchWishlistItems } from '@/store/shop/wishlist-slice';
