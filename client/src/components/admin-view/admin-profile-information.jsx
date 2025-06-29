@@ -17,16 +17,17 @@ function AdminProfileInformation() {
   const fileInputRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   const [formData, setFormData] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    dateOfBirth: user?.dateOfBirth ? user.dateOfBirth.split('T')[0] : '',
-    baseRegion: user?.baseRegion || '',
-    baseCity: user?.baseCity || '',
-    shopName: user?.shopName || '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    dateOfBirth: '',
+    baseRegion: '',
+    baseCity: '',
+    shopName: '',
   });
 
   const [originalData, setOriginalData] = useState({ ...formData });
@@ -39,16 +40,33 @@ function AdminProfileInformation() {
     
     // FORCE FETCH PROFILE DATA - Always fetch to ensure latest data
     console.log('🔄 Force fetching profile to ensure latest data...');
-    dispatch(fetchAdminProfile());
+    dispatch(fetchAdminProfile()).then((result) => {
+      console.log('📥 Profile fetch completed:', result);
+      setProfileLoaded(true);
+    });
   }, [dispatch]); // Removed user dependency to force fetch every time
 
   // Update form data when user data changes in Redux (e.g., after page refresh or profile fetch)
   useEffect(() => {
     console.log('🔧 User data effect triggered');
     console.log('User object:', user);
+    console.log('Profile loaded state:', profileLoaded);
+    console.log('User keys:', Object.keys(user || {}));
+    console.log('User values:', Object.values(user || {}));
     
-    if (user && Object.keys(user).length > 0) {
-      console.log('✅ User data available, populating form...');
+    // Log specific fields we're looking for
+    console.log('Specific user fields:');
+    console.log('- firstName:', user?.firstName);
+    console.log('- lastName:', user?.lastName);
+    console.log('- email:', user?.email);
+    console.log('- phone:', user?.phone);
+    console.log('- shopName:', user?.shopName);
+    console.log('- baseRegion:', user?.baseRegion);
+    console.log('- baseCity:', user?.baseCity);
+    
+    // Only populate form when we have user data AND profile has been loaded
+    if (user && Object.keys(user).length > 0 && profileLoaded) {
+      console.log('✅ User data available AND profile loaded, populating form...');
       
       const updatedFormData = {
         firstName: user?.firstName || '',
@@ -70,9 +88,11 @@ function AdminProfileInformation() {
         console.log('🔍 Verification - Current form data after update:', formData);
       }, 100);
     } else {
-      console.log('⚠️  No user data available or empty object');
+      console.log('⚠️  Waiting for user data or profile to load...');
+      console.log('User available:', !!user && Object.keys(user || {}).length > 0);
+      console.log('Profile loaded:', profileLoaded);
     }
-  }, [user]);
+  }, [user, profileLoaded]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -234,6 +254,18 @@ function AdminProfileInformation() {
 
   const hasChanges = Object.keys(formData).some(key => formData[key] !== originalData[key]);
   const isSuperAdmin = user?.role === 'superAdmin';
+
+  // Show loading state while profile is being fetched
+  if (!profileLoaded) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
