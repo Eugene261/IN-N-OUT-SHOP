@@ -921,7 +921,7 @@ const createOrderAfterPayment = async (req, res) => {
         const orderWithPayment = {
             // Map userId to user field (required by the Order model)
             user: orderData.userId || '',  // This is the critical fix - user instead of userId
-            // Store customer name for display in admin panel
+            // Store customer name for display in vendor panel
             customerName: orderData.customerName || orderData.addressInfo?.customerName || 'Customer',
             // Store email if available for better customer identification
             customerEmail: orderData.userEmail || orderData.email || '',

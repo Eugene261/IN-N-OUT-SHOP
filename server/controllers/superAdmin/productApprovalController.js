@@ -243,7 +243,7 @@ const approveProduct = async (req, res) => {
                 <ul>
                   <li>✅ Your product is now live on the marketplace</li>
                   <li>📈 Customers can now discover and purchase your product</li>
-                  <li>📊 Monitor your sales in the admin dashboard</li>
+                  <li>📊 Monitor your sales in the vendor dashboard</li>
                   <li>🔄 You can update product details anytime</li>
                 </ul>
               </div>

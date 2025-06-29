@@ -385,7 +385,7 @@ function HeaderRightContent() {
                   className='cursor-pointer rounded-lg py-2 my-1 transition-colors duration-200 hover:bg-gray-50'
                 >
                   <HousePlus className='mr-3 h-4 w-4 text-gray-600' />
-                  <span className="font-medium">Admin Dashboard</span>
+                                          <span className="font-medium">Vendor Dashboard</span>
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator className="my-2" />

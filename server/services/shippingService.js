@@ -469,7 +469,7 @@ const findShippingZone = async (city, region, vendorId) => {
         console.log(`Selected zone: ${zone.name}, region: ${zone.region}, baseRate: ${zone.baseRate}, vendorRegion: ${zone.vendorRegion || 'not set'}`);
         
         // No special handling for same region anymore - directly return the zone with the configured base rate
-        // This ensures the shipping fee is exactly what was configured in the admin panel
+        // This ensures the shipping fee is exactly what was configured in the vendor panel
         
         return zone;
     } catch (error) {

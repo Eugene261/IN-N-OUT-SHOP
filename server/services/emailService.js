@@ -1308,7 +1308,7 @@ class EmailService {
           <table class="order-table">
             <tr><td>Email</td><td>${email}</td></tr>
             <tr><td>Temporary Password</td><td style="font-family: monospace; background: #f8f9fa; padding: 8px; border-radius: 4px;">${temporaryPassword}</td></tr>
-            <tr><td>Admin Panel</td><td><a href="${process.env.CLIENT_URL}/admin/login">Click to Login</a></td></tr>
+            <tr><td>Vendor Panel</td><td><a href="${process.env.CLIENT_URL}/admin/login">Click to Login</a></td></tr>
           </table>
         </div>
         
@@ -1330,7 +1330,7 @@ class EmailService {
         </div>
         
         <div style="text-align: center;">
-          <a href="${process.env.CLIENT_URL}/admin/login" class="button">Access Admin Panel</a>
+          <a href="${process.env.CLIENT_URL}/admin/login" class="button">Access Vendor Panel</a>
           <a href="${process.env.CLIENT_URL}/admin/guide" class="button secondary">View Admin Guide</a>
         </div>
       `
@@ -1338,7 +1338,7 @@ class EmailService {
 
     return await this.sendEmail({
       to: email,
-      subject: '🎉 Welcome to IN-N-OUT Store Admin Panel',
+      subject: '🎉 Welcome to IN-N-OUT Store Vendor Panel',
       html: htmlContent
     });
   }
@@ -1475,7 +1475,7 @@ class EmailService {
           <ul>
             <li>💳 Payment has been processed successfully</li>
             <li>📧 Keep this email as a receipt for your records</li>
-            <li>📊 Check your admin dashboard for updated balance</li>
+            <li>📊 Check your vendor dashboard for updated balance</li>
             <li>💬 Contact support if you have any questions</li>
           </ul>
         </div>

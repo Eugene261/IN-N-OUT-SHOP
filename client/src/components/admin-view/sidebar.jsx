@@ -119,7 +119,7 @@ function AdminSidebar({ onItemClick, onClose }) {
             </svg>
           </motion.div>
           <span className="text-lg font-semibold text-black">
-            Admin Panel
+            Vendor Panel
           </span>
         </Link>
       </div>
@@ -190,7 +190,7 @@ function AdminSidebar({ onItemClick, onClose }) {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
       >
-        Admin Portal © {new Date().getFullYear()}
+        Vendor Portal © {new Date().getFullYear()}
       </motion.div>
     </div>
   );

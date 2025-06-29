@@ -96,7 +96,7 @@ function AdminHeader({ onMenuToggle }) {
           
           {/* Dashboard Title - Hide on small screens */}
           <h1 className="hidden sm:block text-lg md:text-xl font-semibold text-gray-900 tracking-wide">
-            Admin Dashboard
+            Vendor Dashboard
           </h1>
           
           {/* Mobile title - Show only on very small screens */}

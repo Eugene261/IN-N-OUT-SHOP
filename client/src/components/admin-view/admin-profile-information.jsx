@@ -31,9 +31,25 @@ function AdminProfileInformation() {
 
   const [originalData, setOriginalData] = useState({ ...formData });
 
+  // Fetch user profile on component mount only if we don't have user data
+  useEffect(() => {
+    console.log('🔧 Profile component mounted, checking if profile fetch is needed...');
+    console.log('Current user in Redux:', user);
+    console.log('Current user in localStorage:', JSON.parse(localStorage.getItem('user') || '{}'));
+    
+    // FORCE FETCH PROFILE DATA - Always fetch to ensure latest data
+    console.log('🔄 Force fetching profile to ensure latest data...');
+    dispatch(fetchAdminProfile());
+  }, [dispatch]); // Removed user dependency to force fetch every time
+
   // Update form data when user data changes in Redux (e.g., after page refresh or profile fetch)
   useEffect(() => {
-    if (user) {
+    console.log('🔧 User data effect triggered');
+    console.log('User object:', user);
+    
+    if (user && Object.keys(user).length > 0) {
+      console.log('✅ User data available, populating form...');
+      
       const updatedFormData = {
         firstName: user?.firstName || '',
         lastName: user?.lastName || '',
@@ -45,26 +61,18 @@ function AdminProfileInformation() {
         shopName: user?.shopName || '',
       };
       
-      console.log('User data changed, updating form data:', updatedFormData);
+      console.log('📝 Form data being set:', updatedFormData);
       setFormData(updatedFormData);
       setOriginalData(updatedFormData);
+      
+      // Double-check the data was set
+      setTimeout(() => {
+        console.log('🔍 Verification - Current form data after update:', formData);
+      }, 100);
+    } else {
+      console.log('⚠️  No user data available or empty object');
     }
   }, [user]);
-
-  // Fetch user profile on component mount only if we don't have user data
-  useEffect(() => {
-    console.log('Profile component mounted, checking if profile fetch is needed...');
-    console.log('Current user in Redux:', user);
-    console.log('Current user in localStorage:', JSON.parse(localStorage.getItem('user') || '{}'));
-    
-    // Only fetch if we don't have user data or if essential fields are missing
-    if (!user || !user.firstName || !user.email) {
-      console.log('User data missing, fetching profile...');
-      dispatch(fetchAdminProfile());
-    } else {
-      console.log('User data already available, skipping profile fetch');
-    }
-  }, [dispatch, user?.firstName, user?.email]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
