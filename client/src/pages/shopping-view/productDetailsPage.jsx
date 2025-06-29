@@ -35,18 +35,18 @@ function ImageGallery({ productDetails }) {
 
   return (
     <div className="space-y-4">
-      {/* Main Image - Large and Clean */}
-      <div className="aspect-square bg-gray-50 rounded-lg overflow-hidden border border-gray-200 flex items-center justify-center">
+      {/* Main Image - Fully Responsive to Image Dimensions */}
+      <div className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
         <img
           src={allImages[currentImageIndex]}
           alt={productDetails?.title || 'Product image'}
-          className="max-w-full max-h-full object-contain"
+          className="w-full h-auto object-contain rounded-lg"
         />
       </div>
 
       {/* Thumbnail Gallery - Clean Row Below */}
       {allImages.length > 1 && (
-        <div className="flex space-x-3">
+        <div className="flex space-x-3 overflow-x-auto pb-2">
           {allImages.map((image, index) => (
             <button
               key={index}
@@ -60,7 +60,7 @@ function ImageGallery({ productDetails }) {
               <img
                 src={image}
                 alt={`${productDetails?.title || 'Product'} ${index + 1}`}
-                className="max-w-full max-h-full object-contain"
+                className="w-full h-full object-cover"
               />
             </button>
           ))}
