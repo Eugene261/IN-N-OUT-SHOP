@@ -148,8 +148,13 @@ function FeaturedVideos() {
 
   const handleVendorClick = (video) => {
     if (video.vendorId) {
-      // Navigate to vendor page - you can customize this route
-      navigate(`/shop/vendor/${video.vendorId._id}`);
+      // Navigate to listing page filtered by vendor's shop
+      const shopName = video.vendorId.shopName || video.vendorId.userName;
+      if (shopName) {
+        navigate(`/shop/listing?shop=${encodeURIComponent(shopName)}`);
+      } else {
+        toast.info('Vendor information not complete');
+      }
     }
   };
 

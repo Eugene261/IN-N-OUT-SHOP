@@ -54,8 +54,9 @@ function EnhancedShoppingProductTile({
     }
 
     if (handleGetProductDetails) {
-      handleGetProductDetails();
+      handleGetProductDetails(product._id);
     } else {
+      // Fallback navigation if handleGetProductDetails is not provided
       navigateWithScroll(navigate, `/shop/product/${product._id}`);
     }
   };

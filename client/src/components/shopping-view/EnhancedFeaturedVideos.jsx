@@ -151,11 +151,15 @@ function EnhancedFeaturedVideos() {
     }
   };
 
-
-
   const handleVendorClick = (video) => {
     if (video.vendorId) {
-      navigate(`/shop/listing?vendor=${video.vendorId._id}`);
+      // Navigate to listing page filtered by vendor's shop
+      const shopName = video.vendorId.shopName || video.vendorId.userName;
+      if (shopName) {
+        navigate(`/shop/listing?shop=${encodeURIComponent(shopName)}`);
+      } else {
+        toast.info('Vendor information not complete');
+      }
     } else {
       toast.info('This is general content - no specific vendor');
     }
