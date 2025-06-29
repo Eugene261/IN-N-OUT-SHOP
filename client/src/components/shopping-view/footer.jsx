@@ -150,6 +150,9 @@ const Footer = () => {
                         sessionStorage.setItem('filters', JSON.stringify({
                           category: [item.category]
                         }));
+                      } else if (item.name === 'All Products') {
+                        sessionStorage.removeItem('filters');
+                        console.log('Footer: All Products clicked, cleared all filters');
                       }
                       navigate(item.path);
                     }}

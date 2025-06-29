@@ -18,15 +18,22 @@ const MobileMenuAccordion = ({ menuItems, onNavigate, navigate }) => {
   };
 
   const handleDirectNavigation = (menuItem) => {
-    if (menuItem.id !== 'products' && menuItem.id !== 'shops') {
-      // Store the category filter in session storage
+    if (menuItem.id === 'products') {
+      // For "All Products", clear all filters to show everything
+      sessionStorage.removeItem('filters');
+      console.log('Mobile: All Products clicked, cleared all filters');
+      navigate('/shop/listing');
+    } else if (menuItem.id !== 'shops') {
+      // For category items, store the category filter in session storage
       sessionStorage.removeItem('filters');
       const currentFilter = {
         category: [menuItem.id]
       };
       sessionStorage.setItem('filters', JSON.stringify(currentFilter));
+      console.log(`Mobile: Category ${menuItem.id} clicked, set filter`, currentFilter);
       navigate('/shop/listing');
     } else {
+      // For other items like shops, navigate directly
       navigate(menuItem.path);
     }
     onNavigate();

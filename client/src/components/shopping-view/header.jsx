@@ -27,14 +27,19 @@ function MenuItems({ onNavigate }) {
   function handleNavigate(menuItem) {
     // Always navigate to the menu item's path when clicked
     if (menuItem.path) {
-      // For items with category filtering
-      if (menuItem.id !== 'home' && menuItem.id !== 'products' && menuItem.id !== 'search') {
-        // Store the category filter in session storage
+      // Handle filter logic based on menu item type
+      if (menuItem.id === 'products') {
+        // For "All Products", clear all filters to show everything
+        sessionStorage.removeItem('filters');
+        console.log('All Products clicked: Cleared all filters');
+      } else if (menuItem.id !== 'home' && menuItem.id !== 'search' && menuItem.id !== 'shops') {
+        // For category items (men, women, kids, etc.), set category filter
         sessionStorage.removeItem('filters');
         const currentFilter = {
           category: [menuItem.id]
         };
         sessionStorage.setItem('filters', JSON.stringify(currentFilter));
+        console.log(`Category ${menuItem.id} clicked: Set filter`, currentFilter);
       }
       
       // Navigate to the path with proper scroll behavior
