@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardFooter } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { motion } from 'framer-motion';
-import { ShoppingBag, Eye, Heart } from 'lucide-react';
+import { ShoppingBag, Eye, Heart, Star, AlertCircle } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToWishlist, removeFromWishlist, fetchWishlistItems } from '@/store/shop/wishlist-slice';
 import { toast } from 'sonner';
@@ -10,6 +10,7 @@ import { brandOptionsMap, categoryOptionsMap } from '@/config';
 import { useNavigate } from 'react-router-dom';
 import LazyImage from '../common/LazyImage';
 import { fetchAllTaxonomyData } from '@/store/superAdmin/taxonomy-slice';
+import { navigateWithScroll } from '../../utils/scrollUtils';
 
 function ShoppingProductTile({ product, handleAddToCart, onAddToCart }) {
   const dispatch = useDispatch();
@@ -139,7 +140,7 @@ function ShoppingProductTile({ product, handleAddToCart, onAddToCart }) {
         className="w-full max-w-sm mx-auto overflow-hidden rounded-xl
         border-none shadow-lg hover:shadow-xl transition-all duration-300 
         flex flex-col h-full cursor-pointer bg-white"
-        onClick={() => navigate(`/shop/product/${product?._id}`)}
+        onClick={() => navigateWithScroll(navigate, `/shop/product/${product?._id}`)}
       >
         {/* Image container */}
         <div className="relative w-full overflow-hidden">

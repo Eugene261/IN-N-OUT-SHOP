@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { HousePlus, Menu, ShoppingBag, UserRound, LogOut, Heart, ChevronDown, ShoppingCart, Sun, Moon } from 'lucide-react';
+import { HousePlus, Menu, ShoppingBag, UserRound, LogOut, Heart, ChevronDown, ShoppingCart } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '../ui/sheet';
 import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
@@ -10,15 +10,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { logoutUser } from '@/store/auth-slice';
 import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
-import UserCartItemsContent from './cartItemsContent';
 import UserCartWraper from './cartWrapper';
-import { fetchCartItems, openCart, closeCart, toggleCart, clearCartState, clearCart } from '@/store/shop/cart-slice';
+import { fetchCartItems, openCart, closeCart } from '@/store/shop/cart-slice';
 import { fetchWishlistItems } from '@/store/shop/wishlist-slice';
-import { Label } from '../ui/label';
+import { navigateWithScroll } from '../../utils/scrollUtils';
 import MobileMenuAccordion from './MobileMenuAccordion';
-import { navigateWithScroll } from '@/utils/scrollUtils';
-import { useTheme } from '@/contexts/ThemeContext';
 
 function MenuItems({ onNavigate }) {
   const navigate = useNavigate();
@@ -192,7 +188,6 @@ function HeaderRightContent() {
   const { user } = useSelector(state => state.auth);
   const { cartItems, isCartOpen }  = useSelector(state => state.shopCart);
   const { wishlistItems } = useSelector(state => state.wishlist);
-  const { theme, toggleTheme, isDark } = useTheme();
   
   // CRITICAL FIX: Ensure cartItems has the right structure
   const validCartItems = cartItems && cartItems.items ? cartItems.items : [];
@@ -283,27 +278,12 @@ function HeaderRightContent() {
 
   return (
     <div className="flex items-center space-x-1">
-      {/* Theme Toggle Button */}
-      <motion.button
-        onClick={toggleTheme}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className="relative p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200"
-        aria-label="Toggle theme"
-      >
-        {isDark ? (
-          <Sun className="w-5 h-5 text-gray-900 dark:text-gray-100" />
-        ) : (
-          <Moon className="w-5 h-5 text-gray-900 dark:text-gray-100" />
-        )}
-      </motion.button>
-      
       {/* Wishlist Button - Available for both authenticated and guest users */}
       <Link to="/shop/wishlist">
         <motion.div
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="relative p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200"
+          className="relative p-2 rounded-md hover:bg-gray-50 transition-all duration-200"
         >
           <Heart className={`w-5 h-5 ${wishlistItems?.length > 0 ? 'fill-red-500 text-red-500' : 'text-gray-900 dark:text-gray-100'}`} />
           {wishlistItems?.length > 0 && (
@@ -465,7 +445,7 @@ function ShoppingHeader() {
 
   return (
     <motion.header 
-      className='fixed top-[40px] left-0 right-0 z-50 w-full bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 backdrop-blur-sm bg-white/95 dark:bg-gray-900/95 border-b border-gray-100 dark:border-gray-800 shadow-md'
+      className='fixed top-[40px] left-0 right-0 z-50 w-full bg-white text-gray-900 backdrop-blur-sm bg-white/95 border-b border-gray-100 shadow-md'
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}

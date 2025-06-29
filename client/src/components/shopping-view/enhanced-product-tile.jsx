@@ -1,9 +1,13 @@
+import React from 'react';
+import { motion } from 'framer-motion';
 import { Badge } from "../ui/badge";
 import { Card, CardContent } from "../ui/card";
-import { Heart, Star, Store, MapPin } from "lucide-react";
+import { Heart, Star, Store, MapPin, ShoppingBag, Clock } from "lucide-react";
 import { useDispatch, useSelector } from 'react-redux';
 import { useEffect } from 'react';
 import { fetchAllTaxonomyData } from '@/store/superAdmin/taxonomy-slice';
+import { useNavigate } from 'react-router-dom';
+import { navigateWithScroll } from '../../utils/scrollUtils';
 
 function EnhancedShoppingProductTile({
   product,
@@ -15,6 +19,7 @@ function EnhancedShoppingProductTile({
   const dispatch = useDispatch();
   const { brands, categories } = useSelector(state => state.taxonomy);
   const shop = product?.createdBy;
+  const navigate = useNavigate();
 
   // Fetch taxonomy data on component mount
   useEffect(() => {
@@ -41,8 +46,16 @@ function EnhancedShoppingProductTile({
   const displayBrand = convertIdToName(product?.brand, brands);
   const displayCategory = convertIdToName(product?.category, categories);
 
+  const handleProductClick = () => {
+    if (handleGetProductDetails) {
+      handleGetProductDetails();
+    } else {
+      navigateWithScroll(navigate, `/shop/product/${product?._id}`);
+    }
+  };
+
   return (
-    <div className="w-full cursor-pointer group" onClick={() => handleGetProductDetails(product?._id)}>
+    <div className="w-full cursor-pointer group" onClick={handleProductClick}>
       {/* Product Image */}
       <div className="relative w-full aspect-square mb-3 overflow-hidden bg-gray-50 rounded-lg">
         <img

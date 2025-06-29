@@ -35,6 +35,8 @@ import ProductOptionsModal from '../../components/shopping-view/productOptionsMo
 import ValueProposition from '../../components/shopping-view/ValueProposition';
 import NewsletterSection from '../../components/shopping-view/NewsletterSection';
 import EnhancedHeroCarousel from '../../components/shopping-view/EnhancedHeroCarousel'
+import { navigateWithScroll } from '../../utils/scrollUtils';
+import ThemeToggle from '../../components/ui/ThemeToggle';
 
 /* const categoriesWithIcon = [
   { id: "men", label: "Men", icon: Shirt },
@@ -95,11 +97,11 @@ function ShoppingHome() {
     }
 
     sessionStorage.setItem('filters', JSON.stringify(currentFilter));
-    navigate('/shop/listing')
+    navigateWithScroll(navigate, '/shop/listing');
   }
 
   function handleGetProductDetails(getCurrentProductId){
-    navigate(`/shop/product/${getCurrentProductId}`);
+    navigateWithScroll(navigate, `/shop/product/${getCurrentProductId}`);
   }
 
   function handleAddToCart(getCurrentProductId){
@@ -263,8 +265,14 @@ function ShoppingHome() {
   }, [dispatch]);
   
     return (
-      <div className='flex flex-col min-h-screen'>
-        <PageTitle title="Home" />
+      <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
+        <PageTitle title="IN-N-OUT Store - Home" />
+        
+        {/* Theme Toggle - Floating Action Button */}
+        <div className="fixed bottom-6 right-6 z-40">
+          <ThemeToggle size={24} />
+        </div>
+
         {/* Enhanced Hero Banner Slider */}
         <EnhancedHeroCarousel 
           FeatureImageList={FeatureImageList} 

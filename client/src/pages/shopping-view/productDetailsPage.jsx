@@ -15,6 +15,7 @@ import EnhancedShoppingProductTile from '../../components/shopping-view/enhanced
 import ProductOptionsModal from '../../components/shopping-view/productOptionsModal';
 import NewArrivals from './newArrivals';
 import { fetchAllTaxonomyData } from '@/store/superAdmin/taxonomy-slice';
+import { navigateWithScroll } from '../../utils/scrollUtils';
 
 // Image Gallery Component for Product Details - Nike style clean layout with swipe support
 function ImageGallery({ productDetails }) {
@@ -693,7 +694,7 @@ function ProductDetailsPage() {
                       >
                         <EnhancedShoppingProductTile
                           product={product}
-                          handleGetProductDetails={() => navigate(`/shop/product/${product._id}`)}
+                          handleGetProductDetails={() => navigateWithScroll(navigate, `/shop/product/${product._id}`)}
                           handleAddToCart={() => {
                             if (!isAuthenticated) {
                               toast.error("Please login to add items to your cart");
