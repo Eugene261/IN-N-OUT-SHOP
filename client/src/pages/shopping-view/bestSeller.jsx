@@ -128,18 +128,18 @@ const BestSeller = () => {
           </div>
           
           {/* Navigation Buttons */}
-          <div className="hidden md:flex gap-2">
+          <div className="flex gap-2">
             <button
               onClick={() => scroll('left')}
-              className="p-2 rounded-full border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="p-1.5 sm:p-2 rounded-full border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
-              <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-300" />
             </button>
             <button
               onClick={() => scroll('right')}
-              className="p-2 rounded-full border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="p-1.5 sm:p-2 rounded-full border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
-              <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-300" />
             </button>
           </div>
         </div>
