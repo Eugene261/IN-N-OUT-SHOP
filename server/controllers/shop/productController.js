@@ -244,8 +244,16 @@ const getFilteredProducts = async(req, res) => {
 
 const getProductDetails = async (req, res) => {
     try {
-        
         const {id} = req.params;
+        
+        // Validate if the ID is a valid MongoDB ObjectId format
+        if (!id || id === 'undefined' || id === 'null' || !id.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid product ID format'
+            });
+        }
+        
         const product = await Product.findById(id)
             .populate('createdBy', 'userName email shopName shopLogo shopCategory shopRating shopReviewCount baseRegion baseCity shopDescription shopWebsite shopEstablished');
 
@@ -368,6 +376,14 @@ const getSimilarProducts = async (req, res) => {
     try {
         const { id } = req.params;
         
+        // Validate if the ID is a valid MongoDB ObjectId format
+        if (!id || id === 'undefined' || id === 'null' || !id.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid product ID format'
+            });
+        }
+        
         // Find the current product to get its category and brand
         const currentProduct = await Product.findById(id);
         
@@ -419,6 +435,14 @@ const toggleBestseller = async (req, res) => {
     try {
         const { id } = req.params;
         
+        // Validate if the ID is a valid MongoDB ObjectId format
+        if (!id || id === 'undefined' || id === 'null' || !id.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid product ID format'
+            });
+        }
+        
         console.log('Attempting to toggle bestseller for product ID:', id);
         
         // Use findByIdAndUpdate to update the product in a single operation
@@ -462,6 +486,14 @@ const toggleBestseller = async (req, res) => {
 const toggleNewArrival = async (req, res) => {
     try {
         const { id } = req.params;
+        
+        // Validate if the ID is a valid MongoDB ObjectId format
+        if (!id || id === 'undefined' || id === 'null' || !id.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid product ID format'
+            });
+        }
         
         console.log('Attempting to toggle new arrival for product ID:', id);
         
