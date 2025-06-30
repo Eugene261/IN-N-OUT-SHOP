@@ -72,6 +72,52 @@ const upload = multer({
   }
 });
 
+// Enhanced error response handler
+const sendErrorResponse = (res, status, message, error = null) => {
+  console.error(`❌ Messaging API Error (${status}):`, message, error ? error.message : '');
+  
+  // Ensure we always send valid JSON
+  const response = {
+    success: false,
+    message: message || 'An error occurred',
+    timestamp: new Date().toISOString()
+  };
+  
+  // Add error details in development
+  if (process.env.NODE_ENV === 'development' && error) {
+    response.error = error.message;
+    response.stack = error.stack;
+  }
+  
+  try {
+    return res.status(status).json(response);
+  } catch (jsonError) {
+    console.error('❌ Failed to send JSON response:', jsonError);
+    // Fallback to plain text if JSON fails
+    return res.status(500).send('Internal server error');
+  }
+};
+
+// Enhanced success response handler
+const sendSuccessResponse = (res, data, message = null) => {
+  const response = {
+    success: true,
+    data: data || null,
+    timestamp: new Date().toISOString()
+  };
+  
+  if (message) {
+    response.message = message;
+  }
+  
+  try {
+    return res.status(200).json(response);
+  } catch (jsonError) {
+    console.error('❌ Failed to send JSON success response:', jsonError);
+    return sendErrorResponse(res, 500, 'Failed to process response');
+  }
+};
+
 // Get all conversations for a user
 const getConversations = asyncHandler(async (req, res) => {
   console.log('🔍 getConversations called');

@@ -194,10 +194,36 @@ const InlineAttachmentMenu = ({
       if (response.data.success) {
         onSendFiles(response.data.data);
         handleClose();
+      } else {
+        throw new Error(response.data.message || 'Upload failed');
       }
     } catch (error) {
       console.error('File upload error:', error);
-      setError(error.response?.data?.message || 'Failed to upload files');
+      
+      // Enhanced error handling
+      let userMessage = 'Failed to upload files';
+      
+      if (error.response) {
+        // Server responded with error status
+        const status = error.response.status;
+        const data = error.response.data;
+        
+        if (status === 413) {
+          userMessage = 'Files too large. Please select smaller files.';
+        } else if (status === 415) {
+          userMessage = 'File type not supported. Please select different files.';
+        } else if (data && data.message) {
+          userMessage = data.message;
+        } else {
+          userMessage = `Upload failed (${status}). Please try again.`;
+        }
+      } else if (error.request) {
+        userMessage = 'Network error. Please check your connection and try again.';
+      } else {
+        userMessage = error.message || 'An unexpected error occurred';
+      }
+      
+      setError(userMessage);
     } finally {
       setUploading(false);
     }

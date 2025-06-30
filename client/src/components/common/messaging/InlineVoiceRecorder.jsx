@@ -261,7 +261,32 @@ const InlineVoiceRecorder = ({
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorData = { message: 'Failed to send voice message' };
+        
+        try {
+          // Check if response has content and is JSON
+          const contentType = response.headers.get('content-type');
+          const contentLength = response.headers.get('content-length');
+          
+          if (contentType && contentType.includes('application/json') && contentLength !== '0') {
+            const responseText = await response.text();
+            if (responseText && responseText.trim()) {
+              errorData = JSON.parse(responseText);
+            }
+          } else {
+            // Non-JSON response, try to get text
+            const responseText = await response.text();
+            errorData = { 
+              message: responseText || `HTTP ${response.status}: ${response.statusText}` 
+            };
+          }
+        } catch (parseError) {
+          console.error('❌ Failed to parse error response:', parseError);
+          errorData = { 
+            message: `Server error (${response.status}): Unable to process response` 
+          };
+        }
+        
         console.error('❌ Server response error:', errorData);
         
         // Provide user-friendly error messages
@@ -281,7 +306,31 @@ const InlineVoiceRecorder = ({
         throw new Error(userMessage);
       }
 
-      const result = await response.json();
+      let result = { data: null };
+      
+      try {
+        // Check if response has content and is JSON
+        const contentType = response.headers.get('content-type');
+        const contentLength = response.headers.get('content-length');
+        
+        if (contentType && contentType.includes('application/json') && contentLength !== '0') {
+          const responseText = await response.text();
+          if (responseText && responseText.trim()) {
+            result = JSON.parse(responseText);
+          }
+        } else {
+          console.warn('❌ Unexpected response format:', {
+            status: response.status,
+            contentType,
+            contentLength
+          });
+          throw new Error('Server returned unexpected response format');
+        }
+      } catch (parseError) {
+        console.error('❌ Failed to parse success response:', parseError);
+        throw new Error('Server response could not be processed');
+      }
+
       console.log('✅ Audio message sent successfully:', result);
       
       onSendAudio(result.data);

@@ -115,4 +115,43 @@ router.post('/heartbeat', updateUserOnlineStatus);
 router.get('/users/:userId/status', getUserOnlineStatus);
 router.post('/offline', markUserOffline);
 
+// Error handling middleware - must be last
+router.use((error, req, res, next) => {
+  console.error('❌ Messaging route error:', error);
+  
+  // Ensure we always return JSON, even for unexpected errors
+  const response = {
+    success: false,
+    message: 'An unexpected error occurred in messaging system',
+    timestamp: new Date().toISOString()
+  };
+  
+  // Add specific error messages for known error types
+  if (error.name === 'ValidationError') {
+    response.message = 'Invalid request data';
+  } else if (error.name === 'CastError') {
+    response.message = 'Invalid ID format';
+  } else if (error.code === 11000) {
+    response.message = 'Duplicate entry';
+  } else if (error.message) {
+    response.message = error.message;
+  }
+  
+  // Add error details in development
+  if (process.env.NODE_ENV === 'development') {
+    response.error = error.message;
+    response.stack = error.stack;
+  }
+  
+  const status = error.status || error.statusCode || 500;
+  
+  try {
+    return res.status(status).json(response);
+  } catch (jsonError) {
+    console.error('❌ Failed to send error response as JSON:', jsonError);
+    // Last resort fallback
+    return res.status(500).send('Internal server error');
+  }
+});
+
 module.exports = router; 
