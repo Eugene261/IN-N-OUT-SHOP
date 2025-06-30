@@ -14,6 +14,25 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET || 'o2DDXYmE8eUDN1L4qWFv1eSQE9s'
 });
 
+// Validate Cloudinary configuration
+console.log('🔧 Cloudinary configuration check:', {
+  cloud_name: cloudinary.config().cloud_name,
+  api_key: cloudinary.config().api_key ? 'Set' : 'Missing',
+  api_secret: cloudinary.config().api_secret ? 'Set' : 'Missing',
+  uploader_available: typeof cloudinary.uploader?.upload === 'function'
+});
+
+// Test Cloudinary connection
+try {
+  if (cloudinary.uploader && typeof cloudinary.uploader.upload === 'function') {
+    console.log('✅ Cloudinary uploader is properly initialized');
+  } else {
+    console.error('❌ Cloudinary uploader not properly initialized');
+  }
+} catch (cloudinaryError) {
+  console.error('❌ Cloudinary initialization error:', cloudinaryError);
+}
+
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -24,18 +43,31 @@ const upload = multer({
   fileFilter: (req, file, cb) => {
     // Allow images, audio, video, and documents
     const allowedMimes = [
-      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-      'audio/mpeg', 'audio/wav', 'audio/mp3', 'audio/ogg', 'audio/webm',
-      'video/mp4', 'video/webm', 'video/quicktime',
+      // Images
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/jpg',
+      // Audio - comprehensive list for mobile compatibility
+      'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/webm', 
+      'audio/aac', 'audio/mp4', 'audio/x-wav', 'audio/wave',
+      'audio/x-mp3', 'audio/mpeg3', 'audio/x-mpeg', 'audio/x-mpeg-3',
+      // Video
+      'video/mp4', 'video/webm', 'video/quicktime', 'video/avi',
+      // Documents
       'application/pdf', 'application/msword', 
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'text/plain'
     ];
     
+    console.log('🔍 File filter check:', {
+      filename: file.originalname,
+      mimetype: file.mimetype,
+      isAllowed: allowedMimes.includes(file.mimetype)
+    });
+    
     if (allowedMimes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('File type not supported'), false);
+      console.error('❌ File type not supported:', file.mimetype);
+      cb(new Error(`File type ${file.mimetype} not supported`), false);
     }
   }
 });
@@ -382,28 +414,51 @@ const sendMediaMessage = asyncHandler(async (req, res) => {
       } else if (file.mimetype.startsWith('audio/')) {
         messageType = 'audio';
         
+        console.log('🎵 Processing audio file:', {
+          mimetype: file.mimetype,
+          originalname: file.originalname,
+          size: file.size
+        });
+        
         // Verify cloudinary.uploader exists
         if (!cloudinary.uploader || typeof cloudinary.uploader.upload !== 'function') {
+          console.error('❌ Cloudinary uploader not properly initialized');
           throw new Error('Cloudinary uploader not properly initialized');
         }
         
         // For audio files, ensure mobile compatibility by converting to MP3 if needed
         const uploadOptions = {
           folder: 'messaging/audio',
-          resource_type: 'video' // Cloudinary uses 'video' for audio files
+          resource_type: 'video', // Cloudinary uses 'video' for audio files
+          quality: 'auto',
+          format: 'mp3' // Force MP3 for maximum compatibility
         };
         
-        // Convert WebM audio to MP3 for mobile compatibility
-        if (file.mimetype === 'audio/webm' || file.originalname.includes('.webm')) {
-          uploadOptions.format = 'mp3';
+        // Enhanced mobile compatibility - convert all audio to MP3
+        if (file.mimetype.includes('webm') || file.mimetype.includes('ogg') || 
+            file.originalname.includes('.webm') || file.originalname.includes('.ogg')) {
           uploadOptions.audio_codec = 'mp3';
+          uploadOptions.audio_frequency = 44100;
           uploadOptions.transformation = [
-            { audio_codec: 'mp3', audio_frequency: 44100 }
+            { audio_codec: 'mp3', audio_frequency: 44100, quality: 'auto' }
           ];
-          console.log('🔄 Converting WebM audio to MP3 for mobile compatibility');
+          console.log('🔄 Converting audio to MP3 for mobile compatibility');
         }
         
-        uploadResult = await cloudinary.uploader.upload(dataURI, uploadOptions);
+        console.log('🎵 Upload options:', uploadOptions);
+        
+        try {
+          uploadResult = await cloudinary.uploader.upload(dataURI, uploadOptions);
+          console.log('✅ Audio upload successful:', {
+            public_id: uploadResult.public_id,
+            format: uploadResult.format,
+            duration: uploadResult.duration,
+            url: uploadResult.secure_url
+          });
+        } catch (cloudinaryError) {
+          console.error('❌ Cloudinary audio upload error:', cloudinaryError);
+          throw new Error(`Audio upload failed: ${cloudinaryError.message}`);
+        }
       } else if (file.mimetype.startsWith('video/')) {
         messageType = 'video';
         uploadResult = await cloudinary.uploader.upload(dataURI, {

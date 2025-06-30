@@ -24,6 +24,7 @@ const InlineVoiceRecorder = ({
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
   const [permission, setPermission] = useState('prompt');
+  const [recordingFormat, setRecordingFormat] = useState({ mimeType: 'audio/webm', extension: 'webm' });
 
   const recorderRef = useRef(null);
   const streamRef = useRef(null);
@@ -145,6 +146,9 @@ const InlineVoiceRecorder = ({
 
       recorderRef.current = new MediaRecorder(streamRef.current, options);
       
+      // Store the recording format for later use
+      setRecordingFormat({ mimeType, extension: fileExtension });
+      
       recorderRef.current.ondataavailable = (event) => {
         if (event.data.size > 0) {
           chunksRef.current.push(event.data);
@@ -153,10 +157,10 @@ const InlineVoiceRecorder = ({
 
       recorderRef.current.onstop = async () => {
         console.log('🎵 Recording stopped, processing...');
-        const audioBlob = new Blob(chunksRef.current, { type: mimeType });
+        const audioBlob = new Blob(chunksRef.current, { type: recordingFormat.mimeType });
         
         // FIXED: Send with correct MIME type and extension
-        await sendAudioMessage(audioBlob, mimeType, fileExtension);
+        await sendAudioMessage(audioBlob, recordingFormat.mimeType, recordingFormat.extension);
         
         chunksRef.current = [];
       };
@@ -221,6 +225,7 @@ const InlineVoiceRecorder = ({
 
     try {
       setSending(true);
+      setError(''); // Clear any previous errors
 
       const formData = new FormData();
       
@@ -257,7 +262,23 @@ const InlineVoiceRecorder = ({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to send voice message');
+        console.error('❌ Server response error:', errorData);
+        
+        // Provide user-friendly error messages
+        let userMessage = 'Failed to send voice message';
+        if (errorData.message) {
+          if (errorData.message.includes('File type')) {
+            userMessage = 'Audio format not supported. Please try again.';
+          } else if (errorData.message.includes('size')) {
+            userMessage = 'Voice message too large. Please record a shorter message.';
+          } else if (errorData.message.includes('Cloudinary')) {
+            userMessage = 'Upload service temporarily unavailable. Please try again.';
+          } else {
+            userMessage = errorData.message;
+          }
+        }
+        
+        throw new Error(userMessage);
       }
 
       const result = await response.json();
@@ -267,7 +288,18 @@ const InlineVoiceRecorder = ({
       onClose();
     } catch (error) {
       console.error('❌ Failed to send audio message:', error);
-      setError(`Failed to send voice message: ${error.message}`);
+      
+      // Handle different types of errors
+      let userMessage = 'Failed to send voice message';
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        userMessage = 'Network error. Please check your connection and try again.';
+      } else if (error.message.includes('timeout')) {
+        userMessage = 'Upload timed out. Please try again with a shorter message.';
+      } else {
+        userMessage = error.message;
+      }
+      
+      setError(userMessage);
     } finally {
       setSending(false);
     }
@@ -431,7 +463,7 @@ const InlineVoiceRecorder = ({
                   <Trash2 className="w-5 h-5" />
                 </button>
                 <button
-                  onClick={sendAudioMessage}
+                  onClick={() => sendAudioMessage(audioBlob, recordingFormat.mimeType, recordingFormat.extension)}
                   disabled={sending}
                   className="p-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
