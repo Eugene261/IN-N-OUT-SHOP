@@ -1,14 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import AdminHeader from './header';
 import AdminSidebar from './sidebar';
 import FloatingMessageButton from '../common/messaging/FloatingMessageButton';
 import MessageWidget from '../common/messaging/MessageWidget';
 
 function AdminLayout() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [messageWidgetOpen, setMessageWidgetOpen] = useState(false);
   const sidebarRef = useRef(null);
+  
+  // Check if we're on the messages page
+  const isOnMessagesPage = location.pathname.includes('/messages');
   
   // Close sidebar when clicking outside
   useEffect(() => {
@@ -31,7 +36,16 @@ function AdminLayout() {
   };
 
   const toggleMessageWidget = () => {
-    setMessageWidgetOpen(prev => !prev);
+    // Check screen size
+    const isDesktop = window.innerWidth >= 1024; // lg breakpoint
+    
+    if (isDesktop) {
+      // On desktop, navigate to full page messaging
+      navigate('/admin/messages');
+    } else {
+      // On mobile, use widget
+      setMessageWidgetOpen(prev => !prev);
+    }
   };
 
   const closeMessageWidget = () => {
@@ -73,24 +87,27 @@ function AdminLayout() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <AdminHeader onMenuToggle={toggleSidebar} />
         
-        <main className="flex-1 overflow-y-auto bg-gray-50">
-          <div className="p-4 sm:p-6 max-w-full">
-            <div className="max-w-7xl mx-auto">
-              <Outlet />
-            </div>
+        <main className="flex-1 overflow-hidden bg-gray-50">
+          <div className="h-full">
+            <Outlet />
           </div>
         </main>
       </div>
 
-      {/* Floating Message Widget */}
-      <FloatingMessageButton 
-        isOpen={messageWidgetOpen}
-        onClick={toggleMessageWidget}
-      />
-      <MessageWidget 
-        isOpen={messageWidgetOpen}
-        onClose={closeMessageWidget}
-      />
+      {/* Floating Message Widget - Only show when NOT on messages page */}
+      {!isOnMessagesPage && (
+        <FloatingMessageButton 
+          isOpen={messageWidgetOpen}
+          onClick={toggleMessageWidget}
+        />
+      )}
+      {/* Only show widget on mobile and when not on messages page */}
+      {!isOnMessagesPage && window.innerWidth < 1024 && (
+        <MessageWidget 
+          isOpen={messageWidgetOpen}
+          onClose={closeMessageWidget}
+        />
+      )}
     </div>
   );
 }

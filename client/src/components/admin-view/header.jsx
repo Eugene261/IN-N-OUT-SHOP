@@ -73,7 +73,7 @@ function AdminHeader({ onMenuToggle }) {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 shadow-sm px-4 py-3 sticky top-0 z-10">
+    <header className="bg-white border-b border-gray-200 shadow-sm px-4 py-3 sticky top-0 z-20">
       <div className="flex items-center justify-between">
         {/* Left side: Menu Toggle Button */}
         <div className="flex items-center gap-3">

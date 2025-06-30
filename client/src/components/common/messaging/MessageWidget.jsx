@@ -96,12 +96,12 @@ const MessageWidget = ({ isOpen, onClose }) => {
           <motion.div
             className="fixed z-50 bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden hidden lg:block"
             style={{
-              bottom: '100px',
-              right: '24px',
-              width: '400px',
-              height: isMinimized ? '60px' : '600px',
-              maxWidth: 'calc(100vw - 48px)',
-              maxHeight: 'calc(100vh - 120px)'
+              bottom: '80px',
+              right: '16px',
+              width: '700px',
+              height: isMinimized ? '60px' : '750px',
+              maxWidth: 'calc(100vw - 32px)',
+              maxHeight: 'calc(100vh - 100px)'
             }}
             variants={widgetVariants}
             initial="hidden"
@@ -135,7 +135,7 @@ const MessageWidget = ({ isOpen, onClose }) => {
 
             {/* Content */}
             {!isMinimized && (
-              <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
+              <div className="flex-1 bg-gray-50 overflow-hidden">
                 <MessagingDashboard isWidget={true} />
               </div>
             )}

@@ -1,4 +1,6 @@
-const User = require('../../models/User.js');const bcrypt = require('bcryptjs');const emailService = require('../../services/emailService.js');
+const User = require('../../models/User.js');
+const bcrypt = require('bcryptjs');
+const emailService = require('../../services/emailService.js');
 const Order = require('../../models/Order.js');
 const Product = require('../../models/Products.js');
 const ShippingZone = require('../../models/ShippingZone.js');
@@ -129,7 +131,33 @@ const addUser = async (req, res) => {
       role
     });
 
-        await newUser.save();        // Send welcome email with credentials for admin users    if (role === 'admin') {      try {        await emailService.sendNewAdminWelcomeEmail(          email,          userName,          password // Send the original password since it's temporary        );        console.log('Welcome email sent to new admin:', email);      } catch (emailError) {        console.error('Failed to send welcome email to new admin:', emailError);        // Don't fail the user creation if email fails      }    }    res.status(201).json({      success: true,      message: 'User created successfully',      user: {        id: newUser._id,        userName: newUser.userName,        email: newUser.email,        role: newUser.role      }    });
+    await newUser.save();
+    
+    // Send welcome email with credentials for admin users
+    if (role === 'admin') {
+      try {
+        await emailService.sendNewAdminWelcomeEmail(
+          email,
+          userName,
+          password // Send the original password since it's temporary
+        );
+        console.log('Welcome email sent to new admin:', email);
+      } catch (emailError) {
+        console.error('Failed to send welcome email to new admin:', emailError);
+        // Don't fail the user creation if email fails
+      }
+    }
+    
+    res.status(201).json({
+      success: true,
+      message: 'User created successfully',
+      user: {
+        id: newUser._id,
+        userName: newUser.userName,
+        email: newUser.email,
+        role: newUser.role
+      }
+    });
   } catch (error) {
     console.error('Error in addUser:', error);
     res.status(500).json({

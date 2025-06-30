@@ -1,6 +1,5 @@
 // CACHE BUST v3.0 - Critical error handling fixes for status access errors
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MessageSquare, 
   Send, 
@@ -73,74 +72,92 @@ const MessagingDashboard = ({ isWidget = false }) => {
 
   // Local UI state
   const [newMessage, setNewMessage] = useState('');
-  const [showConversations, setShowConversations] = useState(true); // Mobile: toggle between conversations and chat
+  // Simple mobile-like behavior: show conversations or chat, not both
+  const [showConversations, setShowConversations] = useState(true);
   const [hasInitialized, setHasInitialized] = useState(false);
   const [initError, setInitError] = useState(null);
   const [showInlineAttachment, setShowInlineAttachment] = useState(false);
   const [showInlineRecorder, setShowInlineRecorder] = useState(false);
   const [prevMessagesLength, setPrevMessagesLength] = useState(0);
   const [participantStatuses, setParticipantStatuses] = useState({}); // Track real online status
+  const [lastSelectedConversationId, setLastSelectedConversationId] = useState(null); // Preserve conversation selection
   const heartbeatIntervalRef = useRef(null);
   const statusCheckIntervalRef = useRef(null);
-
-  // Track conversations with ref to prevent infinite loops
-  const conversationsRef = useRef(conversations);
+  const messagesEndRef = useRef(null);
   
-  // Update ref when conversations change (but don't trigger effects)
+  // Debug activeConversation changes (removed for performance)
+  // useEffect(() => {
+  //   console.log('🎯 Active conversation changed:', activeConversation ? `ID: ${activeConversation._id}` : 'None');
+  // }, [activeConversation]);
+  
+  // Restore active conversation if it gets cleared but we have conversations loaded
   useEffect(() => {
-    conversationsRef.current = conversations;
-  }, [conversations]);
+    if (!activeConversation && lastSelectedConversationId && conversations?.length > 0) {
+      const foundConversation = conversations.find(conv => conv._id === lastSelectedConversationId);
+      if (foundConversation) {
+        dispatch(setActiveConversation(foundConversation));
+      }
+    }
+  }, [activeConversation, lastSelectedConversationId, conversations, dispatch]);
+
+  // Track conversations and activeConversation with refs to prevent infinite loops
+  const conversationsRef = useRef(conversations);
+  const activeConversationRef = useRef(activeConversation);
+  
+  // Update refs when data changes (but don't trigger effects) - REMOVED to prevent loops
+  // useEffect(() => {
+  //   conversationsRef.current = conversations;
+  // }, [conversations]);
+
+  // useEffect(() => {
+  //   activeConversationRef.current = activeConversation;
+  // }, [activeConversation]);
+
+  // Simple initialization - start with conversations visible
+  useEffect(() => {
+    // Always start by showing conversations (mobile-like behavior)
+    setShowConversations(true);
+  }, []);
 
   useEffect(() => {
-    // Initialize data with error handling
+    // Initialize data with error handling - ONLY ONCE
+    if (hasInitialized || !user?.id) return;
+    
     const initializeMessaging = async () => {
       try {
         setInitError(null);
-        console.log('🔄 Initializing messaging system...');
+        // Initialize messaging system
         
         // SAFER ERROR HANDLING: Wrap individual dispatches to handle errors properly
         const conversationsPromise = dispatch(fetchConversations({})).unwrap().catch(err => {
           console.error('❌ Failed to fetch conversations:', err);
-          console.log('🔍 Error type:', typeof err);
-          console.log('🔍 Error details:', JSON.stringify(err, null, 2));
           
           // Ultra-safe check if messaging is disabled (503 error with specific code)  
           if (err && typeof err === 'object' && 
               err.hasOwnProperty('status') && typeof err.status === 'number' && err.status === 503 && 
               err.hasOwnProperty('code') && typeof err.code === 'string' && err.code === 'MESSAGING_DISABLED') {
-            console.log('🚫 Messaging system is disabled');
             throw new Error('MESSAGING_DISABLED');
           }
           
-          console.log('⚠️ Conversations fetch failed, returning empty result');
           // Return empty result for other errors
           return { conversations: [], totalUnread: 0 };
         });
         
         const usersPromise = dispatch(fetchAvailableUsers()).unwrap().catch(err => {
           console.error('❌ Failed to fetch available users:', err);
-          console.log('🔍 Users error type:', typeof err);
-          console.log('🔍 Users error details:', JSON.stringify(err, null, 2));
           
           // Ultra-safe check if messaging is disabled (503 error with specific code)
           if (err && typeof err === 'object' && 
               err.hasOwnProperty('status') && typeof err.status === 'number' && err.status === 503 && 
               err.hasOwnProperty('code') && typeof err.code === 'string' && err.code === 'MESSAGING_DISABLED') {
-            console.log('🚫 Messaging system is disabled');
             throw new Error('MESSAGING_DISABLED');
           }
           
-          console.log('⚠️ Users fetch failed, returning empty array');
           // Return empty array for other errors
           return [];
         });
         
         const [conversationsResult, usersResult] = await Promise.all([conversationsPromise, usersPromise]);
-        console.log('✅ Messaging initialization complete');
-        console.log('🔍 Conversations result:', conversationsResult);
-        console.log('🔍 Users result:', usersResult);
-        console.log('🔍 Conversations type:', typeof conversationsResult);
-        console.log('🔍 Users type:', typeof usersResult);
         setHasInitialized(true);
       } catch (err) {
         console.error('❌ Failed to initialize messaging:', err);
@@ -157,16 +174,13 @@ const MessagingDashboard = ({ isWidget = false }) => {
         } else if (typeof err === 'string') {
           errorMessage = err;
         }
-        console.log('🔍 Setting init error:', errorMessage);
         setInitError(errorMessage);
         setHasInitialized(true); // Still mark as initialized to show error state
       }
     };
 
-    if (!hasInitialized) {
-      initializeMessaging();
-    }
-  }, [dispatch, hasInitialized]);
+    initializeMessaging();
+  }, [user?.id]); // Only run when user changes
 
   useEffect(() => {
     if (activeConversation && hasInitialized) {
@@ -174,6 +188,13 @@ const MessagingDashboard = ({ isWidget = false }) => {
         try {
           await dispatch(fetchMessages({ conversationId: activeConversation._id })).unwrap();
           dispatch(markAsRead({ conversationId: activeConversation._id }));
+          
+          // Scroll to bottom after messages are loaded
+          setTimeout(() => {
+            if (messagesEndRef.current) {
+              messagesEndRef.current.scrollIntoView({ behavior: 'auto' });
+            }
+          }, 600);
         } catch (err) {
           console.error('Failed to load messages:', err);
           // SAFER ERROR MESSAGE EXTRACTION
@@ -188,74 +209,11 @@ const MessagingDashboard = ({ isWidget = false }) => {
     }
   }, [activeConversation, dispatch, hasInitialized]);
 
-  // Auto-refresh messages and conversations with smart error handling
-  useEffect(() => {
-    if (!hasInitialized) return;
-
-    let consecutiveErrors = 0;
-    let isComponentMounted = true;
-    let timeoutId = null;
-
-    const refreshData = async () => {
-      if (!isComponentMounted) return;
-
-      try {
-        // Refresh conversations to get latest messages and unread counts
-        await dispatch(fetchConversations()).unwrap();
-        
-        // Refresh current conversation messages if active
-        if (activeConversation) {
-          await dispatch(fetchMessages({ conversationId: activeConversation._id })).unwrap();
-        }
-        
-        // Reset error count on success
-        consecutiveErrors = 0;
-        scheduleNextRefresh(5000); // Normal 5 second interval
-      } catch (error) {
-        if (!isComponentMounted) return;
-        
-        consecutiveErrors++;
-        
-        // Check if it's a network error
-        const isNetworkError = !navigator.onLine || 
-                              error?.message?.includes('Network Error') ||
-                              error?.code === 'ERR_NETWORK' ||
-                              error?.code === 'ERR_INTERNET_DISCONNECTED' ||
-                              error?.response?.status === 0 ||
-                              error?.message?.includes('ERR_ADDRESS_UNREACHABLE');
-        
-        if (isNetworkError) {
-          console.warn('🌐 Network connection issue during auto-refresh');
-        } else {
-          console.error('❌ Auto-refresh failed:', error);
-        }
-        
-        // Exponential backoff: 5s, 10s, 20s, 30s max
-        const backoffDelay = Math.min(5000 * Math.pow(2, consecutiveErrors - 1), 30000);
-        scheduleNextRefresh(backoffDelay);
-      }
-    };
-
-    const scheduleNextRefresh = (delay) => {
-      if (!isComponentMounted) return;
-      
-      timeoutId = setTimeout(() => {
-        if (isComponentMounted) {
-          refreshData();
-        }
-      }, delay);
-    };
-
-    // Initial refresh
-    refreshData();
-
-    return () => {
-      isComponentMounted = false;
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [dispatch, hasInitialized, activeConversation]);
+  // Auto-refresh messages and conversations with smart error handling - DISABLED TO PREVENT LOOPS
+  // useEffect(() => {
+  //   if (!hasInitialized) return;
+  //   // Auto-refresh logic disabled temporarily to fix infinite loops
+  // }, [hasInitialized]);
 
   useEffect(() => {
     // Show error notifications - FIXED: Don't show auth errors from background processes
@@ -276,78 +234,10 @@ const MessagingDashboard = ({ isWidget = false }) => {
     }
   }, [error, dispatch]);
 
-  // Monitor online/offline status for better user experience  
+  // Monitor online/offline status - SIMPLIFIED TO PREVENT LOOPS
   useEffect(() => {
-    const handleOnline = () => {
-      console.log('📶 Network restored');
-    };
-    const handleOffline = () => {
-      console.log('📴 Network lost');
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    // Heartbeat system - ping server every 30 seconds to maintain online status
-    const startHeartbeat = () => {
-      heartbeatIntervalRef.current = setInterval(async () => {
-        if (navigator.onLine && user?.id) {
-          try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-              console.log('🔔 No token available for heartbeat, skipping');
-              return;
-            }
-            
-            await axios.post(
-              `${import.meta.env.VITE_API_URL}/api/common/messaging/heartbeat`,
-              {},
-              {
-                headers: { 'Authorization': `Bearer ${token}` }
-              }
-            );
-          } catch (error) {
-            // FIXED: Handle authentication errors gracefully without toasts
-            if (error.response?.status === 401) {
-              console.log('🔔 Heartbeat authentication failed, token may be expired');
-              // Clear intervals to stop making failing requests
-              if (heartbeatIntervalRef.current) {
-                clearInterval(heartbeatIntervalRef.current);
-                heartbeatIntervalRef.current = null;
-              }
-              if (statusCheckIntervalRef.current) {
-                clearInterval(statusCheckIntervalRef.current);
-                statusCheckIntervalRef.current = null;
-              }
-              // Don't show error toast - let axios interceptor handle token expiration
-              return;
-            }
-            
-            // Only log non-auth errors
-            if (error.response?.status !== 401) {
-              console.log('⚠️ Heartbeat failed:', error.message);
-            }
-          }
-        }
-      }, 30000); // Every 30 seconds
-    };
-
-    // Check online status of conversation participants every 2 minutes (reduced frequency)
-    const startStatusCheck = () => {
-      statusCheckIntervalRef.current = setInterval(async () => {
-        if (navigator.onLine && conversationsRef.current?.length > 0) {
-          await checkParticipantStatuses();
-        }
-      }, 120000); // Every 2 minutes to prevent overloading mobile
-    };
-
-    startHeartbeat();
-    startStatusCheck();
-
+    // Disabled heartbeat and status checking temporarily to fix infinite loops
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-      
       if (heartbeatIntervalRef.current) {
         clearInterval(heartbeatIntervalRef.current);
       }
@@ -355,7 +245,7 @@ const MessagingDashboard = ({ isWidget = false }) => {
         clearInterval(statusCheckIntervalRef.current);
       }
     };
-  }, [user?.id]); // REMOVED conversations dependency to prevent infinite loop
+  }, []);
 
   // Check online status of conversation participants
   const checkParticipantStatuses = async () => {
@@ -390,8 +280,9 @@ const MessagingDashboard = ({ isWidget = false }) => {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
           const response = await axios.get(
-            `${import.meta.env.VITE_API_URL}/api/common/messaging/users/${participantId}/status`,
+            `${API_URL}/api/common/messaging/users/${participantId}/status`,
             {
               headers: { 'Authorization': `Bearer ${token}` },
               signal: controller.signal
@@ -459,10 +350,17 @@ const MessagingDashboard = ({ isWidget = false }) => {
         window.playMessageReceivedSound();
         console.log('📱 MessagingDashboard: Playing receive sound for incoming message');
       }
+      
+      // Scroll to bottom when new messages arrive (only for new incoming messages)
+      setTimeout(() => {
+        if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 150);
     }
     
     setPrevMessagesLength(currentMessageCount);
-  }, [messages, activeConversation, user?.id, hasInitialized, prevMessagesLength]);
+  }, [messages, activeConversation, user?.id, hasInitialized]); // Removed prevMessagesLength to prevent dependency loops
 
   const handleStartNewConversation = async (recipientId, recipientName) => {
     try {
@@ -471,7 +369,8 @@ const MessagingDashboard = ({ isWidget = false }) => {
         title: `Chat with ${recipientName}` 
       })).unwrap();
       
-      setShowConversations(false); // Switch to chat view on mobile
+      // Simple mobile-like behavior: hide conversations to show the new chat
+      setShowConversations(false);
       toast.success(`Started conversation with ${recipientName}`);
     } catch (error) {
       console.error('Failed to start conversation:', error);
@@ -547,7 +446,8 @@ const MessagingDashboard = ({ isWidget = false }) => {
 
   const handleConversationSelect = (conversation) => {
     dispatch(setActiveConversation(conversation));
-    setShowConversations(false); // Switch to chat view on mobile
+    setLastSelectedConversationId(conversation?._id);
+    setShowConversations(false);
   };
 
   const handleFileUpload = (message) => {
@@ -652,12 +552,12 @@ const MessagingDashboard = ({ isWidget = false }) => {
   // Get real online status for conversation participants
   const getOnlineStatus = (participantId) => {
     if (!participantId) {
-      return { text: 'Unknown', color: 'bg-gray-400', isOnline: false };
+      return { text: 'Offline', color: 'bg-gray-400', isOnline: false };
     }
 
     const status = participantStatuses[participantId];
     if (!status) {
-      return { text: 'Unknown', color: 'bg-gray-400', isOnline: false };
+      return { text: 'Offline', color: 'bg-gray-400', isOnline: false };
     }
 
     if (status.isOnline) {
@@ -665,21 +565,32 @@ const MessagingDashboard = ({ isWidget = false }) => {
     }
 
     // Calculate time since last seen
-    const now = new Date();
-    const lastSeen = new Date(status.lastSeen);
-    const timeDiff = Math.floor((now - lastSeen) / 1000); // seconds
+    try {
+      const now = new Date();
+      const lastSeen = new Date(status.lastSeen);
+      
+      // Check if lastSeen is a valid date
+      if (isNaN(lastSeen.getTime())) {
+        return { text: 'Offline', color: 'bg-gray-400', isOnline: false };
+      }
+      
+      const timeDiff = Math.floor((now - lastSeen) / 1000); // seconds
 
-    if (timeDiff < 60) {
-      return { text: 'Last seen just now', color: 'bg-yellow-400', isOnline: false };
-    } else if (timeDiff < 3600) {
-      const minutes = Math.floor(timeDiff / 60);
-      return { text: `Last seen ${minutes}m ago`, color: 'bg-gray-400', isOnline: false };
-    } else if (timeDiff < 86400) {
-      const hours = Math.floor(timeDiff / 3600);
-      return { text: `Last seen ${hours}h ago`, color: 'bg-gray-400', isOnline: false };
-    } else {
-      const days = Math.floor(timeDiff / 86400);
-      return { text: `Last seen ${days}d ago`, color: 'bg-gray-400', isOnline: false };
+      if (timeDiff < 60) {
+        return { text: 'Last seen just now', color: 'bg-yellow-400', isOnline: false };
+      } else if (timeDiff < 3600) {
+        const minutes = Math.floor(timeDiff / 60);
+        return { text: `Last seen ${minutes}m ago`, color: 'bg-gray-400', isOnline: false };
+      } else if (timeDiff < 86400) {
+        const hours = Math.floor(timeDiff / 3600);
+        return { text: `Last seen ${hours}h ago`, color: 'bg-gray-400', isOnline: false };
+      } else {
+        const days = Math.floor(timeDiff / 86400);
+        return { text: `Last seen ${days}d ago`, color: 'bg-gray-400', isOnline: false };
+      }
+    } catch (error) {
+      console.warn('Error calculating last seen time:', error);
+      return { text: 'Offline', color: 'bg-gray-400', isOnline: false };
     }
   };
 
@@ -701,8 +612,9 @@ const MessagingDashboard = ({ isWidget = false }) => {
       if (user?.id) {
         try {
           const token = localStorage.getItem('token');
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
           await axios.post(
-            `${import.meta.env.VITE_API_URL}/api/common/messaging/offline`,
+            `${API_URL}/api/common/messaging/offline`,
             {},
             {
               headers: { 'Authorization': `Bearer ${token}` }
@@ -740,14 +652,14 @@ const MessagingDashboard = ({ isWidget = false }) => {
   // Safe error boundary wrapper
   const renderMessagingInterface = () => {
     try {
-      // Early return for any critical missing data
+      // Simple authentication check to prevent infinite loops
       if (!user?.id) {
         return (
           <div className="h-full w-full bg-gray-50 flex items-center justify-center">
             <div className="text-center">
-              <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Authentication Required</h3>
-              <p className="text-gray-600">Please log in to access messaging.</p>
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading Messaging</h3>
+              <p className="text-gray-600">Please wait while we load your messages...</p>
             </div>
           </div>
         );
@@ -781,32 +693,32 @@ const MessagingDashboard = ({ isWidget = false }) => {
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex overflow-hidden h-full">
               {/* Conversations Sidebar */}
               <div className={`${
                 showConversations ? 'flex' : 'hidden'
-              } ${isWidget ? 'lg:flex lg:w-2/5' : 'lg:flex lg:w-1/3'} w-full bg-white border-r border-gray-200 flex-col relative shadow-sm`}>
+              } w-full bg-white border-r border-gray-200 flex-col relative shadow-sm h-full`}>
                 {/* Header */}
-                <div className={`${isWidget ? 'p-3' : 'p-4 lg:p-6'} border-b border-gray-200 ${isWidget ? 'bg-gray-50' : 'bg-gradient-to-r from-blue-50 to-indigo-50'}`}>
+                <div className={`${isWidget ? 'p-3' : 'p-4 lg:p-6'} border-b bg-blue-600 text-white`}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       {!isWidget && (
-                        <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                        <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center border-2 border-white border-opacity-30">
                           <MessageSquare className="w-6 h-6 text-white" />
                         </div>
                       )}
                       <div>
-                        <h1 className={`${isWidget ? 'text-base' : 'text-lg lg:text-xl'} font-bold text-gray-900`}>
+                        <h1 className={`${isWidget ? 'text-base' : 'text-lg lg:text-xl'} font-bold text-white`}>
                           {isWidget ? 'Conversations' : 'Messages'}
                         </h1>
-                        <p className="text-xs lg:text-sm text-gray-600">
+                        <p className="text-xs lg:text-sm text-blue-100">
                           {totalUnread > 0 ? `${totalUnread} unread` : 'All caught up'}
                         </p>
                       </div>
                     </div>
                     <button
                       onClick={() => dispatch(setShowNewChatModal(true))}
-                      className={`${isWidget ? 'p-2' : 'p-2 lg:p-3'} bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm hover:shadow-md touch-manipulation`}
+                      className={`${isWidget ? 'p-2' : 'p-2 lg:p-3'} bg-white bg-opacity-20 text-white rounded-xl hover:bg-opacity-30 active:bg-opacity-40 transition-colors shadow-sm hover:shadow-md touch-manipulation border border-white border-opacity-30`}
                       title="Start new conversation"
                     >
                       <Plus className={`${isWidget ? 'w-4 h-4' : 'w-4 h-4 lg:w-5 lg:h-5'}`} />
@@ -862,10 +774,8 @@ const MessagingDashboard = ({ isWidget = false }) => {
                           const lastMessageTime = conversation.lastMessage?.createdAt || conversation.updatedAt;
 
                           return (
-                            <motion.div
+                            <div
                               key={conversation._id}
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
                               className={`p-3 lg:p-4 cursor-pointer transition-all duration-200 hover:bg-gray-50 active:bg-gray-100 ${
                                 isActive ? 'bg-blue-50 border-r-4 border-blue-500' : ''
                               } ${hasUnread ? 'bg-blue-50/50' : ''}`}
@@ -900,7 +810,7 @@ const MessagingDashboard = ({ isWidget = false }) => {
                                   </p>
                                 </div>
                               </div>
-                            </motion.div>
+                            </div>
                           );
                         } catch (conversationError) {
                           console.error('Error rendering conversation:', conversationError);
@@ -923,61 +833,49 @@ const MessagingDashboard = ({ isWidget = false }) => {
               {/* Chat Area */}
               <div className={`${
                 showConversations ? 'hidden' : 'flex'
-              } lg:flex flex-1 flex-col bg-white relative`}>
-                {activeConversation ? (
-                  <>
-                    {/* Conversation Header - Fixed at Top */}
-                    <div className="flex-shrink-0 border-b border-gray-200 bg-white px-4 py-3 shadow-sm">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          {/* Back Button for Mobile */}
-                          <button
-                            onClick={() => setShowConversations(true)}
-                            className="lg:hidden p-1 text-gray-400 hover:text-gray-600 rounded-md"
-                          >
-                            <ArrowLeft className="w-5 h-5" />
-                          </button>
-                          
-                          {/* Conversation Info */}
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                              {getOtherParticipant(activeConversation)?.userName?.charAt(0)?.toUpperCase() || 'U'}
-                            </div>
-                            <div>
-                              <h2 className="text-base lg:text-lg font-semibold text-gray-900">
-                                {getOtherParticipant(activeConversation)?.userName || 'Unknown User'}
-                              </h2>
-                              {/* Online Status */}
-                              <div className="flex items-center space-x-2 text-xs lg:text-sm">
-                                {(() => {
-                                  const otherParticipant = getOtherParticipant(activeConversation);
-                                  const status = getOnlineStatus(otherParticipant?._id || otherParticipant?.id);
-                                  return (
-                                    <div className="flex items-center space-x-1">
-                                      <div className={`w-2 h-2 rounded-full ${status.color} ${status.isOnline ? 'animate-pulse' : ''}`}></div>
-                                      <span className="text-gray-500">{status.text}</span>
-                                    </div>
-                                  );
-                                })()}
-                              </div>
-                            </div>
+              } w-full flex-col bg-white relative h-full`}>
+                
+                {/* BLUE HEADER - ALWAYS VISIBLE */}
+                <div className="flex-shrink-0 bg-blue-600 text-white px-4 py-3 border-b shadow-sm">
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => setShowConversations(true)}
+                      className="flex items-center text-white hover:text-blue-200 font-medium"
+                    >
+                      ← Back
+                    </button>
+                    
+                    {activeConversation && (
+                      <>
+                        {/* User Avatar */}
+                        <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white font-semibold text-sm border-2 border-white border-opacity-30">
+                          {getOtherParticipant(activeConversation)?.userName?.charAt(0)?.toUpperCase() || 'U'}
+                        </div>
+                        
+                        {/* User Info */}
+                        <div>
+                          <h2 className="font-semibold text-white">
+                            {getOtherParticipant(activeConversation)?.userName || 'Unknown User'}
+                          </h2>
+                          <div className="flex items-center space-x-1 text-sm text-blue-100">
+                            <div className="w-2 h-2 rounded-full bg-green-400"></div>
+                            <span>Online</span>
                           </div>
                         </div>
+                      </>
+                    )}
+                    
+                    {!activeConversation && (
+                      <span className="font-semibold text-white">Messages</span>
+                    )}
+                  </div>
+                </div>
 
-                        {/* Action Buttons */}
-                        <div className="flex items-center space-x-2">
-                          <button
-                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                            title="More options"
-                          >
-                            <MoreVertical className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                {activeConversation ? (
+                  <>
 
                     {/* Messages - Scrollable Area */}
-                    <div className="flex-1 min-h-0 overflow-y-auto p-4 lg:p-6 space-y-4 scroll-smooth">
+                    <div className={`flex-1 overflow-y-auto overflow-x-hidden ${isWidget ? 'p-2' : 'p-4 lg:p-6'} space-y-4`}>
                       {messagesLoading && (!messages || messages.length === 0) ? (
                         <div className="flex justify-center py-8">
                           <div className="flex items-center space-x-2 text-blue-600">
@@ -1000,10 +898,8 @@ const MessagingDashboard = ({ isWidget = false }) => {
                             const showAvatar = index === 0 || messages[index - 1]?.sender?._id !== message?.sender?._id;
 
                             return (
-                              <motion.div
-                                key={message._id || index}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
+                              <div
+                                key={`${message._id}-${index}`}
                                 className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} space-x-2 lg:space-x-3`}
                               >
                                 {!isOwnMessage && showAvatar && (
@@ -1068,11 +964,13 @@ const MessagingDashboard = ({ isWidget = false }) => {
                                     {message?.createdAt ? formatTime(message.createdAt) : 'Unknown time'}
                                   </div>
                                 </div>
-                              </motion.div>
+                              </div>
                             );
                           })}
                         </div>
                       )}
+                      {/* Scroll anchor */}
+                      <div ref={messagesEndRef} />
                     </div>
 
                     {/* Inline Components - Above Footer */}
@@ -1099,7 +997,7 @@ const MessagingDashboard = ({ isWidget = false }) => {
                     )}
 
                     {/* Message Input Footer - Always Visible */}
-                    <div className={`flex-shrink-0 bg-white ${isWidget ? 'p-3' : 'p-3 sm:p-4 lg:p-6'} border-t border-gray-200`}>
+                    <div className={`flex-shrink-0 bg-white ${isWidget ? 'p-2' : 'p-4'} border-t border-gray-200 shadow-sm`}>
                       <div className={`flex items-end ${isWidget ? 'space-x-2' : 'space-x-2 sm:space-x-3'}`}>
                         {/* File Upload Button */}
                         <button 
@@ -1108,7 +1006,7 @@ const MessagingDashboard = ({ isWidget = false }) => {
                             if (showInlineRecorder) setShowInlineRecorder(false);
                             setShowInlineAttachment(!showInlineAttachment);
                           }}
-                          className={`flex-shrink-0 ${isWidget ? 'p-2' : 'p-3'} rounded-xl transition-colors touch-manipulation ${
+                          className={`flex-shrink-0 ${isWidget ? 'p-3' : 'p-3'} rounded-xl transition-colors touch-manipulation ${
                             showInlineAttachment 
                               ? 'bg-blue-100 text-blue-600' 
                               : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:bg-gray-200'
@@ -1125,7 +1023,7 @@ const MessagingDashboard = ({ isWidget = false }) => {
                             if (showInlineAttachment) setShowInlineAttachment(false);
                             setShowInlineRecorder(!showInlineRecorder);
                           }}
-                          className={`flex-shrink-0 ${isWidget ? 'p-2' : 'p-3'} rounded-xl transition-colors touch-manipulation ${
+                          className={`flex-shrink-0 ${isWidget ? 'p-3' : 'p-3'} rounded-xl transition-colors touch-manipulation ${
                             showInlineRecorder 
                               ? 'bg-red-100 text-red-600' 
                               : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:bg-gray-200'
@@ -1142,8 +1040,8 @@ const MessagingDashboard = ({ isWidget = false }) => {
                               value={newMessage}
                               onChange={(e) => setNewMessage(e.target.value)}
                               onKeyPress={handleKeyPress}
-                              placeholder="Type your message here..."
-                              className={`w-full ${isWidget ? 'px-3 py-2' : 'px-4 py-3'} pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 ${isWidget ? 'text-sm' : 'text-base'} placeholder-gray-500 resize-none touch-manipulation`}
+                              placeholder="Type a message..."
+                              className={`w-full ${isWidget ? 'px-4 py-3' : 'px-4 py-3'} pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 ${isWidget ? 'text-base' : 'text-base'} placeholder-gray-500 resize-none touch-manipulation`}
                               disabled={sendingMessage}
                             />
                             {sendingMessage && (
@@ -1159,7 +1057,7 @@ const MessagingDashboard = ({ isWidget = false }) => {
                         <button
                           onClick={handleSendMessage}
                           disabled={!newMessage.trim() || sendingMessage}
-                          className={`flex-shrink-0 ${isWidget ? 'p-2' : 'p-3'} bg-blue-600 text-white rounded-2xl hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md disabled:hover:shadow-sm touch-manipulation`}
+                          className={`flex-shrink-0 ${isWidget ? 'p-3' : 'p-3'} bg-blue-600 text-white rounded-2xl hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md disabled:hover:shadow-sm touch-manipulation`}
                           title="Send message"
                         >
                           <Send className="w-5 h-5" />
@@ -1178,12 +1076,20 @@ const MessagingDashboard = ({ isWidget = false }) => {
                       </div>
                       <h3 className="text-xl lg:text-2xl font-bold text-gray-900 mb-3">Welcome to Messaging</h3>
                       <p className="text-gray-600 mb-6 leading-relaxed">
-                        Select a conversation from the sidebar to start chatting, or click the 
-                        <span className="inline-flex items-center mx-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                          <Plus className="w-3 h-3 mr-1" />
-                          plus
-                        </span> 
-                        button to start a new conversation.
+                        {filteredConversations && filteredConversations.length > 0 ? (
+                          <>
+                            Select a conversation from the sidebar to start chatting with admins and super admins.
+                          </>
+                        ) : (
+                          <>
+                            Click the 
+                            <span className="inline-flex items-center mx-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                              <Plus className="w-3 h-3 mr-1" />
+                              plus
+                            </span> 
+                            button in the sidebar to start a new conversation.
+                          </>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -1216,12 +1122,14 @@ const MessagingDashboard = ({ isWidget = false }) => {
   };
 
   return (
-    <div className={`${isWidget ? 'h-full bg-white' : '-m-4 sm:-m-6 lg:-m-8 h-[calc(100vh-80px)] bg-gray-50 border border-gray-200 rounded-lg shadow-sm'} flex overflow-hidden`}>
+    <div className={`${isWidget ? 'h-full bg-white flex flex-col' : 'h-full bg-gray-50'} flex overflow-hidden`}>
       {/* Sound Notifications */}
       <SoundNotifications />
       
       {/* Main Interface */}
-      {renderMessagingInterface()}
+      <div className="flex-1 flex overflow-hidden">
+        {renderMessagingInterface()}
+      </div>
       
       {/* New Conversation Modal */}
       <NewConversationModal 

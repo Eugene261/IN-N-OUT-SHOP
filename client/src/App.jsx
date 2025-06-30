@@ -112,12 +112,21 @@ function App() {
     return () => clearTimeout(timeout);
   }, [dispatch, location.pathname]);
 
-  // Separate effect to handle token synchronization after OAuth
+  // Separate effect to handle token synchronization after OAuth and mobile sessions
   useEffect(() => {
     const token = localStorage.getItem('token');
-    // If we have a token but Redux state shows not authenticated, sync the state
-    if (token && !isAuthenticated && !isLoading && location.pathname !== '/auth/oauth-success') {
-      console.log('App: Token exists but not authenticated, syncing auth state...');
+    // Enhanced token validation for mobile compatibility
+    const isValidToken = token && token !== 'null' && token !== 'undefined' && token.length > 10;
+    
+    // If we have a valid token but Redux state shows not authenticated, sync the state
+    if (isValidToken && !isAuthenticated && !isLoading && location.pathname !== '/auth/oauth-success') {
+      console.log('App: Valid token exists but not authenticated, syncing auth state...', {
+        hasToken: !!token,
+        tokenLength: token?.length,
+        isAuthenticated,
+        isLoading,
+        isMobile: /Mobi|Android/i.test(navigator.userAgent)
+      });
       dispatch(checkAuth());
     }
   }, [dispatch, isAuthenticated, isLoading, location.pathname]);
@@ -182,6 +191,7 @@ function App() {
             <Route path='vendor-payments' element={<AdminVendorPaymentsPage />} />
             <Route path='product-status' element={<ProductApprovalStatus />} />
             <Route path='messaging' element={<MessagingDashboard />} />
+            <Route path='messages' element={<MessagingDashboard />} />
             <Route path='settings' element={<AdminSettingsPage />} />
             <Route path='profile' element={<AdminProfile />} />
           </Route>
@@ -202,6 +212,7 @@ function App() {
             <Route path='taxonomy' element={<TaxonomyManagement />} />
             <Route path='product-approval' element={<ProductApprovalDashboard />} />
             <Route path='messaging' element={<MessagingDashboard />} />
+            <Route path='messages' element={<MessagingDashboard />} />
             <Route path='vendor-payments' element={<SuperAdminVendorPaymentsPage />} />
             <Route path='profile' element={<SuperAdminProfile />} />
           </Route>

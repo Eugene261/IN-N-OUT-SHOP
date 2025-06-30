@@ -99,7 +99,7 @@ function VideoList({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Category</label>
               <Select
@@ -211,9 +211,10 @@ function VideoList({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <div className="flex items-start gap-4">
+                  {/* Mobile Layout - Stack vertically on small screens */}
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
                     {/* Video Thumbnail */}
-                    <div className="w-32 h-20 rounded-md overflow-hidden flex-shrink-0 border border-gray-200 relative">
+                    <div className="w-full sm:w-32 h-48 sm:h-20 rounded-md overflow-hidden flex-shrink-0 border border-gray-200 relative">
                       {video.thumbnailUrl ? (
                         <img 
                           src={video.thumbnailUrl} 
@@ -222,7 +223,7 @@ function VideoList({
                         />
                       ) : (
                         <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
-                          <Play className="h-6 w-6" />
+                          <Play className="h-8 w-8 sm:h-6 sm:w-6" />
                         </div>
                       )}
                       <div className="absolute bottom-1 right-1 bg-black bg-opacity-75 text-white text-xs px-1 rounded">
@@ -276,10 +277,10 @@ function VideoList({
                           )}
                         </div>
                         
-                        {/* Action Buttons - Now positioned better */}
-                        <div className="flex items-center gap-1">
+                        {/* Action Buttons - Mobile-friendly layout */}
+                        <div className="flex items-center gap-1 sm:gap-1">
                           <button
-                            className={`p-1.5 rounded-md transition-all duration-200 ${
+                            className={`p-2 sm:p-1.5 rounded-md transition-all duration-200 ${
                               video.isFeatured 
                                 ? "text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50" 
                                 : "text-gray-400 hover:text-yellow-600 hover:bg-yellow-50"
@@ -288,26 +289,26 @@ function VideoList({
                             title={video.isFeatured ? "Remove from featured" : "Add to featured"}
                           >
                             {video.isFeatured ? (
-                              <Star className="h-4 w-4 fill-current" />
+                              <Star className="h-5 w-5 sm:h-4 sm:w-4 fill-current" />
                             ) : (
-                              <StarOff className="h-4 w-4" />
+                              <StarOff className="h-5 w-5 sm:h-4 sm:w-4" />
                             )}
                           </button>
                           
                           <button
-                            className="p-1.5 rounded-md transition-all duration-200 text-gray-400 hover:text-blue-600 hover:bg-blue-50"
+                            className="p-2 sm:p-1.5 rounded-md transition-all duration-200 text-gray-400 hover:text-blue-600 hover:bg-blue-50"
                             onClick={() => onEdit(video)}
                             title="Edit video"
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-5 w-5 sm:h-4 sm:w-4" />
                           </button>
                           
                           <button
-                            className="p-1.5 rounded-md transition-all duration-200 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                            className="p-2 sm:p-1.5 rounded-md transition-all duration-200 text-gray-400 hover:text-red-600 hover:bg-red-50"
                             onClick={() => onDelete(video._id)}
                             title="Delete video"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-5 w-5 sm:h-4 sm:w-4" />
                           </button>
                         </div>
                       </div>
