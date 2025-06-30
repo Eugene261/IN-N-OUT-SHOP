@@ -247,13 +247,13 @@ const InlineVoiceRecorder = ({
         fileName,
         mimeType,
         fileSize: audioBlob.size,
-        apiUrl: import.meta.env.VITE_API_URL,
-        fullUrl: `${import.meta.env.VITE_API_URL}/api/common/messaging/conversations/${conversationId}/messages/media`,
+        apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:5000',
+        fullUrl: `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/common/messaging/conversations/${conversationId}/messages/media`,
         token: localStorage.getItem('token') ? 'Present' : 'Missing',
         timestamp: new Date().toISOString()
       });
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/common/messaging/conversations/${conversationId}/messages/media`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/common/messaging/conversations/${conversationId}/messages/media`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

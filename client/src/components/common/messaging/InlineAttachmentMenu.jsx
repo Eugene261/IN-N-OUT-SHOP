@@ -181,7 +181,7 @@ const InlineAttachmentMenu = ({
 
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/common/messaging/conversations/${conversationId}/messages/media`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/common/messaging/conversations/${conversationId}/messages/media`,
         formData,
         {
           headers: {
