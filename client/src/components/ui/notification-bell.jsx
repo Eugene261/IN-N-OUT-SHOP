@@ -273,20 +273,42 @@ const NotificationBell = ({ className = "" }) => {
       }))
     });
 
-    // Check for new notifications - Use a more reliable method
-    const currentNotificationIds = new Set(notifications.map(n => n.id));
-    const newNotificationIds = new Set(notificationList.map(n => n.id));
-    const hasNewNotifications = notificationList.some(n => !currentNotificationIds.has(n.id));
-    
-    if (hasNewNotifications && notifications.length > 0) {
-      setHasNewNotification(true);
-      // Play notification sound (optional)
-      playNotificationSound();
-      console.log('🔔 NotificationBell: New notification detected!');
-    }
-
-    setNotifications(notificationList);
-  }, [conversations, user?.id]); // FIXED: Remove notifications.length dependency
+    // FIXED: Use a stable comparison method instead of relying on state
+    setNotifications(prevNotifications => {
+      // Check if notifications actually changed
+      if (prevNotifications.length !== notificationList.length) {
+        return notificationList;
+      }
+      
+      // Check if any notification content changed
+      const hasChanged = notificationList.some((newNotif, index) => {
+        const prevNotif = prevNotifications[index];
+        return !prevNotif || 
+               prevNotif.id !== newNotif.id || 
+               prevNotif.count !== newNotif.count ||
+               prevNotif.title !== newNotif.title;
+      });
+      
+      if (hasChanged) {
+        // Check for truly new notifications (only if we had previous notifications)
+        if (prevNotifications.length > 0) {
+          const currentNotificationIds = new Set(prevNotifications.map(n => n.id));
+          const hasNewNotifications = notificationList.some(n => !currentNotificationIds.has(n.id));
+          
+          if (hasNewNotifications) {
+            setHasNewNotification(true);
+            playNotificationSound();
+            console.log('🔔 NotificationBell: New notification detected!');
+          }
+        }
+        
+        return notificationList;
+      }
+      
+      // No changes, return previous state
+      return prevNotifications;
+    });
+  }, [conversations, user?.id, unreadCount]); // FIXED: Removed notifications dependency
 
   // Play notification sound
   const playNotificationSound = () => {

@@ -242,23 +242,32 @@ const InlineVoiceRecorder = ({
       formData.append('files', audioFile);
       formData.append('content', '🎤 Voice message');
 
-      console.log('🎵 Sending audio:', {
+      console.log('🎵 Sending voice message:', {
+        conversationId,
         fileName,
         mimeType,
-        size: audioBlob.size,
-        extension: fileExtension
+        fileSize: audioBlob.size,
+        apiUrl: import.meta.env.VITE_API_URL,
+        fullUrl: `${import.meta.env.VITE_API_URL}/api/common/messaging/conversations/${conversationId}/messages/media`,
+        token: localStorage.getItem('token') ? 'Present' : 'Missing',
+        timestamp: new Date().toISOString()
       });
 
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/common/messaging/conversations/${conversationId}/messages/media`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: formData
-        }
-      );
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/common/messaging/conversations/${conversationId}/messages/media`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formData
+      });
+
+      console.log('🎵 Voice message response status:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url,
+        headers: Object.fromEntries(response.headers.entries()),
+        timestamp: new Date().toISOString()
+      });
 
       if (!response.ok) {
         let errorData = { message: 'Failed to send voice message' };
