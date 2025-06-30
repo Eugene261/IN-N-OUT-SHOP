@@ -197,17 +197,19 @@ const shopVideoSlice = createSlice({
       })
       .addCase(fetchFeaturedVideos.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.featuredVideos = action.payload.data;
+        state.featuredVideos = action.payload.data || [];
         
         // Initialize like state for each featured video
-        action.payload.data.forEach(video => {
-          if (!state.videoLikes[video._id]) {
-            state.videoLikes[video._id] = {
-              isLiked: false,
-              count: video.likeCount || 0
-            };
-          }
-        });
+        if (action.payload.data && Array.isArray(action.payload.data)) {
+          action.payload.data.forEach(video => {
+            if (!state.videoLikes[video._id]) {
+              state.videoLikes[video._id] = {
+                isLiked: false,
+                count: video.likeCount || 0
+              };
+            }
+          });
+        }
       })
       .addCase(fetchFeaturedVideos.rejected, (state, action) => {
         state.isLoading = false;
@@ -221,7 +223,7 @@ const shopVideoSlice = createSlice({
       })
       .addCase(fetchPublishedVideos.fulfilled, (state, action) => {
         state.isLoading = false;
-        const newVideos = action.payload.data;
+        const newVideos = action.payload.data || [];
         
         // If it's page 1, replace the videos, otherwise append
         if (action.payload.pagination?.current === 1) {
@@ -231,14 +233,16 @@ const shopVideoSlice = createSlice({
         }
         
         // Initialize like state for each video
-        newVideos.forEach(video => {
-          if (!state.videoLikes[video._id]) {
-            state.videoLikes[video._id] = {
-              isLiked: false,
-              count: video.likeCount || 0
-            };
-          }
-        });
+        if (Array.isArray(newVideos)) {
+          newVideos.forEach(video => {
+            if (!state.videoLikes[video._id]) {
+              state.videoLikes[video._id] = {
+                isLiked: false,
+                count: video.likeCount || 0
+              };
+            }
+          });
+        }
         
         state.pagination = action.payload.pagination || { current: 1, pages: 1, total: 0 };
       })
@@ -254,14 +258,16 @@ const shopVideoSlice = createSlice({
       })
       .addCase(fetchVideoById.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.currentVideo = action.payload.data;
+        state.currentVideo = action.payload.data || null;
         
         // Initialize like state for this video
         const video = action.payload.data;
-        state.videoLikes[video._id] = {
-          isLiked: false, // Will be determined by checking user's like status
-          count: video.likeCount || 0
-        };
+        if (video && video._id) {
+          state.videoLikes[video._id] = {
+            isLiked: false, // Will be determined by checking user's like status
+            count: video.likeCount || 0
+          };
+        }
       })
       .addCase(fetchVideoById.rejected, (state, action) => {
         state.isLoading = false;
@@ -311,15 +317,18 @@ const shopVideoSlice = createSlice({
       // Fetch video comments
       .addCase(fetchVideoComments.fulfilled, (state, action) => {
         const { videoId, data, pagination } = action.payload;
+        const commentsData = data || [];
         
         // If it's page 1, replace comments, otherwise append
         if (pagination?.current === 1) {
-          state.videoComments[videoId] = data;
+          state.videoComments[videoId] = commentsData;
         } else {
           if (!state.videoComments[videoId]) {
             state.videoComments[videoId] = [];
           }
-          state.videoComments[videoId].push(...data);
+          if (Array.isArray(commentsData)) {
+            state.videoComments[videoId].push(...commentsData);
+          }
         }
       })
       

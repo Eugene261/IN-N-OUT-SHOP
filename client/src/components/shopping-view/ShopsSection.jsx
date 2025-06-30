@@ -27,8 +27,9 @@ const ShopsSection = () => {
     }
   };
 
-  const handleShopClick = (shopId) => {
-    navigate(`/shop/listing?shop=${shopId}`);
+  const handleShopClick = (shop) => {
+    // Navigate to product listing filtered by shop name
+    navigate(`/shop/listing?shop=${encodeURIComponent(shop.shopName)}`);
   };
 
   if (shopsLoading) {
@@ -109,7 +110,7 @@ const ShopsSection = () => {
             >
               <div 
                 className="w-[320px] cursor-pointer group" 
-                onClick={() => handleShopClick(shop._id)}
+                onClick={() => handleShopClick(shop)}
               >
                 {/* Shop Image/Banner - Reduced height */}
                 <div className="relative w-full h-24 mb-3 overflow-hidden bg-gray-50 dark:bg-gray-700 rounded-lg">
@@ -175,7 +176,7 @@ const ShopsSection = () => {
         {/* View All Shops Button */}
         <div className="flex justify-start mt-8">
           <button 
-            onClick={() => navigate('/shops')}
+            onClick={() => navigate('/shop/shops')}
             className="px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
           >
             View All Shops

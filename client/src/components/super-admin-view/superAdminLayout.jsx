@@ -323,7 +323,7 @@ const SuperAdminLayout = () => {
         </header>
         
         {/* Main content area */}
-        <main className="flex-1 overflow-hidden bg-gray-50 min-h-0">
+        <main className="flex-1 overflow-y-auto bg-gray-50 min-h-0">
           <div className="h-full">
             <Outlet />
           </div>

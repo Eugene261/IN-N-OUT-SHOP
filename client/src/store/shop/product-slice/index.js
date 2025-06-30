@@ -30,12 +30,14 @@ export const fetchAllFilteredProducts = createAsyncThunk('/products/fetchAllFilt
         };
         
         // Add all filter parameters
-        // Make sure we're only adding params that have values
-        Object.entries(filterParams).forEach(([key, value]) => {
-            if (value) {
-                queryObj[key] = value;
-            }
-        });
+        // Make sure we're only adding params that have values and filterParams exists
+        if (filterParams && typeof filterParams === 'object') {
+            Object.entries(filterParams).forEach(([key, value]) => {
+                if (value) {
+                    queryObj[key] = value;
+                }
+            });
+        }
         
         // Create the URLSearchParams object
         const query = new URLSearchParams(queryObj);
@@ -239,7 +241,7 @@ const shoppingProductSlice = createSlice({
         })
         .addCase(fetchAllFilteredProducts.fulfilled, (state, action) => {
             state.isLoading = false
-            state.productList = action.payload.data;
+            state.productList = action.payload.data || [];
         })
         .addCase(fetchAllFilteredProducts.rejected, (state) => {
             state.isLoading = false
@@ -252,7 +254,7 @@ const shoppingProductSlice = createSlice({
         })
         .addCase(fetchProductDetails.fulfilled, (state, action) => {
             state.isLoading = false
-            state.productDetails = action.payload.data;
+            state.productDetails = action.payload.data || null;
         })
         .addCase(fetchProductDetails.rejected, (state) => {
             state.isLoading = false
@@ -265,7 +267,7 @@ const shoppingProductSlice = createSlice({
         })
         .addCase(fetchBestsellerProducts.fulfilled, (state, action) => {
             state.bestsellerLoading = false
-            state.bestsellerProducts = action.payload.data;
+            state.bestsellerProducts = action.payload.data || [];
         })
         .addCase(fetchBestsellerProducts.rejected, (state) => {
             state.bestsellerLoading = false
@@ -301,7 +303,7 @@ const shoppingProductSlice = createSlice({
         })
         .addCase(fetchNewArrivalProducts.fulfilled, (state, action) => {
             state.newArrivalLoading = false
-            state.newArrivalProducts = action.payload.data;
+            state.newArrivalProducts = action.payload.data || [];
         })
         .addCase(fetchNewArrivalProducts.rejected, (state) => {
             state.newArrivalLoading = false
@@ -312,27 +314,29 @@ const shoppingProductSlice = createSlice({
         .addCase(toggleProductBestseller.fulfilled, (state, action) => {
             // Update product in productList if it exists
             const updatedProduct = action.payload.data;
-            const index = state.productList.findIndex(product => product._id === updatedProduct._id);
-            if (index !== -1) {
-                state.productList[index] = updatedProduct;
-            }
-            
-            // Update product details if it's the current product
-            if (state.productDetails && state.productDetails._id === updatedProduct._id) {
-                state.productDetails = updatedProduct;
-            }
-            
-            // Update bestseller products list
-            if (updatedProduct.isBestseller) {
-                // Add to bestsellers if not already there
-                if (!state.bestsellerProducts.some(p => p._id === updatedProduct._id)) {
-                    state.bestsellerProducts.push(updatedProduct);
+            if (updatedProduct) {
+                const index = state.productList.findIndex(product => product._id === updatedProduct._id);
+                if (index !== -1) {
+                    state.productList[index] = updatedProduct;
                 }
-            } else {
-                // Remove from bestsellers
-                state.bestsellerProducts = state.bestsellerProducts.filter(
-                    product => product._id !== updatedProduct._id
-                );
+                
+                // Update product details if it's the current product
+                if (state.productDetails && state.productDetails._id === updatedProduct._id) {
+                    state.productDetails = updatedProduct;
+                }
+                
+                // Update bestseller products list
+                if (updatedProduct.isBestseller) {
+                    // Add to bestsellers if not already there
+                    if (!state.bestsellerProducts.some(p => p._id === updatedProduct._id)) {
+                        state.bestsellerProducts.push(updatedProduct);
+                    }
+                } else {
+                    // Remove from bestsellers
+                    state.bestsellerProducts = state.bestsellerProducts.filter(
+                        product => product._id !== updatedProduct._id
+                    );
+                }
             }
         })
 
@@ -340,24 +344,26 @@ const shoppingProductSlice = createSlice({
         .addCase(toggleProductNewArrival.fulfilled, (state, action) => {
             // Update product in productList if it exists
             const updatedProduct = action.payload.data;
-            const index = state.productList.findIndex(product => product._id === updatedProduct._id);
-            if (index !== -1) {
-                state.productList[index] = updatedProduct;
-            }
-            
-            // Update product details if it's the current product
-            if (state.productDetails && state.productDetails._id === updatedProduct._id) {
-                state.productDetails = updatedProduct;
-            }
-            
-            // Update in newArrivalProducts list if needed
-            const newArrivalIndex = state.newArrivalProducts.findIndex(product => product._id === updatedProduct._id);
-            if (updatedProduct.isNewArrival && newArrivalIndex === -1) {
-                // Add to list if it's now a new arrival and wasn't before
-                state.newArrivalProducts.push(updatedProduct);
-            } else if (!updatedProduct.isNewArrival && newArrivalIndex !== -1) {
-                // Remove from list if it's no longer a new arrival
-                state.newArrivalProducts.splice(newArrivalIndex, 1);
+            if (updatedProduct) {
+                const index = state.productList.findIndex(product => product._id === updatedProduct._id);
+                if (index !== -1) {
+                    state.productList[index] = updatedProduct;
+                }
+                
+                // Update product details if it's the current product
+                if (state.productDetails && state.productDetails._id === updatedProduct._id) {
+                    state.productDetails = updatedProduct;
+                }
+                
+                // Update in newArrivalProducts list if needed
+                const newArrivalIndex = state.newArrivalProducts.findIndex(product => product._id === updatedProduct._id);
+                if (updatedProduct.isNewArrival && newArrivalIndex === -1) {
+                    // Add to list if it's now a new arrival and wasn't before
+                    state.newArrivalProducts.push(updatedProduct);
+                } else if (!updatedProduct.isNewArrival && newArrivalIndex !== -1) {
+                    // Remove from list if it's no longer a new arrival
+                    state.newArrivalProducts.splice(newArrivalIndex, 1);
+                }
             }
         })
         
@@ -367,7 +373,7 @@ const shoppingProductSlice = createSlice({
         })
         .addCase(fetchSimilarProducts.fulfilled, (state, action) => {
             state.similarProductsLoading = false;
-            state.similarProducts = action.payload.data;
+            state.similarProducts = action.payload.data || [];
         })
         .addCase(fetchSimilarProducts.rejected, (state) => {
             state.similarProductsLoading = false;

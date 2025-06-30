@@ -189,7 +189,7 @@ const featuredCollectionSlice = createSlice({
       })
       .addCase(fetchFeaturedCollections.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.collections = action.payload.data;
+        state.collections = action.payload.data || [];
       })
       .addCase(fetchFeaturedCollections.rejected, (state, action) => {
         state.isLoading = false;
@@ -203,9 +203,11 @@ const featuredCollectionSlice = createSlice({
       })
       .addCase(createFeaturedCollection.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.collections.push(action.payload.data);
-        // Sort collections by position
-        state.collections.sort((a, b) => a.position - b.position);
+        if (action.payload.data) {
+          state.collections.push(action.payload.data);
+          // Sort collections by position
+          state.collections.sort((a, b) => a.position - b.position);
+        }
       })
       .addCase(createFeaturedCollection.rejected, (state, action) => {
         state.isLoading = false;
@@ -219,14 +221,16 @@ const featuredCollectionSlice = createSlice({
       })
       .addCase(updateFeaturedCollection.fulfilled, (state, action) => {
         state.isLoading = false;
-        const index = state.collections.findIndex(
-          (collection) => collection._id === action.payload.data._id
-        );
-        if (index !== -1) {
-          state.collections[index] = action.payload.data;
+        if (action.payload.data) {
+          const index = state.collections.findIndex(
+            (collection) => collection._id === action.payload.data._id
+          );
+          if (index !== -1) {
+            state.collections[index] = action.payload.data;
+          }
+          // Sort collections by position
+          state.collections.sort((a, b) => a.position - b.position);
         }
-        // Sort collections by position
-        state.collections.sort((a, b) => a.position - b.position);
       })
       .addCase(updateFeaturedCollection.rejected, (state, action) => {
         state.isLoading = false;
@@ -257,14 +261,16 @@ const featuredCollectionSlice = createSlice({
       .addCase(updateCollectionPositions.fulfilled, (state, action) => {
         state.isLoading = false;
         // Update positions in local state
-        action.payload.positions.forEach(({ id, position }) => {
-          const collection = state.collections.find((c) => c._id === id);
-          if (collection) {
-            collection.position = position;
-          }
-        });
-        // Sort collections by position
-        state.collections.sort((a, b) => a.position - b.position);
+        if (action.payload.positions && Array.isArray(action.payload.positions)) {
+          action.payload.positions.forEach(({ id, position }) => {
+            const collection = state.collections.find((c) => c._id === id);
+            if (collection) {
+              collection.position = position;
+            }
+          });
+          // Sort collections by position
+          state.collections.sort((a, b) => a.position - b.position);
+        }
       })
       .addCase(updateCollectionPositions.rejected, (state, action) => {
         state.isLoading = false;

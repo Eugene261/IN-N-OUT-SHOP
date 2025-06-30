@@ -61,8 +61,9 @@ function ShopsDirectory() {
     }
   };
 
-  const handleShopClick = (shopId) => {
-    navigate(`/shop/vendor/${shopId}`);
+  const handleShopClick = (shop) => {
+    // Navigate to product listing filtered by shop name
+    navigate(`/shop/listing?shop=${encodeURIComponent(shop.shopName)}`);
   };
 
   const handleViewProducts = (shopName) => {
@@ -166,7 +167,7 @@ function ShopsDirectory() {
                 transition={{ duration: 0.3, delay: index * 0.1 }}
               >
                 <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-                  <div onClick={() => handleShopClick(shop._id)}>
+                  <div onClick={() => handleShopClick(shop)}>
                     {/* Shop Banner */}
                     {shop.shopBanner && (
                       <div className="h-32 overflow-hidden rounded-t-lg">
