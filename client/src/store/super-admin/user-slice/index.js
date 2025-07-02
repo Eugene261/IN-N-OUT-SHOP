@@ -1,12 +1,19 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { apiClient } from '@/config/api';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // Get all users
 export const fetchAllUsers = createAsyncThunk(
   'superAdminUsers/fetchAllUsers',
-  async (_, { rejectWithValue }) => {
+  async ({ page = 1, limit = 50 } = {}, { rejectWithValue }) => {
     try {
-      const response = await apiClient.get('/api/superAdmin/users/all');
+      const response = await axios.get(`${API_URL}/api/superAdmin/users/all`, {
+        params: { page, limit },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch users');
@@ -14,25 +21,48 @@ export const fetchAllUsers = createAsyncThunk(
   }
 );
 
-// Get users by role
+// Get users by role - FIXED PARAMETER HANDLING
 export const fetchUsersByRole = createAsyncThunk(
   'superAdminUsers/fetchUsersByRole',
-  async (role, { rejectWithValue }) => {
+  async (params, { rejectWithValue }) => {
     try {
-      const response = await apiClient.get(`/api/superAdmin/users/role/${role}`);
+      // Handle both object and string parameters for backward compatibility
+      const role = typeof params === 'string' ? params : params?.role;
+      
+      if (!role || !['user', 'admin', 'superAdmin'].includes(role)) {
+        return rejectWithValue('Invalid role specified');
+      }
+
+      console.log('🔍 Fetching users by role:', role);
+
+      const response = await axios.get(`${API_URL}/api/superAdmin/users/role/${role}`, {
+        params: {
+          page: typeof params === 'object' ? params.page : 1,
+          limit: typeof params === 'object' ? params.limit : 20
+        },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       return response.data;
     } catch (error) {
+      console.error('❌ Error fetching users by role:', error.response?.data || error.message);
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch users by role');
     }
   }
 );
 
-// Add a new user
+// Add new user
 export const addUser = createAsyncThunk(
   'superAdminUsers/addUser',
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post('/api/superAdmin/users/add', userData);
+      const response = await axios.post(`${API_URL}/api/superAdmin/users/add`, userData, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to add user');
@@ -45,7 +75,15 @@ export const updateUserRole = createAsyncThunk(
   'superAdminUsers/updateUserRole',
   async ({ userId, role }, { rejectWithValue }) => {
     try {
-      const response = await apiClient.put(`/api/superAdmin/users/update-role/${userId}`, { role });
+      const response = await axios.put(`${API_URL}/api/superAdmin/users/update-role/${userId}`, 
+        { role }, 
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update user role');
@@ -53,12 +91,16 @@ export const updateUserRole = createAsyncThunk(
   }
 );
 
-// Delete a user
+// Delete user
 export const deleteUser = createAsyncThunk(
   'superAdminUsers/deleteUser',
   async (userId, { rejectWithValue }) => {
     try {
-      const response = await apiClient.delete(`/api/superAdmin/users/delete/${userId}`);
+      const response = await axios.delete(`${API_URL}/api/superAdmin/users/delete/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       return { ...response.data, userId };
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to delete user');
@@ -70,8 +112,13 @@ const initialState = {
   users: [],
   isLoading: false,
   error: null,
-  success: null,
-  actionType: null
+  pagination: {
+    currentPage: 1,
+    totalPages: 1,
+    totalUsers: 0,
+    hasNext: false,
+    hasPrev: false
+  }
 };
 
 const superAdminUsersSlice = createSlice({
@@ -81,8 +128,9 @@ const superAdminUsersSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
-    clearSuccess: (state) => {
-      state.success = null;
+    clearUsers: (state) => {
+      state.users = [];
+      state.pagination = initialState.pagination;
     }
   },
   extraReducers: (builder) => {
@@ -94,7 +142,8 @@ const superAdminUsersSlice = createSlice({
       })
       .addCase(fetchAllUsers.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.users = action.payload.users;
+        state.users = action.payload.users || [];
+        state.pagination = action.payload.pagination || initialState.pagination;
       })
       .addCase(fetchAllUsers.rejected, (state, action) => {
         state.isLoading = false;
@@ -108,7 +157,8 @@ const superAdminUsersSlice = createSlice({
       })
       .addCase(fetchUsersByRole.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.users = action.payload.users;
+        state.users = action.payload.users || [];
+        state.pagination = action.payload.pagination || initialState.pagination;
       })
       .addCase(fetchUsersByRole.rejected, (state, action) => {
         state.isLoading = false;
@@ -119,63 +169,54 @@ const superAdminUsersSlice = createSlice({
       .addCase(addUser.pending, (state) => {
         state.isLoading = true;
         state.error = null;
-        state.success = null;
-        state.actionType = 'add';
       })
       .addCase(addUser.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.users.push(action.payload.user);
-        state.success = action.payload.message;
-        state.actionType = 'add';
+        if (action.payload.user) {
+          state.users.push(action.payload.user);
+        }
       })
       .addCase(addUser.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
-        state.actionType = 'add';
       })
       
       // Update user role
       .addCase(updateUserRole.pending, (state) => {
         state.isLoading = true;
         state.error = null;
-        state.success = null;
-        state.actionType = 'update';
       })
       .addCase(updateUserRole.fulfilled, (state, action) => {
         state.isLoading = false;
-        const updatedUser = action.payload.user;
-        state.users = state.users.map(user => 
-          user.id === updatedUser.id ? updatedUser : user
-        );
-        state.success = action.payload.message;
-        state.actionType = 'update';
+        if (action.payload.user) {
+          const index = state.users.findIndex(user => user._id === action.payload.user._id);
+          if (index !== -1) {
+            state.users[index] = { ...state.users[index], ...action.payload.user };
+          }
+        }
       })
       .addCase(updateUserRole.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
-        state.actionType = 'update';
       })
       
       // Delete user
       .addCase(deleteUser.pending, (state) => {
         state.isLoading = true;
         state.error = null;
-        state.success = null;
-        state.actionType = 'delete';
       })
       .addCase(deleteUser.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.users = state.users.filter(user => user._id !== action.payload.userId);
-        state.success = action.payload.message;
-        state.actionType = 'delete';
+        if (action.payload.userId) {
+          state.users = state.users.filter(user => user._id !== action.payload.userId);
+        }
       })
       .addCase(deleteUser.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
-        state.actionType = 'delete';
       });
   }
 });
 
-export const { clearError, clearSuccess } = superAdminUsersSlice.actions;
+export const { clearError, clearUsers } = superAdminUsersSlice.actions;
 export default superAdminUsersSlice.reducer;
