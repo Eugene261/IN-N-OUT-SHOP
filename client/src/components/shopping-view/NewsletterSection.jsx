@@ -22,12 +22,29 @@ const NewsletterSection = () => {
 
     setIsSubmitting(true);
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/common/newsletter`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(result.message || 'Successfully subscribed to our newsletter!');
+        setEmail('');
+      } else {
+        toast.error(result.message || 'Failed to subscribe. Please try again.');
+      }
+    } catch (error) {
+      console.error('Newsletter subscription error:', error);
+      toast.error('Failed to subscribe. Please check your connection and try again.');
+    } finally {
       setIsSubmitting(false);
-      toast.success('Successfully subscribed to our newsletter!');
-      setEmail('');
-    }, 2000);
+    }
   };
 
   return (

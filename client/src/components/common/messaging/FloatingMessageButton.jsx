@@ -3,9 +3,11 @@ import { motion } from 'framer-motion';
 import { MessageSquare, X } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { selectTotalUnread } from '../../../store/common/messaging-slice';
+import UserAvatar from './UserAvatar';
 
 const FloatingMessageButton = ({ isOpen, onClick }) => {
   const totalUnread = useSelector(selectTotalUnread);
+  const { user } = useSelector(state => state.auth);
 
   return (
     <motion.div

@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Conversation = require('../../models/Conversation');
 const Message = require('../../models/Message');
 const User = require('../../models/User');
@@ -118,40 +119,135 @@ const sendSuccessResponse = (res, data, message = null) => {
   }
 };
 
-// Get all conversations for a user
+// Get all conversations for a user (OPTIMIZED FOR BSON SIZE LIMITS)
 const getConversations = asyncHandler(async (req, res) => {
-  console.log('🔍 getConversations called');
   const { status, type } = req.query;
   const userId = req.user.id;
-  
-  console.log('🔍 Request details:', {
-    userId,
-    userRole: req.user.role,
-    userName: req.user.userName,
-    queryParams: { status, type, limit: req.query.limit }
-  });
+  const limit = Math.min(parseInt(req.query.limit) || 20, 50); // Limit max results
+
+  console.log('🔍 getConversations optimized - userId:', userId, 'limit:', limit);
 
   try {
-    console.log('🔍 Calling Conversation.findByParticipant...');
-    const conversations = await Conversation.findByParticipant(userId, {
-      status,
-      type,
-      limit: parseInt(req.query.limit) || 50
-    });
+    // CRITICAL: Use lean queries with minimal field selection to prevent BSON size errors
+    const pipeline = [
+      // Match conversations where user is participant
+      {
+        $match: {
+          'participants.user': new mongoose.Types.ObjectId(userId),
+          status: status ? status : { $ne: 'archived' }
+        }
+      },
+      // Add type filter if specified
+      ...(type ? [{ $match: { type } }] : []),
+      
+      // Sort by last message date or updated date
+      {
+        $sort: { 
+          'lastMessage.sentAt': -1, 
+          updatedAt: -1 
+        }
+      },
+      
+      // Limit results
+      { $limit: limit },
+      
+      // CRITICAL: Lookup participants with MINIMAL fields only (no avatar to prevent BSON size errors)
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'participants.user',
+          foreignField: '_id',
+          as: 'participantUsers',
+          pipeline: [
+            {
+              $project: {
+                userName: 1,
+                email: 1,
+                role: 1,
+                // REMOVED: avatar field to prevent BSON size errors from base64 images
+                isOnline: 1,
+                lastSeen: 1
+                // Explicitly excluding large fields that could cause BSON size errors:
+                // - avatar (can contain large base64 images)
+                // - lastUserAgent (can be very long)
+                // - shopDescription (can be large)
+                // - Any other potentially large fields
+              }
+            }
+          ]
+        }
+      },
+      
+      // CRITICAL: Lookup last message sender with MINIMAL fields only
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'lastMessage.sender',
+          foreignField: '_id',
+          as: 'lastMessageSender',
+          pipeline: [
+            {
+              $project: {
+                userName: 1,
+                email: 1,
+                role: 1
+                // REMOVED: avatar field to prevent BSON size errors
+              }
+            }
+          ]
+        }
+      },
+      
+      // Transform the data structure
+      {
+        $addFields: {
+          'lastMessage.sender': { $arrayElemAt: ['$lastMessageSender', 0] },
+          participants: {
+            $map: {
+              input: '$participants',
+              as: 'participant',
+              in: {
+                user: {
+                  $arrayElemAt: [
+                    {
+                      $filter: {
+                        input: '$participantUsers',
+                        cond: { $eq: ['$$this._id', '$$participant.user'] }
+                      }
+                    },
+                    0
+                  ]
+                },
+                role: '$$participant.role',
+                joinedAt: '$$participant.joinedAt'
+              }
+            }
+          }
+        }
+      },
+      
+      // Remove temporary fields
+      {
+        $unset: ['participantUsers', 'lastMessageSender']
+      }
+    ];
 
-    console.log('🔍 Conversations found:', conversations.length);
+    const conversations = await Conversation.aggregate(pipeline);
+
+    console.log('🔍 Optimized conversations found:', conversations.length);
     
     if (conversations.length > 0) {
-      console.log('🔍 First conversation sample:', JSON.stringify({
+      // SAFE: Log only essential data without large fields
+      console.log('🔍 First conversation sample (safe):', JSON.stringify({
         id: conversations[0]._id,
         title: conversations[0].title,
-        lastMessage: conversations[0].lastMessage,
-        unreadCounts: conversations[0].unreadCounts,
-        participants: conversations[0].participants?.map(p => ({
-          userId: p.user?._id || p.user,
-          userName: p.user?.userName,
-          role: p.user?.role || p.role
-        }))
+        lastMessage: {
+          content: conversations[0].lastMessage?.content?.substring(0, 50) + '...',
+          sender: conversations[0].lastMessage?.sender?.userName,
+          sentAt: conversations[0].lastMessage?.sentAt
+        },
+        participantCount: conversations[0].participants?.length,
+        unreadCount: conversations[0].unreadCounts?.length
       }, null, 2));
     }
 
@@ -174,14 +270,26 @@ const getConversations = asyncHandler(async (req, res) => {
       count: conversations.length
     };
 
-    console.log('🔍 Sending response:', JSON.stringify(responseData, null, 2));
-
+    // SAFE: Send response without large embedded data
     res.status(200).json({
       success: true,
       data: responseData
     });
   } catch (error) {
     console.error('❌ Error in getConversations:', error);
+    
+    // ENHANCED: Check for BSON size errors specifically
+    if (error.message?.includes('BSONObj size') || error.message?.includes('document too large')) {
+      console.error('❌ BSON SIZE LIMIT ERROR: Large documents detected in messaging system');
+      console.error('❌ This is likely caused by large avatar images stored as base64 in User documents');
+      
+      return res.status(500).json({
+        success: false,
+        message: 'Document size too large - please contact support to resolve avatar storage issues',
+        error: 'BSON_SIZE_LIMIT_EXCEEDED'
+      });
+    }
+    
     console.error('❌ Error stack:', error.stack);
     throw error; // Re-throw to let asyncHandler handle it
   }
@@ -206,7 +314,7 @@ const getOrCreateDirectConversation = asyncHandler(async (req, res) => {
     type: 'direct',
     'participants.user': { $all: [currentUserId, recipientId] },
     status: { $ne: 'archived' }
-  }).populate('participants.user', 'userName email role profilePicture');
+  }).populate('participants.user', 'userName email role');
 
   if (!conversation) {
     // Create new conversation
@@ -222,7 +330,7 @@ const getOrCreateDirectConversation = asyncHandler(async (req, res) => {
 
     // Populate the new conversation
     conversation = await Conversation.findById(conversation._id)
-      .populate('participants.user', 'userName email role profilePicture');
+      .populate('participants.user', 'userName email role');
 
     // Create system message
     await Message.createSystemMessage(
@@ -245,7 +353,7 @@ const getConversationDetails = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
   const conversation = await Conversation.findById(conversationId)
-    .populate('participants.user', 'userName email role profilePicture')
+    .populate('participants.user', 'userName email role')
     .populate('lastMessage.sender', 'userName email role');
 
   if (!conversation) {
@@ -272,47 +380,129 @@ const getConversationDetails = asyncHandler(async (req, res) => {
   });
 });
 
-// Get messages in a conversation
+// Get messages in a conversation (OPTIMIZED FOR BSON SIZE LIMITS)
 const getMessages = asyncHandler(async (req, res) => {
   const { conversationId } = req.params;
   const { page = 1, limit = 50 } = req.query;
   const userId = req.user.id;
+  const pageNum = Math.max(1, parseInt(page));
+  const limitNum = Math.min(parseInt(limit), 100); // Cap at 100 messages
 
-  // Verify user is participant
-  const conversation = await Conversation.findById(conversationId);
-  if (!conversation || !conversation.isParticipant(userId)) {
+  // OPTIMIZED: Single query to check participant and get conversation
+  const conversation = await Conversation.findOne({
+    _id: conversationId,
+    'participants.user': userId
+  }).select('_id participants').lean();
+
+  if (!conversation) {
     return res.status(403).json({
       success: false,
       message: 'Access denied to this conversation'
     });
   }
 
-  const options = {
-    limit: parseInt(limit),
-    skip: (parseInt(page) - 1) * parseInt(limit),
-    reverse: true
-  };
-
-  const messages = await Message.findByConversation(conversationId, options);
-  messages.reverse();
-
-  const totalMessages = await Message.countDocuments({
-    conversation: conversationId,
-    deletedAt: { $exists: false }
-  });
-
-  res.status(200).json({
-    success: true,
-    data: {
-      messages,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(totalMessages / parseInt(limit)),
-        totalMessages,
-        hasMore: (parseInt(page) * parseInt(limit)) < totalMessages
+  // CRITICAL: Use aggregation with minimal field selection to prevent BSON size errors
+  const skip = (pageNum - 1) * limitNum;
+  
+  const pipeline = [
+    {
+      $match: {
+        conversation: new mongoose.Types.ObjectId(conversationId),
+        deletedAt: { $exists: false }
+      }
+    },
+    {
+      $sort: { createdAt: -1 }
+    },
+    {
+      $facet: {
+        messages: [
+          { $skip: skip },
+          { $limit: limitNum },
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'sender',
+              foreignField: '_id',
+              as: 'sender',
+              pipeline: [
+                {
+                  $project: {
+                    userName: 1,
+                    email: 1,
+                    role: 1
+                    // REMOVED: avatar field to prevent BSON size errors from base64 images
+                  }
+                }
+              ]
+            }
+          },
+          {
+            $unwind: '$sender'
+          },
+          {
+            $lookup: {
+              from: 'messages',
+              localField: 'replyTo',
+              foreignField: '_id',
+              as: 'replyTo',
+              pipeline: [
+                {
+                  $project: {
+                    content: 1,
+                    messageType: 1,
+                    sender: 1
+                  }
+                }
+              ]
+            }
+          },
+          {
+            $addFields: {
+              replyTo: { $arrayElemAt: ['$replyTo', 0] }
+            }
+          }
+        ],
+        totalCount: [
+          { $count: 'count' }
+        ]
       }
     }
-  });
+  ];
+
+  try {
+    const result = await Message.aggregate(pipeline);
+    const messages = result[0].messages.reverse(); // Reverse to show oldest first
+    const totalMessages = result[0].totalCount[0]?.count || 0;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        messages,
+        pagination: {
+          currentPage: pageNum,
+          totalPages: Math.ceil(totalMessages / limitNum),
+          totalMessages,
+          hasMore: (pageNum * limitNum) < totalMessages
+        }
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error in getMessages:', error);
+    
+    // ENHANCED: Check for BSON size errors specifically
+    if (error.message?.includes('BSONObj size') || error.message?.includes('document too large')) {
+      console.error('❌ BSON SIZE LIMIT ERROR: Large documents detected in message queries');
+      
+      return res.status(500).json({
+        success: false,
+        message: 'Document size too large - please contact support to resolve data storage issues',
+        error: 'BSON_SIZE_LIMIT_EXCEEDED'
+      });
+    }
+    
+    throw error;
+  }
 });
 
 // Send a text message
@@ -367,9 +557,9 @@ const sendTextMessage = asyncHandler(async (req, res) => {
   // Update conversation lastMessage
   await conversation.updateLastMessage(message);
 
-  // Populate the message
+  // Populate the message (SAFE: exclude avatar to prevent BSON size errors)
   const populatedMessage = await Message.findById(message._id)
-    .populate('sender', 'userName email role profilePicture')
+    .populate('sender', 'userName email role')
     .populate('replyTo', 'content messageType sender')
     .populate('mentions', 'userName email role');
 
@@ -564,9 +754,9 @@ const sendMediaMessage = asyncHandler(async (req, res) => {
   // Update conversation lastMessage  
   await conversation.updateLastMessage(message);
 
-  // Populate the message
+  // Populate the message (SAFE: exclude avatar to prevent BSON size errors)
   const populatedMessage = await Message.findById(message._id)
-    .populate('sender', 'userName email role profilePicture')
+    .populate('sender', 'userName email role')
     .populate('replyTo', 'content messageType sender')
     .populate('mentions', 'userName email role');
 
@@ -755,7 +945,7 @@ const getAvailableUsers = asyncHandler(async (req, res) => {
   }
 
   const users = await User.find(query)
-    .select('userName email role profilePicture lastActive')
+    .select('userName email role lastActive')
     .sort({ userName: 1 });
 
   res.status(200).json({

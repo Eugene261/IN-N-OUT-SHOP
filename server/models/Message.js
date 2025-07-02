@@ -108,7 +108,7 @@ const MessageSchema = new mongoose.Schema({
 
   systemMessageType: {
     type: String,
-    enum: ['user_joined', 'user_left', 'conversation_created', 'conversation_closed', 'conversation_reopened'],
+    enum: ['user_joined', 'user_left', 'conversation_created', 'conversation_closed', 'conversation_reopened', 'role_change', 'team_update'],
     required: function() {
       return this.isSystemMessage;
     }

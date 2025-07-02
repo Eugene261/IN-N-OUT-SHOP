@@ -215,5 +215,13 @@ UserSchema.methods.isLocalAccount = function() {
   return !this.googleId && !this.facebookId;
 };
 
+// Add database indexes for performance optimization
+UserSchema.index({ role: 1 }); // For role-based queries
+UserSchema.index({ role: 1, createdAt: -1 }); // For sorted role queries
+UserSchema.index({ email: 1 }); // For email lookup
+UserSchema.index({ isActive: 1 }); // For active user queries
+UserSchema.index({ isOnline: 1, lastSeen: -1 }); // For online status
+UserSchema.index({ createdAt: -1 }); // For general sorting
+
 const User = mongoose.model('User', UserSchema);
 module.exports = User;

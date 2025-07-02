@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Minimize2 } from 'lucide-react';
+import { useSelector } from 'react-redux';
 import MessagingDashboard from './MessagingDashboard';
+import UserAvatar from './UserAvatar';
 
 const MessageWidget = ({ isOpen, onClose }) => {
   const [isMinimized, setIsMinimized] = useState(false);
+  const { user } = useSelector(state => state.auth);
 
   // Close with Escape key
   useEffect(() => {
@@ -110,8 +113,12 @@ const MessageWidget = ({ isOpen, onClose }) => {
           >
             {/* Header */}
             <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+              <div className="flex items-center space-x-3">
+                <UserAvatar 
+                  user={user}
+                  size="xs"
+                  showOnlineIndicator={false}
+                />
                 <h3 className="font-semibold text-sm">Messages</h3>
               </div>
               
@@ -151,7 +158,14 @@ const MessageWidget = ({ isOpen, onClose }) => {
           >
             {/* Mobile Header */}
             <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between border-b flex-shrink-0">
-              <h3 className="font-semibold">Messages</h3>
+              <div className="flex items-center space-x-3">
+                <UserAvatar 
+                  user={user}
+                  size="sm"
+                  showOnlineIndicator={false}
+                />
+                <h3 className="font-semibold">Messages</h3>
+              </div>
               <button
                 onClick={onClose}
                 className="p-2 hover:bg-blue-700 rounded transition-colors"

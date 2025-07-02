@@ -1,29 +1,55 @@
 const User = require('../../models/User.js');
 const bcrypt = require('bcryptjs');
 const emailService = require('../../services/emailService.js');
+const roleNotificationService = require('../../services/roleNotificationService.js');
 const Order = require('../../models/Order.js');
 const Product = require('../../models/Products.js');
 const ShippingZone = require('../../models/ShippingZone.js');
 
-// Get all users
+// HIGHLY OPTIMIZED: Get all users with minimal fields and pagination
 const getAllUsers = async (req, res) => {
   try {
-    // Check if the requester is a superAdmin
-    if (req.user.role !== 'superAdmin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Only superAdmins can access this resource.'
-      });
-    }
-
-    const users = await User.find({}, { password: 0 }); // Exclude password field
+    console.log('🔍 getAllUsers: Super admin', req.user.id, 'fetching all users');
+    
+    // Parse pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50; // Limit to 50 users per page
+    const skip = (page - 1) * limit;
+    
+    // CRITICAL OPTIMIZATION: Use minimal fields only
+    const users = await User.find({}, { 
+      _id: 1,
+      userName: 1,
+      email: 1,
+      role: 1,
+      isActive: 1,
+      lastLogin: 1,
+      createdAt: 1
+    })
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .lean()
+    .maxTimeMS(10000); // 10 second timeout
+    
+    // Get total count for pagination (use countDocuments for better performance)
+    const totalUsers = await User.countDocuments({});
+    
+    console.log(`✅ getAllUsers: Found ${users.length} users (page ${page}, total: ${totalUsers})`);
     
     res.status(200).json({
       success: true,
-      users
+      users,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalUsers / limit),
+        totalUsers,
+        hasNext: page < Math.ceil(totalUsers / limit),
+        hasPrev: page > 1
+      }
     });
   } catch (error) {
-    console.error('Error in getAllUsers:', error);
+    console.error('❌ Error in getAllUsers:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -31,34 +57,62 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-// Get users by role
+// HIGHLY OPTIMIZED: Get users by role with minimal fields
 const getUsersByRole = async (req, res) => {
   try {
-    // Check if the requester is a superAdmin
-    if (req.user.role !== 'superAdmin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Only superAdmins can access this resource.'
-      });
-    }
-
     const { role } = req.params;
     
-    if (!['user', 'admin', 'superAdmin'].includes(role)) {
+    console.log('🔍 getUsersByRole: Fetching users with role:', role, 'for super admin:', req.user.id);
+    
+    if (!role || !['user', 'admin', 'superAdmin'].includes(role)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid role specified'
+        message: `Invalid role specified: '${role}'. Valid roles are: user, admin, superAdmin`
       });
     }
 
-    const users = await User.find({ role }, { password: 0 }); // Exclude password field
+    // Parse pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20; // Smaller limit for role filtering
+    const skip = (page - 1) * limit;
+
+    // CRITICAL OPTIMIZATION: Use minimal fields and efficient query
+    const users = await User.find(
+      { role }, 
+      { 
+        _id: 1,
+        userName: 1,
+        email: 1,
+        role: 1,
+        isActive: 1,
+        lastLogin: 1,
+        createdAt: 1
+      }
+    )
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .lean()
+    .maxTimeMS(5000); // 5 second timeout for role queries
+    
+    // Get count for this specific role
+    const totalUsers = await User.countDocuments({ role });
+    
+    console.log(`✅ getUsersByRole: Found ${users.length} users with role: ${role} (page ${page}, total: ${totalUsers})`);
     
     res.status(200).json({
       success: true,
-      users
+      users,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalUsers / limit),
+        totalUsers,
+        hasNext: page < Math.ceil(totalUsers / limit),
+        hasPrev: page > 1
+      }
     });
   } catch (error) {
-    console.error('Error in getUsersByRole:', error);
+    console.error('❌ Error in getUsersByRole:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -69,13 +123,7 @@ const getUsersByRole = async (req, res) => {
 // Add a new user (admin or superAdmin)
 const addUser = async (req, res) => {
   try {
-    // Check if the requester is a superAdmin
-    if (req.user.role !== 'superAdmin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Only superAdmins can add users.'
-      });
-    }
+    console.log('addUser: Super admin', req.user.id, 'adding new user');
 
     const { userName, email, password, role } = req.body;
     
@@ -111,8 +159,8 @@ const addUser = async (req, res) => {
       });
     }
 
-    // Check if user exists
-    const existingUser = await User.findOne({ email });
+    // OPTIMIZED: Check if user exists with minimal fields
+    const existingUser = await User.findOne({ email }, { _id: 1 }).lean();
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -133,18 +181,22 @@ const addUser = async (req, res) => {
 
     await newUser.save();
     
-    // Send welcome email with credentials for admin users
+    // Send welcome email for admin users (async, don't wait)
     if (role === 'admin') {
+      emailService.sendNewAdminWelcomeEmail(email, userName, password)
+        .then(() => console.log('Welcome email sent to new admin:', email))
+        .catch(err => console.error('Failed to send welcome email:', err));
+    }
+
+    // 🔔 NEW: Send SuperAdmin role notifications if creating a superAdmin
+    if (role === 'superAdmin') {
       try {
-        await emailService.sendNewAdminWelcomeEmail(
-          email,
-          userName,
-          password // Send the original password since it's temporary
-        );
-        console.log('Welcome email sent to new admin:', email);
-      } catch (emailError) {
-        console.error('Failed to send welcome email to new admin:', emailError);
-        // Don't fail the user creation if email fails
+        const actionBy = await User.findById(req.user.id).select('_id userName email role');
+        await roleNotificationService.notifySuperAdminRoleChange(newUser, 'created', actionBy);
+        console.log(`✅ SuperAdmin role notifications sent for new user: ${newUser.userName}`);
+      } catch (notificationError) {
+        console.error('❌ Error sending SuperAdmin role notifications:', notificationError);
+        // Don't fail the user creation if notifications fail
       }
     }
     
@@ -170,13 +222,7 @@ const addUser = async (req, res) => {
 // Update user role
 const updateUserRole = async (req, res) => {
   try {
-    // Check if the requester is a superAdmin
-    if (req.user.role !== 'superAdmin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Only superAdmins can update user roles.'
-      });
-    }
+    console.log('updateUserRole: Super admin', req.user.id, 'updating user role');
 
     const { userId } = req.params;
     const { role } = req.body;
@@ -189,27 +235,58 @@ const updateUserRole = async (req, res) => {
       });
     }
 
-    const user = await User.findById(userId);
-    
-    if (!user) {
+    // Get the current user data to check previous role
+    const currentUser = await User.findById(userId).select('_id userName email role');
+    if (!currentUser) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
 
-    user.role = role;
-    await user.save();
+    const oldRole = currentUser.role;
+
+    // OPTIMIZED: Update directly without full fetch
+    const updateResult = await User.findByIdAndUpdate(
+      userId, 
+      { role }, 
+      { 
+        new: true, 
+        runValidators: true,
+        select: '_id userName email role'
+      }
+    ).lean();
+    
+    if (!updateResult) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // 🔔 NEW: Send SuperAdmin role notifications if promoting to superAdmin
+    if (roleNotificationService.shouldNotifyRoleChange(oldRole, role)) {
+      try {
+        const actionBy = await User.findById(req.user.id).select('_id userName email role');
+        // Use the updateResult data for the notification
+        const userForNotification = {
+          _id: updateResult._id,
+          userName: updateResult.userName,
+          email: updateResult.email,
+          role: updateResult.role
+        };
+        await roleNotificationService.notifySuperAdminRoleChange(userForNotification, 'promoted', actionBy);
+        console.log(`✅ SuperAdmin role notifications sent for promoted user: ${updateResult.userName}`);
+      } catch (notificationError) {
+        console.error('❌ Error sending SuperAdmin role notifications:', notificationError);
+        // Don't fail the role update if notifications fail
+      }
+    }
 
     res.status(200).json({
       success: true,
       message: 'User role updated successfully',
-      user: {
-        id: user._id,
-        userName: user.userName,
-        email: user.email,
-        role: user.role
-      }
+      user: updateResult
     });
   } catch (error) {
     console.error('Error in updateUserRole:', error);
@@ -223,26 +300,19 @@ const updateUserRole = async (req, res) => {
 // Delete a user
 const deleteUser = async (req, res) => {
   try {
-    // Check if the requester is a superAdmin
-    if (req.user.role !== 'superAdmin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Only superAdmins can delete users.'
-      });
-    }
+    console.log('deleteUser: Super admin', req.user.id, 'deleting user');
 
     const { userId } = req.params;
     
-    const user = await User.findById(userId);
+    // OPTIMIZED: Delete directly with exists check
+    const deleteResult = await User.findByIdAndDelete(userId);
     
-    if (!user) {
+    if (!deleteResult) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
-
-    await User.findByIdAndDelete(userId);
 
     res.status(200).json({
       success: true,
@@ -260,13 +330,7 @@ const deleteUser = async (req, res) => {
 // Get detailed admin profile (SuperAdmin only)
 const getAdminProfile = async (req, res) => {
   try {
-    // Check if the requester is a superAdmin
-    if (req.user.role !== 'superAdmin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Only superAdmins can access this resource.'
-      });
-    }
+    console.log('getAdminProfile: Super admin', req.user.id, 'accessing admin profile');
 
     const { adminId } = req.params;
     

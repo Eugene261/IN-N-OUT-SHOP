@@ -20,6 +20,7 @@ import InlineVoiceRecorder from './InlineVoiceRecorder';
 import VoiceMessagePlayer from './VoiceMessagePlayer';
 import SoundNotifications from './SoundNotifications';
 import NewConversationModal from './NewConversationModal';
+import UserAvatar from './UserAvatar';
 import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 import {
@@ -157,56 +158,57 @@ const MessagingDashboard = ({ isWidget = false }) => {
           return [];
         });
         
-        const [conversationsResult, usersResult] = await Promise.all([conversationsPromise, usersPromise]);
+        const [conversationsResult, usersResult] = await Promise.allSettled([conversationsPromise, usersPromise]);
         setHasInitialized(true);
       } catch (err) {
         console.error('❌ Failed to initialize messaging:', err);
-        // SAFER ERROR MESSAGE EXTRACTION
-        let errorMessage = 'Failed to load messaging data';
-        if (err && typeof err === 'object') {
-          if (err.message) {
-            errorMessage = err.message;
-          } else if (err.response && err.response.data && err.response.data.message) {
-            errorMessage = err.response.data.message;
-          } else if (typeof err === 'string') {
-            errorMessage = err;
-          }
-        } else if (typeof err === 'string') {
-          errorMessage = err;
-        }
-        setInitError(errorMessage);
-        setHasInitialized(true); // Still mark as initialized to show error state
+        setInitError('Failed to load messaging data');
+        setHasInitialized(true);
       }
     };
 
     initializeMessaging();
   }, [user?.id]); // Only run when user changes
 
+  // OPTIMIZED: Load messages with better performance and error handling
   useEffect(() => {
-    if (activeConversation && hasInitialized) {
-      const loadMessages = async () => {
-        try {
-          await dispatch(fetchMessages({ conversationId: activeConversation._id })).unwrap();
+    if (!activeConversation || !hasInitialized) return;
+    
+    let isCancelled = false;
+    
+    const loadMessages = async () => {
+      try {
+        await dispatch(fetchMessages({ 
+          conversationId: activeConversation._id,
+          limit: 50 
+        })).unwrap();
+        
+        if (!isCancelled) {
           dispatch(markAsRead({ conversationId: activeConversation._id }));
           
-          // Scroll to bottom after messages are loaded
-          setTimeout(() => {
-            if (messagesEndRef.current) {
+          // Optimized scroll - only if element exists
+          requestAnimationFrame(() => {
+            if (messagesEndRef.current && !isCancelled) {
               messagesEndRef.current.scrollIntoView({ behavior: 'auto' });
             }
-          }, 600);
-        } catch (err) {
-          console.error('Failed to load messages:', err);
-          // SAFER ERROR MESSAGE EXTRACTION
-          let errorMessage = 'Failed to load messages';
-          if (err && typeof err === 'object' && err.message) {
-            errorMessage = err.message;
-          }
-          toast.error(errorMessage);
+          });
         }
-      };
-      loadMessages();
-    }
+      } catch (err) {
+        if (!isCancelled) {
+          console.error('Failed to load messages:', err);
+          // Only show toast for non-auth errors
+          if (!err?.message?.includes('Unauthorized')) {
+            toast.error('Failed to load messages');
+          }
+        }
+      }
+    };
+    
+    loadMessages();
+    
+    return () => {
+      isCancelled = true;
+    };
   }, [activeConversation, dispatch, hasInitialized]);
 
   // Auto-refresh messages and conversations with smart error handling - DISABLED TO PREVENT LOOPS
@@ -233,6 +235,32 @@ const MessagingDashboard = ({ isWidget = false }) => {
       dispatch(clearError());
     }
   }, [error, dispatch]);
+
+  // SMART REFRESH: Auto-refresh when user becomes active (for real-time feel)
+  useEffect(() => {
+    if (!hasInitialized || !user?.id) return;
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden && document.hasFocus()) {
+        console.log('🔄 MessagingDashboard: User became active, refreshing conversations');
+        dispatch(fetchConversations({ limit: 20 }));
+      }
+    };
+
+    const handleFocus = () => {
+      console.log('🔄 MessagingDashboard: Window focused, refreshing conversations');
+      dispatch(fetchConversations({ limit: 20 }));
+    };
+
+    // Add listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [hasInitialized, user?.id, dispatch]);
 
   // Monitor online/offline status - SIMPLIFIED TO PREVENT LOOPS
   useEffect(() => {
@@ -327,7 +355,7 @@ const MessagingDashboard = ({ isWidget = false }) => {
     }
   };
 
-  // Monitor messages for incoming message sounds
+  // OPTIMIZED: Monitor messages for incoming sounds with better performance
   useEffect(() => {
     if (!activeConversation || !messages || !hasInitialized) {
       setPrevMessagesLength(messages?.length || 0);
@@ -336,31 +364,31 @@ const MessagingDashboard = ({ isWidget = false }) => {
 
     const currentMessageCount = messages.length;
     
-    // If messages increased and we have previous messages (not initial load)
+    // Only process if messages increased and not initial load
     if (currentMessageCount > prevMessagesLength && prevMessagesLength > 0) {
-      // Get the new messages
       const newMessages = messages.slice(prevMessagesLength);
       
-      // Check if any new message is from another user (not current user)
-      const hasIncomingMessage = newMessages.some(msg => 
-        msg.sender?._id !== user?.id && msg.sender?.toString() !== user?.id
-      );
+      // Check for incoming messages from other users
+      const hasIncomingMessage = newMessages.some(msg => {
+        const senderId = msg.sender?._id || msg.sender;
+        return senderId !== user?.id;
+      });
       
-      if (hasIncomingMessage && window.playMessageReceivedSound) {
-        window.playMessageReceivedSound();
-        console.log('📱 MessagingDashboard: Playing receive sound for incoming message');
-      }
-      
-      // Scroll to bottom when new messages arrive (only for new incoming messages)
-      setTimeout(() => {
-        if (messagesEndRef.current) {
-          messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      if (hasIncomingMessage) {
+        // Play sound if available
+        if (window.playMessageReceivedSound) {
+          window.playMessageReceivedSound();
         }
-      }, 150);
+        
+        // Optimized scroll for new messages
+        requestAnimationFrame(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        });
+      }
     }
     
     setPrevMessagesLength(currentMessageCount);
-  }, [messages, activeConversation, user?.id, hasInitialized]); // Removed prevMessagesLength to prevent dependency loops
+  }, [messages?.length, activeConversation, user?.id, hasInitialized]);
 
   const handleStartNewConversation = async (recipientId, recipientName) => {
     try {
@@ -698,30 +726,30 @@ const MessagingDashboard = ({ isWidget = false }) => {
               <div className={`${
                 showConversations ? 'flex' : 'hidden'
               } w-full bg-white border-r border-gray-200 flex-col relative shadow-sm h-full`}>
-                {/* Header */}
-                <div className={`${isWidget ? 'p-3' : 'p-4 lg:p-6'} border-b bg-blue-600 text-white`}>
+                {/* Header - IMPROVED MOBILE STYLING */}
+                <div className={`${isWidget ? 'p-4' : 'p-4 lg:p-6'} border-b bg-gradient-to-r from-blue-600 to-blue-700 text-white`}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       {!isWidget && (
-                        <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center border-2 border-white border-opacity-30">
-                          <MessageSquare className="w-6 h-6 text-white" />
+                        <div className="w-12 h-12 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center border-2 border-white border-opacity-30 shadow-lg">
+                          <MessageSquare className="w-7 h-7 text-white" />
                         </div>
                       )}
                       <div>
-                        <h1 className={`${isWidget ? 'text-base' : 'text-lg lg:text-xl'} font-bold text-white`}>
+                        <h1 className={`${isWidget ? 'text-lg' : 'text-xl lg:text-2xl'} font-bold text-white`}>
                           {isWidget ? 'Conversations' : 'Messages'}
                         </h1>
-                        <p className="text-xs lg:text-sm text-blue-100">
-                          {totalUnread > 0 ? `${totalUnread} unread` : 'All caught up'}
+                        <p className="text-sm lg:text-base text-blue-100 font-medium">
+                          {totalUnread > 0 ? `${totalUnread} unread message${totalUnread > 1 ? 's' : ''}` : 'All caught up'}
                         </p>
                       </div>
                     </div>
                     <button
                       onClick={() => dispatch(setShowNewChatModal(true))}
-                      className={`${isWidget ? 'p-2' : 'p-2 lg:p-3'} bg-white bg-opacity-20 text-white rounded-xl hover:bg-opacity-30 active:bg-opacity-40 transition-colors shadow-sm hover:shadow-md touch-manipulation border border-white border-opacity-30`}
+                      className={`${isWidget ? 'p-2' : 'p-2 lg:p-3'} bg-white text-blue-600 rounded-xl hover:bg-blue-50 active:bg-blue-100 transition-colors shadow-sm hover:shadow-md touch-manipulation border border-blue-200`}
                       title="Start new conversation"
                     >
-                      <Plus className={`${isWidget ? 'w-4 h-4' : 'w-4 h-4 lg:w-5 lg:h-5'}`} />
+                      <Plus className={`${isWidget ? 'w-5 h-5' : 'w-5 h-5 lg:w-6 lg:h-6'} font-bold`} />
                     </button>
                   </div>
 
@@ -776,38 +804,47 @@ const MessagingDashboard = ({ isWidget = false }) => {
                           return (
                             <div
                               key={conversation._id}
-                              className={`p-3 lg:p-4 cursor-pointer transition-all duration-200 hover:bg-gray-50 active:bg-gray-100 ${
-                                isActive ? 'bg-blue-50 border-r-4 border-blue-500' : ''
-                              } ${hasUnread ? 'bg-blue-50/50' : ''}`}
+                              className={`p-4 cursor-pointer transition-all duration-300 hover:bg-gray-50 active:bg-gray-100 border-l-4 ${
+                                isActive ? 'bg-blue-50 border-blue-500 shadow-sm' : hasUnread ? 'bg-blue-50/30 border-blue-300' : 'border-transparent'
+                              }`}
                               onClick={() => handleConversationSelect(conversation)}
                             >
-                              <div className="flex items-start space-x-3">
-                                <div className="flex-shrink-0">
-                                  <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm lg:text-base">
-                                    {(otherUser.userName || 'U').charAt(0).toUpperCase()}
-                                  </div>
+                              <div className="flex items-start space-x-4">
+                                <div className="flex-shrink-0 relative">
+                                  <UserAvatar 
+                                    user={otherUser}
+                                    size="lg"
+                                    showOnlineIndicator={false}
+                                  />
+                                  {hasUnread && (
+                                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center border-2 border-white">
+                                      <span className="text-white text-xs font-bold">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                                    </div>
+                                  )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between">
-                                    <h3 className={`text-sm lg:text-base font-medium truncate ${
-                                      hasUnread ? 'text-gray-900 font-semibold' : 'text-gray-900'
+                                  <div className="flex items-center justify-between mb-1">
+                                    <h3 className={`text-base lg:text-lg font-semibold truncate ${
+                                      hasUnread ? 'text-gray-900' : 'text-gray-800'
                                     }`}>
                                       {otherUser.userName || 'Unknown User'}
                                     </h3>
-                                    {hasUnread && (
-                                      <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-blue-600 rounded-full">
-                                        {unreadCount}
-                                      </span>
-                                    )}
+                                    <span className={`text-xs font-medium ${hasUnread ? 'text-blue-600' : 'text-gray-400'}`}>
+                                      {lastMessageTime ? formatTime(lastMessageTime) : ''}
+                                    </span>
                                   </div>
-                                  <p className={`text-xs lg:text-sm truncate mt-1 ${
+                                  <p className={`text-sm truncate ${
                                     hasUnread ? 'text-gray-700 font-medium' : 'text-gray-500'
                                   }`}>
                                     {lastMessageContent}
                                   </p>
-                                  <p className="text-xs text-gray-400 mt-1">
-                                    {lastMessageTime ? formatTime(lastMessageTime) : ''}
-                                  </p>
+                                  {otherUser.role && (
+                                    <span className={`inline-block mt-2 px-2 py-1 text-xs font-medium rounded-full ${
+                                      otherUser.role === 'superAdmin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                                    }`}>
+                                      {otherUser.role === 'superAdmin' ? 'Super Admin' : 'Admin'}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -820,50 +857,58 @@ const MessagingDashboard = ({ isWidget = false }) => {
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                        <MessageSquare className="w-8 h-8 text-gray-400" />
+                      <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl flex items-center justify-center mb-6 shadow-lg">
+                        <MessageSquare className="w-10 h-10 text-white" />
                       </div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No conversations</h3>
-                      <p className="text-gray-500 mb-4">Start a new conversation to get started!</p>
+                      <h3 className="text-xl font-bold text-gray-900 mb-3">No conversations yet</h3>
+                      <p className="text-gray-600 mb-6 max-w-sm leading-relaxed">Start a new conversation to connect with admins and super admins!</p>
+                      <button
+                        onClick={() => dispatch(setShowNewChatModal(true))}
+                        className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl"
+                      >
+                        <Plus className="w-5 h-5 mr-2" />
+                        Start Conversation
+                      </button>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Chat Area */}
+                              {/* Chat Area - IMPROVED MOBILE STYLING */}
               <div className={`${
                 showConversations ? 'hidden' : 'flex'
               } w-full flex-col bg-white relative h-full`}>
                 
-                {/* BLUE HEADER - ALWAYS VISIBLE */}
-                <div className="flex-shrink-0 bg-blue-600 text-white px-4 py-3 border-b shadow-sm">
+                                {/* CLEAN HEADER - LESS CROWDED */}
+                <div className="flex-shrink-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 shadow-lg">
                   <div className="flex items-center space-x-3">
                     <button
                       onClick={() => setShowConversations(true)}
-                      className="flex items-center text-white hover:text-blue-200 font-medium"
+                      className="text-white hover:text-blue-200 transition-colors p-1 rounded-lg hover:bg-white hover:bg-opacity-10"
+                      title="Back to conversations"
                     >
-                      ← Back
+                      <ArrowLeft className="w-5 h-5" />
                     </button>
                     
-                    {activeConversation && (
-                      <>
-                        {/* User Avatar */}
-                        <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white font-semibold text-sm border-2 border-white border-opacity-30">
-                          {getOtherParticipant(activeConversation)?.userName?.charAt(0)?.toUpperCase() || 'U'}
-                        </div>
-                        
-                        {/* User Info */}
-                        <div>
-                          <h2 className="font-semibold text-white">
-                            {getOtherParticipant(activeConversation)?.userName || 'Unknown User'}
-                          </h2>
-                          <div className="flex items-center space-x-1 text-sm text-blue-100">
-                            <div className="w-2 h-2 rounded-full bg-green-400"></div>
-                            <span>Online</span>
+                      {activeConversation && (
+                        <>
+                          {/* User Avatar */}
+                          <UserAvatar 
+                            user={getOtherParticipant(activeConversation)}
+                            size="sm"
+                            showOnlineIndicator={true}
+                            isOnline={true}
+                          />
+                          
+                          {/* User Info */}
+                          <div className="flex-1 min-w-0">
+                            <h2 className="font-semibold text-white text-base truncate">
+                              {getOtherParticipant(activeConversation)?.userName || 'Unknown User'}
+                            </h2>
+                            <p className="text-xs text-blue-100">Online</p>
                           </div>
-                        </div>
-                      </>
-                    )}
+                        </>
+                      )}
                     
                     {!activeConversation && (
                       <span className="font-semibold text-white">Messages</span>
@@ -884,13 +929,13 @@ const MessagingDashboard = ({ isWidget = false }) => {
                           </div>
                         </div>
                       ) : (!messages || messages.length === 0) ? (
-                        <div className="text-center py-12">
-                          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <MessageSquare className="w-8 h-8 text-blue-600" />
-                          </div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">No messages yet</h3>
-                          <p className="text-gray-500">Start the conversation by sending your first message!</p>
-                        </div>
+                                            <div className="text-center py-12">
+                      <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                        <MessageSquare className="w-8 h-8 text-blue-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No messages yet</h3>
+                      <p className="text-gray-500">Start the conversation by sending your first message!</p>
+                    </div>
                       ) : (
                         <div className="space-y-4">
                           {messages.map((message, index) => {
@@ -903,8 +948,12 @@ const MessagingDashboard = ({ isWidget = false }) => {
                                 className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} space-x-2 lg:space-x-3`}
                               >
                                 {!isOwnMessage && showAvatar && (
-                                  <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                                    {message?.sender?.userName?.charAt(0)?.toUpperCase() || 'U'}
+                                  <div className="flex-shrink-0">
+                                    <UserAvatar 
+                                      user={message?.sender}
+                                      size="sm"
+                                      showOnlineIndicator={false}
+                                    />
                                   </div>
                                 )}
                                 {!isOwnMessage && !showAvatar && (

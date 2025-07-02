@@ -4,6 +4,7 @@ import { Bell, X, MessageSquare, AlertCircle, CheckCircle, User, Clock } from 'l
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { selectTotalUnread, fetchConversations } from '../../store/common/messaging-slice';
+import UserAvatar from '../common/messaging/UserAvatar';
 
 const NotificationBell = ({ className = "" }) => {
   const dispatch = useDispatch();
@@ -73,8 +74,10 @@ const NotificationBell = ({ className = "" }) => {
         consecutiveNetworkErrors = 0; // Reset network errors on success
         console.log('🔔 NotificationBell: Successfully fetched conversations');
         
-        // Schedule next poll
-        scheduleNextPoll(10000); // Normal 10 second interval
+        // SMART POLLING: Fast when active, slow when idle
+        const isUserActive = document.hasFocus() && !document.hidden;
+        const pollInterval = isUserActive ? 30000 : 120000; // 30s when active, 2min when idle
+        scheduleNextPoll(pollInterval);
         return 'continue';
       } catch (error) {
         if (!isComponentMounted) return 'stop';
@@ -89,9 +92,25 @@ const NotificationBell = ({ className = "" }) => {
             return 'stop'; // Stop polling after multiple auth failures
           }
           
-          // For auth errors, wait longer before retrying
-          scheduleNextPoll(30000); // Wait 30 seconds for auth issues
+          // For auth errors, wait much longer before retrying
+          scheduleNextPoll(120000); // Wait 2 minutes for auth issues
           return 'auth_error';
+        } else if (error.response?.status === 500 && 
+                  (error.response?.data?.error === 'BSON_SIZE_LIMIT_EXCEEDED' ||
+                   error.response?.data?.message?.includes('Document size too large'))) {
+          
+          console.error('🔔 NotificationBell: BSON size limit exceeded - database documents too large');
+          console.error('🔔 This is likely due to large avatar images stored in the database');
+          
+          // For BSON size errors, wait much longer and eventually stop polling
+          authErrorCount++;
+          if (authErrorCount >= MAX_AUTH_ERRORS) {
+            console.log('🔔 NotificationBell: Too many BSON size errors, stopping polling until fixed');
+            return 'stop';
+          }
+          
+          scheduleNextPoll(300000); // Wait 5 minutes for BSON size issues
+          return 'bson_size_error';
         } else if (!navigator.onLine || 
                   error.code === 'ERR_NETWORK' || 
                   error.code === 'ERR_INTERNET_DISCONNECTED' ||
@@ -111,7 +130,7 @@ const NotificationBell = ({ className = "" }) => {
           return 'network_error';
         } else {
           console.error('🔔 NotificationBell: Unexpected error:', error);
-          scheduleNextPoll(20000); // Longer delay for unexpected errors
+          scheduleNextPoll(180000); // Much longer delay (3 minutes) for unexpected errors
           return 'error';
         }
       }
@@ -138,7 +157,7 @@ const NotificationBell = ({ className = "" }) => {
     };
   }, [dispatch, user]);
 
-  // Listen for real-time message events to immediately update notifications
+  // ENHANCED: Real-time message events + visibility/focus detection
   useEffect(() => {
     const handleNewMessage = (event) => {
       console.log('🔔 NotificationBell: New message received, refreshing conversations');
@@ -165,13 +184,30 @@ const NotificationBell = ({ className = "" }) => {
       }
     };
 
+    // SMART POLLING: Faster refresh when user becomes active
+    const handleVisibilityChange = () => {
+      if (!document.hidden && document.hasFocus()) {
+        console.log('🔔 NotificationBell: User became active, immediate refresh');
+        dispatch(fetchConversations()); // Immediate refresh when user becomes active
+      }
+    };
+
+    const handleFocus = () => {
+      console.log('🔔 NotificationBell: Window focused, immediate refresh');
+      dispatch(fetchConversations()); // Immediate refresh when window is focused
+    };
+
     // Listen for custom events
     window.addEventListener('new_message', handleNewMessage);
     window.addEventListener('storage', handleStorageChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
 
     return () => {
       window.removeEventListener('new_message', handleNewMessage);
       window.removeEventListener('storage', handleStorageChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
     };
   }, [dispatch]);
 
@@ -467,19 +503,15 @@ const NotificationBell = ({ className = "" }) => {
                       <div className="flex items-start space-x-3">
                         {/* Avatar or Icon */}
                         <div className="flex-shrink-0">
-                          {notification.avatar ? (
-                            <img
-                              src={notification.avatar}
-                              alt="Avatar"
-                              className="w-8 h-8 rounded-full"
-                            />
-                          ) : (
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${
-                              notification.role === 'superAdmin' ? 'bg-purple-500' : 'bg-blue-500'
-                            }`}>
-                              <User className="w-4 h-4" />
-                            </div>
-                          )}
+                          <UserAvatar 
+                            user={{
+                              userName: notification.title.replace('New message from ', ''),
+                              avatar: notification.avatar,
+                              role: notification.role
+                            }}
+                            size="sm"
+                            showOnlineIndicator={false}
+                          />
                         </div>
 
                         {/* Content */}

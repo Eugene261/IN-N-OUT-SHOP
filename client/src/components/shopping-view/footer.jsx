@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Facebook, Twitter, Instagram, Phone, Mail, MapPin, ArrowRight, ChevronDown, ChevronUp, Heart } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const Footer = () => {
   const { scrollYProgress } = useScroll();
@@ -10,9 +11,53 @@ const Footer = () => {
   
   // State for accordion sections on mobile
   const [activeAccordion, setActiveAccordion] = useState(null);
+  
+  // Newsletter state
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [isNewsletterSubmitting, setIsNewsletterSubmitting] = useState(false);
 
   const toggleAccordion = (section) => {
     setActiveAccordion(activeAccordion === section ? null : section);
+  };
+
+  const handleNewsletterSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!newsletterEmail) {
+      toast.error('Please enter your email address');
+      return;
+    }
+
+    if (!/\S+@\S+\.\S+/.test(newsletterEmail)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    setIsNewsletterSubmitting(true);
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/common/newsletter`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: newsletterEmail }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(result.message || 'Successfully subscribed to our newsletter!');
+        setNewsletterEmail('');
+      } else {
+        toast.error(result.message || 'Failed to subscribe. Please try again.');
+      }
+    } catch (error) {
+      console.error('Newsletter subscription error:', error);
+      toast.error('Failed to subscribe. Please check your connection and try again.');
+    } finally {
+      setIsNewsletterSubmitting(false);
+    }
   };
 
   const staggerVariants = {
@@ -99,7 +144,7 @@ const Footer = () => {
                 Sign up and get 10% off your first order.
               </p>
             </div>
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleNewsletterSubmit}>
               <div className="relative group">
                 <input 
                   type="email"
@@ -107,17 +152,26 @@ const Footer = () => {
                   className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl
                   text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 
                   focus:border-blue-500/50 transition-all duration-300
-                  group-hover:border-gray-300"
+                  group-hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   required
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  disabled={isNewsletterSubmitting}
                 />
                 <button 
                   type="submit" 
                   className="absolute right-2 top-2 bg-gradient-to-r from-blue-600 to-purple-600 
                   text-white p-2.5 rounded-xl hover:from-blue-700 hover:to-purple-700 
                   transition-all duration-300 shadow-lg hover:shadow-blue-500/25 
-                  transform hover:scale-105 active:scale-95"
+                  transform hover:scale-105 active:scale-95
+                  disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  disabled={isNewsletterSubmitting}
                 >
-                  <ArrowRight className="h-4 w-4" />
+                  {isNewsletterSubmitting ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                  ) : (
+                    <ArrowRight className="h-4 w-4" />
+                  )}
                 </button>
               </div>
               <p className="text-xs text-gray-500 leading-relaxed">

@@ -1641,6 +1641,108 @@ class EmailService {
     }
   }
 
+  // NEW: Send SuperAdmin role notification email
+  async sendSuperAdminRoleNotificationEmail(email, userName, actionType = 'promoted', promotedBy = null) {
+    const actionMessages = {
+      'promoted': {
+        title: 'Congratulations! You are now a Super Administrator',
+        icon: '🎉',
+        message: 'Your role has been elevated to Super Administrator.',
+        color: '#6f42c1'
+      },
+      'created': {
+        title: 'Welcome! You have been assigned Super Administrator role',
+        icon: '👑',
+        message: 'Your account has been created with Super Administrator privileges.',
+        color: '#007bff'
+      }
+    };
+
+    const config = actionMessages[actionType] || actionMessages['promoted'];
+    const loginUrl = `${process.env.CLIENT_URL}/super-admin/login`;
+
+    const htmlContent = this.getModernEmailTemplate({
+      title: config.title,
+      headerColor: config.color,
+      icon: config.icon,
+      content: `
+        <div class="notification-header">
+          <h2>${config.icon} ${config.title}</h2>
+          <p>Hello ${userName}, ${config.message}</p>
+          ${promotedBy ? `<p>This action was performed by: <strong>${promotedBy}</strong></p>` : ''}
+        </div>
+        
+        <div class="privilege-overview">
+          <h3>🔑 Your New Privileges</h3>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon">👥</div>
+              <div class="stat-label">User Management</div>
+              <div class="stat-desc">Manage all users and admins</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">📊</div>
+              <div class="stat-label">System Analytics</div>
+              <div class="stat-desc">Access to all reports and metrics</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">🛠️</div>
+              <div class="stat-label">System Configuration</div>
+              <div class="stat-desc">Configure platform settings</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">💳</div>
+              <div class="stat-label">Payment Management</div>
+              <div class="stat-desc">Handle vendor payments</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="access-info">
+          <h3>🚀 Getting Started as Super Admin</h3>
+          <ul>
+            <li>🔐 Log in to your Super Admin dashboard</li>
+            <li>👥 Review user management panel</li>
+            <li>📊 Explore system-wide analytics</li>
+            <li>💳 Check vendor payment status</li>
+            <li>⚙️ Configure system settings</li>
+            <li>📬 Set up notification preferences</li>
+          </ul>
+        </div>
+        
+        <div class="security-notice">
+          <h3>🔒 Important Security Information</h3>
+          <div class="message-box">
+            <p><strong>With great power comes great responsibility!</strong></p>
+            <p>As a Super Administrator, you have access to sensitive system data and controls. Please:</p>
+            <ul>
+              <li>🛡️ Keep your login credentials secure</li>
+              <li>🔄 Change your password regularly</li>
+              <li>⚠️ Be cautious with system changes</li>
+              <li>📝 Keep track of important actions</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div style="text-align: center;">
+          <a href="${loginUrl}" class="button">Access Super Admin Panel</a>
+          <a href="${process.env.CLIENT_URL}/super-admin/guide" class="button secondary">View Admin Guide</a>
+        </div>
+        
+        <div class="footer-note">
+          <p><strong>Questions?</strong> If you have any questions about your new role, please contact the system administrator or review the Super Admin documentation.</p>
+        </div>
+      `
+    });
+
+    return await this.sendEmail({
+      to: email,
+      subject: `👑 You are now a Super Administrator - IN-N-OUT Store`,
+      html: htmlContent,
+      emailType: 'role_change'
+    });
+  }
+
   // Order delivery confirmation
   async sendOrderDeliveredEmail(customerEmail, customerName, orderDetails) {
     const htmlContent = this.getModernEmailTemplate({

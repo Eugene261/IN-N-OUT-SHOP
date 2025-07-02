@@ -7,7 +7,9 @@ import {
   Send, 
   X,
   AlertCircle,
-  Square
+  Square,
+  Play,
+  Pause
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -20,6 +22,7 @@ const InlineVoiceRecorder = ({
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
   const [audioUrl, setAudioUrl] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
@@ -31,7 +34,6 @@ const InlineVoiceRecorder = ({
   const timerRef = useRef(null);
   const chunksRef = useRef([]);
   const audioRef = useRef(null);
-  const isPlayingRef = useRef(false);
 
   // Request microphone permission
   const requestPermission = async () => {
@@ -156,11 +158,13 @@ const InlineVoiceRecorder = ({
       };
 
       recorderRef.current.onstop = async () => {
-        console.log('🎵 Recording stopped, processing...');
+        console.log('🎵 Recording stopped, creating preview...');
         const audioBlob = new Blob(chunksRef.current, { type: recordingFormat.mimeType });
         
-        // FIXED: Send with correct MIME type and extension
-        await sendAudioMessage(audioBlob, recordingFormat.mimeType, recordingFormat.extension);
+        // FIXED: Create preview instead of immediately sending
+        const url = URL.createObjectURL(audioBlob);
+        setAudioBlob(audioBlob);
+        setAudioUrl(url);
         
         chunksRef.current = [];
       };
@@ -190,36 +194,47 @@ const InlineVoiceRecorder = ({
 
   // Play recorded audio
   const playRecording = () => {
-    if (audioRef.current) {
+    if (audioRef.current && audioUrl) {
+      audioRef.current.src = audioUrl;
       audioRef.current.play();
-      isPlayingRef.current = true;
+      setIsPlaying(true);
+      
+      // Handle audio ended
+      audioRef.current.onended = () => {
+        setIsPlaying(false);
+      };
     }
   };
 
   const pauseRecording = () => {
     if (audioRef.current) {
       audioRef.current.pause();
-      isPlayingRef.current = false;
+      setIsPlaying(false);
     }
   };
 
-  // Delete recording
+  // Delete recording and start over
   const deleteRecording = () => {
     if (audioRef.current) {
       audioRef.current.pause();
-      isPlayingRef.current = false;
+      setIsPlaying(false);
+    }
+    
+    if (audioUrl) {
+      URL.revokeObjectURL(audioUrl);
     }
     
     setAudioBlob(null);
-    setAudioUrl('');
+    setAudioUrl(null);
     setDuration(0);
-    onClose();
+    
+    // Don't automatically start recording - let user choose
   };
 
-  // Send audio
-  const sendAudioMessage = async (audioBlob, mimeType, fileExtension) => {
-    if (!conversationId) {
-      setError('No conversation selected');
+  // Send audio - now only called when user explicitly chooses to send
+  const sendAudioMessage = async () => {
+    if (!conversationId || !audioBlob) {
+      setError('No conversation selected or no recording available');
       return;
     }
 
@@ -231,11 +246,11 @@ const InlineVoiceRecorder = ({
       
       // FIXED: Create file with proper extension and MIME type
       const timestamp = Date.now();
-      const fileName = `voice_message_${timestamp}.${fileExtension}`;
+      const fileName = `voice_message_${timestamp}.${recordingFormat.extension}`;
       
       // Create file with correct MIME type
       const audioFile = new File([audioBlob], fileName, { 
-        type: mimeType,
+        type: recordingFormat.mimeType,
         lastModified: timestamp
       });
       
@@ -245,7 +260,7 @@ const InlineVoiceRecorder = ({
       console.log('🎵 Sending voice message:', {
         conversationId,
         fileName,
-        mimeType,
+        mimeType: recordingFormat.mimeType,
         fileSize: audioBlob.size,
         apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:5000',
         fullUrl: `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/common/messaging/conversations/${conversationId}/messages/media`,
@@ -396,6 +411,7 @@ const InlineVoiceRecorder = ({
     setIsRecording(false);
     setAudioBlob(null);
     setAudioUrl(null);
+    setIsPlaying(false);
     setDuration(0);
     setError('');
     setSending(false);
@@ -404,11 +420,9 @@ const InlineVoiceRecorder = ({
     onClose();
   };
 
-  // Auto-start recording when visible
+  // Setup and cleanup when visible
   useEffect(() => {
-    if (isVisible && !isRecording && !audioBlob) {
-      startRecording();
-    }
+    // No auto-start recording - let user manually start
 
     return () => {
       if (streamRef.current) {
@@ -432,6 +446,9 @@ const InlineVoiceRecorder = ({
       exit={{ opacity: 0, y: 20 }}
       className="bg-white border-t border-gray-200 p-4"
     >
+      {/* Hidden audio element for playback */}
+      <audio ref={audioRef} />
+      
       {permission === 'denied' ? (
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -472,7 +489,7 @@ const InlineVoiceRecorder = ({
             <X className="w-6 h-6" />
           </button>
 
-          {/* Recording Indicator */}
+          {/* Recording/Preview Indicator */}
           <div className="flex-1 flex items-center space-x-3">
             {isRecording ? (
               <>
@@ -488,8 +505,10 @@ const InlineVoiceRecorder = ({
               </>
             ) : audioBlob ? (
               <>
-                <div className="w-4 h-4 bg-green-500 rounded-full" />
-                <span className="text-green-600 font-medium">Recording ready</span>
+                <div className="w-4 h-4 bg-blue-500 rounded-full" />
+                <span className="text-blue-600 font-medium">
+                  {isPlaying ? 'Playing...' : 'Preview recording'}
+                </span>
                 <span className="text-gray-600 font-mono text-lg">
                   {formatDuration(duration)}
                 </span>
@@ -497,7 +516,7 @@ const InlineVoiceRecorder = ({
             ) : (
               <>
                 <div className="w-4 h-4 bg-gray-400 rounded-full" />
-                <span className="text-gray-600">Preparing...</span>
+                <span className="text-gray-600">Ready to record</span>
               </>
             )}
           </div>
@@ -508,22 +527,42 @@ const InlineVoiceRecorder = ({
               <button
                 onClick={stopRecording}
                 className="p-3 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                title="Stop recording"
               >
                 <Square className="w-5 h-5" />
               </button>
             ) : audioBlob ? (
               <>
+                {/* Play/Pause Button */}
+                <button
+                  onClick={isPlaying ? pauseRecording : playRecording}
+                  disabled={sending}
+                  className="p-3 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                  title={isPlaying ? "Pause preview" : "Play preview"}
+                >
+                  {isPlaying ? (
+                    <Pause className="w-5 h-5" />
+                  ) : (
+                    <Play className="w-5 h-5" />
+                  )}
+                </button>
+                
+                {/* Delete Recording Button */}
                 <button
                   onClick={deleteRecording}
                   disabled={sending}
                   className="p-3 text-red-500 hover:text-red-700 disabled:opacity-50 transition-colors"
+                  title="Delete recording"
                 >
                   <Trash2 className="w-5 h-5" />
                 </button>
+                
+                {/* Send Button */}
                 <button
-                  onClick={() => sendAudioMessage(audioBlob, recordingFormat.mimeType, recordingFormat.extension)}
+                  onClick={sendAudioMessage}
                   disabled={sending}
                   className="p-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  title="Send voice message"
                 >
                   {sending ? (
                     <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
@@ -532,7 +571,16 @@ const InlineVoiceRecorder = ({
                   )}
                 </button>
               </>
-            ) : null}
+            ) : (
+              /* Start Recording Button */
+              <button
+                onClick={startRecording}
+                className="p-3 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                title="Start recording"
+              >
+                <Mic className="w-5 h-5" />
+              </button>
+            )}
           </div>
         </div>
       )}

@@ -16,6 +16,7 @@ import {
   selectAvailableUsers,
   selectLoading
 } from '../../../store/common/messaging-slice';
+import UserAvatar from './UserAvatar';
 
 const NewConversationModal = ({ isOpen, onClose, onStartConversation }) => {
   const dispatch = useDispatch();
@@ -139,14 +140,12 @@ const NewConversationModal = ({ isOpen, onClose, onStartConversation }) => {
                   onClick={() => handleStartConversation(user)}
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="relative">
-                      <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm lg:text-base">
-                        {user.userName.charAt(0).toUpperCase()}
-                      </div>
-                      {isOnline(user.lastActive) && (
-                        <div className="absolute -bottom-1 -right-1 w-3 h-3 lg:w-4 lg:h-4 bg-green-400 border-2 border-white rounded-full"></div>
-                      )}
-                    </div>
+                    <UserAvatar 
+                      user={user}
+                      size="md"
+                      showOnlineIndicator={true}
+                      isOnline={isOnline(user.lastActive)}
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <h3 className="text-sm lg:text-base font-medium text-gray-900 truncate">

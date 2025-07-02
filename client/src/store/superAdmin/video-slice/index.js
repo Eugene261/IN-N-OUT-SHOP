@@ -1,6 +1,9 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
+// API Base URL with fallback
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 // Helper function to get auth configuration
 const getAuthConfig = (isFormData = false) => {
   return {
@@ -47,7 +50,7 @@ export const fetchVideos = createAsyncThunk(
       if (finalIsFeatured !== undefined && finalIsFeatured !== '' && finalIsFeatured !== null) params.append('isFeatured', finalIsFeatured);
 
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/superAdmin/videos?${params.toString()}`,
+        `${API_BASE_URL}/api/superAdmin/videos?${params.toString()}`,
         getAuthConfig()
       );
       return response.data;
@@ -63,7 +66,7 @@ export const fetchVideoById = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/superAdmin/videos/${id}`,
+        `${API_BASE_URL}/api/superAdmin/videos/${id}`,
         getAuthConfig()
       );
       return response.data;
@@ -79,7 +82,7 @@ export const createVideo = createAsyncThunk(
   async (videoData, { rejectWithValue }) => {
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/superAdmin/videos`,
+        `${API_BASE_URL}/api/superAdmin/videos`,
         videoData,
         getAuthConfig(true) // FormData
       );
@@ -96,7 +99,7 @@ export const updateVideo = createAsyncThunk(
   async ({ id, videoData }, { rejectWithValue }) => {
     try {
       const response = await axios.put(
-        `${import.meta.env.VITE_API_URL}/api/superAdmin/videos/${id}`,
+        `${API_BASE_URL}/api/superAdmin/videos/${id}`,
         videoData,
         getAuthConfig(true) // FormData
       );
@@ -113,7 +116,7 @@ export const deleteVideo = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const response = await axios.delete(
-        `${import.meta.env.VITE_API_URL}/api/superAdmin/videos/${id}`,
+        `${API_BASE_URL}/api/superAdmin/videos/${id}`,
         getAuthConfig()
       );
       return { id, ...response.data };
@@ -129,7 +132,7 @@ export const toggleVideoFeatured = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const response = await axios.put(
-        `${import.meta.env.VITE_API_URL}/api/superAdmin/videos/${id}/featured`,
+        `${API_BASE_URL}/api/superAdmin/videos/${id}/featured`,
         {},
         getAuthConfig()
       );
@@ -146,7 +149,7 @@ export const updateVideoPriorities = createAsyncThunk(
   async (priorities, { rejectWithValue }) => {
     try {
       const response = await axios.put(
-        `${import.meta.env.VITE_API_URL}/api/superAdmin/videos/priorities/update`,
+        `${API_BASE_URL}/api/superAdmin/videos/priorities/update`,
         { priorities },
         getAuthConfig()
       );
@@ -163,7 +166,7 @@ export const fetchVendorsAndAdmins = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/superAdmin/videos/vendors-and-admins`,
+        `${API_BASE_URL}/api/superAdmin/videos/vendors-and-admins`,
         getAuthConfig()
       );
       return response.data;

@@ -29,7 +29,7 @@ const ConversationSchema = new mongoose.Schema({
 
   type: {
     type: String,
-    enum: ['direct', 'support', 'product_related', 'general'],
+    enum: ['direct', 'support', 'product_related', 'general', 'system'],
     default: 'direct'
   },
 
