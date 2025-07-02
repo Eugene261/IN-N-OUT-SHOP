@@ -8,8 +8,7 @@ import {
   addUser, 
   updateUserRole, 
   deleteUser,
-  clearError,
-  clearSuccess
+  clearError
 } from '../../store/super-admin/user-slice';
 import { 
   User, 
@@ -29,7 +28,7 @@ import {
 const UserManagement = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { users, isLoading, error, success, actionType } = useSelector(state => state.superAdminUsers);
+  const { users, pagination, isLoading, error } = useSelector(state => state.superAdminUsers);
   
   // Form states
   const [showAddUserForm, setShowAddUserForm] = useState(false);
@@ -51,6 +50,9 @@ const UserManagement = () => {
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredUsers, setFilteredUsers] = useState([]);
+
+  // Local success state for form handling
+  const [localSuccess, setLocalSuccess] = useState('');
   
   useEffect(() => {
     dispatch(fetchAllUsers());
@@ -73,55 +75,78 @@ const UserManagement = () => {
     }
   }, [users, searchTerm]);
   
+  // Handle local success messages
   useEffect(() => {
-    if (success) {
-      // Clear forms on success
-      if (actionType === 'add') {
-        setShowAddUserForm(false);
-        setNewUser({
-          userName: '',
-          email: '',
-          password: '',
-          role: 'admin'
-        });
-      } else if (actionType === 'update') {
-        setShowEditUserForm(false);
-      }
-      
-      // Clear success message after 3 seconds
+    if (localSuccess) {
       const timer = setTimeout(() => {
-        dispatch(clearSuccess());
+        setLocalSuccess('');
       }, 3000);
       
       return () => clearTimeout(timer);
     }
-  }, [success, actionType, dispatch]);
+  }, [localSuccess]);
   
   const handleFilterChange = (filter) => {
+    // Validate filter parameter
+    if (!filter || typeof filter !== 'string') {
+      console.error('Invalid filter parameter:', filter);
+      return;
+    }
+    
     setActiveFilter(filter);
     if (filter === 'all') {
       dispatch(fetchAllUsers());
+    } else if (['user', 'admin', 'superAdmin'].includes(filter)) {
+      dispatch(fetchUsersByRole({ role: filter }));
     } else {
-      dispatch(fetchUsersByRole(filter));
+      console.error('Invalid role filter:', filter);
     }
   };
   
-  const handleAddUserSubmit = (e) => {
+  const handleAddUserSubmit = async (e) => {
     e.preventDefault();
-    dispatch(addUser(newUser));
+    try {
+      await dispatch(addUser(newUser)).unwrap();
+      // Success - clear form and show message
+      setShowAddUserForm(false);
+      setNewUser({
+        userName: '',
+        email: '',
+        password: '',
+        role: 'admin'
+      });
+      setLocalSuccess('User added successfully!');
+    } catch (error) {
+      // Error is handled by Redux state
+      console.error('Failed to add user:', error);
+    }
   };
   
-  const handleEditUserSubmit = (e) => {
+  const handleEditUserSubmit = async (e) => {
     e.preventDefault();
-    dispatch(updateUserRole({
-      userId: editUser.userId,
-      role: editUser.role
-    }));
+    try {
+      await dispatch(updateUserRole({
+        userId: editUser.userId,
+        role: editUser.role
+      })).unwrap();
+      // Success - close form and show message
+      setShowEditUserForm(false);
+      setLocalSuccess('User role updated successfully!');
+    } catch (error) {
+      // Error is handled by Redux state
+      console.error('Failed to update user role:', error);
+    }
   };
   
-  const handleDeleteUser = (userId) => {
+  const handleDeleteUser = async (userId) => {
     if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      dispatch(deleteUser(userId));
+      try {
+        await dispatch(deleteUser(userId)).unwrap();
+        setLocalSuccess('User deleted successfully!');
+      } catch (error) {
+        // Error is handled by Redux state
+        console.error('Failed to delete user:', error);
+      }
     }
   };
   
@@ -177,7 +202,7 @@ const UserManagement = () => {
       
       {/* Success message */}
       <AnimatePresence>
-        {success && (
+        {localSuccess && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -185,9 +210,9 @@ const UserManagement = () => {
             className="mb-6 p-4 bg-green-100 border border-green-200 rounded-lg flex items-center"
           >
             <CheckCircle className="h-5 w-5 text-green-600 mr-3" />
-            <span className="text-green-700">{success}</span>
+            <span className="text-green-700">{localSuccess}</span>
             <button 
-              onClick={() => dispatch(clearSuccess())}
+              onClick={() => setLocalSuccess('')}
               className="ml-auto text-green-600 hover:text-green-800"
             >
               <X className="h-4 w-4" />
@@ -384,7 +409,7 @@ const UserManagement = () => {
                     disabled={isLoading}
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
                   >
-                    {isLoading && actionType === 'add' ? (
+                    {isLoading ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         Adding...
@@ -474,7 +499,7 @@ const UserManagement = () => {
                     disabled={isLoading}
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
                   >
-                    {isLoading && actionType === 'update' ? (
+                    {isLoading ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         Updating...
@@ -571,14 +596,10 @@ const UserManagement = () => {
                         <button
                           onClick={() => handleDeleteUser(user._id)}
                           className="text-red-600 hover:text-red-900 p-1"
-                          disabled={isLoading && actionType === 'delete'}
+                          disabled={isLoading}
                           title="Delete user"
                         >
-                          {isLoading && actionType === 'delete' ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     </td>
