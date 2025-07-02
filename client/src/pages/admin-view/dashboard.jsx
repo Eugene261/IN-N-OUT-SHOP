@@ -25,12 +25,12 @@ function AdminDashboard() {
   // Feature image management functions have been removed as they're now SuperAdmin-only features
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-50 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-50 p-3 sm:p-6 lg:p-8">
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="max-w-6xl mx-auto space-y-8"
+        className="max-w-6xl mx-auto space-y-6 sm:space-y-8"
       >
         {/* Revenue Dashboard Section */}
         <RevenueDashboard />

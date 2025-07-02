@@ -495,262 +495,254 @@ function RevenueDashboard() {
       initial="hidden"
       animate="visible"
     >
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-800">Revenue Dashboard</h2>
-        <p className="text-gray-500">Sales performance for {user?.name || 'admin'}</p>
+      <div className="mb-6 sm:mb-8">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Revenue Dashboard</h2>
+        <p className="text-sm sm:text-base text-gray-500">Sales performance for {user?.name || 'admin'}</p>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      {/* Modal/Dialog Content */}
+      <Modal isOpen={openDialog} onClose={() => setOpenDialog(false)} title={dialogTitle}>
+        {renderDialogContent()}
+      </Modal>
+
+      {/* Stats Grid - Mobile Optimized */}
+      <motion.div
+        variants={cardVariants}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8"
+      >
+        {/* Total Revenue Card */}
+        <div
+          className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer"
+          onClick={() => openCardDialog('revenue')}
+        >
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 className="text-xs sm:text-sm font-medium text-gray-500">Total Revenue</h3>
+            <span className="p-1.5 sm:p-2 bg-green-100 rounded-full">
+              <DollarSign className="h-3 w-3 sm:h-5 sm:w-5 text-green-600" />
+            </span>
+          </div>
+          <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+            {formatCurrency(revenueStats?.totalRevenue || 0)}
+          </p>
+          <div className="flex items-center justify-between">
+            <span className="text-xs sm:text-sm text-gray-500">Click for details</span>
+            <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+          </div>
         </div>
-      ) : error ? (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          <p>{error}</p>
-          <button 
-            onClick={() => {
-              dispatch(fetchRevenueStats());
-              dispatch(fetchAdminOrders());
-            }}
-            className="mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-          >
-            Retry
-          </button>
+
+        {/* Shipping Fees Card */}
+        <div
+          className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer"
+          onClick={() => openCardDialog('shipping')}
+        >
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 className="text-xs sm:text-sm font-medium text-gray-500">Shipping Fees</h3>
+            <span className="p-1.5 sm:p-2 bg-blue-100 rounded-full">
+              <TruckIcon className="h-3 w-3 sm:h-5 sm:w-5 text-blue-600" />
+            </span>
+          </div>
+          <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+            {getShippingFeeDisplayValue()}
+          </p>
+          <div className="flex items-center justify-between">
+            <span className="text-xs sm:text-sm text-gray-500">Click for breakdown</span>
+            <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+          </div>
         </div>
-      ) : (
-        <div className="space-y-8">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-8">
-          {/* Total Revenue */}
-          <motion.div 
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-shadow cursor-pointer"
-            variants={cardVariants}
-            onClick={() => openCardDialog('revenue')}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Total Revenue</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{formatCurrency(revenueStats?.totalRevenue)}</p>
-              </div>
-              <div className="h-10 w-10 sm:h-12 sm:w-12 bg-green-100 rounded-full flex items-center justify-center">
-                <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-              </div>
-            </div>
-          </motion.div>
 
-          {/* Shipping Fees */}
-          <motion.div 
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-shadow cursor-pointer"
-            variants={cardVariants}
-            onClick={() => openCardDialog('shipping')}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Shipping Fees</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{getShippingFeeDisplayValue()}</p>
-              </div>
-              <div className="h-10 w-10 sm:h-12 sm:w-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <TruckIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Items Sold */}
-          <motion.div 
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-shadow cursor-pointer"
-            variants={cardVariants}
-            onClick={() => openCardDialog('items')}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Items Sold</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{revenueStats?.totalItemsSold || 0}</p>
-              </div>
-              <div className="h-10 w-10 sm:h-12 sm:w-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <Package className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Total Orders */}
-          <motion.div 
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-shadow cursor-pointer"
-            variants={cardVariants}
-            onClick={() => openCardDialog('orders')}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Total Orders</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{revenueStats?.totalOrders || 0}</p>
-              </div>
-              <div className="h-10 w-10 sm:h-12 sm:w-12 bg-purple-100 rounded-full flex items-center justify-center">
-                <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Pending Deliveries - Show on larger screens or as second row */}
-          <motion.div 
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-shadow cursor-pointer sm:col-span-1"
-            variants={cardVariants}
-            onClick={() => openCardDialog('pending')}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Pending Deliveries</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{revenueStats?.pendingDeliveries || 0}</p>
-              </div>
-              <div className="h-10 w-10 sm:h-12 sm:w-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                <TruckIcon className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Confirmed Payments */}
-          <motion.div 
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-shadow cursor-pointer"
-            variants={cardVariants}
-            onClick={() => openCardDialog('payments')}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Confirmed Payments</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{revenueStats?.confirmedPayments || 0}</p>
-              </div>
-              <div className="h-10 w-10 sm:h-12 sm:w-12 bg-indigo-100 rounded-full flex items-center justify-center">
-                <CreditCard className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600" />
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Your Products */}
-          <motion.div 
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-shadow cursor-pointer"
-            variants={cardVariants}
-            onClick={() => openCardDialog('products')}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Your Products</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{revenueStats?.adminProducts || 0}</p>
-              </div>
-              <div className="h-10 w-10 sm:h-12 sm:w-12 bg-pink-100 rounded-full flex items-center justify-center">
-                <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-pink-600" />
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Platform Fees */}
-          <motion.div 
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-shadow cursor-pointer"
-            variants={cardVariants}
-            onClick={() => openCardDialog('fees')}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Platform Fees</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{formatCurrency(revenueStats?.totalPlatformFees || 0)}</p>
-              </div>
-              <div className="h-10 w-10 sm:h-12 sm:w-12 bg-red-100 rounded-full flex items-center justify-center">
-                <Percent className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Net Revenue - Span 2 columns on larger screens */}
-          <motion.div 
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-shadow cursor-pointer lg:col-span-2 xl:col-span-1"
-            variants={cardVariants}
-            onClick={() => openCardDialog('net')}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Net Revenue</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{formatCurrency(revenueStats?.netRevenue || 0)}</p>
-                <p className="text-xs text-gray-400 mt-1">After platform fees</p>
-              </div>
-              <div className="h-10 w-10 sm:h-12 sm:w-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-              </div>
-            </div>
-          </motion.div>
+        {/* Items Sold Card */}
+        <div
+          className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer"
+          onClick={() => openCardDialog('items')}
+        >
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 className="text-xs sm:text-sm font-medium text-gray-500">Items Sold</h3>
+            <span className="p-1.5 sm:p-2 bg-blue-100 rounded-full">
+              <Package className="h-3 w-3 sm:h-5 sm:w-5 text-blue-600" />
+            </span>
+          </div>
+          <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+            {revenueStats?.totalItemsSold || 0}
+          </p>
+          <div className="flex items-center justify-between">
+            <span className="text-xs sm:text-sm text-gray-500">View breakdown</span>
+            <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+          </div>
         </div>
-        
-        {/* Revenue Analytics Section */}
+
+        {/* Total Orders Card */}
+        <div
+          className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer"
+          onClick={() => openCardDialog('orders')}
+        >
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 className="text-xs sm:text-sm font-medium text-gray-500">Total Orders</h3>
+            <span className="p-1.5 sm:p-2 bg-purple-100 rounded-full">
+              <ShoppingBag className="h-3 w-3 sm:h-5 sm:w-5 text-purple-600" />
+            </span>
+          </div>
+          <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+            {revenueStats?.totalOrders || 0}
+          </p>
+          <div className="flex items-center justify-between">
+            <span className="text-xs sm:text-sm text-gray-500">View all orders</span>
+            <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Secondary Stats Grid - Mobile Optimized */}
+      <motion.div
+        variants={cardVariants}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8"
+      >
+        {/* Pending Deliveries Card */}
+        <div
+          className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer"
+          onClick={() => openCardDialog('pending')}
+        >
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 className="text-xs sm:text-sm font-medium text-gray-500">Pending Deliveries</h3>
+            <span className="p-1.5 sm:p-2 bg-yellow-100 rounded-full">
+              <TruckIcon className="h-3 w-3 sm:h-5 sm:w-5 text-yellow-600" />
+            </span>
+          </div>
+          <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+            {revenueStats?.pendingDeliveries || 0}
+          </p>
+          <div className="flex items-center justify-between">
+            <span className="text-xs sm:text-sm text-gray-500">Manage deliveries</span>
+            <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+          </div>
+        </div>
+
+        {/* Confirmed Payments Card */}
+        <div
+          className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer"
+          onClick={() => openCardDialog('payments')}
+        >
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 className="text-xs sm:text-sm font-medium text-gray-500">Confirmed Payments</h3>
+            <span className="p-1.5 sm:p-2 bg-indigo-100 rounded-full">
+              <CreditCard className="h-3 w-3 sm:h-5 sm:w-5 text-indigo-600" />
+            </span>
+          </div>
+          <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+            {revenueStats?.confirmedPayments || 0}
+          </p>
+          <div className="flex items-center justify-between">
+            <span className="text-xs sm:text-sm text-gray-500">View payments</span>
+            <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+          </div>
+        </div>
+
+        {/* Products Card */}
+        <div
+          className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer"
+          onClick={() => openCardDialog('products')}
+        >
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 className="text-xs sm:text-sm font-medium text-gray-500">Your Products</h3>
+            <span className="p-1.5 sm:p-2 bg-pink-100 rounded-full">
+              <Package className="h-3 w-3 sm:h-5 sm:w-5 text-pink-600" />
+            </span>
+          </div>
+          <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+            {revenueStats?.adminProducts || 0}
+          </p>
+          <div className="flex items-center justify-between">
+            <span className="text-xs sm:text-sm text-gray-500">Manage products</span>
+            <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+          </div>
+        </div>
+
+        {/* Net Revenue Card - Full width on mobile */}
+        <div
+          className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer sm:col-span-2 lg:col-span-1"
+          onClick={() => openCardDialog('net')}
+        >
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 className="text-xs sm:text-sm font-medium text-gray-500">Net Revenue</h3>
+            <span className="p-1.5 sm:p-2 bg-green-100 rounded-full">
+              <DollarSign className="h-3 w-3 sm:h-5 sm:w-5 text-green-600" />
+            </span>
+          </div>
+          <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+            {formatCurrency(revenueStats?.netRevenue || 0)}
+          </p>
+          <div className="flex items-center justify-between">
+            <span className="text-xs sm:text-sm text-gray-500">After platform fees</span>
+            <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Revenue Analytics Component */}
+      <motion.div variants={cardVariants}>
         <AdminRevenueStats />
-        
-        {/* Main Dialog Modal */}
-        <Modal
-          isOpen={openDialog}
-          onClose={() => setOpenDialog(false)}
-          title={dialogTitle}
-        >
-          {renderDialogContent()}
-        </Modal>
-        
-        {/* Order Status Update Modal */}
-        <Modal
-          isOpen={openOrderDialog}
-          onClose={() => setOpenOrderDialog(false)}
-          title="Update Order Status"
-        >
-          {selectedOrder && (
-            <div className="space-y-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium">Order #{selectedOrder._id.substring(selectedOrder._id.length - 6)}</h4>
-                <p className="text-sm text-gray-500 mt-1">
-                  Created on {formatDate(selectedOrder.createdAt)}
-                </p>
-              </div>
-              
-              <div className="space-y-3">
-                <h4 className="font-medium">Select New Status</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {['processing', 'shipped', 'delivered', 'cancelled'].map(status => (
-                    <button
-                      key={status}
-                      onClick={() => setUpdatedStatus(status)}
-                      className={`px-3 py-2 rounded-md text-sm capitalize ${updatedStatus === status
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {status}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="flex justify-end space-x-2 pt-4 border-t">
-                <button
-                  onClick={() => setOpenOrderDialog(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    dispatch(updateOrderStatus({
-                      orderId: selectedOrder._id,
-                      status: updatedStatus
-                    }));
-                    setOpenOrderDialog(false);
-                    // Refresh data after a short delay
-                    setTimeout(() => {
-                      dispatch(fetchRevenueStats());
-                      dispatch(fetchAdminOrders());
-                    }, 1000);
-                  }}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                >
-                  Update Status
-                </button>
+      </motion.div>
+
+      {/* Order Status Update Modal */}
+      <Modal
+        isOpen={openOrderDialog}
+        onClose={() => setOpenOrderDialog(false)}
+        title="Update Order Status"
+      >
+        {selectedOrder && (
+          <div className="space-y-4">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h4 className="font-medium">Order #{selectedOrder._id.substring(selectedOrder._id.length - 6)}</h4>
+              <p className="text-sm text-gray-500 mt-1">
+                Created on {formatDate(selectedOrder.createdAt)}
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              <h4 className="font-medium">Select New Status</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {['processing', 'shipped', 'delivered', 'cancelled'].map(status => (
+                  <button
+                    key={status}
+                    onClick={() => setUpdatedStatus(status)}
+                    className={`px-3 py-2 rounded-md text-sm capitalize ${updatedStatus === status
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {status}
+                  </button>
+                ))}
               </div>
             </div>
-          )}
-        </Modal>
-        </div>
-      )}
+            
+            <div className="flex justify-end space-x-2 pt-4 border-t">
+              <button
+                onClick={() => setOpenOrderDialog(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  dispatch(updateOrderStatus({
+                    orderId: selectedOrder._id,
+                    status: updatedStatus
+                  }));
+                  setOpenOrderDialog(false);
+                  // Refresh data after a short delay
+                  setTimeout(() => {
+                    dispatch(fetchRevenueStats());
+                    dispatch(fetchAdminOrders());
+                  }, 1000);
+                }}
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              >
+                Update Status
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </motion.div>
   );
 }
