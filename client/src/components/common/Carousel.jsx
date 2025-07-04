@@ -103,7 +103,7 @@ const Carousel = ({ children, slidesToShow = 4, autoplay = false, autoplaySpeed 
 
   // Style for individual slides
   const slideStyle = {
-    flex: `0 0 ${100 / totalSlides}%`,
+    flex: `0 0 ${100 / actualSlidesToShow}%`,
     boxSizing: 'border-box',
     padding: '0 8px',
   };
