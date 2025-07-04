@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import PageTitle from '../../components/common/PageTitle';
 import { motion } from 'framer-motion';
-import { ShoppingBag, Star, Heart, Share, Minus, Plus } from 'lucide-react';
+import { ShoppingBag, Star, Heart, Share, Minus, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart, fetchCartItems } from '../../store/shop/cart-slice';
 import { addToWishlist, removeFromWishlist } from '../../store/shop/wishlist-slice';
@@ -14,7 +14,6 @@ import EnhancedShoppingProductTile from '../../components/shopping-view/enhanced
 import ProductOptionsModal from '../../components/shopping-view/productOptionsModal';
 import { fetchAllTaxonomyData } from '@/store/superAdmin/taxonomy-slice';
 import { navigateWithScroll } from '../../utils/scrollUtils';
-import Carousel from '../../components/common/Carousel';
 
 // Image Gallery Component for Clean Layout
 function ImageGallery({ productDetails }) {
@@ -549,48 +548,75 @@ function ProductDetailsPage() {
           <h2 className="text-2xl font-bold text-gray-900 mb-8">Related Products</h2>
           
           {similarProductsLoading ? (
-            <Carousel slidesToShow={4}>
+            <div className="flex overflow-x-auto pb-6 hide-scrollbar gap-4">
               {Array(4).fill(0).map((_, index) => (
-                <div key={index} className="bg-white rounded-lg overflow-hidden shadow-sm">
-                  <div className="aspect-square bg-gray-200 animate-pulse"></div>
-                  <div className="p-4">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
-                    <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                <div key={index} className="flex-shrink-0 w-72">
+                  <div className="bg-white rounded-lg overflow-hidden shadow-sm">
+                    <div className="aspect-square bg-gray-200 animate-pulse"></div>
+                    <div className="p-4">
+                      <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                    </div>
                   </div>
                 </div>
               ))}
-            </Carousel>
+            </div>
           ) : similarProducts.length > 0 ? (
-            <Carousel slidesToShow={4}>
-              {similarProducts.map(product => {
-                const isInWishlist = wishlistItems?.some(item =>
-                  item.productId === product._id ||
-                  item.productId?._id === product._id
-                );
+            <div className="relative">
+              {/* Scroll buttons */}
+              <button
+                onClick={() => {
+                  const container = document.querySelector('.related-products-scroll');
+                  container?.scrollBy({ left: -300, behavior: 'smooth' });
+                }}
+                className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-white rounded-full p-2 shadow-md hover:shadow-lg transition-shadow"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+              
+              <button
+                onClick={() => {
+                  const container = document.querySelector('.related-products-scroll');
+                  container?.scrollBy({ left: 300, behavior: 'smooth' });
+                }}
+                className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-white rounded-full p-2 shadow-md hover:shadow-lg transition-shadow"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+              
+              {/* Product cards */}
+              <div className="flex overflow-x-auto pb-6 hide-scrollbar gap-4 related-products-scroll">
+                {similarProducts.map(product => {
+                  const isInWishlist = wishlistItems?.some(item =>
+                    item.productId === product._id ||
+                    item.productId?._id === product._id
+                  );
 
-                return (
-                  <EnhancedShoppingProductTile
-                    key={product._id}
-                    product={product}
-                    handleGetProductDetails={() => {
-                      if (product && product._id) {
-                        navigateWithScroll(navigate, `/shop/product/${product._id}`);
-                      }
-                    }}
-                    handleAddToCart={() => {
-                      if (!isAuthenticated) {
-                        toast.error("Please login to add items to your cart");
-                        return;
-                      }
-                      setSelectedModalProduct(product);
-                      setIsOptionsModalOpen(true);
-                    }}
-                    handleAddToWishlist={(productId) => handleToggleWishlist(productId)}
-                    isInWishlist={isInWishlist}
-                  />
-                );
-              })}
-            </Carousel>
+                  return (
+                    <div key={product._id} className="flex-shrink-0 w-72">
+                      <EnhancedShoppingProductTile
+                        product={product}
+                        handleGetProductDetails={() => {
+                          if (product && product._id) {
+                            navigateWithScroll(navigate, `/shop/product/${product._id}`);
+                          }
+                        }}
+                        handleAddToCart={() => {
+                          if (!isAuthenticated) {
+                            toast.error("Please login to add items to your cart");
+                            return;
+                          }
+                          setSelectedModalProduct(product);
+                          setIsOptionsModalOpen(true);
+                        }}
+                        handleAddToWishlist={(productId) => handleToggleWishlist(productId)}
+                        isInWishlist={isInWishlist}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           ) : (
             <div className="text-center py-12 text-gray-500">
               <p>No related products found</p>
@@ -611,6 +637,23 @@ function ProductDetailsPage() {
       />
     </div>
   );
+}
+
+// CSS for hiding scrollbars (same as NewArrivals component)
+const styles = `
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+`;
+
+if (typeof document !== 'undefined') {
+  const styleElement = document.createElement('style');
+  styleElement.textContent = styles;
+  document.head.appendChild(styleElement);
 }
 
 export default ProductDetailsPage;
