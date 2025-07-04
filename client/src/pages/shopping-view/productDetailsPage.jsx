@@ -14,6 +14,7 @@ import EnhancedShoppingProductTile from '../../components/shopping-view/enhanced
 import ProductOptionsModal from '../../components/shopping-view/productOptionsModal';
 import { fetchAllTaxonomyData } from '@/store/superAdmin/taxonomy-slice';
 import { navigateWithScroll } from '../../utils/scrollUtils';
+import Carousel from '../../components/common/Carousel';
 
 // Image Gallery Component for Clean Layout
 function ImageGallery({ productDetails }) {
@@ -314,14 +315,6 @@ function ProductDetailsPage() {
               <span className="text-sm text-gray-600">({reviewCount} reviews)</span>
             </div>
 
-            {/* Product Description Text */}
-            <div className="text-gray-600 leading-relaxed">
-              <div dangerouslySetInnerHTML={{ 
-                __html: productDetails?.description || 
-                "Company that's grown from 270 to 480 employees in the last 12 months. We're always passionate about bringing top talent to NYC. That's why we're especially excited to kick off the new commit." 
-              }} />
-            </div>
-
             {/* Color Selection Dropdown */}
             {getDisplayColors().length > 0 && (
               <div className="space-y-3">
@@ -556,7 +549,7 @@ function ProductDetailsPage() {
           <h2 className="text-2xl font-bold text-gray-900 mb-8">Related Products</h2>
           
           {similarProductsLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Carousel slidesToShow={4}>
               {Array(4).fill(0).map((_, index) => (
                 <div key={index} className="bg-white rounded-lg overflow-hidden shadow-sm">
                   <div className="aspect-square bg-gray-200 animate-pulse"></div>
@@ -566,10 +559,10 @@ function ProductDetailsPage() {
                   </div>
                 </div>
               ))}
-            </div>
+            </Carousel>
           ) : similarProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {similarProducts.slice(0, 4).map(product => {
+            <Carousel slidesToShow={4}>
+              {similarProducts.map(product => {
                 const isInWishlist = wishlistItems?.some(item =>
                   item.productId === product._id ||
                   item.productId?._id === product._id
@@ -597,7 +590,7 @@ function ProductDetailsPage() {
                   />
                 );
               })}
-            </div>
+            </Carousel>
           ) : (
             <div className="text-center py-12 text-gray-500">
               <p>No related products found</p>
