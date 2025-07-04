@@ -35,7 +35,7 @@ const SuperAdminProducts = () => {
   
   useEffect(() => {
     dispatch(fetchAllProducts());
-    dispatch(fetchUsersByRole('admin'));
+    dispatch(fetchUsersByRole({ role: 'admin' }));
   }, [dispatch]);
   
   useEffect(() => {

@@ -550,7 +550,7 @@ function ProductDetailsPage() {
           {similarProductsLoading ? (
             <div className="flex overflow-x-auto pb-6 hide-scrollbar gap-4">
               {Array(4).fill(0).map((_, index) => (
-                <div key={index} className="flex-shrink-0 w-72">
+                <div key={index} className="flex-shrink-0 w-56 sm:w-64 lg:w-72">
                   <div className="bg-white rounded-lg overflow-hidden shadow-sm">
                     <div className="aspect-square bg-gray-200 animate-pulse"></div>
                     <div className="p-4">
@@ -593,7 +593,7 @@ function ProductDetailsPage() {
                   );
 
                   return (
-                    <div key={product._id} className="flex-shrink-0 w-72">
+                    <div key={product._id} className="flex-shrink-0 w-56 sm:w-64 lg:w-72">
                       <EnhancedShoppingProductTile
                         product={product}
                         handleGetProductDetails={() => {

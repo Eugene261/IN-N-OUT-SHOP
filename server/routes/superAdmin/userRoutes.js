@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { authMiddleware } = require('../../controllers/authController.js');
+const { verifyToken, isSuperAdmin } = require('../../Middleware/auth.js');
 const { 
   getAllUsers, 
   getUsersByRole, 
@@ -10,8 +10,9 @@ const {
   getAdminProfile 
 } = require('../../controllers/superAdmin/userController.js');
 
-// Apply auth middleware to all routes
-router.use(authMiddleware);
+// Apply auth middleware and super admin check to all routes
+router.use(verifyToken);
+router.use(isSuperAdmin);
 
 // Get all users
 router.get('/all', getAllUsers);

@@ -244,7 +244,7 @@ const NewArrivals = () => {
                   return (
                     <motion.div
                       key={product._id}
-                      className="flex-shrink-0 w-72"
+                      className="flex-shrink-0 w-56 sm:w-64 lg:w-72"
                       variants={itemVariants}
                     >
                       <EnhancedShoppingProductTile

@@ -45,7 +45,7 @@ const SuperAdminOrders = () => {
           })));
         }
       });
-    dispatch(fetchUsersByRole('admin'));
+    dispatch(fetchUsersByRole({ role: 'admin' }));
   }, [dispatch]);
   
   useEffect(() => {

@@ -1,0 +1,37 @@
+console.log('🔧 Local MongoDB Setup Guide');
+console.log('=============================');
+console.log('');
+console.log('If MongoDB Atlas is unavailable, you can use local MongoDB for development:');
+console.log('');
+console.log('1. Install MongoDB Community Edition:');
+console.log('   https://www.mongodb.com/try/download/community');
+console.log('');
+console.log('2. Start MongoDB locally:');
+console.log('   mongod --dbpath /path/to/your/data/directory');
+console.log('');
+console.log('3. Update your .env file:');
+console.log('   MONGODB_URI=mongodb://localhost:27017/ecom_development');
+console.log('');
+console.log('4. Or use MongoDB Docker container:');
+console.log('   docker run -d -p 27017:27017 --name mongodb mongo:latest');
+console.log('');
+console.log('5. MongoDB Compass (GUI):');
+console.log('   https://www.mongodb.com/try/download/compass');
+console.log('');
+console.log('⚠️  Remember: Local MongoDB is for development only!');
+console.log('   Your production data is in MongoDB Atlas.');
+console.log('');
+console.log('🔄 To switch back to Atlas when it\'s fixed:');
+console.log('   1. Update MONGODB_URI back to Atlas connection string');
+console.log('   2. Restart your server');
+console.log('   3. Your Atlas data will be preserved');
+console.log('');
+console.log('💡 Current Atlas connection string (masked):');
+if (process.env.MONGODB_URI) {
+    const maskedUri = process.env.MONGODB_URI.replace(/:([^:@]+)@/, ':***@');
+    console.log('   ' + maskedUri);
+}
+console.log('');
+console.log('🎯 Once you fix the Atlas connection, run:');
+console.log('   npm run dev');
+console.log('   And test your product details page changes!'); 

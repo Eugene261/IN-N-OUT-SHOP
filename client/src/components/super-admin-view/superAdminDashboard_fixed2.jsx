@@ -35,7 +35,7 @@ const SuperAdminDashboard = () => {
       .then(response => console.log('Product stats response:', response))
       .catch(error => console.error('Product stats error:', error));
     
-    dispatch(fetchUsersByRole('admin'))
+          dispatch(fetchUsersByRole({ role: 'admin' }))
       .then(response => console.log('Users response:', response))
       .catch(error => console.error('Users error:', error));
   }, [dispatch]);
